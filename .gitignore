@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual env
+.venv/
+venv/
+
+# IDE
+.idea/
+*.iml
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Wikidata on-disk cache
+src/.wikidata_cache/
+
+# Eval run outputs (regenerated from code + datasets)
+src/log_*.txt
+src/eval_done*.marker
+
+# Large local archive, not for the repo
+tests.zip
+
+# OS
+.DS_Store
+Thumbs.db
