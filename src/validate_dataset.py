@@ -164,7 +164,7 @@ def validate_dataset(filepath):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        filepath = "journalistic_dataset.csv"
+        filepath = "social_media_dataset.csv"
     else:
         filepath = sys.argv[1]
 

@@ -24,6 +24,10 @@ src/eval_done*.marker
 # Large local archive, not for the repo
 tests.zip
 
+# Secrets
+.env
+*.env
+
 # OS
 .DS_Store
 Thumbs.db

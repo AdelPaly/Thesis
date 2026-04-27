@@ -1,6 +1,8 @@
 import pandas as pd
 import argparse
-from main import geolocate, geolocate_hybrid, geolocate_conditional, geolocate_refined, geolocate_routed, geolocate_gated, geolocate_coverage
+from dotenv import load_dotenv
+load_dotenv()
+from main import geolocate, geolocate_refined, geolocate_refined_search, geolocate_refined_gemma
 from wikidata import save_caches
 
 def _print_summary(label, sub_df):
@@ -18,27 +20,37 @@ def _print_summary(label, sub_df):
     print(f"  Continent level: {continent:>3}/{total}  ({continent/total*100:5.1f}%)")
     print(f"  No result:       {no_result:>3}/{total}  ({no_result/total*100:5.1f}%)")
 
-def evaluate(dataset_path, limit=None, mode="original", output="eval_results.csv"):
+def evaluate(dataset_path, limit=None, mode="two_stage", output="eval_results.csv"):
     df = pd.read_csv(dataset_path)
     if limit is not None:
         df = df.head(limit)
     rows_out = []
+    llm_save = None
+    # gemma and refined_gemma both use the LLM cache; load the saver lazily
+    if mode in ("gemma", "refined_gemma"):
+        from llm_gemma import geolocate_gemma, save_cache as _sc
+        llm_save = _sc
+
     predict = {
-        "hybrid": geolocate_hybrid,
-        "conditional": geolocate_conditional,
-        "original": geolocate,
+        "two_stage": geolocate,
         "refined": geolocate_refined,
-        "routed": geolocate_routed,
-        "gated": geolocate_gated,
-        "coverage": geolocate_coverage,
+        "refined_search": geolocate_refined_search,
+        "refined_gemma": geolocate_refined_gemma,
+        "gemma": geolocate_gemma if mode in ("gemma", "refined_gemma") else None,
     }[mode]
 
     for i, row in df.iterrows():
         print(f"[{i+1}/{len(df)}] {row['location_name']}...", end=" ", flush=True)
         if i > 0 and i % 10 == 0:
             save_caches()
+            if llm_save:
+                llm_save()
 
-        pred = predict(row["text"])
+        try:
+            pred = predict(row["text"])
+        except Exception as e:
+            print(f"ERROR ({type(e).__name__})")
+            pred = None
 
         if pred is None:
             print("NO RESULT")
@@ -96,6 +108,8 @@ def evaluate(dataset_path, limit=None, mode="original", output="eval_results.csv
             _print_summary(f"Signal {signal}", results_df[results_df["signal_type"] == signal])
     print("=" * 60)
 
+    if llm_save:
+        llm_save()
     results_df.to_csv(output, index=False)
     print(f"Detailed results saved to {output}")
 
@@ -104,9 +118,9 @@ def evaluate(dataset_path, limit=None, mode="original", output="eval_results.csv
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", default="journalistic_dataset.csv")
+    parser.add_argument("--dataset", default="sample_100.csv")
     parser.add_argument("--limit", type=int, default=None, help="Evaluate only first N rows")
-    parser.add_argument("--mode", choices=["original", "hybrid", "conditional", "refined", "routed", "gated", "coverage"], default="routed")
+    parser.add_argument("--mode", choices=["two_stage", "refined", "refined_search", "refined_gemma", "gemma"], default="two_stage")
     parser.add_argument("--output", default="eval_results.csv", help="Path to write detailed results CSV")
     args = parser.parse_args()
     evaluate(args.dataset, limit=args.limit, mode=args.mode, output=args.output)

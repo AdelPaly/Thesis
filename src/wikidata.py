@@ -144,10 +144,36 @@ def _fetch_labels(qids):
 
 
 def _claim_id(entity, prop):
-    """Get QID of first value of a property claim."""
+    """Get QID of the most appropriate single value for a property claim.
+
+    Skips deprecated-rank claims and end-dated (P582) historical claims.
+    Prefers preferred-rank over normal-rank when both exist. Falls back to
+    the raw first-in-storage value if filtering removes every claim, so
+    entities with only historical values still resolve to something."""
     claims = entity.get("claims", {})
     if prop not in claims:
         return None
+
+    preferred = []
+    normal = []
+    for claim in claims[prop]:
+        if claim.get("rank") == "deprecated":
+            continue
+        if "P582" in claim.get("qualifiers", {}):
+            continue
+        val = claim.get("mainsnak", {}).get("datavalue", {}).get("value")
+        if not (isinstance(val, dict) and "id" in val):
+            continue
+        if claim.get("rank") == "preferred":
+            preferred.append(val["id"])
+        else:
+            normal.append(val["id"])
+
+    if preferred:
+        return preferred[0]
+    if normal:
+        return normal[0]
+
     val = claims[prop][0].get("mainsnak", {}).get("datavalue", {}).get("value")
     if isinstance(val, dict) and "id" in val:
         return val["id"]
@@ -377,6 +403,90 @@ def get_coords(entity_text, entity_type, top_n=10):
 GEO_PROP_CHAIN = ["P159", "P131", "P19", "P937", "P276"]
 
 
+# Geographic-area types for the refined_gemma routing gate. A ReFinED-linked
+# LOC whose P31 (directly or one P279 hop above) hits this set is a real
+# settlement / country / admin region. Anything outside (sports venues,
+# generic "old town" / "neighborhood" concepts, oceans, shopping centers)
+# means the Flair LOC tag was a generic noun and the entry should fall back
+# to Gemma instead of committing the ReFinED branch.
+GEO_AREA_P31 = {
+    # Settlements
+    "Q486972",   # human settlement
+    "Q515",      # city
+    "Q3957",     # town
+    "Q532",      # village
+    "Q5084",     # hamlet
+    "Q748149",   # locality
+    "Q1549591",  # big city
+    "Q1637706",  # city with millions of inhabitants
+    "Q702492",   # urban area
+    "Q1907114",  # metropolitan area
+    "Q174844",   # megacity
+    "Q15284",    # municipality
+    "Q5119",     # capital
+    "Q5152",     # capital city
+    # Countries
+    "Q6256",     # country
+    "Q3624078",  # sovereign state
+    "Q5107",     # continent
+    "Q15916867", # historical country
+    "Q3024240",  # former country
+    # Administrative divisions
+    "Q56061",    # administrative territorial entity
+    "Q10864048", # first-level administrative country subdivision
+    "Q13220204", # second-level administrative country subdivision
+    "Q149621",   # district
+    "Q28575",    # county
+    "Q34876",    # province
+    "Q35657",    # state of the United States
+    "Q24698",    # federal subject of Russia
+    "Q3950",     # oblast
+    "Q5852411",  # autonomous region
+    # Geographic regions
+    "Q82794",    # geographic region
+    "Q3455524",  # region
+    "Q1620908",  # historical region
+}
+
+
+# P31 types that describe subdivisions or architectural concepts rather than
+# specific named geographies. These reach human-settlement / region via a P279
+# hop, but they are exactly the descriptors ReFinED resolves wrongly when the
+# Flair LOC tag is a generic noun ("Old Town", "Riverside" district). Gate
+# rejects whenever ALL P31 fall in this set, regardless of P279 chain.
+GEO_NONPLACE_P31 = {
+    "Q123705",   # neighborhood
+    "Q676050",   # old town
+    "Q1497375",  # architectural ensemble
+    "Q48907157", # section of populated place
+}
+
+
+def is_geographic_qid(qid):
+    """Routing-gate helper: True iff QID's P31 (directly, or via one P279
+    hop) hits GEO_AREA_P31. The P279 hop catches subclass patterns like
+    'region of Ghana' -> 'region' and 'commune of France' -> 'municipality'
+    without each subclass being enumerated. Reject when every P31 is in
+    GEO_NONPLACE_P31 (neighborhood / old town / etc.) — those classes reach
+    human settlement via P279 but are too generic to commit ReFinED for."""
+    if not qid:
+        return False
+    ent = _fetch_entities([qid]).get(qid, {})
+    if not ent:
+        return False
+    p31s = _claim_ids(ent, "P31")
+    if not p31s:
+        return False
+    if any(p in GEO_AREA_P31 for p in p31s):
+        return True
+    if all(p in GEO_NONPLACE_P31 for p in p31s):
+        return False
+    for parent in _fetch_entities(p31s).values():
+        if any(s in GEO_AREA_P31 for s in _claim_ids(parent, "P279")):
+            return True
+    return False
+
+
 def resolve_qid_to_candidate(qid, entity_text, entity_type):
     """Resolve a known QID (e.g. from BLINK) to a geographic candidate dict via
     the property chain P625 (coords) → P159 → P131 → P19 → P937 → P276, with one
@@ -425,11 +535,6 @@ def resolve_qid_to_candidate(qid, entity_text, entity_type):
         "country": country,
         "continent": continent,
     }
-
-
-def get_labels(qids):
-    """Public wrapper: batch-fetch English labels for QIDs."""
-    return _fetch_labels(qids)
 
 
 def get_all_coords(entities, top_n=10):

@@ -1,9 +1,9 @@
 """ReFinED entity linker wrapper.
 
 ReFinED (Amazon 2022) does joint NER + entity typing + disambiguation and links
-directly to Wikidata QIDs, so there's no Wikipedia→QID hop. We still feed it
+directly to Wikidata QIDs, so there's no Wikipedia->QID hop. We feed it
 Flair-detected mentions (via the `spans` override) so NER stays consistent with
-the original/hybrid/conditional modes.
+the two_stage configuration.
 """
 from refined.inference.processor import Refined
 from refined.data_types.base_types import Span
