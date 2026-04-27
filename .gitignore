@@ -11,15 +11,18 @@ venv/
 .idea/
 *.iml
 
-# Claude Code local settings
-.claude/settings.local.json
+# Claude Code local state
+.claude/
 
-# Wikidata on-disk cache
+# On-disk caches (regenerated at runtime)
 src/.wikidata_cache/
+src/.llm_cache/
+src/.geonames_qid_cache.pkl
 
 # Eval run outputs (regenerated from code + datasets)
 src/log_*.txt
 src/eval_done*.marker
+results_runner*.log
 
 # Large local archive, not for the repo
 tests.zip

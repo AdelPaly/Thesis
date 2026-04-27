@@ -1,0 +1,31 @@
+configuration,continent,n,exact,country,continent_match
+two_stage,Africa,36,44.4,66.7,66.7
+two_stage,Asia,36,22.2,44.4,55.6
+two_stage,Europe,36,55.6,66.7,75.0
+two_stage,North America,36,47.2,58.3,58.3
+two_stage,Oceania,36,16.7,27.8,30.6
+two_stage,South America,36,27.8,33.3,41.7
+refined,Africa,36,58.3,69.4,69.4
+refined,Asia,36,55.6,63.9,63.9
+refined,Europe,36,58.3,58.3,66.7
+refined,North America,36,41.7,55.6,63.9
+refined,Oceania,36,33.3,41.7,44.4
+refined,South America,36,44.4,44.4,44.4
+gemma,Africa,36,41.7,69.4,72.2
+gemma,Asia,36,50.0,69.4,77.8
+gemma,Europe,36,83.3,91.7,100.0
+gemma,North America,36,44.4,86.1,94.4
+gemma,Oceania,36,13.9,61.1,69.4
+gemma,South America,36,33.3,66.7,77.8
+refined_search,Africa,36,58.3,69.4,69.4
+refined_search,Asia,36,58.3,66.7,66.7
+refined_search,Europe,36,63.9,69.4,80.6
+refined_search,North America,36,41.7,58.3,63.9
+refined_search,Oceania,36,33.3,41.7,44.4
+refined_search,South America,36,44.4,44.4,50.0
+refined_gemma,Africa,36,63.9,83.3,86.1
+refined_gemma,Asia,36,52.8,66.7,77.8
+refined_gemma,Europe,36,72.2,80.6,100.0
+refined_gemma,North America,36,50.0,75.0,94.4
+refined_gemma,Oceania,36,38.9,66.7,75.0
+refined_gemma,South America,36,38.9,69.4,77.8

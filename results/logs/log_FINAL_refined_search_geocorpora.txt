@@ -1,0 +1,167 @@
+2026-04-27 01:14:00,447 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+  Wikidata cache loaded: 5075 entities, 5015 labels, 656 coord lookups
+[1/200] Lansing... C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast():
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
+  super().__init__(
+COUNTRY | pred=Q5083 (United States) | true=nan (United States)
+[2/200] Hollywood... COUNTRY | pred=Q34006 (United States) | true=nan (United States)
+[3/200] Kingdom of Saudi Arabia... MISS | pred=Q79 (Egypt) | true=nan (Saudi Arabia)
+[4/200] Ferguson... COUNTRY | pred=Q17501769 (United States) | true=nan (United States)
+[5/200] Ferguson... NO RESULT
+[6/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
+[7/200] Syrian Arab Republic... COUNTRY | pred=Q3766 (Syria) | true=nan (Syria)
+[8/200] McCarren Park... COUNTRY | pred=Q15205107 (United States) | true=nan (United States)
+[9/200] California... COUNTRY | pred=Q99 (United States) | true=nan (United States)
+[10/200] Yellowstone National Park... COUNTRY | pred=Q351 (United States) | true=nan (United States)
+[11/200] Kentucky... COUNTRY | pred=Q1603 (United States) | true=nan (United States)
+[12/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
+[13/200] Republic of Zambia... COUNTRY | pred=Q953 (Zambia) | true=nan (Zambia)
+[14/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
+[15/200] Toronto... COUNTRY | pred=Q172 (Canada) | true=nan (Canada)
+[16/200] New Zealand... COUNTRY | pred=Q664 (New Zealand) | true=nan (New Zealand)
+[17/200] Ferguson... NO RESULT
+[18/200] Rexburg... COUNTRY | pred=Q818311 (United States) | true=nan (United States)
+[19/200] Republic of Yemen... COUNTRY | pred=Q805 (Yemen) | true=nan (Yemen)
+[20/200] Ferguson... COUNTRY | pred=Q954855 (United States) | true=nan (United States)
+[21/200] Malaysia... COUNTRY | pred=Q833 (Malaysia) | true=nan (Malaysia)
+[22/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
+[23/200] Islamic Republic of Iran... COUNTRY | pred=Q41470 (Iran) | true=nan (Iran)
+[24/200] San Francisco Bay Area... COUNTRY | pred=Q110739 (United States) | true=nan (United States)
+[25/200] Harrow... COUNTRY | pred=Q1247373 (United Kingdom) | true=nan (United Kingdom)
+[26/200] Kingsport... COUNTRY | pred=Q1509 (United States) | true=nan (United States)
+[27/200] Kelantan... COUNTRY | pred=Q185944 (Malaysia) | true=nan (Malaysia)
+[28/200] Ferguson... COUNTRY | pred=Q954855 (United States) | true=nan (United States)
+[29/200] Brescia... COUNTRY | pred=Q1449 (Italy) | true=nan (Italy)
+[30/200] Aurora... COUNTRY | pred=Q49246 (United States) | true=nan (United States)
+[31/200] Palestine... NO RESULT
+[32/200] River Thames... COUNTRY | pred=Q19686 (United Kingdom) | true=nan (United Kingdom)
+[33/200] New York... COUNTRY | pred=Q1384 (United States) | true=nan (United States)
+[34/200] Kalgoorlie/Boulder... COUNTRY | pred=Q548172 (Australia) | true=nan (Australia)
+[35/200] Great Barrier Reef... COUNTRY | pred=Q7343 (Australia) | true=nan (Australia)
+[36/200] Las Vegas... COUNTRY | pred=Q23768 (United States) | true=nan (United States)
+[37/200] Somerset... COUNTRY | pred=Q6376320 (United Kingdom) | true=nan (United Kingdom)
+[38/200] Federal Republic of Nigeria... COUNTRY | pred=Q212372 (Nigeria) | true=nan (Nigeria)
+[39/200] State of Arun�?chal Pradesh... COUNTRY | pred=Q1162 (India) | true=nan (India)
+[40/200] Walpole Station... COUNTRY | pred=Q7653484 (United States) | true=nan (United States)
+[41/200] Republic of India... COUNTRY | pred=Q668 (India) | true=nan (India)
+[42/200] Gustine Gun Club... COUNTRY | pred=Q34741062 (United States) | true=nan (United States)
+[43/200] Republic of the Philippines... COUNTRY | pred=Q928 (Philippines) | true=nan (Philippines)
+[44/200] Columbia... MISS | pred=Q850235 (United Kingdom) | true=nan (United States)
+[45/200] North Dakota... COUNTRY | pred=Q34109 (United States) | true=nan (United States)
+[46/200] United Kingdom of Great Britain and Northern Ireland... COUNTRY | pred=Q145 (United Kingdom) | true=nan (United Kingdom)
+[47/200] Maarrat al-Nu'man District... CONTINENT | pred=Q4703966 (United Arab Emirates) | true=nan (Syria)
+[48/200] Délégation de Hammamet... COUNTRY | pred=Q339535 (Tunisia) | true=nan (Tunisia)
+[49/200] State of Israel... CONTINENT | pred=Q47492 (Palestine) | true=nan (Israel)
+[50/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
+[51/200] Republic of Ghana... COUNTRY | pred=Q117 (Ghana) | true=nan (Ghana)
+[52/200] St. Louis... COUNTRY | pred=Q38022 (United States) | true=nan (United States)
+[53/200] Liverpool... COUNTRY | pred=Q24826 (United Kingdom) | true=nan (United Kingdom)
+[54/200] Russian Federation... COUNTRY | pred=Q159 (Russia) | true=nan (Russia)
+[55/200] Fort Myers... NO RESULT
+[56/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
+[57/200] United States... COUNTRY | pred=Q583725 (United States) | true=nan (United States)
+[58/200] Leichhardt... COUNTRY | pred=Q3130 (Australia) | true=nan (Australia)
+[59/200] River Severn... COUNTRY | pred=Q1287969 (United Kingdom) | true=nan (United Kingdom)
+[60/200] Ukraine... COUNTRY | pred=Q181386 (Ukraine) | true=nan (Ukraine)
+[61/200] Japan... MISS | pred=Q60 (United States) | true=nan (Japan)
+[62/200] Vadodara... NO RESULT
+[63/200] State of Jammu and Kashm?r... COUNTRY | pred=Q668 (India) | true=nan (India)
+[64/200] Republic of Iraq... COUNTRY | pred=Q796 (Iraq) | true=nan (Iraq)
+[65/200] Malaysia... COUNTRY | pred=Q1865 (Malaysia) | true=nan (Malaysia)
+[66/200] State of Odisha... COUNTRY | pred=Q2142272 (India) | true=nan (India)
+[67/200] Pyūth�?n... CONTINENT | pred=Q858 (Syria) | true=nan (Nepal)
+[68/200] Republic of South Africa... COUNTRY | pred=Q258 (South Africa) | true=nan (South Africa)
+[69/200] Kansas... NO RESULT
+[70/200] Republic of Costa Rica... CONTINENT | pred=Q2798738 (United States) | true=nan (Costa Rica)
+[71/200] Dallas... COUNTRY | pred=Q16557 (United States) | true=nan (United States)
+[72/200] Arab Republic of Egypt... COUNTRY | pred=Q79 (Egypt) | true=nan (Egypt)
+[73/200] T?hoku-machi... COUNTRY | pred=Q129465 (Japan) | true=nan (Japan)
+[74/200] County Donegal... COUNTRY | pred=Q179424 (Ireland) | true=nan (Ireland)
+[75/200] Dallas... COUNTRY | pred=Q16557 (United States) | true=nan (United States)
+[76/200] Ferguson... COUNTRY | pred=Q17501769 (United States) | true=nan (United States)
+[77/200] Kuril Islands... COUNTRY | pred=Q80389 (Russia) | true=nan (Russia)
+[78/200] Penampang... COUNTRY | pred=Q778171 (Malaysia) | true=nan (Malaysia)
+[79/200] Texas... COUNTRY | pred=Q1439 (United States) | true=nan (United States)
+[80/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
+[81/200] South Dakota... COUNTRY | pred=Q1211 (United States) | true=nan (United States)
+[82/200] Missouri... COUNTRY | pred=Q317865 (United States) | true=nan (United States)
+[83/200] Arab Republic of Egypt... COUNTRY | pred=Q79 (Egypt) | true=nan (Egypt)
+[84/200] Alaska... NO RESULT
+[85/200] California... MISS | pred=Q51103 (Colombia) | true=nan (United States)
+[86/200] Melbourne... COUNTRY | pred=Q3141 (Australia) | true=nan (Australia)
+[87/200] Louisiana... NO RESULT
+[88/200] Peshawar... COUNTRY | pred=Q18670313 (Pakistan) | true=nan (Pakistan)
+[89/200] United Kingdom of Great Britain and Northern Ireland... COUNTRY | pred=Q7330894 (United Kingdom) | true=nan (United Kingdom)
+[90/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
+[91/200] Kingdom of Cambodia... COUNTRY | pred=Q424 (Cambodia) | true=nan (Cambodia)
+[92/200] East Midlands Airport... COUNTRY | pred=Q47994 (United Kingdom) | true=nan (United Kingdom)
+[93/200] Punjab... COUNTRY | pred=Q8660 (Pakistan) | true=nan (Pakistan)
+[94/200] Mississippi... COUNTRY | pred=Q2076280 (United States) | true=nan (United States)
+[95/200] San Francisco Bay Area... COUNTRY | pred=Q18013 (United States) | true=nan (United States)
+[96/200] People�??s Republic of China... CONTINENT | pred=Q148 (People's Republic of China) | true=nan (China)
+[97/200] State of Jammu and Kashmīr... COUNTRY | pred=Q255455 (India) | true=nan (India)
+[98/200] Syrian Arab Republic... MISS | pred=Q1297 (United States) | true=nan (Syria)
+[99/200] Belle Chasse... COUNTRY | pred=Q1879293 (United States) | true=nan (United States)
+[100/200] Repubblica Italiana... COUNTRY | pred=Q1449 (Italy) | true=nan (Italy)
+[101/200] Michigan... COUNTRY | pred=Q1166 (United States) | true=nan (United States)
+[102/200] Eastern Cape... COUNTRY | pred=Q130840 (South Africa) | true=nan (South Africa)
+[103/200] Commonwealth of Australia... MISS | pred=Q656 (Russia) | true=nan (Australia)
+[104/200] Republic of Yemen... COUNTRY | pred=Q2471 (Yemen) | true=nan (Yemen)
+[105/200] Northern California Preparatory School... COUNTRY | pred=Q1066807 (United States) | true=nan (United States)
+[106/200] London... NO RESULT
+[107/200] Fayetteville... COUNTRY | pred=Q219526 (United States) | true=nan (United States)
+[108/200] Mongolia... MISS | pred=Q7817 (Switzerland) | true=nan (Mongolia)
+[109/200] Ukraine... COUNTRY | pred=Q212 (Ukraine) | true=nan (Ukraine)
+[110/200] Genève... CONTINENT | pred=Q84 (United Kingdom) | true=nan (Switzerland)
+[111/200] Malaysia... COUNTRY | pred=Q182378 (Malaysia) | true=nan (Malaysia)
+[112/200] Camden Yards... NO RESULT
+[113/200] Kinki Chih?... NO RESULT
+[114/200] Central African Republic... COUNTRY | pred=Q929 (Central African Republic) | true=nan (Central African Republic)
+[115/200] Arab Republic of Egypt... COUNTRY | pred=Q85 (Egypt) | true=nan (Egypt)
+[116/200] South Sudan... NO RESULT
+[117/200] Lagos... COUNTRY | pred=Q19604794 (Nigeria) | true=nan (Nigeria)
+[118/200] Republic of Senegal... COUNTRY | pred=Q1041 (Senegal) | true=nan (Senegal)
+[119/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
+[120/200] St. Louis... COUNTRY | pred=Q38022 (United States) | true=nan (United States)
+[121/200] Federal Democratic Republic of Nepal... COUNTRY | pred=Q9170 (Nepal) | true=nan (Nepal)
+[122/200] East Midlands Airport... COUNTRY | pred=Q47994 (United Kingdom) | true=nan (United Kingdom)
+[123/200] Peopleâ�?�?s Republic of China... CONTINENT | pred=Q65040218 (Philippines) | true=nan (China)
+[124/200] Grand Central Airport... COUNTRY | pred=Q639518 (South Africa) | true=nan (South Africa)
+[125/200] Republic of Vanuatu... COUNTRY | pred=Q37806 (Vanuatu) | true=nan (Vanuatu)
+[126/200] Republic of Malawi... COUNTRY | pred=Q1020 (Malawi) | true=nan (Malawi)
+[127/200] United Kingdom of Great Britain and Northern Ireland... COUNTRY | pred=Q145 (United Kingdom) | true=nan (United Kingdom)
+[128/200] Ferguson... NO RESULT
+[129/200] Faisal�?�?b�?�?d... COUNTRY | pred=Q1362 (Pakistan) | true=nan (Pakistan)
+[130/200] Kent...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+COUNTRY | pred=Q179351 (United Kingdom) | true=nan (United Kingdom)
+[131/200] East Midlands Airport...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+COUNTRY | pred=Q47994 (United Kingdom) | true=nan (United Kingdom)
+[132/200] United States...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+MISS | pred=Q212 (Ukraine) | true=nan (United States)
+[133/200] Ukraine... 

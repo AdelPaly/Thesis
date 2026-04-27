@@ -1,0 +1,204 @@
+2026-04-26 21:33:15,050 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+C:\Users\Adela\PycharmProjects\geo\src\llm_gemma.py:3: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+  Wikidata cache loaded: 2327 entities, 2306 labels, 245 coord lookups
+[1/144] Johannesburg... EXACT | pred=Q34647 (South Africa) | true=Q34647 (South Africa)
+[2/144] Aba... EXACT | pred=Q202162 (Nigeria) | true=Q202162 (Nigeria)
+[3/144] Kumasi... C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast():
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
+  super().__init__(
+EXACT | pred=Q182059 (Ghana) | true=Q182059 (Ghana)
+[4/144] Dakar... EXACT | pred=Q3718 (Senegal) | true=Q3718 (Senegal)
+[5/144] Casablanca... EXACT | pred=Q7903 (Morocco) | true=Q7903 (Morocco)
+[6/144] Luanda... EXACT | pred=Q3897 (Angola) | true=Q3897 (Angola)
+[7/144] Dar es Salaam... EXACT | pred=Q1960 (Tanzania) | true=Q1960 (Tanzania)
+[8/144] Porto-Novo... COUNTRY | pred=Q43595 (Benin) | true=Q3799 (Benin)
+[9/144] Osaka... COUNTRY | pred=Q122723 (Japan) | true=Q35765 (Japan)
+[10/144] Isfahan... EXACT | pred=Q42053 (Iran) | true=Q42053 (Iran)
+[11/144] Kolkata...   Wikidata cache saved: 2329 entities, 2308 labels, 245 coord lookups
+EXACT | pred=Q1348 (India) | true=Q1348 (India)
+[12/144] Tehran... COUNTRY | pred=Q6397066 (Iran) | true=Q3616 (Iran)
+[13/144] Hanoi... EXACT | pred=Q1858 (Vietnam) | true=Q1858 (Vietnam)
+[14/144] Nagoya... EXACT | pred=Q11751 (Japan) | true=Q11751 (Japan)
+[15/144] Riyadh... COUNTRY | pred=Q851 (Saudi Arabia) | true=Q3692 (Saudi Arabia)
+[16/144] Dhaka... EXACT | pred=Q1354 (Bangladesh) | true=Q1354 (Bangladesh)
+[17/144] Marseille... EXACT | pred=Q23482 (France) | true=Q23482 (France)
+[18/144] Belgrade... EXACT | pred=Q3711 (Serbia) | true=Q3711 (Serbia)
+[19/144] Warsaw... EXACT | pred=Q270 (Poland) | true=Q270 (Poland)
+[20/144] Galway... COUNTRY | pred=Q1761 (Ireland) | true=Q129610 (Ireland)
+[21/144] Turin...   Wikidata cache saved: 2331 entities, 2310 labels, 245 coord lookups
+EXACT | pred=Q495 (Italy) | true=Q495 (Italy)
+[22/144] Copenhagen... CONTINENT | pred=Q35 (Kingdom of Denmark) | true=Q1748 (Denmark)
+[23/144] Kyiv... EXACT | pred=Q1899 (Ukraine) | true=Q1899 (Ukraine)
+[24/144] Barcelona... EXACT | pred=Q1492 (Spain) | true=Q1492 (Spain)
+[25/144] Nashville... COUNTRY | pred=Q983832 (United States) | true=Q23197 (United States)
+[26/144] Mexico City... EXACT | pred=Q1489 (Mexico) | true=Q1489 (Mexico)
+[27/144] Tampa... EXACT | pred=Q49255 (United States) | true=Q49255 (United States)
+[28/144] Calgary... EXACT | pred=Q36312 (Canada) | true=Q36312 (Canada)
+[29/144] San José... CONTINENT | pred=Q16553 (United States) | true=Q3070 (Costa Rica)
+[30/144] Ottawa... COUNTRY | pred=Q172 (Canada) | true=Q1930 (Canada)
+[31/144] Panama City...   Wikidata cache saved: 2333 entities, 2312 labels, 245 coord lookups
+EXACT | pred=Q3306 (Panama) | true=Q3306 (Panama)
+[32/144] Kingston... EXACT | pred=Q34692 (Jamaica) | true=Q34692 (Jamaica)
+[33/144] Buenos Aires... MISS | pred=Q29422 (United States) | true=Q1486 (Argentina)
+[34/144] São Paulo... COUNTRY | pred=Q175 (Brazil) | true=Q174 (Brazil)
+[35/144] Santiago... COUNTRY | pred=Q298 (Chile) | true=Q2887 (Chile)
+[36/144] Bogotá... EXACT | pred=Q2841 (Colombia) | true=Q2841 (Colombia)
+[37/144] Asunción... CONTINENT | pred=Q414 (Argentina) | true=Q2933 (Paraguay)
+[38/144] Guayaquil... EXACT | pred=Q43509 (Ecuador) | true=Q43509 (Ecuador)
+[39/144] Lima... COUNTRY | pred=Q419 (Peru) | true=Q2868 (Peru)
+[40/144] Caracas... EXACT | pred=Q1533 (Venezuela) | true=Q1533 (Venezuela)
+[41/144] Auckland...   Wikidata cache saved: 2335 entities, 2314 labels, 245 coord lookups
+COUNTRY | pred=Q726917 (New Zealand) | true=Q37100 (New Zealand)
+[42/144] Brisbane... EXACT | pred=Q34932 (Australia) | true=Q34932 (Australia)
+[43/144] Adelaide... COUNTRY | pred=Q1400563 (Australia) | true=Q5112 (Australia)
+[44/144] Port Moresby... CONTINENT | pred=Q726917 (New Zealand) | true=Q36526 (Papua New Guinea)
+[45/144] Nouméa... EXACT | pred=Q9733 (France) | true=Q9733 (France)
+[46/144] Suva... NO RESULT
+[47/144] Yaren District... COUNTRY | pred=Q697 (Nauru) | true=Q31026 (Nauru)
+[48/144] Wellington... COUNTRY | pred=Q726917 (New Zealand) | true=Q23661 (New Zealand)
+[49/144] Victoria... MISS | pred=Q963152 (British Hong Kong) | true=Q3940 (Seychelles)
+[50/144] Tripoli... EXACT | pred=Q3579 (Libya) | true=Q3579 (Libya)
+[51/144] Durban...   Wikidata cache saved: 2338 entities, 2317 labels, 245 coord lookups
+EXACT | pred=Q5468 (South Africa) | true=Q5468 (South Africa)
+[52/144] Mombasa... EXACT | pred=Q225641 (Kenya) | true=Q225641 (Kenya)
+[53/144] Tanga... EXACT | pred=Q152902 (Tanzania) | true=Q152902 (Tanzania)
+[54/144] Touba... EXACT | pred=Q657072 (Senegal) | true=Q657072 (Senegal)
+[55/144] Bo... EXACT | pred=Q844878 (Sierra Leone) | true=Q844878 (Sierra Leone)
+[56/144] Salé... NO RESULT
+[57/144] Hyderabad... EXACT | pred=Q1361 (India) | true=Q1361 (India)
+[58/144] Tangshan... EXACT | pred=Q58422 (People's Republic of China) | true=Q58422 (China)
+[59/144] Surat... EXACT | pred=Q4629 (India) | true=Q4629 (India)
+[60/144] George Town... MISS | pred=Q990898 (United States) | true=Q61092 (Malaysia)
+[61/144] Yazd...   Wikidata cache saved: 2338 entities, 2317 labels, 245 coord lookups
+EXACT | pred=Q182394 (Iran) | true=Q182394 (Iran)
+[62/144] Matara... EXACT | pred=Q13360574 (Sri Lanka) | true=Q13360574 (Sri Lanka)
+[63/144] Manado... EXACT | pred=Q15847 (Indonesia) | true=Q15847 (Indonesia)
+[64/144] Huế... MISS | pred=Q12246 (Spain) | true=Q36167 (Vietnam)
+[65/144] Bath... EXACT | pred=Q22889 (United Kingdom) | true=Q22889 (United Kingdom)
+[66/144] Essen... EXACT | pred=Q2066 (Germany) | true=Q2066 (Germany)
+[67/144] Nice... EXACT | pred=Q33959 (France) | true=Q33959 (France)
+[68/144] Faro... EXACT | pred=Q159457 (Portugal) | true=Q159457 (Portugal)
+[69/144] Brno... EXACT | pred=Q14960 (Czech Republic) | true=Q14960 (Czech Republic)
+[70/144] Bergen... EXACT | pred=Q26793 (Norway) | true=Q26793 (Norway)
+[71/144] Cork...   Wikidata cache saved: 2341 entities, 2320 labels, 245 coord lookups
+EXACT | pred=Q36647 (Ireland) | true=Q36647 (Ireland)
+[72/144] Split... EXACT | pred=Q1663 (Croatia) | true=Q1663 (Croatia)
+[73/144] Regina... EXACT | pred=Q2123 (Canada) | true=Q2123 (Canada)
+[74/144] Florence... EXACT | pred=Q597842 (United States) | true=Q597842 (United States)
+[75/144] Norman... EXACT | pred=Q40347 (United States) | true=Q40347 (United States)
+[76/144] Mérida... EXACT | pred=Q165204 (Mexico) | true=Q165204 (Mexico)
+[77/144] Brandon... COUNTRY | pred=Q16 (Canada) | true=Q61432 (Canada)
+[78/144] Port of Spain... EXACT | pred=Q39178 (Trinidad and Tobago) | true=Q39178 (Trinidad and Tobago)
+[79/144] Belmopan... EXACT | pred=Q3043 (Belize) | true=Q3043 (Belize)
+[80/144] León... MISS | pred=Q15699 (Spain) | true=Q208151 (Nicaragua)
+[81/144] Santa Cruz de la Sierra...   Wikidata cache saved: 2343 entities, 2322 labels, 245 coord lookups
+CONTINENT | pred=Q44821 (Argentina) | true=Q170688 (Bolivia)
+[82/144] Rosario... EXACT | pred=Q52535 (Argentina) | true=Q52535 (Argentina)
+[83/144] Manaus... EXACT | pred=Q40236 (Brazil) | true=Q40236 (Brazil)
+[84/144] Valencia... MISS | pred=Q8818 (Spain) | true=Q54880 (Venezuela)
+[85/144] Sucre... CONTINENT | pred=Q205824 (Venezuela) | true=Q2907 (Bolivia)
+[86/144] Concepción... EXACT | pred=Q1880 (Chile) | true=Q1880 (Chile)
+[87/144] Loja... EXACT | pred=Q944697 (Ecuador) | true=Q944697 (Ecuador)
+[88/144] Macapá... EXACT | pred=Q180215 (Brazil) | true=Q180215 (Brazil)
+[89/144] Hamilton... EXACT | pred=Q200028 (New Zealand) | true=Q200028 (New Zealand)
+[90/144] Darwin... COUNTRY | pred=Q408 (Australia) | true=Q11568 (Australia)
+[91/144] Nelson...   Wikidata cache saved: 2343 entities, 2322 labels, 245 coord lookups
+EXACT | pred=Q206687 (New Zealand) | true=Q206687 (New Zealand)
+[92/144] Mackay... EXACT | pred=Q704371 (Australia) | true=Q704371 (Australia)
+[93/144] Lae... COUNTRY | pred=Q691 (Papua New Guinea) | true=Q612250 (Papua New Guinea)
+[94/144] Nadi... EXACT | pred=Q619443 (Fiji) | true=Q619443 (Fiji)
+[95/144] Apia... EXACT | pred=Q36260 (Samoa) | true=Q36260 (Samoa)
+[96/144] Port Vila... MISS | pred=Q712 (Fiji) | true=Q37806 (Vanuatu)
+[97/144] Johannesburg... COUNTRY | pred=Q258 (South Africa) | true=Q34647 (South Africa)
+[98/144] Cape Town... MISS | pred=Q81882 (Brazil) | true=Q5465 (South Africa)
+[99/144] Enugu... MISS | pred=Q496368 (United Kingdom) | true=Q465022 (Nigeria)
+[100/144] Tunis... COUNTRY | pred=Q180717 (Tunisia) | true=Q3572 (Tunisia)
+[101/144] Harare...   Wikidata cache saved: 2346 entities, 2325 labels, 245 coord lookups
+EXACT | pred=Q3921 (Zimbabwe) | true=Q3921 (Zimbabwe)
+[102/144] Garoua... COUNTRY | pred=Q1009 (Cameroon) | true=Q157915 (Cameroon)
+[103/144] Lubumbashi... EXACT | pred=Q187593 (Democratic Republic of the Congo) | true=Q187593 (Democratic Republic of the Congo)
+[104/144] Jakarta... EXACT | pred=Q3630 (Indonesia) | true=Q3630 (Indonesia)
+[105/144] Jeddah... CONTINENT | pred=Q3861 (Qatar) | true=Q374365 (Saudi Arabia)
+[106/144] Bangkok... MISS | pred=Q24639 (Canada) | true=Q1861 (Thailand)
+[107/144] Beirut... MISS | pred=Q949779 (United States) | true=Q3820 (Lebanon)
+[108/144] Kolkata... EXACT | pred=Q1348 (India) | true=Q1348 (India)
+[109/144] Tehran... EXACT | pred=Q3616 (Iran) | true=Q3616 (Iran)
+[110/144] Bacolod... COUNTRY | pred=Q928 (Philippines) | true=Q5217 (Philippines)
+[111/144] Prague...   Wikidata cache saved: 2347 entities, 2326 labels, 245 coord lookups
+CONTINENT | pred=Q5690 (Greece) | true=Q1085 (Czech Republic)
+[112/144] Lisbon... EXACT | pred=Q597 (Portugal) | true=Q597 (Portugal)
+[113/144] Glasgow... EXACT | pred=Q4093 (United Kingdom) | true=Q4093 (United Kingdom)
+[114/144] Wolverhampton... COUNTRY | pred=Q18125 (United Kingdom) | true=Q126269 (United Kingdom)
+[115/144] Plzeň... COUNTRY | pred=Q1085 (Czech Republic) | true=Q43453 (Czech Republic)
+[116/144] Vienna... EXACT | pred=Q1741 (Austria) | true=Q1741 (Austria)
+[117/144] Rotterdam... EXACT | pred=Q34370 (Netherlands) | true=Q34370 (Netherlands)
+[118/144] Columbus... COUNTRY | pred=Q186545 (United States) | true=Q16567 (United States)
+[119/144] Monterrey... EXACT | pred=Q81033 (Mexico) | true=Q81033 (Mexico)
+[120/144] Calgary... COUNTRY | pred=Q935519 (Canada) | true=Q36312 (Canada)
+[121/144] Tegucigalpa...   Wikidata cache saved: 2350 entities, 2329 labels, 245 coord lookups
+CONTINENT | pred=Q1555 (Guatemala) | true=Q3238 (Honduras)
+[122/144] Hamilton... MISS | pred=Q1072019 (United Kingdom) | true=Q133116 (Canada)
+[123/144] Salt Lake City... COUNTRY | pred=Q1297 (United States) | true=Q23337 (United States)
+[124/144] Antigua Guatemala... CONTINENT | pred=Q2082 (Canada) | true=Q212773 (Guatemala)
+[125/144] Avellaneda... COUNTRY | pred=Q44754 (Argentina) | true=Q753642 (Argentina)
+[126/144] Montevideo... EXACT | pred=Q1335 (Uruguay) | true=Q1335 (Uruguay)
+[127/144] Valparaíso... MISS | pred=Q79990 (New Zealand) | true=Q33986 (Chile)
+[128/144] Guayaquil... COUNTRY | pred=Q736 (Ecuador) | true=Q43509 (Ecuador)
+[129/144] Campinas... COUNTRY | pred=Q155 (Brazil) | true=Q171617 (Brazil)
+[130/144] La Paz... COUNTRY | pred=Q750 (Bolivia) | true=Q1491 (Bolivia)
+[131/144] Melbourne...   Wikidata cache saved: 2351 entities, 2330 labels, 245 coord lookups
+MISS | pred=Q949779 (United States) | true=Q3141 (Australia)
+[132/144] Wellington... MISS | pred=Q16556 (United States) | true=Q23661 (New Zealand)
+[133/144] Lautoka... MISS | pred=Q766 (Jamaica) | true=Q856662 (Fiji)
+[134/144] Napier... CONTINENT | pred=Q408 (Australia) | true=Q203380 (New Zealand)
+[135/144] Tabriz... CONTINENT | pred=Q45301 (Turkey) | true=Q80053 (Iran)
+[136/144] Belgrade... EXACT | pred=Q3711 (Serbia) | true=Q3711 (Serbia)
+[137/144] Dar es Salaam... CONTINENT | pred=Q5465 (South Africa) | true=Q1960 (Tanzania)
+[138/144] Cali... MISS | pred=Q30 (United States) | true=Q51103 (Colombia)
+[139/144] Recife... MISS | pred=Q185221 (Malaysia) | true=Q48344 (Brazil)
+[140/144] Port Moresby... CONTINENT | pred=Q34932 (Australia) | true=Q36526 (Papua New Guinea)
+[141/144] Apia...   Wikidata cache saved: 2354 entities, 2333 labels, 245 coord lookups
+MISS | pred=Q712 (Fiji) | true=Q36260 (Samoa)
+[142/144] Launceston... COUNTRY | pred=Q187861 (Australia) | true=Q24033501 (Australia)
+[143/144] San Salvador... EXACT | pred=Q3110 (El Salvador) | true=Q3110 (El Salvador)
+[144/144] Nadi... COUNTRY | pred=Q712 (Fiji) | true=Q619443 (Fiji)
+
+============================================================
+Pipeline performance overview
+============================================================
+OVERALL (n=144)
+  Exact location:   77/144  ( 53.5%)
+  Country level:   109/144  ( 75.7%)
+  Continent level: 123/144  ( 85.4%)
+  No result:         2/144  (  1.4%)
+
+------------------------------------------------------------
+Per-signal breakdown
+------------------------------------------------------------
+Signal A (n=48)
+  Exact location:   28/48  ( 58.3%)
+  Country level:    42/48  ( 87.5%)
+  Continent level:  46/48  ( 95.8%)
+  No result:         1/48  (  2.1%)
+Signal B (n=48)
+  Exact location:   36/48  ( 75.0%)
+  Country level:    39/48  ( 81.2%)
+  Continent level:  41/48  ( 85.4%)
+  No result:         1/48  (  2.1%)
+Signal C (n=48)
+  Exact location:   13/48  ( 27.1%)
+  Country level:    28/48  ( 58.3%)
+  Continent level:  36/48  ( 75.0%)
+  No result:         0/48  (  0.0%)
+============================================================
+Detailed results saved to C:\Users\Adela\PycharmProjects\geo\results\raw\eval_FINAL_refined_gemma_clean_sm.csv
+  Wikidata cache saved: 2356 entities, 2335 labels, 245 coord lookups

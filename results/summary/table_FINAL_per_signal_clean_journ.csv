@@ -1,0 +1,16 @@
+signal_type,config,n,exact_pct,country_pct,continent_pct,no_result_pct
+A,two_stage,24,45.8,54.2,62.5,0.0
+A,refined,24,41.7,62.5,66.7,20.8
+A,gemma,24,66.7,100.0,100.0,0.0
+A,refined_search,24,37.5,58.3,62.5,20.8
+A,refined_gemma,24,29.2,58.3,100.0,41.7
+B,two_stage,24,37.5,58.3,66.7,0.0
+B,refined,24,83.3,83.3,83.3,8.3
+B,gemma,24,45.8,70.8,75.0,0.0
+B,refined_search,24,83.3,83.3,83.3,0.0
+B,refined_gemma,24,87.5,87.5,87.5,0.0
+C,two_stage,24,33.3,37.5,41.7,8.3
+C,refined,24,33.3,33.3,41.7,16.7
+C,gemma,24,33.3,58.3,66.7,8.3
+C,refined_search,24,37.5,41.7,45.8,4.2
+C,refined_gemma,24,37.5,62.5,66.7,8.3
