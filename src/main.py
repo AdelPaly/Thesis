@@ -104,9 +104,40 @@ def geolocate_refined_gemma(text):
     return geolocate_gemma(text)
 
 
+def _refined_with_llm_fallback(text, llm_fn):
+    """Same routing gate as geolocate_refined_gemma; LLM fn is parameterised
+    so the same skeleton can host gemma, gpt-oss, or llama-4-scout."""
+    from refined_linker import link_mentions
+    from wikidata import is_geographic_qid
+
+    entities = extract_entities(text)
+    geo_entities = [e for e in entities if e["type"] in ("LOC", "PER", "ORG")]
+    if geo_entities and any(e["type"] == "LOC" for e in geo_entities):
+        linked = link_mentions(text, geo_entities)
+        if any(is_geographic_qid(qid) for ent, qid in linked if ent["type"] == "LOC"):
+            return geolocate_refined(text, _prelinked=linked)
+    return llm_fn(text)
+
+
+def geolocate_refined_groq_oss(text):
+    """refined_groq_oss: refined_gemma's routing gate, but the LLM fallback
+    is openai/gpt-oss-120b on Groq."""
+    from llm_groq import geolocate_groq_oss
+    return _refined_with_llm_fallback(text, geolocate_groq_oss)
+
+
+def geolocate_refined_groq_llama(text):
+    """refined_groq_llama: refined_gemma's routing gate, but the LLM fallback
+    is meta-llama/llama-4-scout-17b-16e-instruct on Groq."""
+    from llm_groq import geolocate_groq_llama
+    return _refined_with_llm_fallback(text, geolocate_groq_llama)
+
+
 if __name__ == "__main__":
     text = "The Eiffel Tower was evacuated after a bomb threat."
-    print("two_stage     :", geolocate(text))
-    print("refined       :", geolocate_refined(text))
-    print("refined_search:", geolocate_refined_search(text))
-    print("refined_gemma :", geolocate_refined_gemma(text))
+    print("two_stage          :", geolocate(text))
+    print("refined            :", geolocate_refined(text))
+    print("refined_search     :", geolocate_refined_search(text))
+    print("refined_gemma      :", geolocate_refined_gemma(text))
+    print("refined_groq_oss   :", geolocate_refined_groq_oss(text))
+    print("refined_groq_llama :", geolocate_refined_groq_llama(text))

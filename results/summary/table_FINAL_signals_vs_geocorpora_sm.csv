@@ -1,0 +1,29 @@
+group,config,n,exact_pct,country_pct,continent_pct,acc_161km_pct,no_result_pct
+Signal A,two_stage,48,45.8,60.4,60.4,58.3,25.0
+Signal A,refined,48,52.1,68.8,70.8,68.8,25.0
+Signal A,gemma,48,58.3,87.5,95.8,68.8,2.1
+Signal A,groq_llama,48,41.7,75.0,83.3,60.4,16.7
+Signal A,groq_oss,48,62.5,87.5,91.7,70.8,6.2
+Signal A,refined_search,48,52.1,70.8,72.9,70.8,20.8
+Signal A,refined_gemma,48,58.3,87.5,95.8,68.8,2.1
+Signal B,two_stage,48,35.4,58.3,68.8,58.3,6.2
+Signal B,refined,48,68.8,70.8,72.9,70.8,22.9
+Signal B,gemma,48,41.7,72.9,77.1,52.1,2.1
+Signal B,groq_llama,48,37.5,75.0,79.2,50.0,2.1
+Signal B,groq_oss,48,39.6,75.0,81.2,54.2,2.1
+Signal B,refined_search,48,72.9,75.0,81.2,75.0,10.4
+Signal B,refined_gemma,48,75.0,81.2,85.4,77.1,2.1
+Signal C,two_stage,48,20.8,29.2,31.2,27.1,50.0
+Signal C,refined,48,18.8,20.8,25.0,18.8,66.7
+Signal C,gemma,48,27.1,58.3,75.0,37.5,0.0
+Signal C,groq_llama,48,20.8,50.0,62.5,35.4,14.6
+Signal C,groq_oss,48,43.8,56.2,64.6,50.0,16.7
+Signal C,refined_search,48,20.8,25.0,31.2,22.9,50.0
+Signal C,refined_gemma,48,27.1,58.3,75.0,37.5,0.0
+GeoCorpora,two_stage,144,18.1,70.8,78.5,52.8,7.6
+GeoCorpora,refined,144,52.1,76.4,81.2,65.3,14.6
+GeoCorpora,gemma,144,37.5,81.2,87.5,50.0,5.6
+GeoCorpora,groq_llama,144,37.5,82.6,91.0,47.2,5.6
+GeoCorpora,groq_oss,144,31.2,79.9,88.2,41.0,4.9
+GeoCorpora,refined_search,144,52.1,77.8,85.4,66.0,8.3
+GeoCorpora,refined_gemma,144,50.0,86.8,93.1,63.2,1.4

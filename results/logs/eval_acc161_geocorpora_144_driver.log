@@ -1,0 +1,31 @@
+[1/4] running refined...
+   acc@161km = 95/144 (66.0%)  no_pred=22  median_dist=1.6km  mean_dist=366.5km
+[2/4] running refined_search...
+   acc@161km = 100/144 (69.4%)  no_pred=15  median_dist=1.3km  mean_dist=434.7km
+[3/4] running refined_gemma...
+   acc@161km = 71/144 (49.3%)  no_pred=56  median_dist=1.3km  mean_dist=223.1km
+[4/4] running gemma...
+   FAILED (exit=1) — see results\logs\log_acc161_gemma_geocorpora_144.txt
+
+          mode   n  within_161km  acc_161km_pct  no_prediction  median_dist_km  mean_dist_km
+       refined 144            95      65.972222             22        1.578640    366.494893
+refined_search 144           100      69.444444             15        1.337054    434.653181
+ refined_gemma 144            71      49.305556             56        1.253634    223.057758
+
+Summary written to results\summary\acc161_summary_geocorpora_144.csv
+[1/1] running gemma...
+   FAILED (exit=1) — see results\logs\log_acc161_gemma_geocorpora_144.txt
+[1/1] running gemma...
+   acc@161km = 87/144 (60.4%)  no_pred=3  median_dist=5.6km  mean_dist=1624.5km
+
+ mode   n  within_161km  acc_161km_pct  no_prediction  median_dist_km  mean_dist_km
+gemma 144            87      60.416667              3        5.611144   1624.464826
+
+Summary written to results\summary\acc161_summary_geocorpora_144.csv
+[1/1] running two_stage...
+   acc@161km = 84/144 (58.3%)  no_pred=20  median_dist=7.7km  mean_dist=1483.1km
+
+     mode   n  within_161km  acc_161km_pct  no_prediction  median_dist_km  mean_dist_km
+two_stage 144            84      58.333333             20        7.682733   1483.102933
+
+Summary written to results\summary\acc161_summary_geocorpora_144.csv

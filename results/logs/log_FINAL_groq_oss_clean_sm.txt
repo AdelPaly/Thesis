@@ -1,0 +1,279 @@
+2026-05-01 00:51:05,324 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+  Wikidata cache loaded: 8024 entities, 7919 labels, 1119 coord lookups
+[1/144] Johannesburg... EXACT | 0.0km | pred=Q34647 (South Africa) | true=Q34647 (South Africa)
+[2/144] Aba... EXACT | 0.0km | pred=Q202162 (Nigeria) | true=Q202162 (Nigeria)
+[3/144] Kumasi... EXACT | 0.0km | pred=Q182059 (Ghana) | true=Q182059 (Ghana)
+[4/144] Dakar... EXACT | 0.0km | pred=Q3718 (Senegal) | true=Q3718 (Senegal)
+[5/144] Casablanca... EXACT | 0.0km | pred=Q7903 (Morocco) | true=Q7903 (Morocco)
+[6/144] Luanda... EXACT | 0.0km | pred=Q3897 (Angola) | true=Q3897 (Angola)
+[7/144] Dar es Salaam... COUNTRY | 492.2km | pred=Q924 (Tanzania) | true=Q1960 (Tanzania)
+[8/144] Porto-Novo... NO RESULT
+[9/144] Osaka... COUNTRY | 1.8km | pred=Q122723 (Japan) | true=Q35765 (Japan)
+[10/144] Isfahan... EXACT | 0.0km | pred=Q42053 (Iran) | true=Q42053 (Iran)
+[11/144] Kolkata... EXACT | 0.0km | pred=Q1348 (India) | true=Q1348 (India)
+[12/144] Tehran...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+COUNTRY | 436.3km | pred=Q794 (Iran) | true=Q3616 (Iran)
+[13/144] Hanoi... EXACT | 0.0km | pred=Q1858 (Vietnam) | true=Q1858 (Vietnam)
+[14/144] Nagoya... EXACT | 0.0km | pred=Q11751 (Japan) | true=Q11751 (Japan)
+[15/144] Riyadh... COUNTRY | 220.9km | pred=Q1249255 (Saudi Arabia) | true=Q3692 (Saudi Arabia)
+[16/144] Dhaka... EXACT | 0.0km | pred=Q1354 (Bangladesh) | true=Q1354 (Bangladesh)
+[17/144] Marseille... EXACT | 0.0km | pred=Q23482 (France) | true=Q23482 (France)
+[18/144] Belgrade... EXACT | 0.0km | pred=Q3711 (Serbia) | true=Q3711 (Serbia)
+[19/144] Warsaw... EXACT | 0.0km | pred=Q270 (Poland) | true=Q270 (Poland)
+[20/144] Galway... EXACT | 0.0km | pred=Q129610 (Ireland) | true=Q129610 (Ireland)
+[21/144] Turin... EXACT | 0.0km | pred=Q495 (Italy) | true=Q495 (Italy)
+[22/144] Copenhagen...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+COUNTRY | 9.9km | pred=Q484038 (Denmark) | true=Q1748 (Denmark)
+[23/144] Kyiv... EXACT | 0.0km | pred=Q1899 (Ukraine) | true=Q1899 (Ukraine)
+[24/144] Barcelona... EXACT | 0.0km | pred=Q1492 (Spain) | true=Q1492 (Spain)
+[25/144] Nashville... EXACT | 0.0km | pred=Q23197 (United States) | true=Q23197 (United States)
+[26/144] Mexico City... EXACT | 0.0km | pred=Q1489 (Mexico) | true=Q1489 (Mexico)
+[27/144] Tampa... EXACT | 0.0km | pred=Q49255 (United States) | true=Q49255 (United States)
+[28/144] Calgary... EXACT | 0.0km | pred=Q36312 (Canada) | true=Q36312 (Canada)
+[29/144] San José... CONTINENT | 4852.6km | pred=Q16553 (United States) | true=Q3070 (Costa Rica)
+[30/144] Ottawa... EXACT | 0.0km | pred=Q1930 (Canada) | true=Q1930 (Canada)
+[31/144] Panama City... EXACT | 0.0km | pred=Q3306 (Panama) | true=Q3306 (Panama)
+[32/144] Kingston...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+CONTINENT | 8611.8km | pred= () | true=Q34692 (Jamaica)
+[33/144] Buenos Aires... COUNTRY | 304.2km | pred=Q44754 (Argentina) | true=Q1486 (Argentina)
+[34/144] São Paulo... COUNTRY | 247.2km | pred=Q175 (Brazil) | true=Q174 (Brazil)
+[35/144] Santiago... COUNTRY | 58.5km | pred=Q298 (Chile) | true=Q2887 (Chile)
+[36/144] Bogotá... EXACT | 0.0km | pred=Q2841 (Colombia) | true=Q2841 (Colombia)
+[37/144] Asunción... EXACT | 0.0km | pred=Q2933 (Paraguay) | true=Q2933 (Paraguay)
+[38/144] Guayaquil... EXACT | 0.0km | pred=Q43509 (Ecuador) | true=Q43509 (Ecuador)
+[39/144] Lima... COUNTRY | 316.7km | pred=Q419 (Peru) | true=Q2868 (Peru)
+[40/144] Caracas... EXACT | 0.0km | pred=Q1533 (Venezuela) | true=Q1533 (Venezuela)
+[41/144] Auckland...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+COUNTRY | 488.3km | pred=Q664 (New Zealand) | true=Q37100 (New Zealand)
+[42/144] Brisbane... EXACT | 0.0km | pred=Q34932 (Australia) | true=Q34932 (Australia)
+[43/144] Adelaide... COUNTRY | 1228.0km | pred=Q408 (Australia) | true=Q5112 (Australia)
+[44/144] Port Moresby... NO RESULT
+[45/144] Nouméa... EXACT | 0.0km | pred=Q9733 (France) | true=Q9733 (France)
+[46/144] Suva... MISS | 6942.9km | pred=Q928 (Philippines) | true=Q38807 (Fiji)
+[47/144] Yaren District... COUNTRY | 2.7km | pred=Q697 (Nauru) | true=Q31026 (Nauru)
+[48/144] Wellington... MISS | 18927.1km | pred=Q1026685 (United Kingdom) | true=Q23661 (New Zealand)
+[49/144] Victoria... MISS | 14695.4km | pred=Q949779 (United States) | true=Q3940 (Seychelles)
+[50/144] Tripoli... MISS | 980.3km | pred=Q193409 (Greece) | true=Q3579 (Libya)
+[51/144] Durban...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+EXACT | 0.0km | pred=Q5468 (South Africa) | true=Q5468 (South Africa)
+[52/144] Mombasa... COUNTRY | 497.2km | pred=Q114 (Kenya) | true=Q225641 (Kenya)
+[53/144] Tanga... COUNTRY | 489.6km | pred=Q924 (Tanzania) | true=Q152902 (Tanzania)
+[54/144] Touba... COUNTRY | 180.9km | pred=Q1041 (Senegal) | true=Q657072 (Senegal)
+[55/144] Bo... MISS | 6479.6km | pred=Q750 (Bolivia) | true=Q844878 (Sierra Leone)
+[56/144] Salé... MISS | 2183.3km | pred=Q1022733 (United Kingdom) | true=Q466046 (Morocco)
+[57/144] Hyderabad... EXACT | 0.0km | pred=Q1361 (India) | true=Q1361 (India)
+[58/144] Tangshan...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+CONTINENT | 1359.4km | pred=Q148 (People's Republic of China) | true=Q58422 (China)
+[59/144] Surat... MISS | 6773.7km | pred=Q735073 (France) | true=Q4629 (India)
+[60/144] George Town... MISS | 15570.6km | pred=Q990898 (United States) | true=Q61092 (Malaysia)
+[61/144] Yazd... EXACT | 0.0km | pred=Q182394 (Iran) | true=Q182394 (Iran)
+[62/144] Matara... COUNTRY | 127.6km | pred=Q854 (Sri Lanka) | true=Q13360574 (Sri Lanka)
+[63/144] Manado... EXACT | 0.0km | pred=Q15847 (Indonesia) | true=Q15847 (Indonesia)
+[64/144] Huế... COUNTRY | 68.0km | pred=Q881 (Vietnam) | true=Q36167 (Vietnam)
+[65/144] Bath... EXACT | 0.0km | pred=Q22889 (United Kingdom) | true=Q22889 (United Kingdom)
+[66/144] Essen...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+EXACT | 0.0km | pred=Q2066 (Germany) | true=Q2066 (Germany)
+[67/144] Nice... EXACT | 0.0km | pred=Q33959 (France) | true=Q33959 (France)
+[68/144] Faro... EXACT | 0.0km | pred=Q159457 (Portugal) | true=Q159457 (Portugal)
+[69/144] Brno... EXACT | 0.0km | pred=Q14960 (Czech Republic) | true=Q14960 (Czech Republic)
+[70/144] Bergen... EXACT | 0.0km | pred=Q26793 (Norway) | true=Q26793 (Norway)
+[71/144] Cork... EXACT | 0.0km | pred=Q36647 (Ireland) | true=Q36647 (Ireland)
+[72/144] Split... EXACT | 0.0km | pred=Q1663 (Croatia) | true=Q1663 (Croatia)
+[73/144] Regina... COUNTRY | 682.1km | pred=Q16 (Canada) | true=Q2123 (Canada)
+[74/144] Florence...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+CONTINENT | 9068.5km | pred= () | true=Q597842 (United States)
+[75/144] Norman... COUNTRY | 522.0km | pred=Q30 (United States) | true=Q40347 (United States)
+[76/144] Mérida... EXACT | 0.0km | pred=Q165204 (Mexico) | true=Q165204 (Mexico)
+[77/144] Brandon... COUNTRY | 914.1km | pred=Q16 (Canada) | true=Q61432 (Canada)
+[78/144] Port of Spain... EXACT | 0.0km | pred=Q39178 (Trinidad and Tobago) | true=Q39178 (Trinidad and Tobago)
+[79/144] Belmopan... EXACT | 0.0km | pred=Q3043 (Belize) | true=Q3043 (Belize)
+[80/144] León... MISS | 8369.2km | pred=Q15699 (Spain) | true=Q208151 (Nicaragua)
+[81/144] Santa Cruz de la Sierra... EXACT | 0.0km | pred=Q170688 (Bolivia) | true=Q170688 (Bolivia)
+[82/144] Rosario... EXACT | 0.0km | pred=Q52535 (Argentina) | true=Q52535 (Argentina)
+[83/144] Manaus...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+COUNTRY | 1434.6km | pred=Q155 (Brazil) | true=Q40236 (Brazil)
+[84/144] Valencia... MISS | 7375.6km | pred=Q8818 (Spain) | true=Q54880 (Venezuela)
+[85/144] Sucre... CONTINENT | 3298.8km | pred=Q205824 (Venezuela) | true=Q2907 (Bolivia)
+[86/144] Concepción... EXACT | 0.0km | pred=Q1880 (Chile) | true=Q1880 (Chile)
+[87/144] Loja... COUNTRY | 358.5km | pred=Q736 (Ecuador) | true=Q944697 (Ecuador)
+[88/144] Macapá... EXACT | 0.0km | pred=Q180215 (Brazil) | true=Q180215 (Brazil)
+[89/144] Hamilton... MISS | 13851.0km | pred=Q133116 (Canada) | true=Q200028 (New Zealand)
+[90/144] Darwin... COUNTRY | 1415.1km | pred=Q408 (Australia) | true=Q11568 (Australia)
+[91/144] Nelson...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+COUNTRY | 64.5km | pred=Q664 (New Zealand) | true=Q206687 (New Zealand)
+[92/144] Mackay... COUNTRY | 1709.3km | pred=Q408 (Australia) | true=Q704371 (Australia)
+[93/144] Lae... COUNTRY | 47.8km | pred=Q691 (Papua New Guinea) | true=Q612250 (Papua New Guinea)
+[94/144] Nadi... COUNTRY | 65.6km | pred=Q712 (Fiji) | true=Q619443 (Fiji)
+[95/144] Apia... COUNTRY | 42.6km | pred=Q683 (Samoa) | true=Q36260 (Samoa)
+[96/144] Port Vila...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+COUNTRY | 126.4km | pred=Q686 (Vanuatu) | true=Q37806 (Vanuatu)
+[97/144] Johannesburg... MISS | 13328.1km | pred=Q1342 (United States) | true=Q34647 (South Africa)
+[98/144] Cape Town... MISS | 6298.1km | pred=Q81882 (Brazil) | true=Q5465 (South Africa)
+[99/144] Enugu... EXACT | 0.0km | pred=Q465022 (Nigeria) | true=Q465022 (Nigeria)
+[100/144] Tunis... COUNTRY | 311.9km | pred=Q948 (Tunisia) | true=Q3572 (Tunisia)
+[101/144] Harare...   Wikidata cache saved: 8025 entities, 7920 labels, 1119 coord lookups
+EXACT | 0.0km | pred=Q3921 (Zimbabwe) | true=Q3921 (Zimbabwe)
+[102/144] Garoua... EXACT | 0.0km | pred=Q157915 (Cameroon) | true=Q157915 (Cameroon)
+[103/144] Lubumbashi... EXACT | 0.0km | pred=Q187593 (Democratic Republic of the Congo) | true=Q187593 (Democratic Republic of the Congo)
+[104/144] Jakarta... EXACT | 0.0km | pred=Q3630 (Indonesia) | true=Q3630 (Indonesia)
+[105/144] Jeddah...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+CONTINENT | 1327.1km | pred=Q3861 (Qatar) | true=Q374365 (Saudi Arabia)
+[106/144] Bangkok... EXACT | 0.0km | pred=Q1861 (Thailand) | true=Q1861 (Thailand)
+[107/144] Beirut... NO RESULT
+[108/144] Kolkata... EXACT | 0.0km | pred=Q1348 (India) | true=Q1348 (India)
+[109/144] Tehran... EXACT | 0.0km | pred=Q3616 (Iran) | true=Q3616 (Iran)
+[110/144] Bacolod... NO RESULT
+[111/144] Prague...   Wikidata cache saved: 8025 entities, 7920 labels, 1119 coord lookups
+CONTINENT | 1581.1km | pred=Q5690 (Greece) | true=Q1085 (Czech Republic)
+[112/144] Lisbon... EXACT | 0.0km | pred=Q597 (Portugal) | true=Q597 (Portugal)
+[113/144] Glasgow... EXACT | 0.0km | pred=Q4093 (United Kingdom) | true=Q4093 (United Kingdom)
+[114/144] Wolverhampton... COUNTRY | 98.4km | pred=Q18125 (United Kingdom) | true=Q126269 (United Kingdom)
+[115/144] Plzeň... NO RESULT
+[116/144] Vienna... EXACT | 0.0km | pred=Q1741 (Austria) | true=Q1741 (Austria)
+[117/144] Rotterdam... EXACT | 0.0km | pred=Q34370 (Netherlands) | true=Q34370 (Netherlands)
+[118/144] Columbus...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+COUNTRY | 1327.4km | pred=Q30 (United States) | true=Q16567 (United States)
+[119/144] Monterrey... EXACT | 0.0km | pred=Q81033 (Mexico) | true=Q81033 (Mexico)
+[120/144] Calgary... CONTINENT | 1441.4km | pred=Q16554 (United States) | true=Q36312 (Canada)
+[121/144] Tegucigalpa...   Wikidata cache saved: 8025 entities, 7920 labels, 1119 coord lookups
+EXACT | 0.0km | pred=Q3238 (Honduras) | true=Q3238 (Honduras)
+[122/144] Hamilton... NO RESULT
+[123/144] Salt Lake City... EXACT | 0.0km | pred=Q23337 (United States) | true=Q23337 (United States)
+[124/144] Antigua Guatemala... CONTINENT | 3105.3km | pred=Q316390 (Antigua and Barbuda) | true=Q212773 (Guatemala)
+[125/144] Avellaneda... EXACT | 0.0km | pred=Q753642 (Argentina) | true=Q753642 (Argentina)
+[126/144] Montevideo... EXACT | 0.0km | pred=Q1335 (Uruguay) | true=Q1335 (Uruguay)
+[127/144] Valparaíso... MISS | 9294.9km | pred=Q79990 (New Zealand) | true=Q33986 (Chile)
+[128/144] Guayaquil...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+EXACT | 0.0km | pred=Q43509 (Ecuador) | true=Q43509 (Ecuador)
+[129/144] Campinas... EXACT | 0.0km | pred=Q171617 (Brazil) | true=Q171617 (Brazil)
+[130/144] La Paz... MISS | 4039.9km | pred=Q1129788 (El Salvador) | true=Q1491 (Bolivia)
+[131/144] Melbourne...   Wikidata cache saved: 8026 entities, 7921 labels, 1119 coord lookups
+MISS | 15672.3km | pred=Q949779 (United States) | true=Q3141 (Australia)
+[132/144] Wellington... MISS | 11173.3km | pred=Q16556 (United States) | true=Q23661 (New Zealand)
+[133/144] Lautoka... NO RESULT
+[134/144] Napier... NO RESULT
+[135/144] Tabriz... MISS | 1519.2km | pred=Q406 (Turkey) | true=Q80053 (Iran)
+[136/144] Belgrade... EXACT | 0.0km | pred=Q3711 (Serbia) | true=Q3711 (Serbia)
+[137/144] Dar es Salaam... EXACT | 0.0km | pred=Q1960 (Tanzania) | true=Q1960 (Tanzania)
+[138/144] Cali... MISS | 5791.0km | pred=Q99 (United States) | true=Q51103 (Colombia)
+[139/144] Recife... NO RESULT
+[140/144] Port Moresby... MISS | 4731.3km | pred=Q249996 (Taiwan) | true=Q36526 (Papua New Guinea)
+[141/144] Apia...   Wikidata cache saved: 8026 entities, 7921 labels, 1119 coord lookups
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+MISS | 18233.4km | pred= () | true=Q36260 (Samoa)
+[142/144] Launceston... COUNTRY | 2245.2km | pred=Q408 (Australia) | true=Q24033501 (Australia)
+[143/144] San Salvador... COUNTRY | 35.3km | pred=Q792 (El Salvador) | true=Q3110 (El Salvador)
+[144/144] Nadi... COUNTRY | 65.6km | pred=Q712 (Fiji) | true=Q619443 (Fiji)
+
+============================================================
+Pipeline performance overview
+============================================================
+OVERALL (n=144)
+  Exact location:   70/144  ( 48.6%)
+  Country level:   105/144  ( 72.9%)
+  Continent level: 114/144  ( 79.2%)
+  Within 161 km:    84/144  ( 58.3%)
+  No result:        12/144  (  8.3%)
+
+------------------------------------------------------------
+Per-signal breakdown
+------------------------------------------------------------
+Signal A (n=48)
+  Exact location:   30/48  ( 62.5%)
+  Country level:    42/48  ( 87.5%)
+  Continent level:  44/48  ( 91.7%)
+  Within 161 km:    34/48  ( 70.8%)
+  No result:         3/48  (  6.2%)
+Signal B (n=48)
+  Exact location:   19/48  ( 39.6%)
+  Country level:    36/48  ( 75.0%)
+  Continent level:  39/48  ( 81.2%)
+  Within 161 km:    26/48  ( 54.2%)
+  No result:         1/48  (  2.1%)
+Signal C (n=48)
+  Exact location:   21/48  ( 43.8%)
+  Country level:    27/48  ( 56.2%)
+  Continent level:  31/48  ( 64.6%)
+  Within 161 km:    24/48  ( 50.0%)
+  No result:         8/48  ( 16.7%)
+============================================================
+Detailed results saved to ../results/raw/eval_FINAL_groq_oss_clean_sm.csv
+  Wikidata cache saved: 8026 entities, 7921 labels, 1119 coord lookups

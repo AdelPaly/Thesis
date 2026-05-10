@@ -2,5 +2,7 @@ config,clean_sm_n,noisy_sm_n,clean_country_pct,noisy_country_pct,delta_pp
 two_stage,144,144,49.3,35.4,-13.9
 refined,144,144,53.5,41.7,-11.8
 gemma,144,144,72.9,62.5,-10.4
+groq_llama,144,144,66.7,64.6,-2.1
+groq_oss,144,144,72.9,70.8,-2.1
 refined_search,144,144,56.9,43.1,-13.9
 refined_gemma,144,144,75.7,52.8,-22.9

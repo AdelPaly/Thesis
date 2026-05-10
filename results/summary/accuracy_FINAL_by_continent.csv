@@ -17,6 +17,18 @@ gemma,Europe,36,83.3,91.7,100.0
 gemma,North America,36,44.4,86.1,94.4
 gemma,Oceania,36,13.9,61.1,69.4
 gemma,South America,36,33.3,66.7,77.8
+groq_llama,Africa,36,36.1,58.3,63.9
+groq_llama,Asia,36,47.2,75.0,80.6
+groq_llama,Europe,36,72.2,86.1,94.4
+groq_llama,North America,36,33.3,75.0,80.6
+groq_llama,Oceania,36,5.6,52.8,61.1
+groq_llama,South America,36,27.8,61.1,75.0
+groq_oss,Africa,36,50.0,69.4,69.4
+groq_oss,Asia,36,58.3,80.6,86.1
+groq_oss,Europe,36,86.1,94.4,97.2
+groq_oss,North America,36,55.6,75.0,94.4
+groq_oss,Oceania,36,11.1,55.6,55.6
+groq_oss,South America,36,50.0,77.8,83.3
 refined_search,Africa,36,58.3,69.4,69.4
 refined_search,Asia,36,58.3,66.7,66.7
 refined_search,Europe,36,63.9,69.4,80.6

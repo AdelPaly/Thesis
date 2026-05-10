@@ -1,0 +1,222 @@
+2026-04-29 22:48:17,786 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+C:\Users\Adela\PycharmProjects\geo\src\llm_gemma.py:3: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+  Wikidata cache loaded: 6318 entities, 6237 labels, 846 coord lookups
+[1/144] Georgia... C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast():
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
+  super().__init__(
+EXACT | 0.0km | pred=Q230 (Georgia) | true=Q230 (Georgia)
+[2/144] Republic of India... EXACT | 0.0km | pred=Q668 (India) | true=Q668 (India)
+[3/144] Kerman... COUNTRY | 120.2km | pred=Q171714 (Iran) | true=Q165352 (Iran)
+[4/144] District of Columbia... COUNTRY | 3.4km | pred=Q61 (United States) | true=Q3551781 (United States)
+[5/144] State of Chhattīsgarh... COUNTRY | 223.1km | pred=Q668 (India) | true=Q1168 (India)
+[6/144] United States Capitol... COUNTRY | 205.5km | pred=Q648503 (United States) | true=Q54109 (United States)
+[7/144] Maarrat al-Nu'man District... CONTINENT | 5483.3km | pred= () | true=Q4118375 (Syria)
+[8/144] State of Qatar... MISS | 4476.8km | pred=Q64147 (Switzerland) | true=Q846 (Qatar)
+[9/144] Bhiwandi... CONTINENT | 1473.7km | pred=Q837 (Nepal) | true=Q645725 (India)
+[10/144] Manhattan... EXACT | 0.0km | pred=Q11299 (United States) | true=Q11299 (United States)
+[11/144] Principality of Andorra...   Wikidata cache saved: 6324 entities, 6243 labels, 846 coord lookups
+EXACT | 0.0km | pred=Q228 (Andorra) | true=Q228 (Andorra)
+[12/144] South Kivu Province... COUNTRY | 512.2km | pred=Q974 (Democratic Republic of the Congo) | true=Q488326 (Democratic Republic of the Congo)
+[13/144] Emalahleni... MISS | 8974.5km | pred=Q52101 (Netherlands) | true=Q2347801 (South Africa)
+[14/144] North Island... COUNTRY | 274.9km | pred=Q23661 (New Zealand) | true=Q118863 (New Zealand)
+[15/144] South Dakota... EXACT | 0.0km | pred=Q1211 (United States) | true=Q1211 (United States)
+[16/144] Repubblica Italiana... COUNTRY | 357.5km | pred=Q1449 (Italy) | true=Q38 (Italy)
+[17/144] Kingdom of Cambodia... EXACT | 0.0km | pred=Q424 (Cambodia) | true=Q424 (Cambodia)
+[18/144] Sacramento... EXACT | 0.0km | pred=Q18013 (United States) | true=Q18013 (United States)
+[19/144] Johnstown...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+EXACT | 0.0km | pred=Q1070763 (United States) | true=Q1070763 (United States)
+[20/144] Victoria Park... EXACT | 0.0km | pred=Q429540 (United Kingdom) | true=Q429540 (United Kingdom)
+[21/144] Saint Louis County...   Wikidata cache saved: 6327 entities, 6246 labels, 846 coord lookups
+COUNTRY | 713.1km | pred=Q30 (United States) | true=Q498034 (United States)
+[22/144] Texas... EXACT | 0.0km | pred=Q1439 (United States) | true=Q1439 (United States)
+[23/144] State of Odisha... COUNTRY | 165.2km | pred=Q2142272 (India) | true=Q22048 (India)
+[24/144] County of Cheshire... COUNTRY | 12.2km | pred=Q648810 (United Kingdom) | true=Q23064 (United Kingdom)
+[25/144] Commonwealth of Australia... EXACT | 0.0km | pred=Q408 (Australia) | true=Q408 (Australia)
+[26/144] Khyber Pakhtunkhwa Province... EXACT | 0.0km | pred=Q183314 (Pakistan) | true=Q183314 (Pakistan)
+[27/144] Nagano-ken... EXACT | 0.0km | pred=Q127877 (Japan) | true=Q127877 (Japan)
+[28/144] Cambridge... NO RESULT
+[29/144] Cairo... EXACT | 0.0km | pred=Q85 (Egypt) | true=Q85 (Egypt)
+[30/144] Keswick... EXACT | 0.0km | pred=Q1025076 (United Kingdom) | true=Q1025076 (United Kingdom)
+[31/144] Minsk...   Wikidata cache saved: 6335 entities, 6254 labels, 846 coord lookups
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+CONTINENT | 433.7km | pred=Q1899 (Ukraine) | true=Q2280 (Belarus)
+[32/144] Guelph... EXACT | 0.0km | pred=Q504114 (Canada) | true=Q504114 (Canada)
+[33/144] Clay County... COUNTRY | 361.1km | pred=Q30 (United States) | true=Q484474 (United States)
+[34/144] Republic of Mali... EXACT | 0.0km | pred=Q912 (Mali) | true=Q912 (Mali)
+[35/144] Ar�?«á¸©�?�?... EXACT | 0.0km | pred=Q2631639 (Syria) | true=Q2631639 (Syria)
+[36/144] Republic of Zambia... EXACT | 0.0km | pred=Q953 (Zambia) | true=Q953 (Zambia)
+[37/144] Mosul... COUNTRY | 374.5km | pred=Q796 (Iraq) | true=Q83317 (Iraq)
+[38/144] Mor�?�?d�?�?b�?�?d... COUNTRY | 169.3km | pred=Q242895 (India) | true=Q330643 (India)
+[39/144] Wicklow... COUNTRY | 28.4km | pred=Q673662 (Ireland) | true=Q182591 (Ireland)
+[40/144] Nashville... EXACT | 0.0km | pred=Q23197 (United States) | true=Q23197 (United States)
+[41/144] Jersey City...   Wikidata cache saved: 6338 entities, 6257 labels, 846 coord lookups
+COUNTRY | 3.7km | pred=Q452447 (United States) | true=Q26339 (United States)
+[42/144] New Hanover County... COUNTRY | 1938.7km | pred=Q30 (United States) | true=Q508209 (United States)
+[43/144] Reichstagsgeb�ude...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+COUNTRY | 0.5km | pred=Q64 (Germany) | true=Q151897 (Germany)
+[44/144] Marseille... EXACT | 0.0km | pred=Q23482 (France) | true=Q23482 (France)
+[45/144] Cape Charles... EXACT | 0.0km | pred=Q1376790 (United States) | true=Q1376790 (United States)
+[46/144] La Crosse... EXACT | 0.0km | pred=Q2570337 (United States) | true=Q2570337 (United States)
+[47/144] Cedar Rapids... COUNTRY | 1283.2km | pred=Q61 (United States) | true=Q486439 (United States)
+[48/144] Republic of Niger... EXACT | 0.0km | pred=Q1032 (Niger) | true=Q1032 (Niger)
+[49/144] Lee County... COUNTRY | 2131.4km | pred=Q30 (United States) | true=Q494616 (United States)
+[50/144] Kansas City... EXACT | 0.0km | pred=Q41819 (United States) | true=Q41819 (United States)
+[51/144] Sebastian...   Wikidata cache saved: 6346 entities, 6265 labels, 846 coord lookups
+COUNTRY | 2135.0km | pred=Q30 (United States) | true=Q986174 (United States)
+[52/144] Rotherham... EXACT | 0.0km | pred=Q217039 (United Kingdom) | true=Q217039 (United Kingdom)
+[53/144] Uttar Pradesh... COUNTRY | 497.3km | pred=Q668 (India) | true=Q1498 (India)
+[54/144] Sierra Nevada... EXACT | 0.0km | pred=Q26777 (United States) | true=Q26777 (United States)
+[55/144] Ludian Xian... CONTINENT | 961.8km | pred=Q148 (People's Republic of China) | true=Q1339201 (China)
+[56/144] Kent...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+COUNTRY | 421.0km | pred=Q145 (United Kingdom) | true=Q21694674 (United Kingdom)
+[57/144] Amityville Memorial High School... COUNTRY | 290.5km | pred=Q1384 (United States) | true=Q4746989 (United States)
+[58/144] Mexico City... EXACT | 0.0km | pred=Q1489 (Mexico) | true=Q1489 (Mexico)
+[59/144] Kingdom of Norway... MISS | 6229.0km | pred=Q61 (United States) | true=Q20 (Norway)
+[60/144] Silicon Valley... EXACT | 0.0km | pred=Q163820 (United States) | true=Q163820 (United States)
+[61/144] Aomori-ken...   Wikidata cache saved: 6350 entities, 6269 labels, 846 coord lookups
+EXACT | 0.0km | pred=Q71699 (Japan) | true=Q71699 (Japan)
+[62/144] Kuril Islands... COUNTRY | 3932.6km | pred=Q159 (Russia) | true=Q80389 (Russia)
+[63/144] Austin County... COUNTRY | 16.7km | pred=Q980553 (United States) | true=Q108386 (United States)
+[64/144] Belle Chasse... EXACT | 0.0km | pred=Q1879293 (United States) | true=Q1879293 (United States)
+[65/144] Ukraine... COUNTRY | 364.7km | pred=Q181386 (Ukraine) | true=Q212 (Ukraine)
+[66/144] People�s Democratic Republic of Algeria... CONTINENT | 6440.1km | pred=Q27394 (Botswana) | true=Q262 (Algeria)
+[67/144] Forestdale... COUNTRY | 1250.2km | pred=Q30 (United States) | true=Q1268815 (United States)
+[68/144] Rich Mountain... COUNTRY | 1395.7km | pred=Q30 (United States) | true=Q31422284 (United States)
+[69/144] Indiana... EXACT | 0.0km | pred=Q1415 (United States) | true=Q1415 (United States)
+[70/144] Solomon Islands... EXACT | 0.0km | pred=Q685 (Solomon Islands) | true=Q685 (Solomon Islands)
+[71/144] Palestine...   Wikidata cache saved: 6354 entities, 6273 labels, 846 coord lookups
+MISS | 11245.5km | pred=Q617602 (United States) | true=Q219060 (Palestine)
+[72/144] Argentine Republic... EXACT | 0.0km | pred=Q414 (Argentina) | true=Q414 (Argentina)
+[73/144] Colorado... EXACT | 0.0km | pred=Q1261 (United States) | true=Q1261 (United States)
+[74/144] Karachi... CONTINENT | 1033.8km | pred=Q58705 (India) | true=Q8660 (Pakistan)
+[75/144] Twiggs County... COUNTRY | 37.3km | pred=Q1428 (United States) | true=Q503551 (United States)
+[76/144] Murrieta... EXACT | 0.0km | pred=Q838787 (United States) | true=Q838787 (United States)
+[77/144] Amagansett... COUNTRY | 471.3km | pred=Q755741 (United States) | true=Q2411458 (United States)
+[78/144] American Canyon... EXACT | 0.0km | pred=Q463679 (United States) | true=Q463679 (United States)
+[79/144] Kota Bharu... EXACT | 0.0km | pred=Q651131 (Malaysia) | true=Q651131 (Malaysia)
+[80/144] Federal Republic of Nigeria... COUNTRY | 618.8km | pred=Q212372 (Nigeria) | true=Q1033 (Nigeria)
+[81/144] J?dabpur...   Wikidata cache saved: 6357 entities, 6276 labels, 846 coord lookups
+COUNTRY | 7.2km | pred=Q1348 (India) | true=Q6121208 (India)
+[82/144] Utsjoki... EXACT | 0.0km | pred=Q581920 (Finland) | true=Q581920 (Finland)
+[83/144] Sarawak... COUNTRY | 1194.9km | pred=Q833 (Malaysia) | true=Q170462 (Malaysia)
+[84/144] Province of Bohol... EXACT | 0.0km | pred=Q13752 (Philippines) | true=Q13752 (Philippines)
+[85/144] Haifa... EXACT | 0.0km | pred=Q41621 (Israel) | true=Q41621 (Israel)
+[86/144] Charlottesville... EXACT | 0.0km | pred=Q123766 (United States) | true=Q123766 (United States)
+[87/144] Shady Grove Adventist Hospital... COUNTRY | 4.3km | pred=Q327022 (United States) | true=Q3145253 (United States)
+[88/144] The Geysers... COUNTRY | 312.1km | pred=Q99 (United States) | true=Q3109025 (United States)
+[89/144] New Galloway... EXACT | 0.0km | pred=Q3778560 (United Kingdom) | true=Q3778560 (United Kingdom)
+[90/144] Springfield... COUNTRY | 40.5km | pred=Q1204 (United States) | true=Q28515 (United States)
+[91/144] Fayetteville...   Wikidata cache saved: 6363 entities, 6282 labels, 846 coord lookups
+EXACT | 0.0km | pred=Q219526 (United States) | true=Q219526 (United States)
+[92/144] Michigan... EXACT | 0.0km | pred=Q1166 (United States) | true=Q1166 (United States)
+[93/144] Kingdom of Belgium... CONTINENT | 329.9km | pred=Q458 (Internationality) | true=Q31 (Belgium)
+[94/144] Republic of Iceland... EXACT | 0.0km | pred=Q189 (Iceland) | true=Q189 (Iceland)
+[95/144] Tel Aviv... EXACT | 0.0km | pred=Q33935 (Israel) | true=Q33935 (Israel)
+[96/144] Kolkata... EXACT | 0.0km | pred=Q1348 (India) | true=Q1348 (India)
+[97/144] State of Arun�?chal Pradesh... COUNTRY | 1147.3km | pred=Q668 (India) | true=Q1162 (India)
+[98/144] Hamtramck...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+COUNTRY | 7.4km | pred=Q12439 (United States) | true=Q1013717 (United States)
+[99/144] Portland... EXACT | 0.0km | pred=Q6106 (United States) | true=Q6106 (United States)
+[100/144] Sanford... COUNTRY | 769.3km | pred=Q786770 (United States) | true=Q2022913 (United States)
+[101/144] State of Victoria...   Wikidata cache saved: 6364 entities, 6283 labels, 846 coord lookups
+EXACT | 0.0km | pred=Q36687 (Australia) | true=Q36687 (Australia)
+[102/144] Honolulu... EXACT | 0.0km | pred=Q18094 (United States) | true=Q18094 (United States)
+[103/144] Woking... EXACT | 0.0km | pred=Q646225 (United Kingdom) | true=Q646225 (United Kingdom)
+[104/144] Pyūth�?n... COUNTRY | 3.8km | pred=Q28094 (Nepal) | true=Q1827294 (Nepal)
+[105/144] Dihok... EXACT | 0.0km | pred=Q189541 (Iraq) | true=Q189541 (Iraq)
+[106/144] Montgomery County... COUNTRY | 197.2km | pred=Q488659 (United States) | true=Q378527 (United States)
+[107/144] Central Valley... COUNTRY | 107.7km | pred=Q27026 (United States) | true=Q49786953 (United States)
+[108/144] România... EXACT | 0.0km | pred=Q218 (Romania) | true=Q218 (Romania)
+[109/144] Stanford University... EXACT | 0.0km | pred=Q41506 (United States) | true=Q41506 (United States)
+[110/144] People�??s Republic of China... EXACT | 0.0km | pred=Q148 (People's Republic of China) | true=Q148 (China)
+[111/144] Kingdom of Saudi Arabia...   Wikidata cache saved: 6370 entities, 6289 labels, 846 coord lookups
+MISS | 1561.1km | pred=Q79 (Egypt) | true=Q851 (Saudi Arabia)
+[112/144] Otsego County... COUNTRY | 1281.4km | pred=Q30 (United States) | true=Q502712 (United States)
+[113/144] Somalia... EXACT | 0.0km | pred=Q1045 (Somalia) | true=Q1045 (Somalia)
+[114/144] Republic of France... EXACT | 0.0km | pred=Q142 (France) | true=Q142 (France)
+[115/144] Limpopo...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+EXACT | 0.0km | pred=Q134907 (South Africa) | true=Q134907 (South Africa)
+[116/144] Arab Republic of Egypt... EXACT | 0.0km | pred=Q79 (Egypt) | true=Q79 (Egypt)
+[117/144] Hollywood Park... COUNTRY | 5.1km | pred=Q3344148 (United States) | true=Q49502460 (United States)
+[118/144] Indianapolis... EXACT | 0.0km | pred=Q6346 (United States) | true=Q6346 (United States)
+[119/144] Kalandia... MISS | 11254.4km | pred=Q617602 (United States) | true=Q94800 (Palestine)
+[120/144] Boston... EXACT | 0.0km | pred=Q100 (United States) | true=Q100 (United States)
+[121/144] Vilonia...   Wikidata cache saved: 6372 entities, 6291 labels, 846 coord lookups
+EXACT | 0.0km | pred=Q2233544 (United States) | true=Q2233544 (United States)
+[122/144] Birmingham... MISS | 6795.8km | pred=Q2256 (United Kingdom) | true=Q79867 (United States)
+[123/144] Lagos... EXACT | 0.0km | pred=Q8673 (Nigeria) | true=Q8673 (Nigeria)
+[124/144] Richland County... COUNTRY | 728.4km | pred=Q30 (United States) | true=Q126829 (United States)
+[125/144] Republic of Colombia... CONTINENT | 4121.0km | pred=Q298 (Chile) | true=Q739 (Colombia)
+[126/144] Melbourne... MISS | 15672.3km | pred=Q949779 (United States) | true=Q3141 (Australia)
+[127/144] Golan Heights... COUNTRY | 358.9km | pred=Q858 (Syria) | true=Q83210 (Syria)
+[128/144] Newcastle upon Tyne... COUNTRY | 119.3km | pred=Q42462 (United Kingdom) | true=Q1425428 (United Kingdom)
+[129/144] Liverpool... EXACT | 0.0km | pred=Q24826 (United Kingdom) | true=Q24826 (United Kingdom)
+[130/144] Louisiana...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+COUNTRY | 1147.7km | pred=Q30 (United States) | true=Q1588 (United States)
+[131/144] Dublin...   Wikidata cache saved: 6374 entities, 6293 labels, 846 coord lookups
+MISS | 5742.9km | pred=Q1761 (Ireland) | true=Q988937 (United States)
+[132/144] Pierce County... EXACT | 0.0km | pred=Q156459 (United States) | true=Q156459 (United States)
+[133/144] Imo State... EXACT | 0.0km | pred=Q842939 (Nigeria) | true=Q842939 (Nigeria)
+[134/144] Moscow... EXACT | 0.0km | pred=Q649 (Russia) | true=Q649 (Russia)
+[135/144] Northeast Grave... COUNTRY | 2328.9km | pred=Q30 (United States) | true=Q49664235 (United States)
+[136/144] Ottawa... COUNTRY | 7.5km | pred=Q5011955 (Canada) | true=Q1930 (Canada)
+[137/144] Tibet Autonomous Region... CONTINENT | 458.7km | pred=Q17252 (People's Republic of China) | true=Q17269 (China)
+[138/144] Republic of Turkey... EXACT | 0.0km | pred=Q43 (Turkey) | true=Q43 (Turkey)
+[139/144] Pensacola... EXACT | 0.0km | pred=Q486306 (United States) | true=Q486306 (United States)
+[140/144] Paris... EXACT | 0.0km | pred=Q90 (France) | true=Q90 (France)
+[141/144] Broward County...   Wikidata cache saved: 6376 entities, 6295 labels, 846 coord lookups
+COUNTRY | 10.8km | pred=Q165972 (United States) | true=Q494624 (United States)
+[142/144] McCarren Park... COUNTRY | 7.8km | pred=Q18419 (United States) | true=Q6800173 (United States)
+[143/144] Mexico... EXACT | 0.0km | pred=Q96 (Mexico) | true=Q96 (Mexico)
+[144/144] East Midlands Airport... COUNTRY | 201.7km | pred=Q145 (United Kingdom) | true=Q8977 (United Kingdom)
+
+============================================================
+Pipeline performance overview
+============================================================
+OVERALL (n=144)
+  Exact location:   72/144  ( 50.0%)
+  Country level:   125/144  ( 86.8%)
+  Continent level: 134/144  ( 93.1%)
+  Within 161 km:    91/144  ( 63.2%)
+  No result:         2/144  (  1.4%)
+
+------------------------------------------------------------
+Per-signal breakdown
+------------------------------------------------------------
+Signal nan: (no rows)
+============================================================
+Detailed results saved to ../results/raw/eval_FINAL_refined_gemma_geocorpora.csv
+  Wikidata cache saved: 6379 entities, 6298 labels, 846 coord lookups

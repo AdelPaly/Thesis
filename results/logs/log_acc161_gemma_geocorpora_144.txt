@@ -1,0 +1,221 @@
+2026-04-30 19:00:16,657 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+C:\Users\Adela\PycharmProjects\geo\src\llm_gemma.py:3: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+  Wikidata cache loaded: 6632 entities, 6549 labels, 846 coord lookups
+Input: 144 rows, text='tweet_text', truth=('latitude','longitude')
+[1/144] OUTSIDE 722.0km | pred=Q30 | text="RT @TheAnonMessage: RAW VIDEO: Intense scenes from today's p"
+[2/144] WITHIN 0.3km | pred=Q321381 | text='RT @fireabingdon: Busy morning out in #Abingdon today. Fire '
+[3/144] OUTSIDE 3921.2km | pred=Q490434 | text='BACK TO THE FUTURE ARTIST SHOWCASE | AUG. 24th @ FIRE &amp; '
+[4/144] OUTSIDE 5332.4km | pred=Q755197 | text='RT @Nffcfamily: They say the Earthquake  hit derby and Impro'
+[5/144] WITHIN 5.2km | pred=Q60 | text='RT @4FreedominIran: #Iran resistance to protest at the Unite'
+[6/144] WITHIN 47.5km | pred=Q48320 | text="It's been 20 years since the Hanshin-Awaji Earthquake!\na hap"
+[7/144] WITHIN 1.2km | pred=Q3805 | text='RT @jordantimes: Muslims and Christians march in #Amman on S'
+[8/144] OUTSIDE 5877.2km | pred=Q92561 | text='A ‘vision to eradicate malaria’ - #LordSpeaker, B D’Souza, o'
+[9/144] WITHIN 0.9km | pred=Q23556 | text='Ebola patient walks into hospital: The first American Ebola '
+[10/144] OUTSIDE 5513.1km | pred=Q168052 | text='Will they protest the killing of police? - LancasterOnline h'
+  Wikidata cache saved: 6636 entities, 6553 labels, 846 coord lookups
+[11/144] WITHIN 13.6km | pred=Q60 | text='RT @nytimes: The rising violence by Rikers Island correction'
+[12/144] OUTSIDE 385.7km | pred=Q145 | text='All pregnant women in #Southend are eligible for the free fl'
+[13/144] OUTSIDE 9944.4km | pred=Q100166 | text='South Africa: SA earthquake big, but not uncommon: The Orkne'
+[14/144] OUTSIDE 5876.8km | pred=Q92561 | text='London UK: Flood the Embassy – Justice for Michael Brown – D'
+[15/144] WITHIN 80.6km | pred=Q189 | text='Earthquake Shakes Iceland Volcano, Still No Ash: An earthqua'
+[16/144] WITHIN 9.2km | pred=Q16635 | text='Magnitude 7.1 Earthquake Strikes Off Guam: A magnitude 7.1 e'
+[17/144] OUTSIDE 1977.5km | pred=Q30 | text='RT @stormchaser4850: Update: NWS: The deadly EF-1 #tornado t'
+[18/144] OUTSIDE 832.4km | pred=Q35775 | text='Las Vegas Review - Rebels ready for late night in Boise - De'
+[19/144] WITHIN 1.3km | pred=Q36312 | text='RT @ezralevant: Watch the riot videos. Listen to the victims'
+[20/144] WITHIN 1.8km | pred=Q79842 | text='RT @BohnJower: #ISurvived the Flagstaff Earthquake of 2014'
+  Wikidata cache saved: 6639 entities, 6556 labels, 846 coord lookups
+[21/144] OUTSIDE 16892.6km | pred=Q1007711 | text="RT @Sunburyflooding: Spelthorne's Sunbury Flood Volunteers a"
+[22/144] OUTSIDE 7535.9km | pred=Q841979 | text='RT @johnspatricc: ? http://t.co/E1R9XxQzq9 The Firm #TheFirm'
+[23/144] OUTSIDE 281.0km | pred=Q117 | text='RT @akwasisarpong: An update on the health status of the US '
+[24/144] WITHIN 0.9km | pred=Q41087 | text='SEVERE WX ALERT: ...THE NATIONAL WEATHER SERVICE IN RALEIGH '
+[25/144] OUTSIDE 494.3km | pred=Q928 | text='The Luzon earthquake occurred on Monday, July 16, 1990, at 4'
+[26/144] WITHIN 0.5km | pred=Q16557 | text='RT @BMcCarthy32: this is not a joke: I literally just farted'
+[27/144] OUTSIDE 431.1km | pred=Q14657421 | text='RT @501Awani: The Fire and Rescue Dept confirms a fire broke'
+[28/144] WITHIN 0.2km | pred=Q41183 | text='RT @shadihamid: Rebels in Aleppo "say they are on the verge '
+[29/144] OUTSIDE 3910.2km | pred=Q43421 | text='Richmond Police Chief Has No Faith In the Law so Joins Prote'
+[30/144] OUTSIDE 6480.2km | pred=Q750 | text='RT @Crof: Sierra Leone: Five #Ebola suspects on the run in B'
+  Wikidata cache saved: 6642 entities, 6559 labels, 846 coord lookups
+[31/144] OUTSIDE 11846.9km | pred=Q980055 | text='RT @NeilLokare: Gas masks, machine guns, armored cars, no fl'
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+[32/144] OUTSIDE 3013.1km | pred=Q16 | text='The Riot Team is here at St. Clair prison right now. Appx. 8'
+[33/144] WITHIN 4.3km | pred=Q327022 | text='RT @WTOP: There is no case of Ebola at Shady Grove Hospital.'
+[34/144] WITHIN 0.0km | pred=Q16556 | text='Measles Outbreak Has Arizona Tracking 1,000 Who Might Have B'
+[35/144] OUTSIDE 5742.0km | pred=Q1761 | text='RT @DublinPolice: 33EB shut down at Avery Rd for auto accide'
+[36/144] WITHIN 0.0km | pred=Q65 | text='The Slymar #Earthquake hit  Los Angeles in 1971? Watch this '
+[37/144] WITHIN 0.5km | pred=Q5092 | text='Balt Fire Officers wish a speedy recovery to the MD State Tr'
+[38/144] WITHIN 1.0km | pred=Q3861 | text="RT @Foto_Arquitect: 'Tornado Tower in the centre the Burj Do"
+[39/144] WITHIN 0.7km | pred=Q1247373 | text='RT @MPSHarrow: Reportedly the Photo of the Tornado that stru'
+[40/144] NO RESULT
+  Wikidata cache saved: 6643 entities, 6560 labels, 846 coord lookups
+[41/144] OUTSIDE 1578.3km | pred=Q49088 | text='All Columbia residents and MU students: Some peers of mine a'
+[42/144] OUTSIDE 2328.9km | pred=Q30 | text='@FoxNews Enterovirus D68 makes it way into NE,since the viru'
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+[43/144] WITHIN 0.5km | pred=Q3787 | text='Ebola: Children with symptoms of malaria to be shut out of s'
+[44/144] OUTSIDE 2050.7km | pred=Q30 | text='RT @JamesVanFleet: #Tornado #Damage pics from the EF-0 Torna'
+[45/144] WITHIN 0.0km | pred=Q61 | text='when mr.leonard told us a tornado and huge rain storm drive '
+[46/144] WITHIN 0.7km | pred=Q1247373 | text="'Like a scene from the Wizard of Oz': homes and cars damaged"
+[47/144] WITHIN 2.7km | pred=Q43196 | text='RT @DugoutLegends: Canoeing at Crosley Field during the 1937'
+[48/144] WITHIN 1.1km | pred=Q321079 | text="RT @Riddwane: I've just got an information, that police in J"
+[49/144] OUTSIDE 508.3km | pred=Q30 | text='RT @OfficeDepotFndn: Learn how Office Depot Foundation &amp;'
+[50/144] WITHIN 0.3km | pred=Q241814 | text="Can't wait to hit Kingsport TN so I can help defeat the Rebe"
+  Wikidata cache saved: 6644 entities, 6561 labels, 846 coord lookups
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+[51/144] WITHIN 1.6km | pred=Q18125 | text="RT @PaulineMM: Manchester Dogs' Home Justgiving page if you "
+[52/144] OUTSIDE 16798.2km | pred=Q1425428 | text='Heading into the heart of the Ebola outbreak - ABC Online ht'
+[53/144] OUTSIDE 11238.5km | pred=Q617602 | text="RT @cnnbrk: Hundreds flee town of Shaja'ia in Gaza as Israel"
+[54/144] WITHIN 0.4km | pred=Q62 | text="RT @mikemccaffrey: San Francisco's Tuesday siren is like a c"
+[55/144] WITHIN 0.5km | pred=Q16563 | text='RT @weatherchannel: 10:22pm CT: New #tornado warnings stradd'
+[56/144] WITHIN 7.8km | pred=Q18419 | text='RT @PRODIGYMOBBDEEP: #Mobbsters Come see Okayplayer presents'
+[57/144] WITHIN 1.0km | pred=Q192271 | text='China: a new rockfall video from Guiyang, Guizhou and images'
+[58/144] WITHIN 0.4km | pred=Q49266 | text='4.8 Earthquake, 33 miles ssw of Wichita at 340 pm. We felt i'
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+[59/144] WITHIN 8.1km | pred=Q79891 | text='Hatchet-wielding man who police said tried to set planes on '
+[60/144] WITHIN 0.7km | pred=Q3780 | text="Sierra Leone's top Ebola doctor dies from virus - FREETOWN ("
+  Wikidata cache saved: 6645 entities, 6562 labels, 846 coord lookups
+[61/144] WITHIN 0.3km | pred=Q2141 | text='#hollaback Catcalls, sexualized violence targeted at Halifax'
+[62/144] WITHIN 3.8km | pred=Q49247 | text='Measles outbreak grows to 75 cases.\nCoverage of the Disneyla'
+[63/144] WITHIN 17.4km | pred=Q5083 | text='#BennyCapricon Travelers possibly exposed to measles: Travel'
+[64/144] WITHIN 102.1km | pred=Q1408 | text='#Team_Wolf1 Hundreds in New Jersey Flee Fire at Apartments: '
+[65/144] WITHIN 0.6km | pred=Q122563 | text='Literally a tornado at the baseball tournament in Eau Claire'
+[66/144] WITHIN 2.2km | pred=Q128321 | text='RT @StormWchAmerica: SEVERE WX ALERT: THE NATIONAL WEATHER S'
+[67/144] WITHIN 12.2km | pred=Q1453180 | text='RT @gsurya: "When a great tree falls, the earth shakes": sai'
+[68/144] WITHIN 4.0km | pred=Q1297 | text='RT @The_First_Stone: Protest in Chicago! Police clashing wit'
+[69/144] OUTSIDE 234.5km | pred=Q958 | text='today, we rememeber the victims of the violence in wau,#Sout'
+[70/144] OUTSIDE 5272.7km | pred=Q755149 | text='RT @Bristol_Culture: Hundreds march through Bristol in a Rec'
+  Wikidata cache saved: 6647 entities, 6564 labels, 846 coord lookups
+[71/144] WITHIN 0.3km | pred=Q79990 | text="Marie O'Connell about impact of an earthquake on the NZ Film"
+[72/144] WITHIN 0.1km | pred=Q1852070 | text='RT @GAFollowers: A 9 y/o Carrollton boy was almost injured w'
+[73/144] OUTSIDE 371.0km | pred=Q796 | text='RT @BBassem7: Breaking. #ISIS Islamists rebels just burnt th'
+[74/144] WITHIN 0.5km | pred=Q517569 | text='RT @NBCLA: The 2014 Great California ShakeOut earthquake dri'
+[75/144] OUTSIDE 722.9km | pred=Q30 | text='RT @LisaGHart: Woman interrupts protest in #Clayton w/sign s'
+[76/144] WITHIN 0.3km | pred=Q1376790 | text='Tornado slams Virginia campground; 2 dead: CAPE CHARLES, Va.'
+[77/144] WITHIN 8.9km | pred=Q8660 | text='RT @clockend10: This entire protest #ComeOutKarachi should b'
+[78/144] OUTSIDE 284.7km | pred=Q3234461 | text='RT @ktmkomuter: Torrential downpour in the Klang Valley resu'
+[79/144] WITHIN 0.2km | pred=Q649 | text='#MH17 At 1st rebels claimed they had the black box (flight r'
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+[80/144] WITHIN 0.1km | pred=Q485176 | text='Pasadena Police Dept welcomes writer Anna Patricia Candiani '
+  Wikidata cache saved: 6648 entities, 6565 labels, 846 coord lookups
+[81/144] WITHIN 5.6km | pred=Q60 | text='"You could get a crowbar and flood the Lincoln Tunnel." -Sam'
+[82/144] WITHIN 6.8km | pred=Q12439 | text='RT @rallenMI: Police say more officers on the way to protest'
+[83/144] WITHIN 8.4km | pred=Q1489 | text='RT @MexicAnarchist: Epicenter of the earthquake was in the s'
+[84/144] WITHIN 0.0km | pred=Q317865 | text='Mercy set to open Joplin hospital four years after huge torn'
+[85/144] WITHIN 8.0km | pred=Q43070 | text='Fighting flares at Ukraine`s Donetsk airport: Ukrainian forc'
+[86/144] OUTSIDE 5758.1km | pred=Q684016 | text='Got kicked outta Flint Kroger cus there powers out. Off to m'
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+[87/144] OUTSIDE 407.5km | pred=Q29 | text='#EURONEWS #NEWS Tornado tears up Spanish resort - Holiday ma'
+[88/144] WITHIN 0.9km | pred=Q36600 | text="RT @Rangeeni: Our heart breaks for Gaza's children. #Gaza &l"
+[89/144] WITHIN 0.5km | pred=Q16552 | text='The #measles is spreading in #SanDiego. Find out where you m'
+[90/144] WITHIN 0.1km | pred=Q33935 | text='RT @peacenowisrael: Protest in Tel Aviv. Demand an end to th'
+  Wikidata cache saved: 6649 entities, 6566 labels, 846 coord lookups
+[91/144] OUTSIDE 2077.2km | pred=Q30 | text='RT California_agen: Earthquake: 3.3 quake strikes near the G'
+[92/144] OUTSIDE 2021.5km | pred=Q30 | text='RT @JeffRanieri: Earthquake near #Gilroy 4.2 &amp; 3.8 likel'
+[93/144] OUTSIDE 868.6km | pred=Q30 | text='@K_Babyy_ tennessee is way overdue for an earthquake along t'
+[94/144] WITHIN 0.8km | pred=Q846683 | text='Did you feel the earthquake last night? tremors in Grantham,'
+[95/144] WITHIN 0.2km | pred=Q38022 | text='WTF can they *possibly* protest regarding this shooting? How'
+[96/144] WITHIN 0.6km | pred=Q1156 | text='@AviralKapoor_ You know why we had riot in Mumbai in August '
+[97/144] WITHIN 0.2km | pred=Q41262 | text='? Tomorrow: Nottingham, United Kingdom - Oct 2 at The Maze S'
+[98/144] WITHIN 0.9km | pred=Q203263 | text='RT @universityofga: UGA Alert Emergency Message. The tornado'
+[99/144] NO RESULT
+[100/144] OUTSIDE 6445.8km | pred=Q5836 | text="It was a mini riot at toledos mall for the Columbia 11's tic"
+  Wikidata cache saved: 6652 entities, 6569 labels, 846 coord lookups
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+[101/144] WITHIN 1.5km | pred=Q21683239 | text="@HistoricPapers I'd forgotten about that Luton riot back in "
+[102/144] WITHIN 2.5km | pred=Q8652 | text='#miami What an idiot! I hope they fire this police officer, '
+[103/144] OUTSIDE 424.0km | pred=Q258 | text='Queenstown police are monitoring a protest taking place at t'
+[104/144] WITHIN 1.1km | pred=Q463679 | text='RT @enf: Bay Area geotagged tweets per minute around the tim'
+[105/144] WITHIN 1.3km | pred=Q651131 | text='RT @reubenkang: Thoughts and Prayers to the people of Kota B'
+[106/144] WITHIN 1.2km | pred=Q1865 | text='No fire at fuel hike rally as protesters stay away: KUALA LU'
+[107/144] WITHIN 0.3km | pred=Q34647 | text="@_Zanie relax. We don't have malaria mosquitoes in Jozi. Onl"
+[108/144] WITHIN 2.0km | pred=Q1761 | text='RT @DETWaterBrigade: Thousands take to the streets of Dublin'
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+[109/144] OUTSIDE 2084.5km | pred=Q30 | text='RT @RKBA1911: So, now do Asians &amp; Hispanics get to riot '
+[110/144] WITHIN 1.0km | pred=Q23197 | text='Waiting out a storm in the basement. #tailgate #Nashville #t'
+  Wikidata cache saved: 6654 entities, 6571 labels, 846 coord lookups
+[111/144] OUTSIDE 5877.7km | pred=Q92561 | text="#news #flu Downing Street's Ebola panic is a classic case of"
+[112/144] OUTSIDE 5884.1km | pred=Q92561 | text='Criterion proposes East India Dock PRS towers - Criterion Ca'
+[113/144] WITHIN 0.3km | pred=Q3766 | text='RT @rk70534: #Damascus, #Syria: #Yarmouk Palestinian refugee'
+[114/144] WITHIN 0.8km | pred=Q43070 | text="RT @Telegraph: Ukraine's rebels prepare to defend Donetsk to"
+[115/144] OUTSIDE 1685.3km | pred=Q30 | text='RT @MarybethJacoby: Tornado watch in the MIdlands \nhttp://t.'
+[116/144] OUTSIDE 870.0km | pred=Q988739 | text='at 10:05 PM a Flood Warning was Cancelled for the Grand Rive'
+[117/144] OUTSIDE 7248.5km | pred=Q30 | text='Flu vaccination refresh today at Ashford Park Farm-still got'
+[118/144] WITHIN 6.6km | pred=Q11299 | text="Enjoy the Show: Learn More with 'Sharknado 2'! -  People-eat"
+[119/144] WITHIN 0.3km | pred=Q8673 | text='#LatestInfo: Lagos female doctor contracts Ebola virus: \xa0 \xa0 '
+[120/144] OUTSIDE 1830.2km | pred=Q182625 | text='Windsor tornado is the focus is the first talk. Tornado move'
+  Wikidata cache saved: 6655 entities, 6572 labels, 846 coord lookups
+[121/144] WITHIN 0.1km | pred=Q649 | text='RT @ReutersLive: LIVE: Thousands are expected at a protest i'
+[122/144] OUTSIDE 5917.0km | pred=Q92561 | text='RT @Jamie_Woodward_: Ice floes on the Thames &amp; the Great'
+[123/144] OUTSIDE 2291.0km | pred=Q30 | text='RT @Robert_Mills: Lowell, Dracut, Tyngsboro, Southern NH, th'
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+[124/144] OUTSIDE 692.8km | pred=Q17 | text='6.0 earthquake is likely in the Aomori and Morioka Japan are'
+[125/144] WITHIN 0.3km | pred=Q100 | text="The chefs will be cooking for Boston's Fire &amp; Police Dep"
+[126/144] WITHIN 1.0km | pred=Q24826 | text='@EamonnHolmes The rest of us hope not ..Santa lost in fog, R'
+[127/144] WITHIN 2.4km | pred=Q220 | text='U think "Rome existed before the flood?" what meme told you '
+[128/144] OUTSIDE 6972.1km | pred=Q34433 | text="RT @OleMissFB: The Rebels' next game against Tennessee will "
+[129/144] OUTSIDE 6817.8km | pred=Q669171 | text='When westboro baptist church was gonna protest the sandy hoo'
+[130/144] WITHIN 2.7km | pred=Q8969 | text='RT @oart50: "The Man on Fire," one of the several sculptures'
+  Wikidata cache saved: 6657 entities, 6574 labels, 846 coord lookups
+[131/144] WITHIN 0.8km | pred=Q80053 | text='Tabriz: A protest gathering in front of the university #Iran'
+[132/144] NO RESULT
+[133/144] WITHIN 0.0km | pred=Q34932 | text='#qldpol 2011 Brisbane floods forgotten as people buy into th'
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+[134/144] WITHIN 26.3km | pred=Q9885 | text='Congratulation @bukharishujaat  ‘For the Sake of Honour’ awa'
+[135/144] WITHIN 3.2km | pred=Q66485 | text='Huge Damage to Property in Fire at Jaipur City Palace: A fir'
+[136/144] WITHIN 26.2km | pred=Q41621 | text='RT @Elizrael: PHOTOS: The protest in Haifa and two of the pr'
+[137/144] WITHIN 0.4km | pred=Q23482 | text='RT @FaithWarJournal: Marseilles: 30-40% Muslim. Excessive vi'
+[138/144] WITHIN 0.5km | pred=Q48403 | text='RT @DDNewsLive: Punjab reported first swine flu death of yea'
+[139/144] OUTSIDE 9800.4km | pred=Q181966 | text='RT @LANow: After devastating earthquake in Napa, geologists '
+[140/144] WITHIN 0.1km | pred=Q18419 | text='RT @ouijv: TONIGHT IS THE NIGHT!!!!\n@mcsole &amp; @djpain1 \n'
+  Wikidata cache saved: 6659 entities, 6576 labels, 846 coord lookups
+[141/144] OUTSIDE 12551.5km | pred=Q794 | text='Iran: reports of protest rallies across the country http://t'
+[142/144] OUTSIDE 1467.9km | pred=Q30 | text='FEMA Deadline Not the End of Flood Recovery in Florida: PENS'
+[143/144] WITHIN 0.0km | pred=Q25395 | text="RT @yeahRIFAsaidit: I'm from Newark, NJ. I can attest to the"
+[144/144] OUTSIDE 193.4km | pred=Q212 | text='It is such a simple question: Where are the ATC recordings o'
+  Wikidata cache saved: 6659 entities, 6576 labels, 846 coord lookups
+
+Done: acc@161km = 87/144 (60.4%)  ->  C:\Users\Adela\PycharmProjects\geo\results\raw\eval_acc161_gemma_geocorpora_144.csv
+  Wikidata cache saved: 6659 entities, 6576 labels, 846 coord lookups

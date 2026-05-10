@@ -1,0 +1,50 @@
+configuration,predicted_continent,n_wrong_total,share_pct
+two_stage,Africa,55,7.3
+two_stage,Americas,55,1.8
+two_stage,Asia,55,12.7
+two_stage,Europe,55,45.5
+two_stage,North America,55,18.2
+two_stage,Oceania,55,7.3
+two_stage,South America,55,7.3
+refined,Africa,22,9.1
+refined,Americas,22,0.0
+refined,Asia,22,9.1
+refined,Europe,22,59.1
+refined,North America,22,18.2
+refined,Oceania,22,4.5
+refined,South America,22,0.0
+gemma,Africa,33,3.0
+gemma,Americas,33,0.0
+gemma,Asia,33,6.1
+gemma,Europe,33,33.3
+gemma,North America,33,42.4
+gemma,Oceania,33,6.1
+gemma,South America,33,9.1
+groq_llama,Africa,32,0.0
+groq_llama,Americas,32,0.0
+groq_llama,Asia,32,9.4
+groq_llama,Europe,32,40.6
+groq_llama,North America,32,34.4
+groq_llama,Oceania,32,3.1
+groq_llama,South America,32,12.5
+groq_oss,Africa,27,0.0
+groq_oss,Americas,27,0.0
+groq_oss,Asia,27,11.1
+groq_oss,Europe,27,37.0
+groq_oss,North America,27,37.0
+groq_oss,Oceania,27,3.7
+groq_oss,South America,27,11.1
+refined_search,Africa,35,2.9
+refined_search,Americas,35,0.0
+refined_search,Asia,35,8.6
+refined_search,Europe,35,48.6
+refined_search,North America,35,25.7
+refined_search,Oceania,35,5.7
+refined_search,South America,35,8.6
+refined_gemma,Africa,26,3.8
+refined_gemma,Americas,26,0.0
+refined_gemma,Asia,26,11.5
+refined_gemma,Europe,26,34.6
+refined_gemma,North America,26,42.3
+refined_gemma,Oceania,26,3.8
+refined_gemma,South America,26,3.8

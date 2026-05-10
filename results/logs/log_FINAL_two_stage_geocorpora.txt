@@ -1,238 +1,217 @@
-2026-04-27 00:49:01,343 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
-  Wikidata cache loaded: 2384 entities, 2363 labels, 245 coord lookups
-[1/200] Lansing... COUNTRY | pred=Q60 (United States) | true=nan (United States)
-[2/200] Hollywood... COUNTRY | pred=Q34006 (United States) | true=nan (United States)
-[3/200] Kingdom of Saudi Arabia... MISS | pred=Q282428 (Egypt) | true=nan (Saudi Arabia)
-[4/200] Ferguson... COUNTRY | pred=Q16567 (United States) | true=nan (United States)
-[5/200] Ferguson... CONTINENT | pred=Q1406237 (Canada) | true=nan (United States)
-[6/200] United States... COUNTRY | pred=Q1223 (United States) | true=nan (United States)
-[7/200] Syrian Arab Republic... CONTINENT | pred=Q3076765 (Ottoman Empire) | true=nan (Syria)
-[8/200] McCarren Park... COUNTRY | pred=Q462177 (United States) | true=nan (United States)
-[9/200] California... COUNTRY | pred=Q99 (United States) | true=nan (United States)
-[10/200] Yellowstone National Park... COUNTRY | pred=Q351 (United States) | true=nan (United States)
-[11/200] Kentucky...   Wikidata cache saved: 2584 entities, 2563 labels, 274 coord lookups
-COUNTRY | pred=Q2781219 (United States) | true=nan (United States)
-[12/200] United States... COUNTRY | pred=Q99 (United States) | true=nan (United States)
-[13/200] Republic of Zambia... MISS | pred=Q49755180 (Armenia) | true=nan (Zambia)
-[14/200] United States... MISS | pred=Q828 () | true=nan (United States)
-[15/200] Toronto... COUNTRY | pred=Q611723 (Canada) | true=nan (Canada)
-[16/200] New Zealand... COUNTRY | pred=Q664 (New Zealand) | true=nan (New Zealand)
-[17/200] Ferguson... CONTINENT | pred=Q1406237 (Canada) | true=nan (United States)
-[18/200] Rexburg... COUNTRY | pred=Q7319370 (United States) | true=nan (United States)
-[19/200] Republic of Yemen... CONTINENT | pred=Q784972 (Ottoman Empire) | true=nan (Yemen)
-[20/200] Ferguson... COUNTRY | pred=Q954855 (United States) | true=nan (United States)
-[21/200] Malaysia...   Wikidata cache saved: 2720 entities, 2696 labels, 296 coord lookups
-COUNTRY | pred=Q15065 (Malaysia) | true=nan (Malaysia)
-[22/200] United States... MISS | pred=Q828 () | true=nan (United States)
-[23/200] Islamic Republic of Iran... COUNTRY | pred=Q5947953 (Iran) | true=nan (Iran)
-[24/200] San Francisco Bay Area... COUNTRY | pred=Q30283390 (United States) | true=nan (United States)
-[25/200] Harrow... COUNTRY | pred=Q5666542 (United Kingdom) | true=nan (United Kingdom)
-[26/200] Kingsport... CONTINENT | pred=Q6413389 (Canada) | true=nan (United States)
-[27/200] Kelantan... COUNTRY | pred=Q1636096 (Malaysia) | true=nan (Malaysia)
-[28/200] Ferguson... COUNTRY | pred=Q954855 (United States) | true=nan (United States)
-[29/200] Brescia... COUNTRY | pred=Q593321 (Italy) | true=nan (Italy)
-[30/200] Aurora... COUNTRY | pred=Q49246 (United States) | true=nan (United States)
-[31/200] Palestine...   Wikidata cache saved: 2934 entities, 2905 labels, 322 coord lookups
-NO RESULT
-[32/200] River Thames... COUNTRY | pred=Q26285418 (United Kingdom) | true=nan (United Kingdom)
-[33/200] New York... COUNTRY | pred=Q1384 (United States) | true=nan (United States)
-[34/200] Kalgoorlie/Boulder... COUNTRY | pred=Q55807949 (Australia) | true=nan (Australia)
-[35/200] Great Barrier Reef... COUNTRY | pred=Q7306796 (Australia) | true=nan (Australia)
-[36/200] Las Vegas... COUNTRY | pred=Q23768 (United States) | true=nan (United States)
-[37/200] Somerset... COUNTRY | pred=Q6376320 (United Kingdom) | true=nan (United Kingdom)
-[38/200] Federal Republic of Nigeria... COUNTRY | pred=Q1033 (Nigeria) | true=nan (Nigeria)
-[39/200] State of Arun�?chal Pradesh... COUNTRY | pred=Q1659305 (India) | true=nan (India)
-[40/200] Walpole Station... COUNTRY | pred=Q33314120 (United States) | true=nan (United States)
-[41/200] Republic of India...   Wikidata cache saved: 3087 entities, 3056 labels, 343 coord lookups
-COUNTRY | pred=Q668 (India) | true=nan (India)
-[42/200] Gustine Gun Club... COUNTRY | pred=Q49267129 (United States) | true=nan (United States)
-[43/200] Republic of the Philippines... COUNTRY | pred=Q928 (Philippines) | true=nan (Philippines)
-[44/200] Columbia... MISS | pred=Q1053720 (United Kingdom) | true=nan (United States)
-[45/200] North Dakota... COUNTRY | pred=Q2000624 (United States) | true=nan (United States)
-[46/200] United Kingdom of Great Britain and Northern Ireland... COUNTRY | pred=Q22 (United Kingdom) | true=nan (United Kingdom)
-[47/200] Maarrat al-Nu'man District... CONTINENT | pred=Q12227058 (Yemen) | true=nan (Syria)
-[48/200] Délégation de Hammamet... COUNTRY | pred=Q39470468 (Tunisia) | true=nan (Tunisia)
-[49/200] State of Israel... CONTINENT | pred=Q39760 (Palestine) | true=nan (Israel)
-[50/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
-[51/200] Republic of Ghana...   Wikidata cache saved: 3286 entities, 3250 labels, 371 coord lookups
-COUNTRY | pred=Q85763373 (Ghana) | true=nan (Ghana)
-[52/200] St. Louis... COUNTRY | pred=Q1760539 (United States) | true=nan (United States)
-[53/200] Liverpool... COUNTRY | pred=Q24826 (United Kingdom) | true=nan (United Kingdom)
-[54/200] Russian Federation... COUNTRY | pred=Q159 (Russia) | true=nan (Russia)
-[55/200] Fort Myers... COUNTRY | pred=Q506451 (United States) | true=nan (United States)
-[56/200] United States... COUNTRY | pred=Q637413 (United States) | true=nan (United States)
-[57/200] United States... COUNTRY | pred=Q637413 (United States) | true=nan (United States)
-[58/200] Leichhardt... MISS | pred=Q1938175 (United Kingdom) | true=nan (Australia)
-[59/200] River Severn... COUNTRY | pred=Q1287969 (United Kingdom) | true=nan (United Kingdom)
-[60/200] Ukraine... COUNTRY | pred=Q181386 (Ukraine) | true=nan (Ukraine)
-[61/200] Japan...   Wikidata cache saved: 3420 entities, 3383 labels, 394 coord lookups
-MISS | pred=Q60 (United States) | true=nan (Japan)
-[62/200] Vadodara... COUNTRY | pred=Q11909 (India) | true=nan (India)
-[63/200] State of Jammu and Kashm?r... COUNTRY | pred=Q987 (India) | true=nan (India)
-[64/200] Republic of Iraq... CONTINENT | pred=Q3041595 (Arab Federation) | true=nan (Iraq)
-[65/200] Malaysia... COUNTRY | pred=Q1865 (Malaysia) | true=nan (Malaysia)
-[66/200] State of Odisha... MISS | pred=Q19792051 () | true=nan (India)
-[67/200] Pyūth�?n... CONTINENT | pred=Q3630 (Indonesia) | true=nan (Nepal)
-[68/200] Republic of South Africa... COUNTRY | pred=Q258 (South Africa) | true=nan (South Africa)
-[69/200] Kansas... NO RESULT
-[70/200] Republic of Costa Rica... CONTINENT | pred=Q2798738 (United States) | true=nan (Costa Rica)
-[71/200] Dallas...   Wikidata cache saved: 3517 entities, 3477 labels, 411 coord lookups
-MISS | pred=Q23196824 (Ivory Coast) | true=nan (United States)
-[72/200] Arab Republic of Egypt... MISS | pred=Q99 (United States) | true=nan (Egypt)
-[73/200] T?hoku-machi... COUNTRY | pred=Q428428 (Japan) | true=nan (Japan)
-[74/200] County Donegal... COUNTRY | pred=Q855330 (Ireland) | true=nan (Ireland)
-[75/200] Dallas... COUNTRY | pred=Q745866 (United States) | true=nan (United States)
-[76/200] Ferguson... CONTINENT | pred=Q1406237 (Canada) | true=nan (United States)
-[77/200] Kuril Islands... COUNTRY | pred=Q389717 (Russia) | true=nan (Russia)
-[78/200] Penampang... COUNTRY | pred=Q778171 (Malaysia) | true=nan (Malaysia)
-[79/200] Texas... COUNTRY | pred=Q1439 (United States) | true=nan (United States)
-[80/200] United States... COUNTRY | pred=Q11703 (United States) | true=nan (United States)
-[81/200] South Dakota...   Wikidata cache saved: 3597 entities, 3553 labels, 429 coord lookups
-COUNTRY | pred=Q2302260 (United States) | true=nan (United States)
-[82/200] Missouri... COUNTRY | pred=Q317865 (United States) | true=nan (United States)
-[83/200] Arab Republic of Egypt... COUNTRY | pred=Q461793 (Egypt) | true=nan (Egypt)
-[84/200] Alaska... NO RESULT
-[85/200] California... COUNTRY | pred=Q161562 (United States) | true=nan (United States)
-[86/200] Melbourne... COUNTRY | pred=Q3141 (Australia) | true=nan (Australia)
-[87/200] Louisiana... COUNTRY | pred=Q1588 (United States) | true=nan (United States)
-[88/200] Peshawar... COUNTRY | pred=Q3918532 (Pakistan) | true=nan (Pakistan)
-[89/200] United Kingdom of Great Britain and Northern Ireland... COUNTRY | pred=Q7330894 (United Kingdom) | true=nan (United Kingdom)
-[90/200] United States... COUNTRY | pred=Q99 (United States) | true=nan (United States)
-[91/200] Kingdom of Cambodia...   Wikidata cache saved: 3754 entities, 3709 labels, 451 coord lookups
-COUNTRY | pred=Q9205 (Cambodia) | true=nan (Cambodia)
-[92/200] East Midlands Airport... COUNTRY | pred=Q8977 (United Kingdom) | true=nan (United Kingdom)
-[93/200] Punjab... COUNTRY | pred=Q58635 (Pakistan) | true=nan (Pakistan)
-[94/200] Mississippi... MISS | pred=Q9054503 (Spain) | true=nan (United States)
-[95/200] San Francisco Bay Area... COUNTRY | pred=Q610120 (United States) | true=nan (United States)
-[96/200] People�??s Republic of China... CONTINENT | pred=Q148 (People's Republic of China) | true=nan (China)
-[97/200] State of Jammu and Kashmīr... COUNTRY | pred=Q255455 (India) | true=nan (India)
-[98/200] Syrian Arab Republic... MISS | pred=Q637413 (United States) | true=nan (Syria)
-[99/200] Belle Chasse... COUNTRY | pred=Q77082656 (United States) | true=nan (United States)
-[100/200] Repubblica Italiana... COUNTRY | pred=Q593321 (Italy) | true=nan (Italy)
-[101/200] Michigan...   Wikidata cache saved: 3909 entities, 3864 labels, 472 coord lookups
-COUNTRY | pred=Q6346 (United States) | true=nan (United States)
-[102/200] Eastern Cape... COUNTRY | pred=Q5330030 (South Africa) | true=nan (South Africa)
-[103/200] Commonwealth of Australia... NO RESULT
-[104/200] Republic of Yemen... COUNTRY | pred=Q2471 (Yemen) | true=nan (Yemen)
-[105/200] Northern California Preparatory School... COUNTRY | pred=Q1066807 (United States) | true=nan (United States)
-[106/200] London... COUNTRY | pred=Q743535 (United Kingdom) | true=nan (United Kingdom)
-[107/200] Fayetteville... COUNTRY | pred=Q2131289 (United States) | true=nan (United States)
-[108/200] Mongolia...   Rate limited, waiting 1s...
+2026-05-03 13:57:20,619 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+  Wikidata cache loaded: 8047 entities, 7943 labels, 1119 coord lookups
+[1/144] nan... MISS | 10011.4km | pred=Q5547611 (United States) | true=Q230 (Georgia)
+[2/144] nan... EXACT | 0.0km | pred=Q668 (India) | true=Q668 (India)
+[3/144] nan... COUNTRY | 120.2km | pred=Q171714 (Iran) | true=Q165352 (Iran)
+[4/144] nan... COUNTRY | 3715.1km | pred=Q5803319 (United States) | true=Q3551781 (United States)
+[5/144] nan... EXACT | 0.0km | pred=Q1168 (India) | true=Q1168 (India)
+[6/144] nan... COUNTRY | 0.0km | pred=Q1126034 (United States) | true=Q54109 (United States)
+[7/144] nan... CONTINENT | 2543.3km | pred=Q12227058 (Yemen) | true=Q4118375 (Syria)
+[8/144] nan... COUNTRY | 30.2km | pred=Q1574578 (Qatar) | true=Q846 (Qatar)
+[9/144] nan... COUNTRY | 0.4km | pred=Q17375236 (India) | true=Q645725 (India)
+[10/144] nan... EXACT | 0.0km | pred=Q11299 (United States) | true=Q11299 (United States)
+[11/144] nan... CONTINENT | 1099.5km | pred=Q266063 (Slovenia) | true=Q228 (Andorra)
+[12/144] nan... COUNTRY | 43.3km | pred=Q22698251 (Democratic Republic of the Congo) | true=Q488326 (Democratic Republic of the Congo)
+[13/144] nan... COUNTRY | 40.4km | pred=Q1931836 (South Africa) | true=Q2347801 (South Africa)
+[14/144] nan... COUNTRY | 274.9km | pred=Q23661 (New Zealand) | true=Q118863 (New Zealand)
+[15/144] nan... COUNTRY | 256.1km | pred=Q2302260 (United States) | true=Q1211 (United States)
+[16/144] nan... COUNTRY | 358.4km | pred=Q593321 (Italy) | true=Q38 (Italy)
+[17/144] nan... COUNTRY | 122.1km | pred=Q9205 (Cambodia) | true=Q424 (Cambodia)
+[18/144] nan... COUNTRY | 5.1km | pred=Q1026941 (United States) | true=Q18013 (United States)
+[19/144] nan... COUNTRY | 92.4km | pred=Q1342 (United States) | true=Q1070763 (United States)
+[20/144] nan... MISS | 14476.6km | pred=Q4011294 (Australia) | true=Q429540 (United Kingdom)
+[21/144] nan... COUNTRY | 8.8km | pred=Q7589612 (United States) | true=Q498034 (United States)
+[22/144] nan... EXACT | 0.0km | pred=Q1439 (United States) | true=Q1439 (United States)
+[23/144] nan... MISS | 437.4km | pred=Q19792051 () | true=Q22048 (India)
+[24/144] nan... COUNTRY | 177.4km | pred=Q1520175 (United Kingdom) | true=Q23064 (United Kingdom)
+[25/144] nan... NO RESULT
+[26/144] nan... COUNTRY | 430.8km | pred=Q58635 (Pakistan) | true=Q183314 (Pakistan)
+[27/144] nan... COUNTRY | 129.8km | pred=Q11654815 (Japan) | true=Q127877 (Japan)
+[28/144] nan... COUNTRY | 0.7km | pred=Q35794 (United Kingdom) | true=Q350 (United Kingdom)
+[29/144] nan... COUNTRY | 18.5km | pred=Q461793 (Egypt) | true=Q85 (Egypt)
+[30/144] nan... COUNTRY | 25.4km | pred=Q2251503 (United Kingdom) | true=Q1025076 (United Kingdom)
+[31/144] nan... CONTINENT | 434.1km | pred=Q84151 (Ukraine) | true=Q2280 (Belarus)
+[32/144] nan... CONTINENT | 1077.8km | pred=Q79563 (United States) | true=Q504114 (Canada)
+[33/144] nan... COUNTRY | 478.2km | pred=Q61330 (United States) | true=Q484474 (United States)
+[34/144] nan... EXACT | 0.0km | pred=Q912 (Mali) | true=Q912 (Mali)
+[35/144] nan... COUNTRY | 1.4km | pred=Q12247287 (Syria) | true=Q2631639 (Syria)
+[36/144] nan... MISS | 6261.8km | pred=Q49755180 (Armenia) | true=Q953 (Zambia)
+[37/144] nan... COUNTRY | 3.5km | pred=Q127430768 (Iraq) | true=Q83317 (Iraq)
+[38/144] nan... COUNTRY | 169.3km | pred=Q242895 (India) | true=Q330643 (India)
+[39/144] nan... NO RESULT
+[40/144] nan... COUNTRY | 792.2km | pred=Q599186 (United States) | true=Q23197 (United States)
+[41/144] nan... COUNTRY | 3.7km | pred=Q452447 (United States) | true=Q26339 (United States)
+[42/144] nan... COUNTRY | 711.3km | pred=Q1072784 (United States) | true=Q508209 (United States)
+[43/144] nan... EXACT | 0.0km | pred=Q151897 (Germany) | true=Q151897 (Germany)
+[44/144] nan... EXACT | 0.0km | pred=Q23482 (France) | true=Q23482 (France)
+[45/144] nan... COUNTRY | 14.1km | pred=Q644090 (United States) | true=Q1376790 (United States)
+[46/144] nan... COUNTRY | 713.7km | pred=Q14681141 (United States) | true=Q2570337 (United States)
+[47/144] nan... COUNTRY | 427.9km | pred=Q49878842 (United States) | true=Q486439 (United States)
+[48/144] nan... MISS | 8664.2km | pred=Q172 (Canada) | true=Q1032 (Niger)
+[49/144] nan... EXACT | 0.0km | pred=Q494616 (United States) | true=Q494616 (United States)
+[50/144] nan... COUNTRY | 10.2km | pred=Q486472 (United States) | true=Q41819 (United States)
+[51/144] nan... EXACT | 0.0km | pred=Q986174 (United States) | true=Q986174 (United States)
+[52/144] nan... COUNTRY | 1.0km | pred=Q686057 (United Kingdom) | true=Q217039 (United Kingdom)
+[53/144] nan... COUNTRY | 18.9km | pred=Q87822808 (India) | true=Q1498 (India)
+[54/144] nan... COUNTRY | 1230.9km | pred=Q496406 (United States) | true=Q26777 (United States)
+[55/144] nan... CONTINENT | 1181.9km | pred=Q10918367 (People's Republic of China) | true=Q1339201 (China)
+[56/144] nan... COUNTRY | 69.3km | pred=Q179351 (United Kingdom) | true=Q21694674 (United Kingdom)
+[57/144] nan... COUNTRY | 50.3km | pred=Q60 (United States) | true=Q4746989 (United States)
+[58/144] nan... MISS | 10190.0km | pred=Q118089290 (Poland) | true=Q1489 (Mexico)
+[59/144] nan... MISS | 6229.0km | pred=Q61 (United States) | true=Q20 (Norway)
+[60/144] nan... EXACT | 0.0km | pred=Q163820 (United States) | true=Q163820 (United States)
+[61/144] nan... COUNTRY | 11.1km | pred=Q628429 (Japan) | true=Q71699 (Japan)
+[62/144] nan... COUNTRY | 529.7km | pred=Q389717 (Russia) | true=Q80389 (Russia)
+[63/144] nan... COUNTRY | 8.1km | pred=Q107317573 (United States) | true=Q108386 (United States)
+[64/144] nan... COUNTRY | 3.3km | pred=Q77082656 (United States) | true=Q1879293 (United States)
+[65/144] nan... COUNTRY | 364.7km | pred=Q181386 (Ukraine) | true=Q212 (Ukraine)
+[66/144] nan... CONTINENT | 6440.1km | pred=Q27394 (Botswana) | true=Q262 (Algeria)
+[67/144] nan... COUNTRY | 306.9km | pred=Q94403 (United States) | true=Q1268815 (United States)
+[68/144] nan... MISS | 6211.4km | pred=Q105417131 (United Kingdom) | true=Q31422284 (United States)
+[69/144] nan... COUNTRY | 19.0km | pred=Q6346 (United States) | true=Q1415 (United States)
+[70/144] nan... NO RESULT
+[71/144] nan... NO RESULT
+[72/144] nan... MISS | 13829.5km | pred=Q230 (Georgia) | true=Q414 (Argentina)
+[73/144] nan... COUNTRY | 63.1km | pred=Q49258 (United States) | true=Q1261 (United States)
+[74/144] nan... COUNTRY | 38.1km | pred=Q4783383 (Pakistan) | true=Q8660 (Pakistan)
+[75/144] nan... NO RESULT
+[76/144] nan... MISS | 9165.7km | pred=Q22981364 () | true=Q838787 (United States)
+[77/144] nan... MISS | 1.7km | pred=Q124031908 () | true=Q2411458 (United States)
+[78/144] nan... COUNTRY | 3892.2km | pred=Q7889904 (United States) | true=Q463679 (United States)
+[79/144] nan... COUNTRY | 9.3km | pred=Q136654559 (Malaysia) | true=Q651131 (Malaysia)
+[80/144] nan... EXACT | 0.0km | pred=Q1033 (Nigeria) | true=Q1033 (Nigeria)
+[81/144] nan... COUNTRY | 0.6km | pred=Q2579702 (India) | true=Q6121208 (India)
+[82/144] nan... NO RESULT
+[83/144] nan... NO RESULT
+[84/144] nan... COUNTRY | 7.8km | pred=Q6497558 (Philippines) | true=Q13752 (Philippines)
+[85/144] nan... COUNTRY | 6.7km | pred=Q591115 (Israel) | true=Q41621 (Israel)
+[86/144] nan... COUNTRY | 0.0km | pred=Q36248530 (United States) | true=Q123766 (United States)
+[87/144] nan... EXACT | 0.0km | pred=Q3145253 (United States) | true=Q3145253 (United States)
+[88/144] nan... EXACT | 0.0km | pred=Q3109025 (United States) | true=Q3109025 (United States)
+[89/144] nan... MISS | 5095.5km | pred=Q49145 (United States) | true=Q3778560 (United Kingdom)
+[90/144] nan... COUNTRY | 40.5km | pred=Q1204 (United States) | true=Q28515 (United States)
+[91/144] nan... COUNTRY | 1177.8km | pred=Q2131289 (United States) | true=Q219526 (United States)
+[92/144] nan... COUNTRY | 510.5km | pred=Q6346 (United States) | true=Q1166 (United States)
+[93/144] nan... CONTINENT | 329.9km | pred=Q458 (Internationality) | true=Q31 (Belgium)
+[94/144] nan... COUNTRY | 47.0km | pred=Q3740828 (Iceland) | true=Q189 (Iceland)
+[95/144] nan... COUNTRY | 0.9km | pred=Q2561450 (Israel) | true=Q33935 (Israel)
+[96/144] nan... COUNTRY | 4.4km | pred=Q1048849 (India) | true=Q1348 (India)
+[97/144] nan... COUNTRY | 71.2km | pred=Q1659305 (India) | true=Q1162 (India)
+[98/144] nan... COUNTRY | 2637.1km | pred=Q816 (United States) | true=Q1013717 (United States)
+[99/144] nan... EXACT | 0.0km | pred=Q6106 (United States) | true=Q6106 (United States)
+[100/144] nan... COUNTRY | 1140.5km | pred=Q3887931 (United States) | true=Q2022913 (United States)
+[101/144] nan... EXACT | 0.0km | pred=Q36687 (Australia) | true=Q36687 (Australia)
+[102/144] nan... COUNTRY | 6.9km | pred=Q531178 (United States) | true=Q18094 (United States)
+[103/144] nan... COUNTRY | 0.4km | pred=Q2119774 (United Kingdom) | true=Q646225 (United Kingdom)
+[104/144] nan... CONTINENT | 4597.1km | pred=Q3630 (Indonesia) | true=Q1827294 (Nepal)
+[105/144] nan...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+MISS | 3412.3km | pred=Q239 (Belgium) | true=Q189541 (Iraq)
+[106/144] nan...   Rate limited, waiting 1s...
   Rate limited, waiting 2s...
   Rate limited, waiting 4s...
   Rate limited, waiting 8s...
   Rate limited, waiting 16s...
-COUNTRY | pred=Q9246 (Mongolia) | true=nan (Mongolia)
-[109/200] Ukraine... CONTINENT | pred=Q13164 (Russia) | true=nan (Ukraine)
-[110/200] Genève... MISS | pred=Q1378284 (United States) | true=nan (Switzerland)
-[111/200] Malaysia...   Wikidata cache saved: 4041 entities, 3996 labels, 489 coord lookups
-COUNTRY | pred=Q15065 (Malaysia) | true=nan (Malaysia)
-[112/200] Camden Yards... MISS | pred=Q35715 (Australia) | true=nan (United States)
-[113/200] Kinki Chih?... NO RESULT
-[114/200] Central African Republic... COUNTRY | pred=Q929 (Central African Republic) | true=nan (Central African Republic)
-[115/200] Arab Republic of Egypt... COUNTRY | pred=Q85 (Egypt) | true=nan (Egypt)
-[116/200] South Sudan... NO RESULT
-[117/200] Lagos... COUNTRY | pred=Q1024647 (Nigeria) | true=nan (Nigeria)
-[118/200] Republic of Senegal... CONTINENT | pred=Q5502051 (French colonial empire) | true=nan (Senegal)
-[119/200] United States... COUNTRY | pred=Q30 (United States) | true=nan (United States)
-[120/200] St. Louis... COUNTRY | pred=Q954855 (United States) | true=nan (United States)
-[121/200] Federal Democratic Republic of Nepal...   Wikidata cache saved: 4136 entities, 4093 labels, 508 coord lookups
-COUNTRY | pred=Q6647 (Nepal) | true=nan (Nepal)
-[122/200] East Midlands Airport... COUNTRY | pred=Q8977 (United Kingdom) | true=nan (United Kingdom)
-[123/200] Peopleâ�?�?s Republic of China... CONTINENT | pred=Q3306193 (Philippines) | true=nan (China)
-[124/200] Grand Central Airport... COUNTRY | pred=Q111859414 (South Africa) | true=nan (South Africa)
-[125/200] Republic of Vanuatu... COUNTRY | pred=Q811239 (Vanuatu) | true=nan (Vanuatu)
-[126/200] Republic of Malawi... COUNTRY | pred=Q1020 (Malawi) | true=nan (Malawi)
-[127/200] United Kingdom of Great Britain and Northern Ireland... COUNTRY | pred=Q22 (United Kingdom) | true=nan (United Kingdom)
-[128/200] Ferguson... COUNTRY | pred=Q954855 (United States) | true=nan (United States)
-[129/200] Faisal�?�?b�?�?d... COUNTRY | pred=Q3308246 (Pakistan) | true=nan (Pakistan)
-[130/200] Kent... COUNTRY | pred=Q179351 (United Kingdom) | true=nan (United Kingdom)
-[131/200] East Midlands Airport...   Wikidata cache saved: 4316 entities, 4269 labels, 534 coord lookups
-COUNTRY | pred=Q5328988 (United Kingdom) | true=nan (United Kingdom)
-[132/200] United States... MISS | pred=Q2296961 (Ukraine) | true=nan (United States)
-[133/200] Ukraine... COUNTRY | pred=Q2296961 (Ukraine) | true=nan (Ukraine)
-[134/200] Huntington Beach High School... COUNTRY | pred=Q99 (United States) | true=nan (United States)
-[135/200] State of N?g?land... NO RESULT
-[136/200] Missouri... COUNTRY | pred=Q317865 (United States) | true=nan (United States)
-[137/200] Chiavari... COUNTRY | pred=Q3949932 (Italy) | true=nan (Italy)
-[138/200] Indiana... COUNTRY | pred=Q6346 (United States) | true=nan (United States)
-[139/200] Ferguson... MISS | pred=Q5715 (Egypt) | true=nan (United States)
-[140/200] Syrian Arab Republic... CONTINENT | pred=Q3076765 (Ottoman Empire) | true=nan (Syria)
-[141/200] Novotel Nathan Road Kowloon Hong Kong...   Wikidata cache saved: 4430 entities, 4382 labels, 554 coord lookups
-MISS | pred=Q125566378 () | true=nan (Hong Kong)
-[142/200] United States... MISS | pred=Q828 () | true=nan (United States)
-[143/200] Canada... COUNTRY | pred=Q16 (Canada) | true=nan (Canada)
-[144/200] Paducah... NO RESULT
-[145/200] Republic of Yemen... CONTINENT | pred=Q784972 (Ottoman Empire) | true=nan (Yemen)
-[146/200] Federal Republic of Nigeria... COUNTRY | pred=Q1033 (Nigeria) | true=nan (Nigeria)
-[147/200] United Kingdom of Great Britain and Northern Ireland... CONTINENT | pred=Q145694 (Italy) | true=nan (United Kingdom)
-[148/200] United States... COUNTRY | pred=Q99 (United States) | true=nan (United States)
-[149/200] Bolivarian Republic of Venezuela... CONTINENT | pred=Q99659372 (Peru) | true=nan (Venezuela)
-[150/200] Trilokpuri... COUNTRY | pred=Q15648149 (India) | true=nan (India)
-[151/200] Washington, D.C....   Wikidata cache saved: 4513 entities, 4464 labels, 568 coord lookups
-COUNTRY | pred=Q61 (United States) | true=nan (United States)
-[152/200] Russian Federation... CONTINENT | pred=Q6413000 (United Kingdom) | true=nan (Russia)
-[153/200] Republic of Liberia... COUNTRY | pred=Q1014 (Liberia) | true=nan (Liberia)
-[154/200] Dallas-Fort Worth-Arlington... COUNTRY | pred=Q459096 (United States) | true=nan (United States)
-[155/200] State of Israel... COUNTRY | pred=Q46815 (Israel) | true=nan (Israel)
-[156/200] Federative Republic of Brazil... COUNTRY | pred=Q8678 (Brazil) | true=nan (Brazil)
-[157/200] University of Mississippi... COUNTRY | pred=Q33405 (United States) | true=nan (United States)
-[158/200] Alfreton... COUNTRY | pred=Q2462661 (United Kingdom) | true=nan (United Kingdom)
-[159/200] Novoazovs'k... COUNTRY | pred=Q12134021 (Ukraine) | true=nan (Ukraine)
-[160/200] United States... COUNTRY | pred=Q1408 (United States) | true=nan (United States)
-[161/200] Ferguson...   Wikidata cache saved: 4630 entities, 4579 labels, 587 coord lookups
-COUNTRY | pred=Q954855 (United States) | true=nan (United States)
-[162/200] Republic of Sierra Leone... COUNTRY | pred=Q3445630 (Sierra Leone) | true=nan (Sierra Leone)
-[163/200] Republic of the Philippines... CONTINENT | pred=Q2721139 (Spanish Empire) | true=nan (Philippines)
-[164/200] Ukraine... COUNTRY | pred=Q2296961 (Ukraine) | true=nan (Ukraine)
-[165/200] Republic of Guinea... CONTINENT | pred=Q207887 (Nigeria) | true=nan (Guinea)
-[166/200] Dundalk... COUNTRY | pred=Q664711 (Ireland) | true=nan (Ireland)
-[167/200] Gaza Strip... COUNTRY | pred=Q36678 (Palestine) | true=nan (Palestine)
-[168/200] Ferguson... CONTINENT | pred=Q1406237 (Canada) | true=nan (United States)
-[169/200] Forestdale... COUNTRY | pred=Q94403 (United States) | true=nan (United States)
-[170/200] Arab Republic of Egypt... MISS | pred=Q47492 (Palestine) | true=nan (Egypt)
-[171/200] Syrian Arab Republic...   Wikidata cache saved: 4721 entities, 4667 labels, 606 coord lookups
-CONTINENT | pred=Q3076765 (Ottoman Empire) | true=nan (Syria)
-[172/200] United States... COUNTRY | pred=Q99 (United States) | true=nan (United States)
-[173/200] Disneyland... COUNTRY | pred=Q181185 (United States) | true=nan (United States)
-[174/200] Central Valley... MISS | pred=Q23307527 (Chile) | true=nan (United States)
-[175/200] San Francisco... COUNTRY | pred=Q7889904 (United States) | true=nan (United States)
-[176/200] Federal Republic of Nigeria... COUNTRY | pred=Q1033 (Nigeria) | true=nan (Nigeria)
-[177/200] Debal�??tseve... COUNTRY | pred=Q18920465 (Ukraine) | true=nan (Ukraine)
-[178/200] Arab Republic of Egypt... COUNTRY | pred=Q11768 (Egypt) | true=nan (Egypt)
-[179/200] Orange County... COUNTRY | pred=Q30280986 (United States) | true=nan (United States)
-[180/200] Massachusetts... COUNTRY | pred=Q49143 (United States) | true=nan (United States)
-[181/200] California...   Wikidata cache saved: 4842 entities, 4787 labels, 622 coord lookups
-MISS | pred=Q84 (United Kingdom) | true=nan (United States)
-[182/200] State of Israel... MISS | pred=Q461793 (Egypt) | true=nan (Israel)
-[183/200] Eau Claire... COUNTRY | pred=Q3551771 (United States) | true=nan (United States)
-[184/200] Lockport... COUNTRY | pred=Q2194112 (United States) | true=nan (United States)
-[185/200] Malaysia... COUNTRY | pred=Q15065 (Malaysia) | true=nan (Malaysia)
-[186/200] People�??s Republic of China... CONTINENT | pred=Q47097 (People's Republic of China) | true=nan (China)
-[187/200] Cathedral of Saint John the Divine... CONTINENT | pred=Q28582983 (Nicaragua) | true=nan (United States)
-[188/200] Republic of Liberia... COUNTRY | pred=Q3748 (Liberia) | true=nan (Liberia)
-[189/200] Ferguson... CONTINENT | pred=Q1406237 (Canada) | true=nan (United States)
-[190/200] The White House... COUNTRY | pred=Q35525 (United States) | true=nan (United States)
-[191/200] Republic of Haiti...   Wikidata cache saved: 4932 entities, 4874 labels, 640 coord lookups
-COUNTRY | pred=Q33491 (Haiti) | true=nan (Haiti)
-[192/200] United Kingdom of Great Britain and Northern Ireland... COUNTRY | pred=Q41262 (United Kingdom) | true=nan (United Kingdom)
-[193/200] Sumatera Selatan... MISS | pred=Q35715 (Australia) | true=nan (Indonesia)
-[194/200] Newcastle upon Tyne... COUNTRY | pred=Q42462 (United Kingdom) | true=nan (United Kingdom)
-[195/200] United Kingdom of Great Britain and Northern Ireland... COUNTRY | pred=Q22 (United Kingdom) | true=nan (United Kingdom)
-[196/200] State of Israel... MISS | pred=Q66660337 (France) | true=nan (Israel)
-[197/200] Sullivan County... COUNTRY | pred=Q87932437 (United States) | true=nan (United States)
-[198/200] Somalia... MISS | pred=Q60 (United States) | true=nan (Somalia)
-[199/200] United States... COUNTRY | pred=Q99 (United States) | true=nan (United States)
-[200/200] Ferguson... CONTINENT | pred=Q1406237 (Canada) | true=nan (United States)
+  Rate limited, waiting 32s...
+  API error: 429 Too Many Requests after retries
+COUNTRY | 197.2km | pred=Q488659 (United States) | true=Q378527 (United States)
+[107/144] nan... MISS | 9514.4km | pred=Q23307527 (Chile) | true=Q49786953 (United States)
+[108/144] nan... CONTINENT | 641.7km | pred=Q1899 (Ukraine) | true=Q218 (Romania)
+[109/144] nan... COUNTRY | 0.4km | pred=Q8012895 (United States) | true=Q41506 (United States)
+[110/144] nan... EXACT | 0.0km | pred=Q148 (People's Republic of China) | true=Q148 (China)
+[111/144] nan...   Wikidata cache saved: 8122 entities, 8018 labels, 1131 coord lookups
+MISS | 1447.6km | pred=Q282428 (Egypt) | true=Q851 (Saudi Arabia)
+[112/144] nan... NO RESULT
+[113/144] nan... MISS | 12083.7km | pred=Q60 (United States) | true=Q1045 (Somalia)
+[114/144] nan...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+MISS | 8638.7km | pred=Q3306 (Panama) | true=Q142 (France)
+[115/144] nan... EXACT | 0.0km | pred=Q134907 (South Africa) | true=Q134907 (South Africa)
+[116/144] nan... MISS | 12195.6km | pred=Q99 (United States) | true=Q79 (Egypt)
+[117/144] nan... EXACT | 0.0km | pred=Q49502460 (United States) | true=Q49502460 (United States)
+[118/144] nan...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  API error: 429 Too Many Requests after retries
+EXACT | 0.0km | pred=Q6346 (United States) | true=Q6346 (United States)
+[119/144] nan... NO RESULT
+[120/144] nan... MISS | 5221.7km | pred=Q894605 (United Kingdom) | true=Q100 (United States)
+[121/144] nan...   Wikidata cache saved: 8158 entities, 8053 labels, 1142 coord lookups
+COUNTRY | 1.9km | pred=Q14681469 (United States) | true=Q2233544 (United States)
+[122/144] nan...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+COUNTRY | 136.4km | pred=Q29364 (United States) | true=Q79867 (United States)
+[123/144] nan... COUNTRY | 15.6km | pred=Q1024647 (Nigeria) | true=Q8673 (Nigeria)
+[124/144] nan... COUNTRY | 1812.7km | pred=Q755741 (United States) | true=Q126829 (United States)
+[125/144] nan...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+CONTINENT | 4121.0km | pred=Q298 (Chile) | true=Q739 (Colombia)
+[126/144] nan... EXACT | 0.0km | pred=Q3141 (Australia) | true=Q3141 (Australia)
+[127/144] nan... EXACT | 0.0km | pred=Q83210 (Israel) | true=Q83210 (Syria)
+[128/144] nan... COUNTRY | 119.3km | pred=Q42462 (United Kingdom) | true=Q1425428 (United Kingdom)
+[129/144] nan... EXACT | 0.0km | pred=Q24826 (United Kingdom) | true=Q24826 (United Kingdom)
+[130/144] nan... EXACT | 0.0km | pred=Q1588 (United States) | true=Q1588 (United States)
+[131/144] nan...   Wikidata cache saved: 8218 entities, 8110 labels, 1157 coord lookups
+NO RESULT
+[132/144] nan...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+COUNTRY | 3801.3km | pred=Q7191787 (United States) | true=Q156459 (United States)
+[133/144] nan... EXACT | 0.0km | pred=Q842939 (Nigeria) | true=Q842939 (Nigeria)
+[134/144] nan... COUNTRY | 7.6km | pred=Q13164 (Russia) | true=Q649 (Russia)
+[135/144] nan... COUNTRY | 319.8km | pred=Q60 (United States) | true=Q49664235 (United States)
+[136/144] nan...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+  Rate limited, waiting 32s...
+  Search error: 429 Too Many Requests after retries
+NO RESULT
+[137/144] nan... CONTINENT | 461.6km | pred=Q2444884 (Tibet) | true=Q17269 (China)
+[138/144] nan...   Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+MISS | 9371.3km | pred=Q1297 (United States) | true=Q43 (Turkey)
+[139/144] nan... COUNTRY | 1.3km | pred=Q15265924 (United States) | true=Q486306 (United States)
+[140/144] nan... EXACT | 0.0km | pred=Q90 (France) | true=Q90 (France)
+[141/144] nan...   Wikidata cache saved: 8284 entities, 8176 labels, 1174 coord lookups
+  Rate limited, waiting 1s...
+  Rate limited, waiting 2s...
+  Rate limited, waiting 4s...
+  Rate limited, waiting 8s...
+  Rate limited, waiting 16s...
+COUNTRY | 1953.9km | pred=Q830669 (United States) | true=Q494624 (United States)
+[142/144] nan... COUNTRY | 38.0km | pred=Q462177 (United States) | true=Q6800173 (United States)
+[143/144] nan... COUNTRY | 502.5km | pred=Q1489 (Mexico) | true=Q96 (Mexico)
+[144/144] nan... EXACT | 0.0km | pred=Q8977 (United Kingdom) | true=Q8977 (United Kingdom)
 
 ============================================================
 Pipeline performance overview
 ============================================================
-OVERALL (n=200)
-  Exact location:    0/200  (  0.0%)
-  Country level:   139/200  ( 69.5%)
-  Continent level: 167/200  ( 83.5%)
-  No result:         8/200  (  4.0%)
+OVERALL (n=144)
+  Exact location:   26/144  ( 18.1%)
+  Country level:   102/144  ( 70.8%)
+  Continent level: 113/144  ( 78.5%)
+  Within 161 km:    76/144  ( 52.8%)
+  No result:        11/144  (  7.6%)
 
 ------------------------------------------------------------
 Per-signal breakdown
@@ -240,4 +219,4 @@ Per-signal breakdown
 Signal nan: (no rows)
 ============================================================
 Detailed results saved to C:\Users\Adela\PycharmProjects\geo\results\raw\eval_FINAL_two_stage_geocorpora.csv
-  Wikidata cache saved: 5049 entities, 4989 labels, 656 coord lookups
+  Wikidata cache saved: 8303 entities, 8195 labels, 1178 coord lookups

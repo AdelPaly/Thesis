@@ -1,4 +1,4 @@
-text,signal_type,true_qid,true_country,true_continent,pred_qid,pred_country,pred_continent,exact,country_match,continent_match
+text,signal_type,true_qid,true_country,true_continent,true_lat,true_lon,pred_qid,pred_country,pred_continent,pred_lat,pred_lon,exact,country_match,continent_match,dist_km,within_161km
 "Kaizer Chiefs Foundation Launches Youth Mentorship Programme
 
 Kaizer Chiefs' community foundation has announced a new mentorship initiative targeting young people in surrounding townships, with the programme set to begin intake next month.
@@ -11,7 +11,7 @@ The mentorship will run in six-month cycles, with mentors drawn from the club's 
 
 Local community leaders have welcomed the initiative, noting that existing government employment programmes have long waiting lists and limited capacity. Several have called for other major sports organisations in the area to follow the club's lead.
 
-Registration is expected to open within the coming weeks, with the first cohort beginning in early February. The foundation has indicated it intends to expand the programme to additional sites across the wider metropolitan area if the pilot proves successful, with a target of reaching 1,000 young people within three years.",A,Q34647,South Africa,Africa,Q34647,South Africa,Africa,True,True,True
+Registration is expected to open within the coming weeks, with the first cohort beginning in early February. The foundation has indicated it intends to expand the programme to additional sites across the wider metropolitan area if the pilot proves successful, with a target of reaching 1,000 young people within three years.",A,Q34647,South Africa,Africa,-26.204361111,28.041638888,Q34647,South Africa,Africa,-26.204361111,28.041638888,True,True,True,0.0,True
 "Asante Kotoko Breaks Ground on New Training Facility in Highlands
 
 Asante Kotoko has begun construction on a dedicated training complex on the outskirts of the city, marking the club's largest infrastructure investment in over a decade.
@@ -24,7 +24,7 @@ Local residents have broadly welcomed the project, though some have raised conce
 
 Construction is being managed by a regional firm with experience in sports infrastructure. The first phase, covering the pitches and gymnasium, is expected to be operational within 18 months. The academy dormitories and medical facilities will follow in a second phase, with full completion targeted for late 2027.
 
-The club says the facility will also be available for use by the national youth teams during preparation camps, positioning it as a resource for the broader football development ecosystem in the region.",A,Q182059,Ghana,Africa,Q182059,Ghana,Africa,True,True,True
+The club says the facility will also be available for use by the national youth teams during preparation camps, positioning it as a resource for the broader football development ecosystem in the region.",A,Q182059,Ghana,Africa,6.7,-1.625,Q182059,Ghana,Africa,6.7,-1.625,True,True,True,0.0,True
 "Wydad Athletic Club Partners on Stadium Solar Installation
 
 Wydad Athletic Club has announced a partnership with a regional energy firm to install solar panels across the roof of its stadium complex, in what the club describes as a first for professional sport in the region.
@@ -35,7 +35,7 @@ The project is partly motivated by the rising cost of grid electricity, which ha
 
 The energy firm involved has previously completed commercial solar installations along the coastal industrial corridor and at several large retail sites. A company representative said the stadium project presented unique engineering challenges due to the curved roof structure, requiring custom mounting brackets.
 
-Local environmental groups have praised the initiative, with one calling it ""a visible symbol of what the private sector can achieve when it takes sustainability seriously."" The club expects the system to be fully operational before the start of the next season, with surplus energy potentially fed back into the local grid under a net metering arrangement currently being negotiated with the utility provider.",A,Q7903,Morocco,Africa,Q7903,Morocco,Africa,True,True,True
+Local environmental groups have praised the initiative, with one calling it ""a visible symbol of what the private sector can achieve when it takes sustainability seriously."" The club expects the system to be fully operational before the start of the next season, with surplus energy potentially fed back into the local grid under a net metering arrangement currently being negotiated with the utility provider.",A,Q7903,Morocco,Africa,33.599166666,-7.62,Q7903,Morocco,Africa,33.599166666,-7.62,True,True,True,0.0,True
 "Diamond Platnumz Foundation Opens Free Music School Near Harbour
 
 The Diamond Platnumz Foundation has opened a free music school offering classes in production, vocals, and instrument tuition to young people across the wider metropolitan area.
@@ -46,7 +46,7 @@ The initiative has drawn support from WCB Wasafi, the record label founded by th
 
 Local musicians have welcomed the project, noting that formal music education has historically been available only through expensive private institutions or informal apprenticeships. The school will offer four streams — vocal performance, music production, instrumental tuition, and music business — with students able to combine modules across streams.
 
-The foundation says it plans to offer scholarships for students who show particular promise, with the long-term aim of creating a sustainable pipeline of professional musicians. A recording studio on the premises will allow students to produce demo material as part of their coursework. The first intake begins in February, with applications already exceeding available places.",A,Q1960,Tanzania,Africa,Q1960,Tanzania,Africa,True,True,True
+The foundation says it plans to offer scholarships for students who show particular promise, with the long-term aim of creating a sustainable pipeline of professional musicians. A recording studio on the premises will allow students to produce demo material as part of their coursework. The first intake begins in February, with applications already exceeding available places.",A,Q1960,Tanzania,Africa,-6.816111111,39.280277777,Q1960,Tanzania,Africa,-6.816111111,39.280277777,True,True,True,0.0,True
 "Capcom Announces Largest Graduate Recruitment Drive in Five Years
 
 Capcom has announced its largest graduate recruitment intake in five years, with over 100 positions available across its development studios near the castle district.
@@ -57,7 +57,7 @@ The company's main campus, situated in the commercial area near the canal networ
 
 The recruitment drive will run through the spring cherry blossom season, with assessment centres held at the campus and at partner universities across the metropolitan area. Successful candidates are expected to start in the autumn. The company has also confirmed it will offer a limited number of paid summer internships for students in their penultimate year of study, with interns working on live projects rather than isolated training exercises.
 
-Starting salaries have been increased by approximately eight per cent compared to last year's intake, a move the company attributes to market conditions rather than recruitment difficulties. The positions are open to graduates from any discipline, though technical roles require demonstrated programming ability.",A,Q35765,Japan,Asia,Q122723,Japan,Asia,False,True,True
+Starting salaries have been increased by approximately eight per cent compared to last year's intake, a move the company attributes to market conditions rather than recruitment difficulties. The positions are open to graduates from any discipline, though technical roles require demonstrated programming ability.",A,Q35765,Japan,Asia,34.69375,135.502111111,Q122723,Japan,Asia,34.686333333,135.519861111,False,True,True,1.8203920679941776,True
 "Mohun Bagan Opens Permanent Riverside Fan Zone
 
 Mohun Bagan has opened a permanent fan zone near the club's traditional heartland along the river, offering merchandise, food stalls, and large-screen match viewings on game days.
@@ -68,7 +68,7 @@ The location was chosen for its accessibility by ferry, rickshaw, and metro, and
 
 The fan zone will operate on all home match days and selected away fixtures, with a large screen broadcasting live coverage. The club has indicated it may host cultural events during the off-season to keep the space active year-round, including film screenings and music performances.
 
-Revenue from merchandise and food sales will be reinvested into the club's community programmes, which currently serve approximately 2,000 young people across the eastern districts. The club says the fan zone also serves a commercial purpose, providing a dedicated retail space that was previously lacking.",A,Q1348,India,Asia,Q1348,India,Asia,True,True,True
+Revenue from merchandise and food sales will be reinvested into the club's community programmes, which currently serve approximately 2,000 young people across the eastern districts. The club says the fan zone also serves a commercial purpose, providing a dedicated retail space that was previously lacking.",A,Q1348,India,Asia,22.5675,88.37,Q1348,India,Asia,22.5675,88.37,True,True,True,0.0,True
 "Persepolis FC Partners With NGO on Air Quality Awareness Campaign
 
 Persepolis Football Club has partnered with a local environmental NGO to raise awareness about air quality issues, using match days as a platform to distribute information and protective equipment to fans.
@@ -79,7 +79,7 @@ The initiative reflects growing public concern about pollution levels in the met
 
 The club's large and passionate fanbase — estimated at several million across the country — provides a natural channel for public health messaging that might otherwise struggle to reach younger male demographics, who are statistically less likely to engage with conventional health campaigns.
 
-The NGO behind the campaign has previously worked with schools and hospitals but says this is its first partnership with a sports organisation. ""Football reaches people that health messaging alone does not,"" a spokesperson said. The club has committed to the campaign for the remainder of the season, with data collected on mask distribution volumes and fan survey responses to be used in assessing the campaign's reach and potential expansion to other clubs.",A,Q3616,Iran,Asia,Q3616,Iran,Asia,True,True,True
+The NGO behind the campaign has previously worked with schools and hospitals but says this is its first partnership with a sports organisation. ""Football reaches people that health messaging alone does not,"" a spokesperson said. The club has committed to the campaign for the remainder of the season, with data collected on mask distribution volumes and fan survey responses to be used in assessing the campaign's reach and potential expansion to other clubs.",A,Q3616,Iran,Asia,35.688888888,51.389722222,Q3616,Iran,Asia,35.688888888,51.389722222,True,True,True,0.0,True
 "Grameen Bank Reports Record Microloan Disbursement in Garment District
 
 Grameen Bank has reported record microloan disbursements in the garment district this quarter, with over 12,000 new loans issued to small business owners and factory workers seeking to supplement their income.
@@ -90,7 +90,7 @@ The garment district, one of the densest industrial zones in the region, employs
 
 Grameen Bank's branch offices in the district have extended their opening hours to accommodate workers whose factory shifts end after the standard banking day. The bank says the average loan size has increased by approximately 15 per cent compared to the same quarter last year, suggesting that borrowers are pursuing more ambitious business plans.
 
-The microloan programme has been operational in the area for over two decades, and Grameen Bank estimates that its lending has contributed to the establishment of over 3,000 small businesses in the surrounding neighbourhoods. A new mobile banking initiative is planned for next quarter, allowing loan applications and repayments to be processed via smartphone for the first time.",A,Q1354,Bangladesh,Asia,Q1354,Bangladesh,Asia,True,True,True
+The microloan programme has been operational in the area for over two decades, and Grameen Bank estimates that its lending has contributed to the establishment of over 3,000 small businesses in the surrounding neighbourhoods. A new mobile banking initiative is planned for next quarter, allowing loan applications and repayments to be processed via smartphone for the first time.",A,Q1354,Bangladesh,Asia,23.728888888,90.394444444,Q1354,Bangladesh,Asia,23.728888888,90.394444444,True,True,True,0.0,True
 "IAM Collective Funds Music Education Programme in Harbour Quarter
 
 The hip-hop collective IAM has launched a music education fund targeting young people in the harbour district, with classes in production, DJing, and lyric writing set to begin next month.
@@ -101,7 +101,7 @@ The harbour quarter has undergone significant regeneration in recent years, with
 
 Classes will cover music production software, mixing and mastering, lyric composition, and the business side of the music industry including rights management and digital distribution. The programme will partner with local recording studios to offer work placements, and students who complete the full course will receive a portfolio of recorded material suitable for submission to labels or streaming platforms.
 
-Organisers say the fund will be sustained through a combination of concert revenue and contributions from the collective's members, with additional support from a regional cultural development grant. Applications open in two weeks, with priority given to residents of the surrounding neighbourhoods. The mistral winds that batter the coast during winter had kept attendance at the outdoor launch event modest, but organisers said online interest had been strong, with over 200 enquiries received in the first 48 hours.",A,Q23482,France,Europe,Q23482,France,Europe,True,True,True
+Organisers say the fund will be sustained through a combination of concert revenue and contributions from the collective's members, with additional support from a regional cultural development grant. Applications open in two weeks, with priority given to residents of the surrounding neighbourhoods. The mistral winds that batter the coast during winter had kept attendance at the outdoor launch event modest, but organisers said online interest had been strong, with over 200 enquiries received in the first 48 hours.",A,Q23482,France,Europe,43.296666666,5.376388888,Q23482,France,Europe,43.296666666,5.376388888,True,True,True,0.0,True
 "Druid Theatre Announces Open-Air Summer Season Along Waterfront
 
 Druid Theatre Company has announced a summer open-air performance season along the waterfront, with four productions scheduled between June and August.
@@ -112,7 +112,7 @@ The open-air programme is part of a broader effort by the company to attract aud
 
 Local businesses in the harbour area have welcomed the initiative, noting that previous outdoor cultural events have generated significant foot traffic in the evenings and extended the trading hours for nearby pubs and restaurants. The company has also partnered with three local food vendors to provide interval refreshments, keeping the economic benefit within the immediate neighbourhood.
 
-Rehearsals for the first production are already underway, with the company working around the unpredictable spring weather. The full programme and ticket information will be announced within the coming weeks. The company says that if the season proves successful, it will consider making the open-air programme an annual fixture, potentially expanding to a full month-long festival format.",A,Q129610,Ireland,Europe,Q129610,Ireland,Europe,True,True,True
+Rehearsals for the first production are already underway, with the company working around the unpredictable spring weather. The full programme and ticket information will be announced within the coming weeks. The company says that if the season proves successful, it will consider making the open-air programme an annual fixture, potentially expanding to a full month-long festival format.",A,Q129610,Ireland,Europe,53.2719,-9.0488,Q129610,Ireland,Europe,53.2719,-9.0488,True,True,True,0.0,True
 "Torino FC Foundation Opens Free Homework Club in Western Suburbs
 
 The Torino FC Foundation has opened a free homework club for primary school children in the western suburbs, operating from a community centre near the club's training ground.
@@ -123,7 +123,7 @@ The western suburbs, where winter fog rolling down from the Alpine foothills can
 
 Staffing will be provided by a combination of two paid educators and approximately 15 volunteers recruited from the club's organised supporter groups. Several volunteers are retired teachers who responded to an appeal circulated through the fan network. The community centre's proximity to a tram stop on the route serving the industrial zone means parents can collect children on their way home from factory shifts.
 
-The foundation aims to serve 60 children in the first term and expand to a second location by the following academic year. Early feedback from families has been overwhelmingly positive, with the programme already operating at near capacity after just two weeks. The club says it is exploring corporate sponsorship to fund additional staff and extend the programme to include Saturday morning sessions.",A,Q495,Italy,Europe,Q495,Italy,Europe,True,True,True
+The foundation aims to serve 60 children in the first term and expand to a second location by the following academic year. Early feedback from families has been overwhelmingly positive, with the programme already operating at near capacity after just two weeks. The club says it is exploring corporate sponsorship to fund additional staff and extend the programme to include Saturday morning sessions.",A,Q495,Italy,Europe,45.079166666,7.676111111,Q495,Italy,Europe,45.079166666,7.676111111,True,True,True,0.0,True
 "Legia Foundation Supports Elderly Care Outreach in Historic Old Town
 
 The Legia Foundation has announced funding for an elderly care outreach programme operating in the historic old town district, with home visits and social activities planned for isolated residents.
@@ -134,7 +134,7 @@ The old town, rebuilt brick by brick from historical records after near-total wa
 
 The outreach programme will operate year-round but with increased frequency during the winter. Volunteers will receive training in elderly welfare assessment, basic first aid, and safeguarding. Each volunteer will be assigned a small group of residents for regular visits, building the kind of ongoing relationship that one-off welfare checks cannot provide.
 
-The first round of home visits will begin next week, with approximately 100 residents identified through referrals from local health clinics, pharmacies, and parish churches. The foundation says it will assess the programme after six months using wellbeing metrics developed by the social services partner, and will consider extending it to other districts where elderly isolation has been identified as a concern.",A,Q270,Poland,Europe,Q270,Poland,Europe,True,True,True
+The first round of home visits will begin next week, with approximately 100 residents identified through referrals from local health clinics, pharmacies, and parish churches. The foundation says it will assess the programme after six months using wellbeing metrics developed by the social services partner, and will consider extending it to other districts where elderly isolation has been identified as a concern.",A,Q270,Poland,Europe,52.23,21.011111111,Q270,Poland,Europe,52.23,21.011111111,True,True,True,0.0,True
 "Vanderbilt Reports Record Graduate Applications Amid Campus Expansion
 
 Vanderbilt University has reported a record number of graduate programme applications for the coming academic year, with demand driven by new facilities and an expanding research portfolio.
@@ -145,7 +145,7 @@ The university's campus, set among tree-lined avenues in the arts district adjac
 
 Vanderbilt's music industry programme, which draws on the city's deep roots in country, blues, and gospel music, has seen particularly strong international interest. The programme offers students access to recording studios, publishing houses, and live performance venues that are concentrated within walking distance of campus in a density found in few other cities.
 
-The university says it will expand its graduate housing capacity to accommodate the growing intake, with a new residential building planned on the southern edge of campus. Construction is expected to begin in the autumn and be completed within 18 months. Vanderbilt has also increased the number of fully funded doctoral positions by 12 per cent, funded through a combination of endowment returns and new corporate research partnerships.",A,Q23197,United States,North America,Q23197,United States,North America,True,True,True
+The university says it will expand its graduate housing capacity to accommodate the growing intake, with a new residential building planned on the southern edge of campus. Construction is expected to begin in the autumn and be completed within 18 months. Vanderbilt has also increased the number of fully funded doctoral positions by 12 per cent, funded through a combination of endowment returns and new corporate research partnerships.",A,Q23197,United States,North America,36.162222222,-86.774444444,Q23197,United States,North America,36.162222222,-86.774444444,True,True,True,0.0,True
 "Club América Foundation Funds Altitude Training Research at University
 
 The Club América Foundation has announced a research grant to study the effects of high-altitude living on youth athletic development, conducted in partnership with a local university's sports science department.
@@ -156,7 +156,7 @@ The research will be conducted at the university's south campus, where existing 
 
 The grant also funds the purchase of portable metabolic testing equipment that will allow field measurements at training sites outside the laboratory. A doctoral student has been appointed to lead the data collection, supervised by the university's head of sports physiology.
 
-Results are expected to be submitted for peer-reviewed publication within three years. The foundation says it hopes the findings will inform training protocols not only for its own academy but for youth sport programmes across high-altitude regions globally. The study has already attracted interest from researchers in other elevated cities who have expressed interest in replicating the methodology at different altitudes.",A,Q1489,Mexico,North America,Q1489,Mexico,North America,True,True,True
+Results are expected to be submitted for peer-reviewed publication within three years. The foundation says it hopes the findings will inform training protocols not only for its own academy but for youth sport programmes across high-altitude regions globally. The study has already attracted interest from researchers in other elevated cities who have expressed interest in replicating the methodology at different altitudes.",A,Q1489,Mexico,North America,19.353773,-99.13589,Q1489,Mexico,North America,19.353773,-99.13589,True,True,True,0.0,True
 "Saprissa Opens Community Football Pitch on Central Plateau
 
 Deportivo Saprissa has opened a free-access community football pitch on the central plateau, with the facility available to local residents from dawn until dusk seven days a week.
@@ -167,7 +167,7 @@ The surrounding area, characterised by cool evenings, lush coffee plantations, a
 
 The artificial surface was chosen specifically for the local climate, as the combination of afternoon tropical downpours and heavy morning dew makes natural grass pitches unplayable for much of the year without intensive maintenance. The floodlighting extends usable hours beyond sunset, which comes early and abruptly near the equator.
 
-Local schools have already expressed interest in using the facility for physical education classes, and the club says it will host free coaching sessions on weekend mornings staffed by academy coaches. A small changing room and toilet block is planned as a second phase, funded by the club's commercial partners. The pitch is the first of three planned by the club over the next two years, with sites in other underserved communities currently being assessed.",A,Q3070,Costa Rica,North America,Q800,Costa Rica,North America,False,True,True
+Local schools have already expressed interest in using the facility for physical education classes, and the club says it will host free coaching sessions on weekend mornings staffed by academy coaches. A small changing room and toilet block is planned as a second phase, funded by the club's commercial partners. The pitch is the first of three planned by the club over the next two years, with sites in other underserved communities currently being assessed.",A,Q3070,Costa Rica,North America,9.932738888,-84.079613888,Q800,Costa Rica,North America,10.0,-84.0,False,True,True,11.487341522503383,True
 "Copa Airlines Announces New Direct Route From Canal City Hub
 
 Copa Airlines has announced a new direct route connecting its canal city hub to a major regional destination, with three weekly flights beginning in March.
@@ -178,7 +178,7 @@ The airline's hub terminal, located near the Pacific approach to the canal, has 
 
 The new route will be operated by Boeing 737-800 aircraft in a two-class configuration. Introductory fares have been set aggressively to build demand, with promotional pricing available for the first month of operations. The airline says corporate accounts have already been secured with several multinational firms operating in the free trade zone adjacent to the canal.
 
-Bookings open next week through the airline's website and partner travel agencies. The company says it will assess demand over the initial six months and consider increasing frequency to daily service if load factors meet targets. The route also opens new connecting possibilities for passengers transiting through the hub to destinations across the continent.",A,Q3306,Panama,North America,Q3306,Panama,North America,True,True,True
+Bookings open next week through the airline's website and partner travel agencies. The company says it will assess demand over the initial six months and consider increasing frequency to daily service if load factors meet targets. The route also opens new connecting possibilities for passengers transiting through the hub to destinations across the continent.",A,Q3306,Panama,North America,8.971111111,-79.534722222,Q3306,Panama,North America,8.971111111,-79.534722222,True,True,True,0.0,True
 "Boca Juniors Foundation Launches Reading Programme in Port Neighbourhood
 
 The Boca Juniors Foundation has launched a community reading programme in the colourful port neighbourhood near the club's home ground, with weekly sessions targeting children aged 6 to 12.
@@ -191,7 +191,7 @@ Sessions are staffed by volunteer educators recruited from local universities, m
 
 The first sessions attracted over 40 children, exceeding organisers' expectations and prompting discussions about adding a second weekly session. The foundation is in conversations with a local bookshop chain about establishing a permanent lending library at the community centre, which would allow children to take books home between sessions.
 
-The programme runs every Saturday morning and is free of charge. The foundation says it plans to track participants' school performance over time to build an evidence base for expanding the model to other neighbourhoods.",A,Q1486,Argentina,South America,Q44754,Argentina,South America,False,True,True
+The programme runs every Saturday morning and is free of charge. The foundation says it plans to track participants' school performance over time to build an evidence base for expanding the model to other neighbourhoods.",A,Q1486,Argentina,South America,-34.599722222,-58.381944444,Q44754,Argentina,South America,-37.0,-60.0,False,True,True,304.1726623904683,False
 "Corinthians Partners With Health Authority on Stadium Vaccination Drive
 
 Corinthians has partnered with the regional health authority to host a mass vaccination drive at its stadium, targeting communities in the surrounding sprawl that have below-average immunisation rates.
@@ -204,7 +204,7 @@ The partnership is the first of its kind for the club, which has previously host
 
 Organisers expect to administer over 5,000 doses across the two-day event. The health authority says the initiative is specifically designed to reach populations that do not regularly visit health centres — working adults who cannot take time off, informal workers without fixed schedules, and elderly residents who find the journey to municipal clinics difficult.
 
-If the pilot is successful, the health authority says it will explore partnerships with other large-capacity venues across the metropolitan area for future campaigns.",A,Q174,Brazil,South America,Q175,Brazil,South America,False,True,True
+If the pilot is successful, the health authority says it will explore partnerships with other large-capacity venues across the metropolitan area for future campaigns.",A,Q174,Brazil,South America,-23.550394444,-46.633947222,Q175,Brazil,South America,-22.07,-48.433611111,False,True,True,247.22595596619212,False
 "Colo-Colo Foundation Donates Mountain Rescue Equipment
 
 The Colo-Colo Foundation has donated a package of mountain rescue equipment to the regional emergency services, including lightweight stretchers, satellite radios, and thermal imaging cameras valued at approximately $80,000.
@@ -215,7 +215,7 @@ The metropolitan area sits at the foot of a major cordillera, with peaks exceedi
 
 The new thermal imaging cameras are expected to be particularly valuable during winter months, when fog, snow, and short daylight hours make visual searches for lost hikers extremely difficult. The satellite radios will replace the existing VHF system, which has significant coverage gaps in the deep valleys on the eastern approach to the range.
 
-The equipment will be based at the main rescue station and available for deployment across the region. The foundation says the donation is part of a broader community safety initiative that will also fund wilderness first aid training in secondary schools near the mountain access routes. A formal handover ceremony is planned for next month.",A,Q2887,Chile,South America,Q298,Chile,South America,False,True,True
+The equipment will be based at the main rescue station and available for deployment across the region. The foundation says the donation is part of a broader community safety initiative that will also fund wilderness first aid training in secondary schools near the mountain access routes. A formal handover ceremony is planned for next month.",A,Q2887,Chile,South America,-33.4375,-70.65,Q298,Chile,South America,-33.0,-71.0,False,True,True,58.53753974071169,True
 "Millonarios FC Pledges Support for Highland Plateau School Rebuilding
 
 Millonarios FC has pledged financial support for the rebuilding of a primary school on the highland plateau, after the original structure was severely damaged by seasonal rains earlier this year.
@@ -226,7 +226,7 @@ The rebuilding will be managed by a local construction cooperative with experien
 
 The rebuilt school will incorporate improved drainage, a reinforced steel-frame roof, and raised floor levels designed to keep classrooms dry even during the heaviest downpours. The design also includes wider corridors and additional emergency exits, addressing safety concerns identified in the original structure.
 
-Children from the damaged classrooms have been temporarily relocated to a nearby church hall, where volunteer teachers have maintained a reduced timetable. The school is expected to reopen fully by the start of the next academic year in February. The club says it will monitor the building's performance through the following wet season and fund any additional waterproofing measures that prove necessary.",A,Q2841,Colombia,South America,Q739,Colombia,South America,False,True,True
+Children from the damaged classrooms have been temporarily relocated to a nearby church hall, where volunteer teachers have maintained a reduced timetable. The school is expected to reopen fully by the start of the next academic year in February. The club says it will monitor the building's performance through the following wet season and fund any additional waterproofing measures that prove necessary.",A,Q2841,Colombia,South America,4.60971,-74.08175,Q739,Colombia,South America,4.0,-73.25,False,True,True,114.46326530588202,True
 "Fonterra Opens Innovation Centre Near Volcanic Suburbs
 
 Fonterra has opened a new product innovation centre on the outskirts of the metropolitan area, investing approximately $25 million in facilities designed to accelerate the development of specialty dairy ingredients.
@@ -237,7 +237,7 @@ Fonterra's dominance in the dairy export sector is difficult to overstate, with 
 
 The facility sits on reclaimed farmland near the isthmus, where the narrow strip of land connecting the northern and southern parts of the metropolitan area creates a transport bottleneck that Fonterra's supply chain team has had to work around. Milk tankers arriving from rural collection points to the south must navigate the congested motorway corridor before reaching the processing facilities on the northern side.
 
-The innovation centre will employ approximately 60 food scientists and technicians, with recruitment already underway. Fonterra says it has received strong interest from graduates of local universities, though it is also recruiting internationally for specialist roles in protein fractionation and fermentation science. Fonterra says the centre will also host visiting researchers from partner universities and international dairy companies, fostering the kind of cross-pollination that the company believes is essential to maintaining its competitive edge. The first commercial products developed at the centre are expected to reach export markets within two years.",A,Q37100,New Zealand,Oceania,Q726917,New Zealand,Oceania,False,True,True
+The innovation centre will employ approximately 60 food scientists and technicians, with recruitment already underway. Fonterra says it has received strong interest from graduates of local universities, though it is also recruiting internationally for specialist roles in protein fractionation and fermentation science. Fonterra says the centre will also host visiting researchers from partner universities and international dairy companies, fostering the kind of cross-pollination that the company believes is essential to maintaining its competitive edge. The first commercial products developed at the centre are expected to reach export markets within two years.",A,Q37100,New Zealand,Oceania,-36.849166666,174.765277777,Q726917,New Zealand,Oceania,-36.9,174.783333333,False,True,True,5.876148685424613,True
 "Flight Centre Reports Surge in Domestic Bookings From Subtropical Hub
 
 Flight Centre has reported a significant surge in domestic travel bookings from its headquarters city, with weekend getaway packages driving the growth as residents seek relief from the subtropical summer humidity.
@@ -248,7 +248,7 @@ The company's riverside headquarters, located in a district that has evolved ove
 
 Flight Centre's growth has been particularly strong in packages targeting the reef and hinterland destinations accessible within a few hours' drive, suggesting that proximity and convenience are more important to local travellers than exotic destinations. The company has also noted increased interest in multi-city domestic itineraries, with customers combining coastal and outback stops in a single trip.
 
-The company says it plans to expand its retail presence in the western suburbs, where population growth has created demand for a physical travel agency closer to the new residential developments. Two new shopfront locations are expected to open before the end of the financial year.",A,Q34932,Australia,Oceania,Q34932,Australia,Oceania,True,True,True
+The company says it plans to expand its retail presence in the western suburbs, where population growth has created demand for a physical travel agency closer to the new residential developments. Two new shopfront locations are expected to open before the end of the financial year.",A,Q34932,Australia,Oceania,-27.467777777,153.027777777,Q34932,Australia,Oceania,-27.467777777,153.027777777,True,True,True,0.0,True
 "Air Niugini Announces Fleet Expansion to Serve Growing Domestic Demand
 
 Air Niugini has announced the lease of two additional turboprop aircraft to serve growing domestic demand, with new routes to highland centres and island provinces expected to begin operating within six months.
@@ -259,7 +259,7 @@ The harbour area, where fishing boats, cargo vessels, and passenger ferries shar
 
 Air Niugini currently operates domestic services to over 20 destinations, many of which are accessible only by air due to the country's mountainous terrain and limited road infrastructure. The new aircraft will add capacity on the busiest highland routes, where demand frequently exceeds available seats during peak travel periods around holidays and cultural festivals.
 
-The fleet expansion is funded through an operating lease arrangement that Air Niugini says allows flexibility to adjust capacity without committing to aircraft purchase. The airline's management has indicated that international route expansion is also under consideration, though domestic connectivity remains the immediate priority.",A,Q36526,Papua New Guinea,Oceania,Q36526,Papua New Guinea,Oceania,True,True,True
+The fleet expansion is funded through an operating lease arrangement that Air Niugini says allows flexibility to adjust capacity without committing to aircraft purchase. The airline's management has indicated that international route expansion is also under consideration, though domestic connectivity remains the immediate priority.",A,Q36526,Papua New Guinea,Oceania,-9.478888888,147.149444444,Q36526,Papua New Guinea,Oceania,-9.478888888,147.149444444,True,True,True,0.0,True
 "Whittaker's Partners With Schools on Chocolate Science Workshops
 
 Whittaker's has launched a series of free chocolate science workshops for secondary school students, covering the chemistry of cocoa processing, food technology principles, and sustainable sourcing practices.
@@ -270,7 +270,7 @@ The visitor centre sits near the harbour, where the famously fierce winds funnel
 
 Each workshop runs for three hours and covers the journey from raw cocoa bean to finished chocolate bar, including fermentation, roasting, conching, and tempering. Students carry out hands-on experiments measuring the melting points of different cocoa butter crystal structures and conducting blind taste comparisons of chocolate produced under different processing conditions.
 
-Ten schools have registered for the first term, with capacity for 30 students per session. The company says feedback from teachers has been enthusiastic, with several requesting additional sessions focused on the business and marketing side of food production. An extension to primary schools is planned for the following year, with a simplified curriculum focusing on the geography and agriculture of cocoa-growing regions.",A,Q23661,New Zealand,Oceania,Q1015773,New Zealand,Oceania,False,True,True
+Ten schools have registered for the first term, with capacity for 30 students per session. The company says feedback from teachers has been enthusiastic, with several requesting additional sessions focused on the business and marketing side of food production. An extension to primary schools is planned for the following year, with a simplified curriculum focusing on the geography and agriculture of cocoa-growing regions.",A,Q23661,New Zealand,Oceania,-41.288888888,174.777222222,Q1015773,New Zealand,Oceania,-41.133333333,174.85,False,True,True,18.337072956509008,True
 "Victoria Market Renovation Draws Record Vendor Applications
 
 The historic Victoria market is set for its most significant renovation in decades, with officials confirming that over 30 vendors have applied for the 10 new stall spaces opening this autumn.
@@ -281,7 +281,7 @@ The market, which has served as the commercial heart of the surrounding area for
 
 Not all reactions have been positive. Several long-standing vendors have expressed concern that the renovation will increase rents and attract businesses catering primarily to tourists rather than local buyers. ""This market has always been for the people who live here, and we need to make sure it stays that way,"" one veteran fish vendor said.
 
-The renovation will be carried out in phases to minimise disruption to daily trading. Construction on the shade structures begins next month, with the cold storage facility following in the second phase. The new stalls are expected to be operational before the peak tourist season in December. Officials say they will prioritise applications from vendors selling locally produced goods over those importing from the mainland.",B,Q3940,Seychelles,Africa,Q766,Jamaica,North America,False,False,False
+The renovation will be carried out in phases to minimise disruption to daily trading. Construction on the shade structures begins next month, with the cold storage facility following in the second phase. The new stalls are expected to be operational before the peak tourist season in December. Officials say they will prioritise applications from vendors selling locally produced goods over those importing from the mainland.",B,Q3940,Seychelles,Africa,-4.623611111,55.454444444,Q766,Jamaica,North America,18.18,-77.4,False,False,False,14678.61708955216,False
 "Tripoli Roundabout Redesign Targets Chronic Congestion
 
 City officials have announced a major redesign of the central roundabout in Tripoli, targeting the chronic traffic congestion that has frustrated commuters and traders for years.
@@ -292,7 +292,7 @@ The roundabout sits at the intersection of the main commercial strip and the roa
 
 The redesign has been developed with input from an international transport consultancy that has worked on similar projects across the region. The consultancy's preliminary analysis found that the roundabout handles approximately three times the traffic volume it was designed for, a result of rapid population growth and vehicle ownership increases over the past two decades.
 
-Work is scheduled to begin after the summer heat subsides, with completion targeted for early next year. Officials acknowledged the construction period will cause additional disruption and have proposed temporary traffic diversions through side streets. A public information campaign will begin next month to advise residents and businesses of the planned changes.",B,Q3579,Libya,Africa,Q193409,Greece,Europe,False,False,False
+Work is scheduled to begin after the summer heat subsides, with completion targeted for early next year. Officials acknowledged the construction period will cause additional disruption and have proposed temporary traffic diversions through side streets. A public information campaign will begin next month to advise residents and businesses of the planned changes.",B,Q3579,Libya,Africa,32.87519,13.18746,Q193409,Greece,Europe,37.508333333,22.375,False,False,False,980.3080020714526,False
 "Durban Beachfront Promenade Gets Accessibility Overhaul
 
 The Durban beachfront promenade is undergoing a major accessibility upgrade, with new ramps, tactile paving, shaded rest areas, and wheelchair-accessible viewing platforms being installed along a two-kilometre stretch.
@@ -303,7 +303,7 @@ The promenade is one of the most popular public spaces in the metropolitan area,
 
 Construction crews are working in 200-metre sections to minimise disruption, with barriers and diversion paths clearly marked. The southern stretch, which includes the most popular swimming area, is expected to be completed first. A new drinking fountain network connected to the existing municipal water supply is also being installed along the route.
 
-The full project is due for completion by mid-year. Disability advocacy groups have broadly welcomed the initiative but have called for the upgrade to be extended to the northern section of the promenade, which is currently excluded from the project scope due to budget constraints. The municipality says it will assess the feasibility of a second phase once the current work is complete.",B,Q5468,South Africa,Africa,Q5468,South Africa,Africa,True,True,True
+The full project is due for completion by mid-year. Disability advocacy groups have broadly welcomed the initiative but have called for the upgrade to be extended to the northern section of the promenade, which is currently excluded from the project scope due to budget constraints. The municipality says it will assess the feasibility of a second phase once the current work is complete.",B,Q5468,South Africa,Africa,-29.858333333,31.025,Q5468,South Africa,Africa,-29.858333333,31.025,True,True,True,0.0,True
 "Bo Central Market Building Nears Completion After Rainy Season Delays
 
 The new central market building in Bo is nearing completion, with traders expected to begin moving into the permanent structure within the next two months after a series of weather-related construction delays.
@@ -314,7 +314,7 @@ Bo has experienced steady growth in recent years, with newly paved roads near th
 
 The building provides 120 permanent stall spaces across three wings, with separate sections for fresh produce, dry goods and textiles, and prepared food. Traders' associations were consulted extensively on the layout, and the design includes wide central aisles to improve ventilation and pedestrian flow. A covered loading area at the rear allows delivery vehicles to unload out of the rain.
 
-Officials say a formal opening ceremony is planned once all traders have relocated and the surrounding access roads have been resurfaced. The total project cost, funded by a combination of government allocation and international development finance, has not been publicly disclosed.",B,Q844878,Sierra Leone,Africa,Q750,Bolivia,South America,False,False,False
+Officials say a formal opening ceremony is planned once all traders have relocated and the surrounding access roads have been resurfaced. The total project cost, funded by a combination of government allocation and international development finance, has not been publicly disclosed.",B,Q844878,Sierra Leone,Africa,7.956388888,-11.74,Q750,Bolivia,South America,-17.056869611,-64.991228611,False,False,False,6479.584098943744,False
 "Hyderabad Biryani Festival Draws Record Crowds to Old Quarter
 
 The annual Hyderabad biryani festival has drawn record attendance, with organisers estimating over 15,000 visitors across the three-day event held in the old quarter near the pearl market.
@@ -325,7 +325,7 @@ The old quarter's narrow streets were closed to traffic for the duration, with t
 
 The festival has grown steadily since its founding six years ago, evolving from a small neighbourhood event into a major culinary attraction. This year's edition attracted visitors from across the wider region, with the event generating an estimated economic impact of several million in local currency for surrounding businesses, hotels, and transport providers.
 
-Organisers say next year's festival will expand to include a street food category alongside the traditional biryani competition, and will add a dedicated children's area with cooking workshops. Sponsorship interest from regional food and beverage companies has reportedly tripled compared to the previous year, and the festival committee is considering extending the event to four days.",B,Q1361,India,Asia,Q1361,India,Asia,True,True,True
+Organisers say next year's festival will expand to include a street food category alongside the traditional biryani competition, and will add a dedicated children's area with cooking workshops. Sponsorship interest from regional food and beverage companies has reportedly tripled compared to the previous year, and the festival committee is considering extending the event to four days.",B,Q1361,India,Asia,17.361666666,78.474722222,Q1361,India,Asia,17.361666666,78.474722222,True,True,True,0.0,True
 "Georgetown Heritage Shophouse Restoration Wins Conservation Award
 
 A restoration project in the Georgetown heritage zone has won a regional conservation award for its sensitive rehabilitation of five shophouses dating to the 1880s.
@@ -336,7 +336,7 @@ The heritage zone, famous for its street food culture and its extraordinary mix 
 
 The award panel praised the project for its attention to authentic materials, noting that replacement tiles were sourced from the same regional suppliers that originally produced them over a century ago. The structural work included discreet steel reinforcement hidden within the original timber framing, allowing the buildings to meet modern earthquake resistance standards without visible alteration to the exterior.
 
-The developers say they have already been approached about applying the same conservation methodology to a neighbouring block of shophouses currently in deteriorating condition. A feasibility study for that project is expected to begin within the next quarter.",B,Q61092,Malaysia,Asia,Q990898,United States,North America,False,False,False
+The developers say they have already been approached about applying the same conservation methodology to a neighbouring block of shophouses currently in deteriorating condition. A feasibility study for that project is expected to begin within the next quarter.",B,Q61092,Malaysia,Asia,5.4145,100.3292,Q990898,United States,North America,30.6511,-97.6814,False,False,False,15570.585939565692,False
 "Hue Imperial Complex Launches Evening Sound and Light Programme
 
 The Hue imperial complex has launched an evening sound and light programme, allowing visitors to experience the historic site after dark for the first time in its modern history.
@@ -347,7 +347,7 @@ Hue has long been known for its moody charm, with the old imperial area taking o
 
 The programme is designed to extend visitor time in the city and boost the local hospitality sector during the slower winter months, when many tourists pass through quickly on their way between other destinations. The evening programme gives them a reason to stay overnight, benefiting hotels, restaurants, and the bun bo noodle shops that line the streets near the complex.
 
-Tickets are priced modestly to encourage local attendance alongside tourist visitors. Officials say the programme will run as a pilot through the winter season, with a permanent year-round schedule under consideration if attendance targets are met. Early booking data suggests strong international interest, with over 60 per cent of advance purchases made by visitors from outside the country.",B,Q36167,Vietnam,Asia,Q881,Vietnam,Asia,False,True,True
+Tickets are priced modestly to encourage local attendance alongside tourist visitors. Officials say the programme will run as a pilot through the winter season, with a permanent year-round schedule under consideration if attendance targets are met. Early booking data suggests strong international interest, with over 60 per cent of advance purchases made by visitors from outside the country.",B,Q36167,Vietnam,Asia,16.456111111,107.576388888,Q881,Vietnam,Asia,16.0,108.0,False,True,True,67.95347976322954,True
 "Yazd Wind Tower Restoration Receives International Heritage Funding
 
 A project to restore traditional wind towers in Yazd has received a significant grant from an international heritage foundation, with conservation work expected to begin on eight structures this year.
@@ -358,7 +358,7 @@ Yazd's narrow alleyways and mud-brick architecture are designed around the same 
 
 The restoration will prioritise towers that are still in active residential use, where the cooling function remains essential to daily life. Each tower will be assessed individually, with conservation architects developing bespoke repair plans that respect the original construction techniques and materials — primarily mud brick, timber, and woven reed screens. Modern interventions will be limited to structural reinforcement where the original materials have degraded beyond repair.
 
-The heritage foundation says the project has potential significance beyond local conservation, serving as a model for climate-adaptive architecture in arid regions facing rising temperatures. A documentation programme will record the restoration process for educational use.",B,Q182394,Iran,Asia,Q182394,Iran,Asia,True,True,True
+The heritage foundation says the project has potential significance beyond local conservation, serving as a model for climate-adaptive architecture in arid regions facing rising temperatures. A documentation programme will record the restoration process for educational use.",B,Q182394,Iran,Asia,31.897222222,54.3675,Q182394,Iran,Asia,31.897222222,54.3675,True,True,True,0.0,True
 "Bath Thermal Quarter Expansion Receives Planning Approval
 
 Plans to expand the thermal bathing quarter in Bath have received planning approval, with a new outdoor pool and wellness centre expected to open by 2028.
@@ -371,7 +371,7 @@ Conservation groups have broadly supported the project, recognising the economic
 
 The planning approval includes conditions requiring the developer to commission an independent archaeological survey of the site before construction begins, given the likelihood of Roman-era remains beneath the surface. A hydrological study has confirmed that the new pool's demand can be met without reducing the flow to existing facilities.
 
-Construction is expected to begin in the spring, with the project creating an estimated 150 jobs during the building phase and 40 permanent positions once operational.",B,Q22889,United Kingdom,Europe,Q22889,United Kingdom,Europe,True,True,True
+Construction is expected to begin in the spring, with the project creating an estimated 150 jobs during the building phase and 40 permanent positions once operational.",B,Q22889,United Kingdom,Europe,51.381388888,-2.359722222,Q22889,United Kingdom,Europe,51.381388888,-2.359722222,True,True,True,0.0,True
 "Cork Covered Market Confirms Largest Expansion in Two Decades
 
 Cork's historic covered market has confirmed its largest expansion in over 20 years, with 12 new stall spaces opening in a newly constructed eastern wing this autumn.
@@ -384,7 +384,7 @@ The expansion adds approximately 300 square metres of trading space, along with 
 
 Not everyone is enthusiastic. Several existing stallholders have expressed concern about increased foot traffic and competition. ""We welcome growth, but the character of this place is what makes it special — we cannot let it become a generic food hall,"" a long-standing butcher said.
 
-Construction is due to begin in June, with the first new vendors expected to open by late October. The market management says the selection process will prioritise vendors offering products made or sourced locally.",B,Q36647,Ireland,Europe,Q36647,Ireland,Europe,True,True,True
+Construction is due to begin in June, with the first new vendors expected to open by late October. The market management says the selection process will prioritise vendors offering products made or sourced locally.",B,Q36647,Ireland,Europe,51.9,-8.473055555,Q36647,Ireland,Europe,51.9,-8.473055555,True,True,True,0.0,True
 "Bergen Fish Market Plans Major Expansion After Record Tourism Year
 
 The Bergen fish market is set for a significant expansion following a record tourist season, with an extension planned along the harbour front to nearly double the market's current vendor capacity.
@@ -397,7 +397,7 @@ The expanded market will maintain the traditional outdoor vendor format but add 
 
 The expansion is expected to be completed before the next summer season. The market association says it will prioritise vendors offering locally caught and processed seafood over those importing frozen product. A new waste management system is also included in the plans, addressing complaints about fish waste disposal that have been a recurring issue during peak season.
 
-Funding has been secured through a combination of municipal investment and private contributions from the market's existing vendor network.",B,Q26793,Norway,Europe,Q26793,Norway,Europe,True,True,True
+Funding has been secured through a combination of municipal investment and private contributions from the market's existing vendor network.",B,Q26793,Norway,Europe,60.3925,5.323333333,Q26793,Norway,Europe,60.3925,5.323333333,True,True,True,0.0,True
 "Split Waterfront Restaurants Open Early Amid Growing Spring Tourism
 
 The fish restaurants lining the Split waterfront have opened earlier than usual this year, with several establishments beginning service in March rather than the traditional April start.
@@ -410,7 +410,7 @@ The early opening has also been driven by investment in heated terrace areas, wh
 
 Local tourism officials have welcomed the trend, seeing it as evidence that the city is successfully transitioning from a summer-only destination to a year-round one. Hotel occupancy data for March shows a 22 per cent increase compared to the same month last year, driven primarily by visitors from northern regions seeking early spring warmth.
 
-The restaurant association says it is working with the municipal authority on extended evening trading hours for the spring season, noting that sunset dining in March and April is particularly popular with visitors unaccustomed to the Mediterranean light.",B,Q1663,Croatia,Europe,Q1663,Croatia,Europe,True,True,True
+The restaurant association says it is working with the municipal authority on extended evening trading hours for the spring season, noting that sunset dining in March and April is particularly popular with visitors unaccustomed to the Mediterranean light.",B,Q1663,Croatia,Europe,43.51,16.44,Q1663,Croatia,Europe,43.51,16.44,True,True,True,0.0,True
 "Regina Farmers Market Reports Record Winter Attendance Despite Deep Freeze
 
 The Regina farmers market has reported record winter attendance, with organisers saying the indoor venue drew over 3,000 visitors last Saturday despite temperatures dropping to minus 30 with wind chill pushing perceived conditions to minus 42.
@@ -421,7 +421,7 @@ Regina's winters are among the harshest on the prairies, with clear skies offeri
 
 The market's winter success has surprised even its organisers, who initially viewed the indoor season as a modest supplement to the main summer programme. Attendance has grown by approximately 40 per cent year on year, driven partly by a growing local food movement and partly by the simple human need for warmth and company during the long prairie winter.
 
-Several vendors have committed to year-round participation for the first time, finding the winter market profitable enough to justify the effort. The perogi stall, which has operated at the market for over a decade, reported selling out by 11am last Saturday. Plans are underway to secure a larger indoor venue for next winter.",B,Q2123,Canada,North America,Q16,Canada,North America,False,True,True
+Several vendors have committed to year-round participation for the first time, finding the winter market profitable enough to justify the effort. The perogi stall, which has operated at the market for over a decade, reported selling out by 11am last Saturday. Plans are underway to secure a larger indoor venue for next winter.",B,Q2123,Canada,North America,50.454722222,-104.606666666,Q16,Canada,North America,56.0,-109.0,False,True,True,682.1115079541693,False
 "Norman Tornado Shelter Programme Expands to All Public Schools
 
 The tornado shelter programme in Norman has been expanded to cover all public schools in the district, following two close encounters with severe weather this spring that sent thousands of students into inadequate shelter spaces.
@@ -432,7 +432,7 @@ Norman sits squarely within one of the most tornado-prone corridors on the conti
 
 Each new safe room is designed to withstand winds of up to 250 miles per hour and provide shelter for the full student and staff population of its school. The rooms will double as multipurpose spaces during normal school hours, serving as additional classrooms or assembly areas.
 
-Construction has already begun at three sites and is expected to be completed across all eight schools before the next spring storm season. The district says it will also install direct-link warning systems connected to the regional weather centre, eliminating any delay between an official warning being issued and school shelters being activated.",B,Q40347,United States,North America,Q30,United States,North America,False,True,True
+Construction has already begun at three sites and is expected to be completed across all eight schools before the next spring storm season. The district says it will also install direct-link warning systems connected to the regional weather centre, eliminating any delay between an official warning being issued and school shelters being activated.",B,Q40347,United States,North America,35.220833333,-97.443611111,Q30,United States,North America,39.828175,-98.5795,False,True,True,521.9998936341015,False
 "Trinidad Carnival Costume Registrations Reach All-Time High
 
 Registrations for Trinidad carnival costume bands have reached an all-time high, with organisers reporting a 25 per cent increase over last year's already record-breaking numbers.
@@ -443,7 +443,7 @@ The costume fitting season is now in full swing across dozens of mas camps, with
 
 The growing international attendance has brought both benefits and tensions. Visitor spending has boosted the hotel, restaurant, and transport sectors, but some local participants have expressed frustration that costume prices have risen as bands target a wealthier international market. ""Carnival should be for everyone, not just people who can afford a thousand-dollar costume,"" one long-time participant said.
 
-Organisers say they are working with transport authorities to manage the expected crowds along the main parade route, where viewing areas have historically been insufficient for the numbers attending. New grandstand sections and improved barriers are being installed, and additional water distribution points will be set up along the route given the intense tropical heat during the festival period.",B,Q39178,Trinidad and Tobago,North America,Q39178,Trinidad and Tobago,North America,True,True,True
+Organisers say they are working with transport authorities to manage the expected crowds along the main parade route, where viewing areas have historically been insufficient for the numbers attending. New grandstand sections and improved barriers are being installed, and additional water distribution points will be set up along the route given the intense tropical heat during the festival period.",B,Q39178,Trinidad and Tobago,North America,10.666666666,-61.516666666,Q39178,Trinidad and Tobago,North America,10.666666666,-61.516666666,True,True,True,0.0,True
 "Merida Cenote Conservation Programme Launches With Federal Backing
 
 A cenote conservation programme covering the Merida metropolitan area has launched with federal environmental funding, targeting 15 natural sinkholes used for recreation and as freshwater sources.
@@ -454,7 +454,7 @@ Merida's proximity to hundreds of natural sinkholes, formed by the collapse of l
 
 However, increasing urban development, intensive agriculture, and the growth of unregulated tourism operations at popular cenotes have raised serious concerns about water quality. Testing at several sites has revealed elevated levels of nitrates and coliform bacteria, attributed to septic seepage and fertiliser runoff. The karst geology of the region means that contaminants introduced at the surface can reach the aquifer within hours, with little natural filtration.
 
-The programme will employ local guides as conservation monitors at the most visited sites and develop educational materials for schools about the geological and ecological significance of the cenote system. Officials expect the first round of comprehensive water quality assessments to be completed within three months, with results informing which sites require immediate access restrictions.",B,Q165204,Mexico,North America,Q165204,Mexico,North America,True,True,True
+The programme will employ local guides as conservation monitors at the most visited sites and develop educational materials for schools about the geological and ecological significance of the cenote system. Officials expect the first round of comprehensive water quality assessments to be completed within three months, with results informing which sites require immediate access restrictions.",B,Q165204,Mexico,North America,20.97,-89.62,Q165204,Mexico,North America,20.97,-89.62,True,True,True,0.0,True
 "Santa Cruz Construction Boom Prompts Regulatory Review
 
 The construction boom in Santa Cruz has prompted city officials to announce a comprehensive review of building permits issued over the past two years, following mounting complaints from residents about noise, dust, and traffic disruption.
@@ -467,7 +467,7 @@ However, infrastructure has struggled to keep pace. Water pressure in several ne
 
 Officials say the permit review will take approximately three months, with interim restrictions on new applications in the most congested districts. Developers have expressed concern that construction delays will increase costs and potentially stall projects already underway. A developers' association spokesperson called for ""pragmatic regulation rather than blanket moratoriums.""
 
-The review will also assess whether current zoning regulations are adequate for a city growing at this speed, with recommendations expected by mid-year.",B,Q170688,Bolivia,South America,Q44821,Argentina,South America,False,False,True
+The review will also assess whether current zoning regulations are adequate for a city growing at this speed, with recommendations expected by mid-year.",B,Q170688,Bolivia,South America,-17.789166666,-63.1975,Q44821,Argentina,South America,-48.823888888,-69.815,False,False,True,3502.1740365823207,False
 "Rosario Waterfront Cycling Path Opens After Prolonged Delays
 
 The long-awaited Rosario waterfront cycling path has finally opened, connecting the northern and southern stretches of the riverside promenade in a continuous eight-kilometre route for the first time.
@@ -478,7 +478,7 @@ Construction was delayed repeatedly by funding disputes between municipal and pr
 
 The sunsets over the river have long been the city's defining natural attraction, drawing residents to the waterfront in the evenings with a regularity that makes the promenade feel like a living room shared by millions. The cycling path formalises what was previously an informal mix of pedestrians, cyclists, joggers, and skaters sharing the same narrow strip of paving, and includes separated lanes for different users.
 
-The opening was marked by a community cycling event that attracted over 500 participants of all ages. City officials say they are already planning extensions to connect the waterfront path to the university district and the northern industrial zone, creating what they describe as a comprehensive active transport network that could reduce car dependency for short journeys across the city.",B,Q52535,Argentina,South America,Q52535,Argentina,South America,True,True,True
+The opening was marked by a community cycling event that attracted over 500 participants of all ages. City officials say they are already planning extensions to connect the waterfront path to the university district and the northern industrial zone, creating what they describe as a comprehensive active transport network that could reduce car dependency for short journeys across the city.",B,Q52535,Argentina,South America,-32.9575,-60.639444444,Q52535,Argentina,South America,-32.9575,-60.639444444,True,True,True,0.0,True
 "Valencia Carnival Float Competition Sets Record Participation
 
 The annual Valencia carnival float competition has set a new participation record, with 38 neighbourhood teams entering elaborately decorated floats this year compared to 24 in the previous edition.
@@ -491,7 +491,7 @@ The surge in participation has been attributed partly to increased corporate spo
 
 The growth has prompted discussions about extending the parade route to accommodate the larger number of floats without compressing viewing time. Crowd safety is also under review, as the streets along the existing route were packed well beyond comfortable capacity on the main night.
 
-A post-carnival economic impact assessment is being conducted for the first time this year, commissioned by the tourism board to quantify the festival's contribution to the local economy and support applications for additional public funding.",B,Q54880,Venezuela,South America,Q8818,Spain,Europe,False,False,False
+A post-carnival economic impact assessment is being conducted for the first time this year, commissioned by the tourism board to quantify the festival's contribution to the local economy and support applications for additional public funding.",B,Q54880,Venezuela,South America,10.166666666,-68.0,Q8818,Spain,Europe,39.47,-0.376388888,False,False,False,7375.576103850752,False
 "Concepcion University District Upgrades Hot Dog Infrastructure
 
 The university district in Concepcion has received a fleet of new all-weather hot dog stands, replacing the ageing carts that have served generations of students their completos — the loaded hot dogs piled with avocado, tomato, sauerkraut, and mayonnaise that are a staple of student life.
@@ -502,7 +502,7 @@ Concepcion's large university population drives much of the commercial activity 
 
 The upgrade was funded by a municipal small business improvement grant that covered 70 per cent of the equipment cost, with vendors contributing the remainder. Several vendors said the improved canopies would allow them to continue trading during the heaviest rain, when they previously had to close and lose income.
 
-Health inspectors who initiated the upgrade say the new equipment significantly reduces the risk of foodborne illness, particularly during the colder months when temperature control is critical for mayonnaise-based toppings. The stands began operating in their new configuration this week, with vendors reporting that the visible improvement in hygiene standards has, if anything, increased customer confidence and sales.",B,Q1880,Chile,South America,Q1880,Chile,South America,True,True,True
+Health inspectors who initiated the upgrade say the new equipment significantly reduces the risk of foodborne illness, particularly during the colder months when temperature control is critical for mayonnaise-based toppings. The stands began operating in their new configuration this week, with vendors reporting that the visible improvement in hygiene standards has, if anything, increased customer confidence and sales.",B,Q1880,Chile,South America,-36.826944444,-73.050277777,Q1880,Chile,South America,-36.826944444,-73.050277777,True,True,True,0.0,True
 "Hamilton Roundabout Upgrade Promises to Cut Commute Times
 
 A major roundabout upgrade near Hamilton is expected to cut peak-hour commute times by up to 15 per cent, according to transport planners managing the $12 million project.
@@ -515,7 +515,7 @@ The project also includes the installation of the area's first intelligent traff
 
 Construction began last month and is expected to take approximately eight months, with the most disruptive phases scheduled during school holiday periods to minimise congestion impact. Temporary traffic management measures are in place throughout, with detours adding roughly five minutes to most journeys.
 
-The upgrade is the largest single roading investment in the district this year. Local business owners have expressed concern about reduced foot traffic during the construction period, and the project team has committed to maintaining vehicle access to all commercial premises throughout the works.",B,Q200028,New Zealand,Oceania,Q133116,Canada,North America,False,False,False
+The upgrade is the largest single roading investment in the district this year. Local business owners have expressed concern about reduced foot traffic during the construction period, and the project team has committed to maintaining vehicle access to all commercial premises throughout the works.",B,Q200028,New Zealand,Oceania,-37.783333333,175.283333333,Q133116,Canada,North America,43.256666666,-79.869166666,False,False,False,13851.004787072601,False
 "Darwin Dry Season Markets Return With Record Vendor Numbers
 
 The Darwin dry season markets have returned with their largest ever vendor lineup, adding over 20 new stalls to what organisers describe as the biggest weekly outdoor market programme in the region.
@@ -526,7 +526,7 @@ Darwin's dry season transforms the city from a place where outdoor activity is l
 
 The crocodile warning signs at the waterfront continue to provide reliable entertainment, with backpackers and first-time visitors photographing them in apparent disbelief while locals walk past without a glance. The signs are entirely genuine — estuarine crocodiles are occasionally spotted in the harbour — but they have become a cultural marker as much as a safety measure.
 
-This season's markets also feature a dedicated Indigenous art section developed in partnership with regional arts organisations, showcasing painters, weavers, and printmakers from communities across the wider region. The first market of the season drew an estimated 4,000 visitors, and organisers expect numbers to grow as the dry season progresses and word spreads among the tourist population.",B,Q11568,Australia,Oceania,Q408,Australia,Oceania,False,True,True
+This season's markets also feature a dedicated Indigenous art section developed in partnership with regional arts organisations, showcasing painters, weavers, and printmakers from communities across the wider region. The first market of the season drew an estimated 4,000 visitors, and organisers expect numbers to grow as the dry season progresses and word spreads among the tourist population.",B,Q11568,Australia,Oceania,-12.438055555,130.841111111,Q408,Australia,Oceania,-25.0,133.0,False,True,True,1415.1082809192403,False
 "Nelson Craft Beer Trail Launches With Twelve Participating Breweries
 
 A new craft beer trail has launched in Nelson, connecting 12 independent breweries and taprooms along a 15-kilometre route through the sunny coastal town and its surrounding hop-growing hinterland.
@@ -537,7 +537,7 @@ Nelson's combination of record sunshine hours, fertile alluvial soils, clean mou
 
 The wharf area, where fish and chip shops have served the local catch for generations, provides the trail's starting point. From there the route winds through the town centre, past the Saturday craft market, and out into the rural fringe where the larger production breweries operate.
 
-The trail is explicitly designed to be completed over multiple visits rather than a single session, with organisers noting that responsible drinking is both a legal requirement and a practical consideration given the distances involved. Accommodation providers have partnered with the tourism board to develop weekend packages combining the beer trail with other regional attractions including kayaking, cycling, and vineyard visits.",B,Q206687,New Zealand,Oceania,Q664,New Zealand,Oceania,False,True,True
+The trail is explicitly designed to be completed over multiple visits rather than a single session, with organisers noting that responsible drinking is both a legal requirement and a practical consideration given the distances involved. Accommodation providers have partnered with the tourism board to develop weekend packages combining the beer trail with other regional attractions including kayaking, cycling, and vineyard visits.",B,Q206687,New Zealand,Oceania,-41.293056,173.238056,Q664,New Zealand,Oceania,-41.2,174.0,False,True,True,64.5371697458554,True
 "Mackay Mango Season Wraps Up With Bumper Harvest
 
 The Mackay mango season has wrapped up with what growers are calling their best harvest in over a decade, with roadside stall prices dropping to as low as three dollars per kilogram during the final weeks as supply overwhelmed demand.
@@ -548,7 +548,7 @@ Mackay's tropical climate, rich volcanic soils, and reliable water supply make i
 
 The strong harvest has also boosted export volumes, with several new international buyers secured during the season for the premium Kensington Pride variety. Cold chain logistics infrastructure at the regional airport has been expanded to handle the increased export demand, with a new temperature-controlled packing facility operational for the first time this season.
 
-As the mango season winds down, the reef tourism sector picks up, providing a year-round economic rhythm that sustains the local hospitality and service industries. Tour operators report strong forward bookings for the autumn coral viewing season. Planning for next season's mango plantings is already underway, with several growers expanding their orchard acreage in response to the positive market signals.",B,Q704371,Australia,Oceania,Q408,Australia,Oceania,False,True,True
+As the mango season winds down, the reef tourism sector picks up, providing a year-round economic rhythm that sustains the local hospitality and service industries. Tour operators report strong forward bookings for the autumn coral viewing season. Planning for next season's mango plantings is already underway, with several growers expanding their orchard acreage in response to the positive market signals.",B,Q704371,Australia,Oceania,-21.141111111,149.186111111,Q408,Australia,Oceania,-25.0,133.0,False,True,True,1709.2689451690087,False
 "Pirates Launch After-School Programme Near Mining Belt
 
 Pirates have launched a free after-school sports programme targeting young people in the townships near the mining belt, with football, netball, and athletics sessions running five afternoons a week at three community centres.
@@ -561,7 +561,7 @@ Each community centre will be staffed by two full-time coaches and a youth welfa
 
 The first week attracted over 120 participants across the three centres, significantly exceeding the initial target of 80. Several parents have already asked whether the programme can be extended to include Saturday morning sessions, and Pirates says it will assess capacity after the first three months.
 
-The education trust is providing academic mentoring alongside the sports activities, with homework help available before each afternoon session. Pirates says it views the programme as a long-term commitment rather than a pilot project, and has ring-fenced funding for a minimum of three years.",C,Q34647,South Africa,Africa,Q258,South Africa,Africa,False,True,True
+The education trust is providing academic mentoring alongside the sports activities, with homework help available before each afternoon session. Pirates says it views the programme as a long-term commitment rather than a pilot project, and has ring-fenced funding for a minimum of three years.",C,Q34647,South Africa,Africa,-26.204361111,28.041638888,Q258,South Africa,Africa,-29.0,24.0,False,True,True,505.14806449926147,False
 "Rangers Community Trust Funds Emergency School Repairs in Coal Country
 
 The Rangers Community Trust has funded emergency repairs to two primary schools near the coal-producing hills, after heavy seasonal rains caused structural damage to classrooms and boundary walls at both sites.
@@ -572,7 +572,7 @@ The area's economy has long been tied to coal extraction, with the dark-soiled h
 
 Rangers's trust says education investment is critical to creating pathways beyond the extractive economy, which has been in gradual decline as reserves diminish and environmental regulations tighten. Many young people in the area see professional football as the most visible escape route, but the trust argues that academic achievement offers more sustainable opportunities.
 
-Rangers have confirmed that both schools are expected to reopen fully within six weeks, with the drainage work requiring the longest completion time. The trust is in discussions with the state education authority about co-funding a comprehensive drainage infrastructure project that would protect not just these two schools but several other public buildings in the flood-prone lower areas of the district.",C,Q465022,Nigeria,Africa,Q22,United Kingdom,Europe,False,False,False
+Rangers have confirmed that both schools are expected to reopen fully within six weeks, with the drainage work requiring the longest completion time. The trust is in discussions with the state education authority about co-funding a comprehensive drainage infrastructure project that would protect not just these two schools but several other public buildings in the flood-prone lower areas of the district.",C,Q465022,Nigeria,Africa,6.440277777,7.494166666,Q22,United Kingdom,Europe,57.0,-5.0,False,False,False,5727.009154128258,False
 "Esperance Derby Generates Record Matchday Revenue for Club
 
 The latest Esperance derby has generated record matchday revenue, with ticket sales, merchandise, and food concessions all surpassing previous highs by a significant margin.
@@ -585,7 +585,7 @@ The record revenue comes at an opportune time for the club, which has been plann
 
 Esperance says it will direct a portion of the derby revenue toward a feasibility study for a new north stand, which would add approximately 5,000 seats and include modern hospitality facilities. A full business case is expected to be presented to Esperance's board before the end of the current season.
 
-Separately, Esperance has announced extended merchandise opening hours at its stadium shop in response to the demand observed on derby day, with online sales also reportedly surging in the days following the match.",C,Q3572,Tunisia,Africa,Q948,Tunisia,Africa,False,True,True
+Separately, Esperance has announced extended merchandise opening hours at its stadium shop in response to the demand observed on derby day, with online sales also reportedly surging in the days following the match.",C,Q3572,Tunisia,Africa,36.800833333,10.18,Q948,Tunisia,Africa,34.0,10.0,False,True,True,311.8652766702599,False
 "Dynamos Begin Stadium Safety Improvements After Independent Review
 
 Dynamos have begun a programme of safety improvements at their home ground, following an independent review that identified significant structural and crowd management deficiencies requiring urgent attention.
@@ -598,7 +598,7 @@ The independent review, commissioned after a crowd crush incident at a cup match
 
 The first phase of physical improvements is expected to be completed before the start of the next season. Dynamos says it is also investing in steward training, with all matchday staff required to complete a crowd management certification course developed by the national sports authority.
 
-Longer-term, the club is exploring options for a comprehensive stadium redevelopment, though funding remains a significant challenge in a league where commercial revenues are modest by international standards.",C,Q3921,Zimbabwe,Africa,Q954,Zimbabwe,Africa,False,True,True
+Longer-term, the club is exploring options for a comprehensive stadium redevelopment, though funding remains a significant challenge in a league where commercial revenues are modest by international standards.",C,Q3921,Zimbabwe,Africa,-17.829166666,31.052222222,Q954,Zimbabwe,Africa,-19.0,30.0,False,True,True,171.0918196816042,False
 "Tractor Unveil Plans for Youth Academy Near Carpet Bazaar District
 
 Tractor have unveiled plans for a dedicated youth football academy near the historic carpet bazaar district, with construction expected to begin in the spring and the facility operational by early next year.
@@ -611,7 +611,7 @@ The academy will prioritise recruitment from the surrounding province, with scou
 
 Funding for the project comes from a combination of club revenue, a regional corporate sponsorship, and a contribution from the national football federation's development fund. The total cost has not been disclosed, but local media estimates suggest a figure in the region of $3 million.
 
-Tractor are targeting a first intake of approximately 40 players is targeted for the autumn, with selection based on a combination of on-pitch assessment and academic aptitude testing. The club emphasises that education will run alongside football development, with all scholars required to maintain satisfactory academic progress.",C,Q80053,Iran,Asia,,,,False,False,False
+Tractor are targeting a first intake of approximately 40 players is targeted for the autumn, with selection based on a combination of on-pitch assessment and academic aptitude testing. The club emphasises that education will run alongside football development, with all scholars required to maintain satisfactory academic progress.",C,Q80053,Iran,Asia,38.073888888,46.296111111,,,,,,False,False,False,,False
 "United Announce Community Stadium Open Day in Temple District
 
 United have announced a community open day at their stadium near the temple district, offering free tours, coaching clinics, and food stalls in what United describes as its largest public engagement event of the year.
@@ -622,7 +622,7 @@ The stadium, situated in the area where golden temple spires catch the last of t
 
 The open day will feature displays from United's community programmes, including a youth literacy initiative that has distributed over 10,000 books to schools in low-income areas, and a women's football development scheme that has grown from 30 participants to over 200 in its first two years. A health screening station will offer free blood pressure and blood sugar checks, developed in partnership with a local hospital group.
 
-Organisers expect over 3,000 visitors across the day and have arranged additional skytrain services to handle the expected demand. Food vendors from the area surrounding the ground have been invited to operate stalls inside the stadium concourse, bringing the street food culture that fans associate with match days into the event itself.",C,Q1861,Thailand,Asia,Q48403,India,Asia,False,False,True
+Organisers expect over 3,000 visitors across the day and have arranged additional skytrain services to handle the expected demand. Food vendors from the area surrounding the ground have been invited to operate stalls inside the stadium concourse, bringing the street food culture that fans associate with match days into the event itself.",C,Q1861,Thailand,Asia,13.75,100.516666666,Q48403,India,Asia,31.626917,74.87704,False,False,True,3281.248236622443,False
 "Al Ahli Women's Volleyball Team Reaches Continental Semi-Final
 
 Al Ahli's women's volleyball team has reached the semi-finals of the continental club championship, marking Al Ahli's best result in any women's sport in over a decade and raising hopes of a historic final appearance.
@@ -635,7 +635,7 @@ The team was only established five years ago, initially as a recreational progra
 
 Al Ahli has announced that the semi-final will be broadcast live on its digital platforms, a first for any women's sporting event in the organisation's history. Win or lose, the club says the team's run has already transformed internal attitudes toward women's sport, with plans for a women's basketball programme now under active development.
 
-A victory would guarantee a place in the continental final, which is scheduled for the following month at a venue yet to be confirmed.",C,Q374365,Saudi Arabia,Asia,Q85,Egypt,Africa,False,False,False
+A victory would guarantee a place in the continental final, which is scheduled for the following month at a venue yet to be confirmed.",C,Q374365,Saudi Arabia,Asia,21.542777777,39.172777777,Q85,Egypt,Africa,30.044444444,31.235833333,False,False,False,1234.068144580951,False
 "Ansar Secure Record Sponsorship Deal Ahead of Title Defence
 
 Ansar have secured a multi-year sponsorship deal with a regional telecommunications provider, in what the club describes as the most significant commercial agreement in its history.
@@ -646,7 +646,7 @@ Ansar's home ground, located in the port area where the Mediterranean breeze car
 
 The telecommunications provider said the partnership reflects its strategy of connecting with young, urban audiences in a market where football remains by far the most popular sport. Ansar's fanbase is concentrated in the densely populated neighbourhoods surrounding the port, where matchday atmosphere spills out of the ground and into the narrow streets.
 
-Ansar's new playing shirts are expected to go on sale within the month. The club says early interest has been strong, with over 500 pre-orders received in the first week after the deal was announced. The commercial department is now pursuing secondary sponsorship agreements to further strengthen the club's financial position ahead of a title defence that begins next month.",C,Q3820,Lebanon,Asia,Q3820,Lebanon,Asia,True,True,True
+Ansar's new playing shirts are expected to go on sale within the month. The club says early interest has been strong, with over 500 pre-orders received in the first week after the deal was announced. The commercial department is now pursuing secondary sponsorship agreements to further strengthen the club's financial position ahead of a title defence that begins next month.",C,Q3820,Lebanon,Asia,33.886944444,35.513055555,Q3820,Lebanon,Asia,33.886944444,35.513055555,True,True,True,0.0,True
 "Sparta Unveil Ambitious Youth Academy Plans for River Valley Site
 
 Sparta have revealed plans for a state-of-the-art youth academy facility on the city's western outskirts, with construction expected to begin in early 2027 and the project representing the largest single investment in youth development in Sparta's history.
@@ -657,7 +657,7 @@ The chosen site sits in the river valley on the western edge of the city, select
 
 Local residents near the proposed site have raised concerns about traffic and noise, particularly during tournament weekends when visiting youth teams would generate additional vehicle movements. A public consultation is scheduled for later this month, and club officials say they are committed to addressing community concerns before construction begins. ""We want this facility to benefit the whole neighbourhood, not create problems for it,"" a chief executive said.
 
-The academy currently feeds approximately five players per season into the reserve squad. Sparta hopes to double that figure within five years of the new facility opening, reducing its dependence on expensive transfer market recruitment.",C,Q1085,Czech Republic,Europe,Q5690,Greece,Europe,False,False,True
+The academy currently feeds approximately five players per season into the reserve squad. Sparta hopes to double that figure within five years of the new facility opening, reducing its dependence on expensive transfer market recruitment.",C,Q1085,Czech Republic,Europe,50.0875,14.421388888,Q5690,Greece,Europe,37.073678,22.430937,False,False,True,1582.1707442531026,False
 "Sporting Announce Tram-Linked Fan Zone in Tiled Historic Quarter
 
 Sporting have announced plans for a permanent fan zone in the historic quarter known for its decorative ceramic tilework and steep, narrow streets, with the venue connected to the city's tram network for easy access on match days.
@@ -670,7 +670,7 @@ The sardine restaurants, pastel-coloured buildings, and fado music venues that c
 
 The fan zone is expected to open before the start of next season, following a renovation period of approximately four months. The warehouse interior will retain its original exposed brick and iron beam structure, with the club commissioning a local artist to create a mural depicting the club's history on the main interior wall.
 
-The club says it will also host off-season events including film screenings, live music, and community meetings, ensuring the space contributes to neighbourhood life beyond football.",C,Q597,Portugal,Europe,Q597,Portugal,Europe,True,True,True
+The club says it will also host off-season events including film screenings, live music, and community meetings, ensuring the space contributes to neighbourhood life beyond football.",C,Q597,Portugal,Europe,38.708042,-9.139016,Q597,Portugal,Europe,38.708042,-9.139016,True,True,True,0.0,True
 "Celtic Foundation Funds Tenement Restoration in Rainy East End
 
 The Celtic Foundation has funded the restoration of a block of Victorian-era tenements in the east end, preserving 24 units of affordable housing in a neighbourhood facing accelerating gentrification pressure.
@@ -683,7 +683,7 @@ The restored buildings will provide affordable rental housing managed by a local
 
 Celtic's foundation says the project represents a new direction for its community work, moving beyond traditional sports and education programmes into housing, which it now considers the most pressing issue facing the communities closest to the club. Similar restoration projects in neighbouring streets are under consideration, with the foundation exploring match-funding arrangements with the municipal housing authority.
 
-Total project cost has not been disclosed, but the housing association described the foundation's contribution as ""substantial and transformative."" The restored flats are expected to be ready for occupancy within four months.",C,Q4093,United Kingdom,Europe,Q4093,United Kingdom,Europe,True,True,True
+Total project cost has not been disclosed, but the housing association described the foundation's contribution as ""substantial and transformative."" The restored flats are expected to be ready for occupancy within four months.",C,Q4093,United Kingdom,Europe,55.861111111,-4.25,Q4093,United Kingdom,Europe,55.861111111,-4.25,True,True,True,0.0,True
 "Rapid Announce Heuriger Partnership for Matchday Hospitality
 
 Rapid have announced a partnership with three traditional Heuriger wine taverns to create matchday hospitality packages that combine football with the city's distinctive wine culture.
@@ -694,7 +694,7 @@ The Heuriger tradition, in which local winemakers open their premises seasonally
 
 The first packages are available for the next home fixture, with capacity limited to 50 guests per match day to preserve the intimate character of the Heuriger experience. Rapid says early interest has been strong, with enquiries coming from both local supporters looking for a special occasion experience and international visitors seeking an authentically local evening out.
 
-The wine served at the pre-match meal will be exclusively from the participating taverns' own vineyards, with the Gruner Veltliner and Gemischter Satz varieties expected to be the most popular choices. The partnership runs until the end of the season, with both parties expressing interest in making it a permanent fixture.",C,Q1741,Austria,Europe,Q1741,Austria,Europe,True,True,True
+The wine served at the pre-match meal will be exclusively from the participating taverns' own vineyards, with the Gruner Veltliner and Gemischter Satz varieties expected to be the most popular choices. The partnership runs until the end of the season, with both parties expressing interest in making it a permanent fixture.",C,Q1741,Austria,Europe,48.208333333,16.3725,Q1741,Austria,Europe,48.208333333,16.3725,True,True,True,0.0,True
 "Wranglers Announce Community Skating Programme Along Frozen Riverfront
 
 Wranglers have announced a free community skating programme for young fans, using the frozen riverfront pathway adjacent to their training facility as the venue for weekly learn-to-skate sessions.
@@ -705,7 +705,7 @@ The dramatic temperature swings caused by chinook weather events, where warm Pac
 
 The riverfront pathway, with the mountain foothills rising sharply to the west and the downtown skyline visible to the east, provides a spectacular setting for the programme. Parents are welcome to skate alongside their children, and the Wranglers have partnered with a local equipment supplier to provide loaner skates and helmets for families who do not have their own.
 
-The first session attracted over 60 participants despite temperatures of minus 15, suggesting strong community demand. Wranglers say they will assess capacity after the first month and consider adding a second weekly session if the ice conditions allow. The programme is part of a broader community engagement strategy that the Wranglers describe as essential to building a fanbase in a market dominated by the city's established professional teams.",C,Q36312,Canada,North America,Q36312,Canada,North America,True,True,True
+The first session attracted over 60 participants despite temperatures of minus 15, suggesting strong community demand. Wranglers say they will assess capacity after the first month and consider adding a second weekly session if the ice conditions allow. The programme is part of a broader community engagement strategy that the Wranglers describe as essential to building a fanbase in a market dominated by the city's established professional teams.",C,Q36312,Canada,North America,51.05,-114.066666666,Q36312,Canada,North America,51.05,-114.066666666,True,True,True,0.0,True
 "Tigres Foundation Funds School Libraries in Sierra Foothills
 
 The Tigres Foundation has funded the establishment of five school libraries in the foothills of the sierra, bringing structured reading resources to primary schools where book access has historically been minimal.
@@ -718,7 +718,7 @@ Tigres's foundation selected the five schools based on a needs assessment that f
 
 Monitoring will track borrowing rates, reading frequency, and student literacy outcomes over a two-year evaluation period. If the pilot demonstrates measurable impact on reading scores, the foundation has committed to extending the programme to an additional ten schools in the following phase.
 
-The librarians, who will work three days per week at each school, have been recruited from the surrounding communities and will receive training in children's library management before the libraries open next month.",C,Q81033,Mexico,North America,Q96,Mexico,North America,False,True,True
+The librarians, who will work three days per week at each school, have been recruited from the surrounding communities and will receive training in children's library management before the libraries open next month.",C,Q81033,Mexico,North America,25.684444444,-100.318055555,Q96,Mexico,North America,23.0,-102.0,False,True,True,343.6953798325773,False
 "Bulldogs Partner With Steel Heritage Museum on Community History Project
 
 Bulldogs have partnered with the local steel heritage museum to develop a community oral history project documenting the deep connection between the city's industrial past and its hockey culture.
@@ -729,7 +729,7 @@ The harbour area, where the mills once employed tens of thousands and the glow o
 
 Bulldogs say they view the partnership as reflecting a growing awareness that sports clubs are repositories of community memory, not just entertainment businesses. ""When a steelworker talks about walking from the night shift to the Saturday game, they are telling the story of this city,"" a Bulldogs community director said.
 
-The project will run for 12 months, with a team of two researchers conducting structured interviews with approximately 50 participants identified through the Bulldogs' supporter networks and the museum's volunteer base. Interview recordings will be archived at the museum and made available online. Bulldogs plan to host a public exhibition combining interview excerpts, historical photographs, and matchday memorabilia at the museum's main gallery next year.",C,Q133116,Canada,North America,Q34180,Canada,North America,False,True,True
+The project will run for 12 months, with a team of two researchers conducting structured interviews with approximately 50 participants identified through the Bulldogs' supporter networks and the museum's volunteer base. Interview recordings will be archived at the museum and made available online. Bulldogs plan to host a public exhibition combining interview excerpts, historical photographs, and matchday memorabilia at the museum's main gallery next year.",C,Q133116,Canada,North America,43.256666666,-79.869166666,Q34180,Canada,North America,43.140833333,-80.263055555,False,True,True,34.428369774627754,True
 "Real Launch Environmental Campaign Focused on Salt Flats and Great Lake
 
 Real have launched a season-long environmental awareness campaign focused on the salt flats and great lake ecosystem, using match days to distribute educational materials and engage fans with conservation issues.
@@ -742,7 +742,7 @@ The campaign features informational displays at the stadium concourse, a dedicat
 
 The salt flats surrounding the lake, which glow pink at certain times of year due to algal blooms and are visible from elevated points across the city, have become a popular photography destination — a cultural connection the campaign is deliberately leveraging.
 
-The environmental trust says the partnership represents a new model for conservation outreach, noting that sports fans constitute a demographic that traditional environmental messaging frequently fails to engage.",C,Q23337,United States,North America,Q30,United States,North America,False,True,True
+The environmental trust says the partnership represents a new model for conservation outreach, noting that sports fans constitute a demographic that traditional environmental messaging frequently fails to engage.",C,Q23337,United States,North America,40.75,-111.883333333,Q30,United States,North America,39.828175,-98.5795,False,True,True,1131.9608197305981,False
 "Racing Foundation Commits to Youth Centre in Industrial District
 
 The Racing Foundation has committed funding for a new youth centre in the industrial district near Racing's home ground, with construction expected to begin before the end of the year.
@@ -755,7 +755,7 @@ The centre will be managed by a local youth services NGO with over a decade of e
 
 The building will include a multipurpose hall, computer room, kitchen for cooking classes, and an outdoor sports court. The design has been developed in consultation with local young people, who identified job skills training, internet access, and safe recreational space as their top priorities.
 
-The foundation says it views the youth centre as a permanent commitment to the neighbourhood rather than a time-limited project, and has established an endowment to ensure funding stability beyond the initial construction phase.",C,Q753642,Argentina,South America,Q753642,Argentina,South America,True,True,True
+The foundation says it views the youth centre as a permanent commitment to the neighbourhood rather than a time-limited project, and has established an endowment to ensure funding stability beyond the initial construction phase.",C,Q753642,Argentina,South America,-34.6625,-58.367777777,Q753642,Argentina,South America,-34.6625,-58.367777777,True,True,True,0.0,True
 "Nacional Launch Free Running Club Along River Estuary Rambla
 
 Nacional have launched a free weekly running club for supporters, meeting along the rambla that stretches beside the wide, calm river estuary that defines the city's southern edge.
@@ -768,7 +768,7 @@ The first session attracted over 80 participants — nearly triple the expected 
 
 The club says it will add a Saturday morning session if demand continues, and is considering organising a supporters' half-marathon later in the year as a fundraising event for Nacional's community programmes. Running shirts in the club's colours are available at cost price for participants who want them.
 
-The initiative is part of a broader club strategy to engage supporters through activities beyond match attendance, recognising that community connection is the foundation of long-term loyalty and commercial sustainability.",C,Q1335,Uruguay,South America,Q1335,Uruguay,South America,True,True,True
+The initiative is part of a broader club strategy to engage supporters through activities beyond match attendance, recognising that community connection is the foundation of long-term loyalty and commercial sustainability.",C,Q1335,Uruguay,South America,-34.905916666,-56.191311111,Q1335,Uruguay,South America,-34.905916666,-56.191311111,True,True,True,0.0,True
 "Wanderers Fund Restoration of Historic Port Hill Stairway
 
 Wanderers have funded the restoration of a historic stairway connecting the port district to the hillside residential neighbourhoods above, addressing safety concerns that had led to the stairway's partial closure earlier this year.
@@ -781,7 +781,7 @@ The restoration included rebuilding 47 damaged steps, installing continuous stee
 
 The restored stairway reopened last week to an informal community celebration. Wanderers says it has identified two additional stairways in urgent need of similar work and is actively seeking co-funding from the municipal authority, which is responsible for stairway maintenance but has consistently underfunded the work.
 
-The total restoration cost of approximately $25,000 was covered entirely by Wanderers's community fund.",C,Q33986,Chile,South America,Q3398353,Canada,North America,False,False,False
+The total restoration cost of approximately $25,000 was covered entirely by Wanderers's community fund.",C,Q33986,Chile,South America,-33.046111111,-71.619722222,Q3398353,Canada,North America,46.579444444,-63.878333333,False,False,False,8887.951543266674,False
 "Junior Commission Traffic Study to Improve Matchday Access
 
 Junior have commissioned a comprehensive traffic management study for the area surrounding their stadium, aiming to reduce the congestion that consistently mars the matchday experience for fans and local residents alike.
@@ -794,7 +794,7 @@ The problem is compounded by a lack of dedicated parking facilities near the gro
 
 The consultancy's interim findings, based on traffic counting and GPS tracking during three recent matches, indicate that approximately 70 per cent of fans arrive by private car despite reasonably good bus connections. The final report will recommend interventions potentially including temporary road closures, park-and-ride shuttle services from satellite locations, and improved pedestrian signage.
 
-Junior says it will present the consultancy's recommendations to the municipal authority jointly, seeking shared funding for whichever interventions are adopted.",C,Q62823,Colombia,South America,Q739675,United States,North America,False,False,False
+Junior says it will present the consultancy's recommendations to the municipal authority jointly, seeking shared funding for whichever interventions are adopted.",C,Q62823,Colombia,South America,10.983333333,-74.801944444,Q739675,United States,North America,18.383333333,-66.15,False,False,False,1241.607253665921,False
 "Victory Launch Tram-Linked Youth Cycling Programme
 
 Victory have launched a cycling skills programme for young fans aged 8 to 14, using the city's extensive tram network as a starting point for guided rides through the wide, tree-lined boulevards surrounding the stadium.
@@ -807,7 +807,7 @@ The programme was developed in response to a survey of club members' families th
 
 The first four sessions are fully booked, with a waiting list forming for the next intake. Victory says it will provide free bicycles for participants from families that cannot afford their own, funded by a small grant from the state cycling federation.
 
-Each session is led by two qualified cycling instructors and two club volunteers, maintaining a ratio of one adult to every four children. Parents are welcome to ride along at the rear of the group.",C,Q3141,Australia,Oceania,,,,False,False,False
+Each session is led by two qualified cycling instructors and two club volunteers, maintaining a ratio of one adult to every four children. Parents are welcome to ride along at the rear of the group.",C,Q3141,Australia,Oceania,-37.814166666,144.963055555,,,,,,False,False,False,,False
 "Phoenix Commission Wind Study to Improve Harbour Stadium Comfort
 
 Phoenix have commissioned an engineering study of wind conditions at their harbour-side stadium, aiming to address persistent fan complaints about the powerful gusts that funnel through the gap between surrounding hills during matches.
@@ -820,7 +820,7 @@ The engineering firm will use computational fluid dynamics modelling combined wi
 
 The flat whites from the café on the hill above the ground have been described, only half-jokingly, as the most wind-tested beverages in professional sport. The café owner says business actually increases on the windiest days, as fans arrive early to shelter with a hot drink before braving the walk down to the exposed concourse.
 
-Results are expected within two months, with any structural modifications planned for the off-season. Phoenix has committed to consulting with supporter groups before finalising any design changes.",C,Q23661,New Zealand,Oceania,Q1026685,United Kingdom,Europe,False,False,False
+Results are expected within two months, with any structural modifications planned for the off-season. Phoenix has committed to consulting with supporter groups before finalising any design changes.",C,Q23661,New Zealand,Oceania,-41.288888888,174.777222222,Q1026685,United Kingdom,Europe,50.9755,-3.2243,False,False,False,18927.14259780032,False
 "United Partner With Wineries for Art Deco Festival Hospitality Packages
 
 United have partnered with five local wineries to offer combined match-and-wine packages during the city's famous Art Deco festival weekend, targeting the growing overlap between sport tourism and food-and-wine visitors.
@@ -831,7 +831,7 @@ The city's extraordinary collection of Art Deco buildings, constructed during a 
 
 The wine region surrounding the city has developed rapidly over the past two decades, with the sheltered coastal microclimate producing particularly strong results with Syrah, Chardonnay, and late-harvest dessert wines. The five participating wineries were selected to represent a range of styles and sizes.
 
-United's first packages sold out within 48 hours of being announced, prompting the club to negotiate additional allocations with two of the wineries. United say they will expand the offering next year and are in discussions with the festival organisers about a formal long-term partnership that would position the match as an official festival event.",C,Q203380,New Zealand,Oceania,Q203380,New Zealand,Oceania,True,True,True
+United's first packages sold out within 48 hours of being announced, prompting the club to negotiate additional allocations with two of the wineries. United say they will expand the offering next year and are in discussions with the festival organisers about a formal long-term partnership that would position the match as an official festival event.",C,Q203380,New Zealand,Oceania,-39.490277777,176.917777777,Q203380,New Zealand,Oceania,-39.490277777,176.917777777,True,True,True,0.0,True
 "Eagles Launch Clean Water Initiative for Harbour Settlements
 
 Eagles have launched a clean water initiative targeting informal settlements near the harbour, funding the installation of filtration units at five community water collection points serving an estimated 2,000 residents.
@@ -844,4 +844,4 @@ Eagles's involvement grew out of a player visit to the settlements earlier this 
 
 The filtration units are expected to be installed and operational within the next month. Each unit can process approximately 200 litres per day, enough to supply safe drinking and cooking water for the surrounding households. A community health monitoring programme, run in partnership with a local medical clinic, will track waterborne illness rates at each installation to measure the initiative's impact.
 
-Eagles says the filtration units are an interim measure while it advocates for the extension of piped municipal water to the affected areas.",C,Q36526,Papua New Guinea,Oceania,Q334,Singapore,Asia,False,False,False
+Eagles says the filtration units are an interim measure while it advocates for the extension of piped municipal water to the affected areas.",C,Q36526,Papua New Guinea,Oceania,-9.478888888,147.149444444,Q334,Singapore,Asia,1.3,103.8,False,False,False,4947.440957727717,False

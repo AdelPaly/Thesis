@@ -1,0 +1,234 @@
+2026-04-30 18:15:09,471 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast():
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
+  super().__init__(
+C:\Users\Adela\PycharmProjects\geo\src\llm_gemma.py:3: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+  Wikidata cache loaded: 6601 entities, 6518 labels, 846 coord lookups
+Input: 144 rows, text='tweet_text', truth=('latitude','longitude')
+[1/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[1/144] NO RESULT
+[2/144] WITHIN 0.3km | pred=Q321381 | text='RT @fireabingdon: Busy morning out in #Abingdon today. Fire '
+[3/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[3/144] NO RESULT
+[4/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[4/144] NO RESULT
+[5/144] WITHIN 5.2km | pred=Q60 | text='RT @4FreedominIran: #Iran resistance to protest at the Unite'
+[6/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[6/144] NO RESULT
+[7/144] WITHIN 1.2km | pred=Q3805 | text='RT @jordantimes: Muslims and Christians march in #Amman on S'
+[8/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[8/144] NO RESULT
+[9/144] WITHIN 0.9km | pred=Q23556 | text='Ebola patient walks into hospital: The first American Ebola '
+[10/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[10/144] NO RESULT
+  Wikidata cache saved: 6604 entities, 6521 labels, 846 coord lookups
+[11/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[11/144] NO RESULT
+[12/144] WITHIN 0.0km | pred=Q203995 | text='All pregnant women in #Southend are eligible for the free fl'
+[13/144] OUTSIDE 345.4km | pred=Q258 | text='South Africa: SA earthquake big, but not uncommon: The Orkne'
+[14/144] WITHIN 0.2km | pred=Q84 | text='London UK: Flood the Embassy – Justice for Michael Brown – D'
+[15/144] WITHIN 0.6km | pred=Q1018862 | text='Earthquake Shakes Iceland Volcano, Still No Ash: An earthqua'
+[16/144] WITHIN 9.2km | pred=Q16635 | text='Magnitude 7.1 Earthquake Strikes Off Guam: A magnitude 7.1 e'
+[17/144] WITHIN 0.0km | pred=Q5092544 | text='RT @stormchaser4850: Update: NWS: The deadly EF-1 #tornado t'
+[18/144] WITHIN 1.3km | pred=Q23768 | text='Las Vegas Review - Rebels ready for late night in Boise - De'
+[19/144] WITHIN 1.3km | pred=Q36312 | text='RT @ezralevant: Watch the riot videos. Listen to the victims'
+[20/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[20/144] NO RESULT
+  Wikidata cache saved: 6607 entities, 6524 labels, 846 coord lookups
+[21/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[21/144] NO RESULT
+[22/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[22/144] NO RESULT
+[23/144] OUTSIDE 281.0km | pred=Q117 | text='RT @akwasisarpong: An update on the health status of the US '
+[24/144] OUTSIDE 386.6km | pred=Q755741 | text='SEVERE WX ALERT: ...THE NATIONAL WEATHER SERVICE IN RALEIGH '
+[25/144] WITHIN 0.0km | pred=Q125384 | text='The Luzon earthquake occurred on Monday, July 16, 1990, at 4'
+[26/144] WITHIN 0.5km | pred=Q16557 | text='RT @BMcCarthy32: this is not a joke: I literally just farted'
+[27/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[27/144] NO RESULT
+[28/144] WITHIN 0.2km | pred=Q41183 | text='RT @shadihamid: Rebels in Aleppo "say they are on the verge '
+[29/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[29/144] NO RESULT
+[30/144] WITHIN 71.6km | pred=Q1044 | text='RT @Crof: Sierra Leone: Five #Ebola suspects on the run in B'
+  Wikidata cache saved: 6610 entities, 6527 labels, 846 coord lookups
+[31/144] WITHIN 4.3km | pred=Q1530 | text='RT @NeilLokare: Gas masks, machine guns, armored cars, no fl'
+[32/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[32/144] NO RESULT
+[33/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[33/144] NO RESULT
+[34/144] WITHIN 0.0km | pred=Q16556 | text='Measles Outbreak Has Arizona Tracking 1,000 Who Might Have B'
+[35/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[35/144] NO RESULT
+[36/144] WITHIN 0.0km | pred=Q65 | text='The Slymar #Earthquake hit  Los Angeles in 1971? Watch this '
+[37/144] WITHIN 33.2km | pred=Q1391 | text='Balt Fire Officers wish a speedy recovery to the MD State Tr'
+[38/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[38/144] NO RESULT
+[39/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[39/144] NO RESULT
+[40/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[40/144] NO RESULT
+  Wikidata cache saved: 6611 entities, 6528 labels, 846 coord lookups
+[41/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[41/144] NO RESULT
+[42/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[42/144] NO RESULT
+[43/144] WITHIN 0.5km | pred=Q3787 | text='Ebola: Children with symptoms of malaria to be shut out of s'
+[44/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[44/144] NO RESULT
+[45/144] WITHIN 0.0km | pred=Q61 | text='when mr.leonard told us a tornado and huge rain storm drive '
+[46/144] WITHIN 1.1km | pred=Q54961 | text="'Like a scene from the Wizard of Oz': homes and cars damaged"
+[47/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[47/144] NO RESULT
+[48/144] WITHIN 4.6km | pred=Q1412551 | text="RT @Riddwane: I've just got an information, that police in J"
+[49/144] WITHIN 49.8km | pred=Q1649 | text='RT @OfficeDepotFndn: Learn how Office Depot Foundation &amp;'
+[50/144] OUTSIDE 314.2km | pred=Q1509 | text="Can't wait to hit Kingsport TN so I can help defeat the Rebe"
+  Wikidata cache saved: 6617 entities, 6534 labels, 846 coord lookups
+[51/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[51/144] NO RESULT
+[52/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[52/144] NO RESULT
+[53/144] WITHIN 0.4km | pred=Q607406 | text="RT @cnnbrk: Hundreds flee town of Shaja'ia in Gaza as Israel"
+[54/144] WITHIN 0.4km | pred=Q62 | text="RT @mikemccaffrey: San Francisco's Tuesday siren is like a c"
+[55/144] OUTSIDE 378.2km | pred=Q1509 | text='RT @weatherchannel: 10:22pm CT: New #tornado warnings stradd'
+[56/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[56/144] NO RESULT
+[57/144] WITHIN 1.0km | pred=Q192271 | text='China: a new rockfall video from Guiyang, Guizhou and images'
+[58/144] WITHIN 0.4km | pred=Q49266 | text='4.8 Earthquake, 33 miles ssw of Wichita at 340 pm. We felt i'
+[59/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[59/144] NO RESULT
+[60/144] WITHIN 124.3km | pred=Q1044 | text="Sierra Leone's top Ebola doctor dies from virus - FREETOWN ("
+  Wikidata cache saved: 6618 entities, 6535 labels, 846 coord lookups
+[61/144] WITHIN 0.3km | pred=Q2141 | text='#hollaback Catcalls, sexualized violence targeted at Halifax'
+[62/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[62/144] NO RESULT
+[63/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[63/144] NO RESULT
+[64/144] WITHIN 102.1km | pred=Q1408 | text='#Team_Wolf1 Hundreds in New Jersey Flee Fire at Apartments: '
+[65/144] WITHIN 0.6km | pred=Q122563 | text='Literally a tornado at the baseball tournament in Eau Claire'
+[66/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[66/144] NO RESULT
+[67/144] OUTSIDE 200.9km | pred=Q330643 | text='RT @gsurya: "When a great tree falls, the earth shakes": sai'
+[68/144] OUTSIDE 555.3km | pred=Q1581 | text='RT @The_First_Stone: Protest in Chicago! Police clashing wit'
+[69/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[69/144] NO RESULT
+[70/144] WITHIN 0.2km | pred=Q23154 | text='RT @Bristol_Culture: Hundreds march through Bristol in a Rec'
+  Wikidata cache saved: 6619 entities, 6536 labels, 846 coord lookups
+[71/144] WITHIN 0.3km | pred=Q79990 | text="Marie O'Connell about impact of an earthquake on the NZ Film"
+[72/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[72/144] NO RESULT
+[73/144] OUTSIDE 353.0km | pred=Q30674229 | text='RT @BBassem7: Breaking. #ISIS Islamists rebels just burnt th'
+[74/144] WITHIN 0.2km | pred=Q864450 | text='RT @NBCLA: The 2014 Great California ShakeOut earthquake dri'
+[75/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[75/144] NO RESULT
+[76/144] WITHIN 0.3km | pred=Q1376790 | text='Tornado slams Virginia campground; 2 dead: CAPE CHARLES, Va.'
+[77/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[77/144] NO RESULT
+[78/144] OUTSIDE 284.7km | pred=Q3234461 | text='RT @ktmkomuter: Torrential downpour in the Klang Valley resu'
+[79/144] WITHIN 0.2km | pred=Q649 | text='#MH17 At 1st rebels claimed they had the black box (flight r'
+[80/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[80/144] NO RESULT
+  Wikidata cache saved: 6619 entities, 6536 labels, 846 coord lookups
+[81/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[81/144] NO RESULT
+[82/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[82/144] NO RESULT
+[83/144] WITHIN 8.4km | pred=Q1489 | text='RT @MexicAnarchist: Epicenter of the earthquake was in the s'
+[84/144] WITHIN 0.0km | pred=Q317865 | text='Mercy set to open Joplin hospital four years after huge torn'
+[85/144] WITHIN 8.0km | pred=Q43070 | text='Fighting flares at Ukraine`s Donetsk airport: Ukrainian forc'
+[86/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[86/144] NO RESULT
+[87/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[87/144] NO RESULT
+[88/144] OUTSIDE 3346.5km | pred=Q39760 | text="RT @Rangeeni: Our heart breaks for Gaza's children. #Gaza &l"
+[89/144] WITHIN 0.5km | pred=Q16552 | text='The #measles is spreading in #SanDiego. Find out where you m'
+[90/144] WITHIN 0.1km | pred=Q33935 | text='RT @peacenowisrael: Protest in Tel Aviv. Demand an end to th'
+  Wikidata cache saved: 6621 entities, 6538 labels, 846 coord lookups
+[91/144] OUTSIDE 312.1km | pred=Q99 | text='RT California_agen: Earthquake: 3.3 quake strikes near the G'
+[92/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[92/144] NO RESULT
+[93/144] OUTSIDE 322.8km | pred=Q1509 | text='@K_Babyy_ tennessee is way overdue for an earthquake along t'
+[94/144] WITHIN 38.1km | pred=Q180057 | text='Did you feel the earthquake last night? tremors in Grantham,'
+[95/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[95/144] NO RESULT
+[96/144] WITHIN 0.6km | pred=Q1156 | text='@AviralKapoor_ You know why we had riot in Mumbai in August '
+[97/144] WITHIN 0.2km | pred=Q41262 | text='? Tomorrow: Nottingham, United Kingdom - Oct 2 at The Maze S'
+[98/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[98/144] NO RESULT
+[99/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[99/144] NO RESULT
+[100/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[100/144] NO RESULT
+  Wikidata cache saved: 6626 entities, 6543 labels, 846 coord lookups
+[101/144] WITHIN 0.2km | pred=Q203889 | text="@HistoricPapers I'd forgotten about that Luton riot back in "
+[102/144] WITHIN 2.5km | pred=Q8652 | text='#miami What an idiot! I hope they fire this police officer, '
+[103/144] WITHIN 99.0km | pred=Q2005511 | text='Queenstown police are monitoring a protest taking place at t'
+[104/144] WITHIN 41.7km | pred=Q213205 | text='RT @enf: Bay Area geotagged tweets per minute around the tim'
+[105/144] WITHIN 1.3km | pred=Q651131 | text='RT @reubenkang: Thoughts and Prayers to the people of Kota B'
+[106/144] WITHIN 1.2km | pred=Q1865 | text='No fire at fuel hike rally as protesters stay away: KUALA LU'
+[107/144] OUTSIDE 1072.5km | pred=Q1029 | text="@_Zanie relax. We don't have malaria mosquitoes in Jozi. Onl"
+[108/144] WITHIN 2.0km | pred=Q1761 | text='RT @DETWaterBrigade: Thousands take to the streets of Dublin'
+[109/144] WITHIN 0.3km | pred=Q189074 | text='RT @RKBA1911: So, now do Asians &amp; Hispanics get to riot '
+[110/144] WITHIN 1.0km | pred=Q23197 | text='Waiting out a storm in the basement. #tailgate #Nashville #t'
+  Wikidata cache saved: 6628 entities, 6545 labels, 846 coord lookups
+[111/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[111/144] NO RESULT
+[112/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[112/144] NO RESULT
+[113/144] WITHIN 4.2km | pred=Q2918779 | text='RT @rk70534: #Damascus, #Syria: #Yarmouk Palestinian refugee'
+[114/144] WITHIN 0.8km | pred=Q43070 | text="RT @Telegraph: Ukraine's rebels prepare to defend Donetsk to"
+[115/144] OUTSIDE 6402.9km | pred=Q850235 | text='RT @MarybethJacoby: Tornado watch in the MIdlands \nhttp://t.'
+[116/144] OUTSIDE 703.7km | pred=Q1542859 | text='at 10:05 PM a Flood Warning was Cancelled for the Grand Rive'
+[117/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[117/144] NO RESULT
+[118/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[118/144] NO RESULT
+[119/144] WITHIN 0.3km | pred=Q8673 | text='#LatestInfo: Lagos female doctor contracts Ebola virus: \xa0 \xa0 '
+[120/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[120/144] NO RESULT
+  Wikidata cache saved: 6629 entities, 6546 labels, 846 coord lookups
+[121/144] WITHIN 0.0km | pred=Q133274 | text='RT @ReutersLive: LIVE: Thousands are expected at a protest i'
+[122/144] WITHIN 7.1km | pred=Q19686 | text='RT @Jamie_Woodward_: Ice floes on the Thames &amp; the Great'
+[123/144] WITHIN 10.1km | pred=Q2577621 | text='RT @Robert_Mills: Lowell, Dracut, Tyngsboro, Southern NH, th'
+[124/144] WITHIN 129.8km | pred=Q71699 | text='6.0 earthquake is likely in the Aomori and Morioka Japan are'
+[125/144] WITHIN 0.3km | pred=Q100 | text="The chefs will be cooking for Boston's Fire &amp; Police Dep"
+[126/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[126/144] NO RESULT
+[127/144] WITHIN 2.4km | pred=Q220 | text='U think "Rome existed before the flood?" what meme told you '
+[128/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[128/144] NO RESULT
+[129/144] OUTSIDE 2057.4km | pred=Q386170 | text='When westboro baptist church was gonna protest the sandy hoo'
+[130/144] WITHIN 2.7km | pred=Q8969 | text='RT @oart50: "The Man on Fire," one of the several sculptures'
+  Wikidata cache saved: 6630 entities, 6547 labels, 846 coord lookups
+[131/144] WITHIN 0.8km | pred=Q80053 | text='Tabriz: A protest gathering in front of the university #Iran'
+[132/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[132/144] NO RESULT
+[133/144] WITHIN 0.0km | pred=Q34932 | text='#qldpol 2011 Brisbane floods forgotten as people buy into th'
+[134/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[134/144] NO RESULT
+[135/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[135/144] NO RESULT
+[136/144] WITHIN 26.2km | pred=Q41621 | text='RT @Elizrael: PHOTOS: The protest in Haifa and two of the pr'
+[137/144] WITHIN 0.4km | pred=Q23482 | text='RT @FaithWarJournal: Marseilles: 30-40% Muslim. Excessive vi'
+[138/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[138/144] NO RESULT
+[139/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[139/144] NO RESULT
+[140/144] ERROR (KeyError: 'GOOGLE_API_KEY')
+[140/144] NO RESULT
+  Wikidata cache saved: 6632 entities, 6549 labels, 846 coord lookups
+[141/144] OUTSIDE 1418.2km | pred=Q2798738 | text='Iran: reports of protest rallies across the country http://t'
+[142/144] WITHIN 0.0km | pred=Q486306 | text='FEMA Deadline Not the End of Flood Recovery in Florida: PENS'
+[143/144] WITHIN 86.4km | pred=Q1408 | text="RT @yeahRIFAsaidit: I'm from Newark, NJ. I can attest to the"
+[144/144] WITHIN 0.5km | pred=Q1899 | text='It is such a simple question: Where are the ATC recordings o'
+  Wikidata cache saved: 6632 entities, 6549 labels, 846 coord lookups
+
+Done: acc@161km = 71/144 (49.3%)  ->  C:\Users\Adela\PycharmProjects\geo\results\raw\eval_acc161_refined_gemma_geocorpora_144.csv
+  Wikidata cache saved: 6632 entities, 6549 labels, 846 coord lookups
