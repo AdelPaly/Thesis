@@ -39,3 +39,7 @@ Thumbs.db
 
 # Local-only scripts folder
 scripts/
+
+# Local-only dataset
+src/geocorpora_144.csv
+
