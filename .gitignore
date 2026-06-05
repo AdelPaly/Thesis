@@ -37,9 +37,6 @@ tests.zip
 .DS_Store
 Thumbs.db
 
-# Local-only scripts folder
-scripts/
-
 # Local-only dataset
 src/geocorpora_144.csv
 
