@@ -40,3 +40,8 @@ Thumbs.db
 # Local-only dataset
 src/geocorpora_144.csv
 
+
+# Bluesky English dump (~380 MB, regenerate with scripts/fetch_bluesky_en.py)
+src/bluesky_en.jsonl
+src/bluesky_en.parquet
+src/bluesky_en.jsonl.bak
