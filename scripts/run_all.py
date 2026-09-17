@@ -33,6 +33,8 @@ LOG_DIR = REPO_ROOT / "results" / "logs"
 # this is an ordering preference, not a registry.
 ORDER = ["baseline_majority", "baseline_population",
          "gemma", "groq_oss",
+         "dense_retrieval",
+         "grounded_gemma", "grounded_gemma_linking",
          "two_stage", "refined",
          "routed_gemma", "mordecai3"]
 

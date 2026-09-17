@@ -26,6 +26,120 @@ parameter is hardcoded anywhere in the pipeline, and `config_hash` — a sha256
 over the canonicalised configuration — is stored on every record, so a record
 can always be traced to the exact configuration that produced it.
 
+## Tiers
+
+The evaluation is organised by **what kind of signal a method can consume**,
+not by model family. Tiers 0 and 1 need a toponym in the text and score zero by
+construction on entity-only conditions; tiers 2 upward do not.
+
+| Tier | Method | Configuration |
+|---|---|---|
+| 0 | population baseline, majority | `baseline_population`, `baseline_majority` |
+| 1 | geoparser | `mordecai3` (cited from literature, not re-run — see below) |
+| 2a | retrieve + rerank | `two_stage` |
+| 2b | entity linking | `refined` |
+| 3 | dense retrieval | `dense_retrieval` |
+| 4 | LLM-only | `gemma`, `groq_oss` (model-sensitivity contrast) |
+| 5 | grounded LLM | `grounded_gemma`, `grounded_gemma_linking` |
+| combo | routed | `routed_gemma` (reported as a negative result) |
+| — | oracle | analysis only, not a configuration |
+
+A configuration declares its tier in its config file. `tier` is presentation
+metadata: it orders report rows and is **excluded from `config_hash`**, so it
+cannot change a prediction and cannot force a re-run.
+
+### Tier 3 — dense retrieval, and why it exists
+
+Without it, "NER-free" and "LLM" are the same category in the results, because
+every system that lacks a mention-detection stage happens to be an LLM. The
+headline contrast could not then separate *no mention detection* from
+*parametric knowledge*. Tier 3 is that missing cell: no mention detection, no
+entity linking, no LLM — embed the post, embed a text description of every
+candidate place, take nearest neighbours.
+
+It uses the **same encoder as the tier 2 reranker**
+(`intfloat/multilingual-e5-base`), so the comparison is not confounded by a
+different encoder. E5 is trained with asymmetric prefixes for retrieval, so
+`query: ` and `passage: ` are set explicitly in the config rather than left
+implicit in the encoder call.
+
+**What goes into the index** (`dense.index_fields`) defines what the tier can
+possibly retrieve — a place whose indexed text says nothing about football
+cannot be retrieved from a post about football. It is a configuration
+parameter and it is recorded in the index metadata:
+
+> English label · English description · English aliases (up to 8) ·
+> country label · continent label
+
+**The candidate pool** determines the difficulty: retrieving from 150 places is
+a different task from retrieving from 100,000. The `gold_plus_predicted` pool
+is every gold place across all configured datasets, plus every QID any
+configuration ever proposed as a candidate place, plus every QID in a linker
+candidate set, filtered to entities that actually carry coordinates. Sizes are
+recorded in the index metadata and reported.
+
+Two properties of that pool must be stated wherever this tier is reported:
+
+* **The gold place is in the pool by construction.** So "gold not in the
+  top-k" is a *ranking* failure, never a coverage failure, and 100% recall is
+  reachable in principle. This is a closed-set retrieval evaluation.
+* **The distractors are endogenous** — they are the places other systems
+  actually confused for the gold. That makes them hard negatives, but the pool
+  lacks the long tail of world geography, so scores here are optimistic
+  relative to retrieval over a full gazetteer.
+
+### Tier 5 — grounded LLM
+
+Retrieval-augmented, not routed. Candidates are retrieved first, handed to the
+model as a numbered list with QID, label, country and description, and the
+model selects one or declines. It may not name a place outside the list.
+
+The motivation is the routing result: the oracle shows ~20 pp of headroom that
+routing does not capture, and the rebuilt gate underperforms both its
+components. Retrieval-augmented generation is the direction adjacent tasks have
+taken (Img2Loc for image geolocation, Spatial-RAG for spatial QA); the
+text-geolocation equivalent is unexplored. Combining the paradigms is a cleaner
+contribution than choosing between them.
+
+Three design points:
+
+* **The retriever is an existing tier, never a new one.** `grounded_gemma`
+  takes candidates from tier 3, `grounded_gemma_linking` from tier 2b. A new
+  retriever would confound the comparison against the tier it is built on.
+* **Abstention is a first-class answer.** Declining when the right place is
+  absent from the candidates is correct behaviour, not failure. Tier 2's high
+  no-result rate makes abstention a real axis here, so refusal is recorded as
+  refusal.
+* **Selection is validated.** An index out of range, or a QID not in the list,
+  is recorded as a violation in the record's `error`. A grounded system that
+  ignores its grounding must be visible rather than scored as an ordinary
+  wrong guess.
+
+The two variants answer a question neither can answer alone: **does grounding
+help because of the LLM or because of the retriever?** Same model, same prompt,
+same selection contract, different candidate source. Chosen on dev.
+
+### Failure attribution for the new tiers
+
+Both tiers get labels appropriate to their architecture, and the table
+distinguishes **impossible** cells from **empty** ones: a level whose stage
+does not exist in an architecture prints `n/a`, while `0.0` means the stage
+exists and the failure never occurred. Dense retrieval has no NER and no
+linking stage, so those cells are `n/a`, not zero.
+
+Two levels are specific to retrieval-then-selection:
+
+| level | meaning |
+|---|---|
+| `gold_not_retrieved` | the gold place was not among the retrieved candidates — a retrieval failure |
+| `wrong_candidate_selected` | the gold place *was* in the supplied list and the model chose another — a selection failure |
+| `abstained` | the model declined although the gold place was in the list |
+| `selection_violation` | the model answered outside the candidate list |
+
+That split is the number tier 5 exists to produce: it separates retrieval
+failure from selection failure, which is what says whether grounding is
+working.
+
 ## Dev/test split
 
 There is a single split, committed at `splits/place_split.csv` (with an

@@ -100,8 +100,41 @@ def sort_key(name, records, tiers):
 
 
 LEVELS = ["no_ner_span", "span_not_linked", "wrong_entity",
-          "wrong_candidate_selected", "correct_candidate_not_first",
+          "gold_not_retrieved", "wrong_candidate_selected",
+          "correct_candidate_not_first", "abstained", "selection_violation",
           "returned_nothing", "no_intermediate_stages"]
+
+# Which pipeline stage a level presupposes. A level whose stage does not exist
+# in an architecture is STRUCTURALLY IMPOSSIBLE there, and the table prints a
+# dash rather than 0.0 -- "this cannot happen here" and "this never happened"
+# are different statements and must not look alike.
+LEVEL_REQUIRES = {
+    "no_ner_span": "ner",
+    "span_not_linked": "linking",
+    "wrong_entity": "linking",
+    "gold_not_retrieved": "candidates",
+    "wrong_candidate_selected": "candidates",
+    "correct_candidate_not_first": "candidates",
+    "abstained": "selection",
+    "selection_violation": "selection",
+    "returned_nothing": None,            # any architecture can return nothing
+    "no_intermediate_stages": None,
+}
+
+
+def stages_present(records):
+    """Which stages an architecture actually has, read off its records."""
+    present = set()
+    for rec in records:
+        if rec.get("ner_spans"):
+            present.add("ner")
+        if rec.get("linked_entities"):
+            present.add("linking")
+        if rec.get("candidate_places"):
+            present.add("candidates")
+        if rec.get("selection") is not None:
+            present.add("selection")
+    return present
 
 
 # ------------------------------------------------------- failure attribution
@@ -128,6 +161,34 @@ def attribute(rec):
     links = rec.get("linked_entities") or []
     places = rec.get("candidate_places") or []
     has_pred = rec.get("has_prediction")
+    selection = rec.get("selection")
+    paradigm = rec.get("paradigm")
+
+    # --- retrieval-then-selection architectures (tier 5) -------------------
+    # Attributed first, because for these the question is specifically whether
+    # retrieval or selection failed, and that is the number the tier exists to
+    # produce.
+    if selection is not None:
+        place_qids = [p.get("qid") for p in places]
+        gold_present = bool(gold and gold in place_qids)
+        if selection.get("violation"):
+            return "selection_violation"
+        if not places:
+            return "gold_not_retrieved"      # nothing was retrieved at all
+        if not gold_present:
+            return "gold_not_retrieved"      # retrieval failure, not the model
+        if selection.get("abstained"):
+            return "abstained"               # declined with the gold in front of it
+        return "wrong_candidate_selected"    # had it, chose another
+
+    # --- dense retrieval (tier 3): no NER, no linking ----------------------
+    if paradigm == "dense_retrieval":
+        if not places:
+            return "returned_nothing"
+        place_qids = [p.get("qid") for p in places]
+        if gold and gold in place_qids:
+            return "correct_candidate_not_first"
+        return "gold_not_retrieved"
 
     # No observable stage at all. Two different situations:
     #   * it still produced an answer -- a single-call LLM, the constant
@@ -176,21 +237,30 @@ def attribute_all(scored):
     return scored
 
 
-def crosstab(scored, row_key, only_failures=True):
-    """rows = row_key value, columns = failure level, cells = counts."""
+def crosstab(scored, row_key, only_failures=True, all_records=None):
+    """rows = row_key value, columns = failure level, cells = counts.
+
+    Also returns, per row, the set of stages that row's architecture has, so
+    the printer can tell an impossible cell from an empty one.
+    """
     table = defaultdict(Counter)
+    rows_records = defaultdict(list)
+    for rec in (all_records if all_records is not None else scored):
+        rows_records[rec.get(row_key)].append(rec)
     for rec in scored:
         level = rec.get("failure_level")
         if only_failures and level is None:
             continue
         table[rec.get(row_key)][level or "correct"] += 1
-    return table
+    stages = {key: stages_present(recs) for key, recs in rows_records.items()}
+    return table, stages
 
 
-def print_crosstab(table, row_label, percent=True):
+def print_crosstab(result, row_label, percent=True):
+    """Row percentages. A cell an architecture cannot produce prints as `n/a`,
+    never as 0.0."""
+    table, stages = result
     cols = [c for c in LEVELS if any(c in row for row in table.values())]
-    if not percent:
-        cols = ["correct"] + cols if any("correct" in r for r in table.values()) else cols
     width = max([len(row_label)] + [len(str(k)) for k in table]) + 1
     header = f"{row_label:{width}} {'n':>5} " + " ".join(f"{c[:11]:>12}" for c in cols)
     print(header)
@@ -198,13 +268,19 @@ def print_crosstab(table, row_label, percent=True):
     for key in sorted(table, key=lambda k: str(k)):
         row = table[key]
         total = sum(row.values())
+        have = stages.get(key, set())
         cells = []
         for c in cols:
-            if percent:
+            required = LEVEL_REQUIRES.get(c)
+            if required is not None and required not in have and not row[c]:
+                cells.append(f"{'n/a':>12}")
+            elif percent:
                 cells.append(f"{row[c] / total * 100:>12.1f}" if total else f"{'-':>12}")
             else:
                 cells.append(f"{row[c]:>12}")
         print(f"{str(key):{width}} {total:>5} " + " ".join(cells))
+    print("  n/a = the architecture has no such stage, so the level is impossible;")
+    print("  0.0 = the stage exists and the failure never occurred.")
     print()
 
 
@@ -218,21 +294,25 @@ def cmd_failures(scored, args):
     print("Row percentages across the levels; each row sums to 100.\n")
 
     print("-- by configuration --")
-    print_crosstab(crosstab(failures, "config_name"), "config")
+    print_crosstab(crosstab(failures, "config_name", all_records=scored), "config")
     print("-- by paradigm --")
-    print_crosstab(crosstab(failures, "paradigm"), "paradigm")
+    print_crosstab(crosstab(failures, "paradigm", all_records=scored), "paradigm")
     print("-- by condition --")
-    print_crosstab(crosstab(failures, "condition"), "condition")
+    print_crosstab(crosstab(failures, "condition", all_records=scored), "condition")
     print("-- by paradigm x condition --")
-    for rec in failures:
+    for rec in scored:
         rec["_pxc"] = f"{rec.get('paradigm')} / {rec.get('condition')}"
-    print_crosstab(crosstab(failures, "_pxc"), "paradigm / condition")
+    print_crosstab(crosstab(failures, "_pxc", all_records=scored),
+                   "paradigm / condition")
     print("-- by routing branch (routed configurations only) --")
     routed = [r for r in failures if r.get("routing_branch")]
     if routed:
-        for rec in routed:
-            rec["_cxb"] = f"{rec.get('config_name')} / {rec.get('routing_branch')}"
-        print_crosstab(crosstab(routed, "_cxb"), "config / branch")
+        for rec in scored:
+            if rec.get("routing_branch"):
+                rec["_cxb"] = f"{rec.get('config_name')} / {rec.get('routing_branch')}"
+        branch_records = [r for r in scored if r.get("routing_branch")]
+        print_crosstab(crosstab(routed, "_cxb", all_records=branch_records),
+                       "config / branch")
     else:
         print("(none)\n")
 

@@ -1,0 +1,32 @@
+name: gemma4
+tier: "4"
+paradigm: ner_free
+description: >
+  Matched ungrounded control for tier 5. Identical to `gemma` except for the
+  model, because gemma-3-12b-it is no longer served by the API and the
+  grounded tiers therefore had to move to gemma-4-31b-it. Without this row the
+  grounded-vs-ungrounded comparison would be cross-model and would measure the
+  model change rather than the grounding.
+
+  Google Gemma 3 12B (instruction tuned), reading the whole text in one pass. No mention detection stage:
+  the model is asked for city / country / continent directly, and the answer
+  is resolved against Wikidata. A continent-only answer carries no coordinate.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  backend: gemma
+  model: gemma-4-31b-it
+  cache_name: gemma4
+routing:
+  enabled: false
+  gate: null
+  fallback: null

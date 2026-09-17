@@ -13,6 +13,7 @@ _CACHE_FILES = {
     "label": os.path.join(_CACHE_DIR, "label.pkl"),
     "coords": os.path.join(_CACHE_DIR, "coords.pkl"),
     "search": os.path.join(_CACHE_DIR, "search.pkl"),
+    "alias": os.path.join(_CACHE_DIR, "alias.pkl"),
 }
 
 
@@ -32,8 +33,9 @@ _entity_cache = _load_pickle(_CACHE_FILES["entity"])   # QID -> entity data
 _label_cache = _load_pickle(_CACHE_FILES["label"])     # QID -> English label
 _coords_cache = _load_pickle(_CACHE_FILES["coords"])   # (text, type) -> candidates
 _search_cache = _load_pickle(_CACHE_FILES["search"])   # (text, limit) -> [qid]
+_alias_cache = _load_pickle(_CACHE_FILES["alias"])     # QID -> [alias]
 _initial_sizes = (len(_entity_cache), len(_label_cache), len(_coords_cache),
-                  len(_search_cache))
+                  len(_search_cache), len(_alias_cache))
 print(f"  Wikidata cache loaded: {_initial_sizes[0]} entities, "
       f"{_initial_sizes[1]} labels, {_initial_sizes[2]} coord lookups, "
       f"{_initial_sizes[3]} searches")
@@ -42,14 +44,15 @@ print(f"  Wikidata cache loaded: {_initial_sizes[0]} entities, "
 def _save_caches():
     # Only write if something changed, to avoid clobbering with empty dicts on error.
     sizes = (len(_entity_cache), len(_label_cache), len(_coords_cache),
-             len(_search_cache))
+             len(_search_cache), len(_alias_cache))
     if sizes == _initial_sizes:
         return
     try:
         for key, path in _CACHE_FILES.items():
             tmp = path + ".tmp"
             data = {"entity": _entity_cache, "label": _label_cache,
-                    "coords": _coords_cache, "search": _search_cache}[key]
+                    "coords": _coords_cache, "search": _search_cache,
+                    "alias": _alias_cache}[key]
             with open(tmp, "wb") as f:
                 pickle.dump(data, f)
             os.replace(tmp, path)
@@ -163,6 +166,37 @@ def _fetch_labels(qids):
             except Exception:
                 pass
     return {q: _label_cache.get(q, "") for q in qids}
+
+
+def fetch_aliases(qids):
+    """Batch-fetch English aliases, using a cache. {QID: [alias, ...]}.
+
+    Aliases are a separate call rather than an extra prop on _fetch_entities,
+    because the entity cache already holds thousands of entries fetched without
+    them and widening the props there would silently return alias-less entries
+    for everything already cached.
+    """
+    missing = [q for q in qids if q not in _alias_cache]
+    for i in range(0, len(missing), 50):
+        batch = missing[i:i + 50]
+        try:
+            data = _api_get({
+                "action": "wbgetentities",
+                "ids": "|".join(batch),
+                "props": "aliases",
+                "languages": "en",
+                "format": "json",
+            })
+        except Exception as e:                                  # noqa: BLE001
+            print(f"  Alias fetch error: {e}")
+            continue
+        for qid, ent in data.get("entities", {}).items():
+            _alias_cache[qid] = [a.get("value", "")
+                                 for a in ent.get("aliases", {}).get("en", [])
+                                 if a.get("value")]
+        for q in batch:
+            _alias_cache.setdefault(q, [])
+    return {q: _alias_cache.get(q, []) for q in qids}
 
 
 def _claim_id(entity, prop):

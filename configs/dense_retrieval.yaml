@@ -1,0 +1,45 @@
+name: dense_retrieval
+tier: "3"
+paradigm: dense_retrieval
+description: >
+  Tier 3. No mention detection, no entity linking, no LLM: embed the post,
+  embed a text description of every candidate place, take nearest neighbours.
+
+  This is the cell that separates "no mention-detection stage" from
+  "parametric knowledge". Without it every NER-free system in the comparison
+  happens to be an LLM, so the headline contrast cannot tell the two apart.
+
+  The encoder is the one the reranker already uses, so the comparison against
+  tier 2 is not confounded by a different encoder. E5 is trained with
+  asymmetric query/passage prefixes for retrieval, so they are set explicitly
+  here rather than left implicit.
+
+  index_fields defines what the tier can possibly retrieve: a place whose
+  indexed text says nothing about football cannot be retrieved from a post
+  about football. The pool defines the difficulty, and both are recorded in
+  the index metadata and reported.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  top_n: 10
+rerank:
+  model: null
+  enabled: false
+llm:
+  backend: null
+  model: null
+routing:
+  enabled: false
+  gate: null
+  fallback: null
+dense:
+  encoder: intfloat/multilingual-e5-base
+  pool: gold_plus_predicted
+  top_k: 10
+  index_fields: [label, description, aliases, country, continent]
+  query_prefix: "query: "
+  passage_prefix: "passage: "

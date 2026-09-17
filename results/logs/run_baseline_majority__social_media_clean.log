@@ -1,7 +1,8 @@
-config   : baseline_majority (baseline) hash=8359d7821961
+config   : baseline_majority (baseline) hash=b126fcbd421b
 dataset  : social_media_clean -> src/social_media_dataset.csv (144 items)
 output   : results\predictions\baseline_majority__social_media_clean.jsonl
-  Wikidata cache loaded: 8335 entities, 8226 labels, 1178 coord lookups
+  144 record(s) in baseline_majority__social_media_clean.jsonl were written by a different config_hash and will be replaced
+  Wikidata cache loaded: 11129 entities, 11001 labels, 1178 coord lookups, 898 searches
 [1/144] ce11764b8bdeb186 -> Q1348
 [2/144] 00598fcba940d826 -> Q1348
 [3/144] 098fb8402c195a11 -> Q1348

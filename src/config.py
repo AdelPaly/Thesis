@@ -22,13 +22,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = REPO_ROOT / "configs"
 DATASET_REGISTRY = CONFIG_DIR / "datasets.yaml"
 
-PARADIGMS = {"ner_dependent", "ner_free", "geoparser", "routed", "baseline"}
+PARADIGMS = {"ner_dependent", "ner_free", "geoparser", "routed", "baseline",
+             "dense_retrieval", "grounded_llm"}
 LINKING_BACKENDS = {"refined", "wikidata_search", "none"}
 LLM_BACKENDS = {None, "gemma", "groq_oss", "groq_llama"}
 ROUTING_GATES = {"legacy_is_geographic_qid", "input_properties"}
 ROUTING_BRANCHES = {"llm", "linking", "geoparser"}
 BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
 GAZETTEERS = {"wikidata"}
+DENSE_POOLS = {"gold_only", "gold_plus_predicted"}
+CANDIDATE_SOURCES = {"dense", "linking"}
 GEOPARSERS = {"mordecai3"}
 
 
@@ -85,6 +88,31 @@ class BaselineConfig:
 
 
 @dataclass(frozen=True)
+class DenseConfig:
+    """Tier 3: dense retrieval over candidate place descriptions."""
+    encoder: str | None = None
+    pool: str = "gold_plus_predicted"
+    top_k: int = 10
+    # What text represents a place in the index. This defines what the tier can
+    # possibly retrieve, so it is a parameter and it is recorded in the index
+    # metadata rather than being implicit in the code.
+    index_fields: list[str] | None = None
+    # E5 is trained with asymmetric prefixes for retrieval. They are parameters
+    # so the choice is visible in the config rather than buried in the encoder
+    # call, and so the index cache key can include them.
+    query_prefix: str = "query: "
+    passage_prefix: str = "passage: "
+
+
+@dataclass(frozen=True)
+class GroundedConfig:
+    """Tier 5: retrieve candidates, then have the LLM select from them."""
+    candidate_source: str | None = None      # dense | linking
+    top_k: int = 10
+    allow_abstention: bool = True
+
+
+@dataclass(frozen=True)
 class GeoparserConfig:
     backend: str | None = None         # mordecai3
     spacy_model: str | None = None
@@ -101,6 +129,8 @@ class PipelineConfig:
     routing: RoutingConfig = field(default_factory=RoutingConfig)
     baseline: BaselineConfig = field(default_factory=BaselineConfig)
     geoparser: GeoparserConfig = field(default_factory=GeoparserConfig)
+    dense: DenseConfig = field(default_factory=DenseConfig)
+    grounded: GroundedConfig = field(default_factory=GroundedConfig)
     # Presentation metadata: which tier of the evaluation this configuration
     # belongs to, by what kind of signal it can consume. Excluded from
     # config_hash with `description`, because it orders report rows and does
@@ -165,7 +195,8 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
         raise ConfigError("configuration must be a YAML mapping")
 
     known_sections = {"name", "paradigm", "tier", "description", "ner", "linking",
-                      "rerank", "llm", "routing", "baseline", "geoparser"}
+                      "rerank", "llm", "routing", "baseline", "geoparser",
+                      "dense", "grounded"}
     unknown = set(raw) - known_sections
     if unknown:
         raise ConfigError(f"unknown top-level key(s) {sorted(unknown)}; "
@@ -186,6 +217,8 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
         "routing": (RoutingConfig, _section(raw, "routing")),
         "baseline": (BaselineConfig, _section(raw, "baseline")),
         "geoparser": (GeoparserConfig, _section(raw, "geoparser")),
+        "dense": (DenseConfig, _section(raw, "dense")),
+        "grounded": (GroundedConfig, _section(raw, "grounded")),
     }
     built = {}
     for key, (cls, sub) in sections.items():
@@ -212,6 +245,7 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
 def _validate(cfg: PipelineConfig) -> None:
     n, li, rr, llm = cfg.ner, cfg.linking, cfg.rerank, cfg.llm
     ro, ba, gp = cfg.routing, cfg.baseline, cfg.geoparser
+    de, gr = cfg.dense, cfg.grounded
 
     if li.backend not in LINKING_BACKENDS:
         raise ConfigError(f"linking.backend must be one of {sorted(LINKING_BACKENDS)}")
@@ -220,6 +254,12 @@ def _validate(cfg: PipelineConfig) -> None:
                           f"{sorted(str(b) for b in LLM_BACKENDS)}")
     if li.top_n < 1:
         raise ConfigError("linking.top_n must be >= 1")
+    if de.pool not in DENSE_POOLS:
+        raise ConfigError(f"dense.pool must be one of {sorted(DENSE_POOLS)}")
+    if de.top_k < 1:
+        raise ConfigError("dense.top_k must be >= 1")
+    if gr.top_k < 1:
+        raise ConfigError("grounded.top_k must be >= 1")
     if rr.enabled and not rr.model:
         raise ConfigError("rerank.enabled is true but rerank.model is not set")
     if llm.backend and not llm.model:
@@ -278,6 +318,37 @@ def _validate(cfg: PipelineConfig) -> None:
                 raise ConfigError("baseline 'most_populous' requires ner.model")
             if not ba.gazetteer:
                 raise ConfigError("baseline 'most_populous' requires baseline.gazetteer")
+
+    elif cfg.paradigm == "dense_retrieval":
+        if not de.encoder:
+            raise ConfigError("paradigm 'dense_retrieval' requires dense.encoder")
+        if not de.index_fields:
+            raise ConfigError("paradigm 'dense_retrieval' requires dense.index_fields "
+                              "-- what goes into the index defines what the tier can "
+                              "retrieve, so it must be stated")
+        if n.model:
+            raise ConfigError("paradigm 'dense_retrieval' must not set ner.model -- "
+                              "having no mention-detection stage is the point of the "
+                              "tier")
+        if llm.backend:
+            raise ConfigError("paradigm 'dense_retrieval' must not set llm.backend")
+
+    elif cfg.paradigm == "grounded_llm":
+        if gr.candidate_source not in CANDIDATE_SOURCES:
+            raise ConfigError("grounded.candidate_source must be one of "
+                              f"{sorted(CANDIDATE_SOURCES)}")
+        if not llm.backend:
+            raise ConfigError("paradigm 'grounded_llm' requires an llm.backend")
+        if gr.candidate_source == "dense" and not de.encoder:
+            raise ConfigError("grounded.candidate_source is 'dense' but dense.encoder "
+                              "is not set")
+        if gr.candidate_source == "linking":
+            if not n.model:
+                raise ConfigError("grounded.candidate_source is 'linking' but "
+                                  "ner.model is not set")
+            if li.backend == "none":
+                raise ConfigError("grounded.candidate_source is 'linking' but "
+                                  "linking.backend is 'none'")
 
     elif cfg.paradigm == "geoparser":
         if not gp.backend:

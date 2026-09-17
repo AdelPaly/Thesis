@@ -128,6 +128,7 @@ def build_record(cfg: PipelineConfig, dataset: str, row, out) -> dict:
         "predicted_country": _clean(pred.get("country")),
         "predicted_continent": _clean(pred.get("continent")),
         "llm_raw_response": out.llm_raw_response,
+        "selection": out.selection,
         "error": out.error,
     }
 
@@ -162,8 +163,26 @@ def _load_existing(path: Path, config_hash: str, overwrite: bool):
     return existing
 
 
+def _split_filter(df, dataset_name, split):
+    """Restrict a run to one side of the committed place-level split.
+
+    A run-scoping flag, not a metric: the runner still computes nothing. It
+    exists so that an expensive configuration can be exercised on dev -- where
+    choices are made -- without paying for test items that must not be looked
+    at yet."""
+    import csv as _csv
+    path = REPO_ROOT / "splits" / "item_split.csv"
+    if not path.exists():
+        raise SystemExit(f"--split needs {path}; run scripts/make_split.py first")
+    with path.open(encoding="utf-8") as f:
+        side = {(r["item_id"], r["dataset"]): r["split"] for r in _csv.DictReader(f)}
+    keep = [i for i, row in df.iterrows()
+            if side.get((item_id(row["text"]), dataset_name)) == split]
+    return df.loc[keep]
+
+
 def run(config_name: str, dataset_name: str, limit=None, overwrite=False,
-        out_dir: Path = PREDICTIONS_DIR, checkpoint_every: int = 10):
+        out_dir: Path = PREDICTIONS_DIR, checkpoint_every: int = 10, split=None):
     cfg = load_config(config_name)
     datasets = load_datasets()
     if dataset_name not in datasets:
@@ -172,6 +191,8 @@ def run(config_name: str, dataset_name: str, limit=None, overwrite=False,
     spec = datasets[dataset_name]
 
     df = pd.read_csv(spec.resolved_path())
+    if split:
+        df = _split_filter(df, dataset_name, split)
     if limit is not None:
         df = df.head(limit)
 
@@ -179,7 +200,8 @@ def run(config_name: str, dataset_name: str, limit=None, overwrite=False,
     out_path = out_dir / f"{cfg.name}__{dataset_name}.jsonl"
 
     print(f"config   : {cfg.name} ({cfg.paradigm}) hash={cfg.config_hash[:12]}")
-    print(f"dataset  : {dataset_name} -> {spec.path} ({len(df)} items)")
+    print(f"dataset  : {dataset_name} -> {spec.path} ({len(df)} items"
+          + (f", split={split}" if split else "") + ")")
     print(f"output   : {out_path.relative_to(REPO_ROOT)}")
 
     existing = _load_existing(out_path, cfg.config_hash, overwrite)
@@ -261,6 +283,8 @@ def main():
     p.add_argument("--limit", type=int, default=None, help="only the first N items")
     p.add_argument("--overwrite", action="store_true",
                    help="recompute every item instead of resuming")
+    p.add_argument("--split", default=None, choices=["dev", "test"],
+                   help="run only one side of the place-level split")
     p.add_argument("--out-dir", default=str(PREDICTIONS_DIR))
     p.add_argument("--debug", action="store_true", help="print tracebacks for item failures")
     p.add_argument("--list", action="store_true", help="list configurations and datasets, then exit")
@@ -276,7 +300,7 @@ def main():
 
     set_debug(args.debug)
     run(args.config, args.dataset, limit=args.limit, overwrite=args.overwrite,
-        out_dir=Path(args.out_dir))
+        out_dir=Path(args.out_dir), split=args.split)
 
 
 if __name__ == "__main__":

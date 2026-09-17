@@ -32,6 +32,10 @@ class PipelineOutput:
     routing_features: dict | None = None
     prediction: dict | None = None
     llm_raw_response: str | None = None
+    # Grounded LLM only: which candidate was selected, whether it abstained,
+    # and whether it broke the selection contract. Stored so a wrong answer can
+    # be attributed to bad retrieval versus bad selection.
+    selection: dict | None = None
     error: str | None = None
 
 
@@ -98,6 +102,7 @@ class Pipeline:
         # which dataset it is running over.
         self.dataset = dataset
         self._llm = None
+        self._grounded = None
         self._majority = _UNSET
 
     # ---------------------------------------------------------------- stages
@@ -164,6 +169,8 @@ class Pipeline:
     def save_llm_cache(self):
         if self._llm is not None:
             self._llm.save_cache()
+        if self._grounded is not None:
+            self._grounded.save_cache()
 
     # ------------------------------------------------------------ baselines
 
@@ -245,6 +252,70 @@ class Pipeline:
         headline number is carried by the label distribution alone."""
         cand = self._majority_place()
         out.prediction = dict(cand) if cand else None
+
+    # ------------------------------------------------- tier 3: dense retrieval
+
+    def _dense_candidates(self, text):
+        """Top-k nearest places by cosine similarity. No mention detection, no
+        linking, no LLM."""
+        from dense_index import get_index
+        index = get_index(self.cfg)
+        return index.search(text, top_k=self.cfg.dense.top_k)
+
+    def _run_dense_path(self, text, out):
+        candidates = self._dense_candidates(text)
+        out.candidate_places = [_candidate_record(c) for c in candidates]
+        out.prediction = candidates[0] if candidates else None
+
+    # -------------------------------------------------- tier 5: grounded LLM
+
+    def _grounded_selector(self):
+        if self._grounded is None:
+            from llm_grounded import build
+            self._grounded = build(self._llm_pipeline(), self._grounded_cache_name())
+        return self._grounded
+
+    def _grounded_cache_name(self):
+        gr = self.cfg.grounded
+        return f"{self.cfg.llm.cache_name}_grounded_{gr.candidate_source}"
+
+    def _run_grounded_path(self, text, out):
+        """Retrieve candidates, hand the list to the LLM, let it select one or
+        decline. The retriever is an existing tier, never a new one, so the
+        comparison against that tier is not confounded."""
+        gr = self.cfg.grounded
+        if gr.candidate_source == "dense":
+            candidates = self._dense_candidates(text)[:gr.top_k]
+        elif gr.candidate_source == "linking":
+            out.ner_spans = self._ner(text)
+            out.linked_entities = self._link(text, out.ner_spans)
+            candidates = self._places_from_links(out.ner_spans,
+                                                 out.linked_entities)[:gr.top_k]
+        else:
+            raise ValueError(f"unknown grounded.candidate_source "
+                             f"{gr.candidate_source!r}")
+
+        out.candidate_places = [_candidate_record(c) for c in candidates]
+
+        if not candidates:
+            # Nothing to select from. This is a retrieval failure, and the
+            # selection record says so rather than blaming the model.
+            out.selection = {"index": None, "qid": None, "abstained": True,
+                             "violation": None, "no_candidates": True}
+            return
+
+        chosen, selection, raw = self._grounded_selector().select(text, candidates)
+        out.llm_raw_response = raw
+        out.selection = selection
+        if selection.get("violation"):
+            # Recorded, never silently scored as an ordinary wrong guess: a
+            # grounded system ignoring its grounding has to be visible.
+            out.error = f"selection violation: {selection['violation']}"
+        out.prediction = chosen
+
+    def save_llm_cache_grounded(self):
+        if self._grounded is not None:
+            self._grounded.save_cache()
 
     # ----------------------------------------------------------- geoparser
 
@@ -391,6 +462,10 @@ class Pipeline:
                     self._run_geoparser_path(text, out)
                 else:
                     raise ValueError(f"unhandled routing branch {branch!r}")
+            elif paradigm == "dense_retrieval":
+                self._run_dense_path(text, out)
+            elif paradigm == "grounded_llm":
+                self._run_grounded_path(text, out)
             elif paradigm == "geoparser":
                 self._run_geoparser_path(text, out)
             elif paradigm == "baseline":
