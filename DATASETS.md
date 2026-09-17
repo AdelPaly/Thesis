@@ -54,7 +54,7 @@ In practice each rewritten post carried two to three distractors, typically one 
 
 ## Validation
 
-Every synthetic entry was validated against Wikidata with `scripts/validate_dataset.py`, which checks, per row, that (1) the `qid` exists, (2) its English label matches the expected name, and (3) its country (`P17`) is consistent with the `country` column. One known edge case in the `P17` check is sovereign-territory mapping: e.g. Nouméa (Q9733), whose `P17` is France rather than New Caledonia, which strict `P17` equality flags as a mismatch; a `P131` traversal or a sovereign-territory allowlist avoids this.
+Every synthetic entry was validated against Wikidata with `scripts/dataset_qids.py validate`, which checks, per row, that (1) the `qid` exists, (2) its English label matches the expected name, and (3) its country (`P17`) is consistent with the `country` column. One known edge case in the `P17` check is sovereign-territory mapping: e.g. Nouméa (Q9733), whose `P17` is France rather than New Caledonia, which strict `P17` equality flags as a mismatch; a `P131` traversal or a sovereign-territory allowlist avoids this.
 
 **First-pass validation results** (entries that failed QID existence or label matching and were subsequently regenerated/corrected):
 
@@ -65,14 +65,14 @@ Every synthetic entry was validated against Wikidata with `scripts/validate_data
 
 The failing rows were regenerated/fixed until the datasets passed validation.
 
-The same family of checks was applied to the **GeoCorpora** reference sample by `scripts/fix_qids.py`; its run log is committed at `results/logs/fix_qids_geocorpora_144.log`.
+The same family of checks was applied to the **GeoCorpora** reference sample by `scripts/dataset_qids.py repair`; its run log is committed at `results/logs/fix_qids_geocorpora_144.log`.
 
 ## Reproducing the validation
 
 ```bash
 pip install -r requirements.txt
-python scripts/validate_dataset.py src/social_media_dataset.csv
-python scripts/validate_dataset.py src/journalistic_dataset.csv
+python scripts/dataset_qids.py validate src/social_media_dataset.csv
+python scripts/dataset_qids.py validate src/journalistic_dataset.csv
 ```
 
 No API key is required for validation; it uses the public Wikidata SPARQL endpoint. See `scripts/README.md` for the full list of scripts.

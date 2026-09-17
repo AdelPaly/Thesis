@@ -32,7 +32,7 @@ tells each batch which locations are already used, and resumes if you
 interrupt it. Next to the CSV it writes a `.raw.jsonl` log of every
 request/response and a `.meta.json` with the model, date and spec hash
 (spec section 9.1). Rows are only checked for structure, so run
-`validate_dataset.py` and `add_coords.py` on the output afterwards.
+`dataset_qids.py validate` and `dataset_coords.py add` on the output afterwards.
 
 ### Real social media posts (English)
 
@@ -54,38 +54,77 @@ deduplication, no length limits, no content filtering. About **49.5%** of the
 dump is English, giving ~1.04M rows (~380 MB) at `../src/bluesky_en.jsonl`.
 Use `--format parquet` for a much smaller file, or `--limit N` for a trial run.
 
-## Validation (the scripts your reviewer asked for)
+## Validation
 
 | Script | Purpose |
 |--------|---------|
-| `validate_dataset.py` | Validate a synthetic dataset against Wikidata: checks each `qid` exists, its English label matches the expected name, and its country (`P17`) matches. Reports failing rows. Run per dataset. |
-| `fix_qids.py` | The GeoCorpora validator: checks/repairs `qid`s by searching Wikidata and matching country (`P17`). Its run over the 144-row GeoCorpora sample produced `../results/logs/fix_qids_geocorpora_144.log`. |
+| `dataset_qids.py validate <csv>` | Check every row's `qid` against Wikidata: the item exists, its English label matches the expected name, and its country (`P17`) matches the `country` column. Read-only. |
+| `dataset_qids.py repair <csv> [--out f]` | The same three checks, plus a Wikidata search for a candidate whose `P17` matches, rewriting `qid`. In place unless `--out`. Its run over the 144-row GeoCorpora sample produced `../results/logs/fix_qids_geocorpora_144.log`. |
 
 ```bash
-python scripts/validate_dataset.py src/social_media_dataset.csv
-python scripts/validate_dataset.py src/journalistic_dataset.csv
+python scripts/dataset_qids.py validate src/social_media_dataset.csv
+python scripts/dataset_qids.py validate src/journalistic_dataset.csv
+python scripts/dataset_qids.py repair   src/geocorpora_eval.csv
 ```
 
-Both use only the **public Wikidata SPARQL / search APIs** — no API key needed.
+This replaces `validate_dataset.py` and `fix_qids.py`, which were the same
+capability split by dataset: one could only validate, the other could repair,
+and each carried its own copy of the SPARQL boilerplate. Either action now
+runs on any dataset.
 
-## Coordinate / QID enrichment
+Uses only the **public Wikidata SPARQL / search APIs** — no API key needed.
 
-| Script | Purpose |
-|--------|---------|
-| `add_qids.py` | Add a `qid` column by resolving a `geoNameId` to its Wikidata QID via `P1566`. |
-| `add_coords.py` | Add `latitude`/`longitude` by looking up Wikidata `P625` for each row's QID (batched, disk-cached). |
-| `add_noisy_coords.py` | Join clean coordinates onto `social_media_noisy.csv` by `qid` (the noisy set is row-aligned with the clean set) and re-verify against `P625`. |
-| `verify_coords.py` | Read-only check that `latitude`/`longitude` in an eval CSV match Wikidata `P625` for the row's `qid`. |
-
-## Evaluation / analysis helpers
+## Coordinate enrichment
 
 | Script | Purpose |
 |--------|---------|
-| `eval_acc161.py` + `_eval_acc161_worker.py` | Distance-only (within-161 km) evaluation for CSVs that have ground-truth coordinates but no QIDs (e.g. raw GeoCorpora rows). |
-| `enrich_within_161km.py` | Back-fill the `within_161km` column on `eval_FINAL_*` CSVs produced before `evaluate.py` started writing it. |
-| `restore_geocorpora_eval.py` | Reconstruct `src/geocorpora_eval.csv` from the ground-truth columns of an existing `eval_FINAL_*_geocorpora.csv`, so all modes are evaluated on the same row set. |
+| `dataset_coords.py add <csv>` | Fill `latitude`/`longitude` from Wikidata `P625` for each row's `qid`, in place. Sources from the QID currently in the CSV, so manual QID edits flow through. |
+| `dataset_coords.py verify <csv>...` | Read-only check that stored coordinates still match `P625` (tolerance ~1.1 km). |
+
+```bash
+python scripts/dataset_coords.py add    src/social_media_dataset.csv
+python scripts/dataset_coords.py verify src/social_media_dataset.csv src/journalistic_dataset.csv
+```
+
+This replaces `add_coords.py` and `verify_coords.py`. There is now **one
+coordinate client** — `src/wikidata.coords_for_qids`, reading `P625` through
+the same rate-limited `wbgetentities` path and the same `src/.wikidata_cache`
+the pipeline uses. The old pair reached the same fact through a SPARQL endpoint
+with a second cache at `src/.qid_coords_cache.pkl`; that transport and that
+cache are gone.
+
+`add_qids.py` (GeoNames `P1566` → QID) is deleted: it imported
+`prepare_geocorpora.py`, which exists nowhere in the repo or its history, so it
+could not run. `dataset_qids.py repair` is the surviving QID resolver.
+
+## Evaluation and analysis
+
+Evaluation itself lives outside this directory and is split in two, so that
+changing a metric never re-runs a model:
+
+| Entry point | Purpose |
+|--------|---------|
+| `../src/runner.py` | Inference only. Runs one configuration (`../configs/*.yaml`) over one dataset and writes `../results/predictions/<config>__<dataset>.jsonl`. Computes no metrics. |
+| `score.py` | Metrics only. Reads those prediction files and computes everything. Imports nothing from `../src/`, loads no model, makes no network call. Sole home of the haversine implementation. |
+
+```bash
+python src/runner.py --list
+python src/runner.py --config refined --dataset social_media_clean
+python scripts/score.py --by condition
+```
+
+The old `eval_acc161.py` + `_eval_acc161_worker.py` pair is deleted. It was a
+second copy of the inference loop with its own 8-column schema, existing only
+because some corpora have coordinates but no gold QIDs. The single record
+format allows a null `place_qid`, and `score.py` reports `exact` over the
+items that have one (`nQID` column). **Accuracy@161 km itself is unchanged** —
+it is the field standard and `score.py` reports it.
+
+| Script | Purpose |
+|--------|---------|
 | `analyze_failures.py` | Failure-mode analysis across the chapter-4 evaluations. |
 | `diagnose_ner_recall.py` | NER-recall diagnostic — attributes pipeline misses to the Flair NER stage. |
+| `archive/` | Completed one-off scripts, kept as provenance for files on disk. See `archive/README.md`. |
 
 ## API keys
 

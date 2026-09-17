@@ -18,7 +18,13 @@ has_prediction : the configuration returned something -- a QID, a coordinate,
                  or at minimum a continent.
 no_result      : the complement of has_prediction. Reported per item, as a
                  column, not as a separate denominator.
-exact          : predicted_qid == place_qid (both present).
+exact          : predicted_qid == place_qid, over items that HAVE a gold QID.
+                 place_qid is allowed to be null: some corpora have gold
+                 coordinates but no gold Wikidata id, and reporting those as
+                 0% exact would be wrong. The n_gold_qid column is the
+                 denominator, so a dataset without gold QIDs reports exact as
+                 "-" rather than zero. This is the capability that made the
+                 separate eval_acc161 path exist; it is now in the one scorer.
 country        : exact, or predicted_country == gold_country. The hierarchy is
                  derived HERE, at report time, not baked into stored booleans.
 continent      : country, or predicted_continent == gold_continent.
@@ -99,6 +105,7 @@ def score_record(rec: dict) -> dict:
         "continent_correct": continent,
         "distance_km": distance,
         "scorable_distance": gold_latlon is not None,
+        "scorable_exact": gold_qid is not None,
         "within_161km": distance is not None and distance <= ACC_RADIUS_KM,
     }
 
@@ -110,10 +117,12 @@ def aggregate(scored: list[dict]) -> dict:
         return {"n": 0}
     dists = [s["distance_km"] for s in scored if s["distance_km"] is not None]
     n_scorable = sum(1 for s in scored if s["scorable_distance"])
+    n_gold_qid = sum(1 for s in scored if s["scorable_exact"])
     within = sum(1 for s in scored if s["within_161km"])
     return {
         "n": n,
-        "exact": sum(s["exact"] for s in scored) / n,
+        "n_gold_qid": n_gold_qid,
+        "exact": (sum(s["exact"] for s in scored) / n_gold_qid) if n_gold_qid else None,
         "country": sum(s["country_correct"] for s in scored) / n,
         "continent": sum(s["continent_correct"] for s in scored) / n,
         "acc@161km": (within / n_scorable) if n_scorable else None,
@@ -150,15 +159,16 @@ def _fmt(value, pct=False, width=7):
 
 
 def print_table(rows, group_label="config"):
-    header = (f"{group_label:34} {'n':>4} {'exact':>7} {'country':>7} {'cont':>7} "
-              f"{'a@161':>7} {'med km':>8} {'mean km':>8} {'no-res':>7} {'err':>6}")
+    header = (f"{group_label:34} {'n':>4} {'nQID':>5} {'exact':>7} {'country':>7} "
+              f"{'cont':>7} {'a@161':>7} {'med km':>8} {'mean km':>8} {'no-res':>7} {'err':>6}")
     print(header)
     print("-" * len(header))
     for label, m in rows:
         if m["n"] == 0:
             print(f"{label:34} {0:>4}")
             continue
-        print(f"{label:34} {m['n']:>4} {_fmt(m['exact'], True)} {_fmt(m['country'], True)} "
+        print(f"{label:34} {m['n']:>4} {m['n_gold_qid']:>5} "
+              f"{_fmt(m['exact'], True)} {_fmt(m['country'], True)} "
               f"{_fmt(m['continent'], True)} {_fmt(m['acc@161km'], True)} "
               f"{_fmt(m['median_km'], width=8)} {_fmt(m['mean_km'], width=8)} "
               f"{_fmt(m['no_result_rate'], True)} {_fmt(m['error_rate'], True, 6)}")
@@ -205,7 +215,7 @@ def main():
         import csv
         out = Path(args.out)
         out.parent.mkdir(parents=True, exist_ok=True)
-        fields = ["group", "n", "exact", "country", "continent", "acc@161km",
+        fields = ["group", "n", "n_gold_qid", "exact", "country", "continent", "acc@161km",
                   "n_with_distance", "median_km", "mean_km", "no_result_rate", "error_rate"]
         with out.open("w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=fields)

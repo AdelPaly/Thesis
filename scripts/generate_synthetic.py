@@ -14,7 +14,7 @@ Alongside the CSV it writes:
   <out>.raw.jsonl   every request/response pair (raw text + OpenRouter meta)
   <out>.meta.json   generation metadata per spec section 9.1 (model, date,
                     spec sha256); wikidata_verification_date is left for you
-                    to fill in after running scripts/validate_dataset.py
+                    to fill in after running scripts/dataset_qids.py validate
 
 The model is OPENROUTER_MODEL from src/.env unless --model is given.
 
@@ -25,7 +25,7 @@ Usage:
         --signals A --continents Europe --per-batch 2        # small trial run
 
 Rows are only checked structurally here (schema, enums, QID shape, referent
-count). Run validate_dataset.py on the output afterwards, then add_coords.py
+count). Run dataset_qids.py validate on the output afterwards, then dataset_coords.py add
 for latitude/longitude.
 """
 import argparse

@@ -192,13 +192,53 @@ def _claim_ids(entity, prop):
 
 
 def _get_coords(entity):
+    """Coordinate location (P625) as (lat, lon), or None.
+
+    Rank handling matches SPARQL `wdt:P625` truthy semantics -- preferred rank
+    wins, deprecated claims are skipped, normal rank is the fallback. The gold
+    coordinates in the datasets were sourced through wdt:P625, so the pipeline
+    reading a different claim off the same item would put a systematic offset
+    between gold and predicted coordinates on multi-coordinate entities.
+    """
     claims = entity.get("claims", {})
     if "P625" not in claims:
         return None
+    normal = None
+    for claim in claims["P625"]:
+        if claim.get("rank") == "deprecated":
+            continue
+        val = claim.get("mainsnak", {}).get("datavalue", {}).get("value")
+        if not (val and "latitude" in val):
+            continue
+        if claim.get("rank") == "preferred":
+            return val["latitude"], val["longitude"]
+        if normal is None:
+            normal = (val["latitude"], val["longitude"])
+    if normal is not None:
+        return normal
+    # Every claim was deprecated or malformed: fall back to the raw first
+    # value rather than reporting no coordinate at all.
     val = claims["P625"][0].get("mainsnak", {}).get("datavalue", {}).get("value")
     if val and "latitude" in val:
         return val["latitude"], val["longitude"]
     return None
+
+
+def coords_for_qids(qids):
+    """Coordinates for a batch of QIDs: {qid: (lat, lon) | None}.
+
+    The one coordinate client. The dataset tooling used to reach Wikidata
+    through a second transport (a SPARQL endpoint) with a second on-disk cache
+    (src/.qid_coords_cache.pkl) for exactly this fact; both are gone. This goes
+    through the same rate-limited wbgetentities path and the same
+    src/.wikidata_cache the pipeline uses, so a QID fetched by either side is
+    cached for both.
+    """
+    wanted = sorted({q for q in qids if isinstance(q, str) and q.startswith("Q")})
+    if not wanted:
+        return {}
+    entities = _fetch_entities(wanted)
+    return {q: _get_coords(entities.get(q, {})) for q in wanted}
 
 
 def _resolve_country_continent(entities_dict):

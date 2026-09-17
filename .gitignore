@@ -17,9 +17,6 @@ venv/
 # On-disk caches (regenerated at runtime)
 src/.wikidata_cache/
 src/.llm_cache/
-src/.geonames_qid_cache.pkl
-src/.qid_alive_cache.pkl
-src/.qid_coords_cache.pkl
 
 # Eval run outputs (regenerated from code + datasets)
 src/log_*.txt
