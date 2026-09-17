@@ -242,10 +242,22 @@ continent. Placeholder strings are now normalised to absent.
 ## Framing notes for the write-up
 
 **Every non-LLM configuration uses the same Flair NER.** Mention detection is
-held constant across `two_stage`, `refined`, `refined_search`,
-`baseline_population` and the routed configurations, which is what makes a
-linker comparison a comparison of linkers rather than of pipelines. State this
-as a design strength.
+held constant across `two_stage`, `refined`, `refined_search` and the routed
+configurations, which is what makes a linker comparison a comparison of linkers
+rather than of pipelines. State this as a design strength.
+
+This was checked rather than assumed, because the configurations do not filter
+tags identically: `two_stage` sets `ner.entity_types: null` (keep every tag)
+while `refined` sets `[LOC, PER, ORG]`. On `social_media_clean` the effective
+mention set is nevertheless **identical on 144/144 items** — `two_stage`
+produced 4 MISC spans in total, and none of them yielded a candidate place,
+because the retrieval step ignores tags outside LOC/PER/ORG. So Table 3 varies
+only the linking mechanism.
+
+`baseline_population` is deliberately *not* part of that comparison: it sets
+`ner.entity_types: [LOC]`, since a population heuristic over a gazetteer is a
+toponym system and feeding it person and organisation mentions would not be the
+published baseline.
 
 **"End-to-end" is retired as a label for ReFinED.** ReFinED here runs in
 constrained-span mode over mentions supplied by Flair. It performs

@@ -432,6 +432,48 @@ def cmd_stats(scored, args):
 
 # ---------------------------------------------------------------- entry
 
+def _warn_uneven_coverage(scored):
+    """Pooling a configuration over fewer datasets than its neighbours makes a
+    table quietly incomparable, so say so loudly instead."""
+    per_config = defaultdict(set)
+    for r in scored:
+        per_config[r.get("config_name")].add(r.get("dataset"))
+    if not per_config:
+        return
+    all_datasets = set().union(*per_config.values())
+    short = {c: sorted(all_datasets - ds) for c, ds in per_config.items()
+             if ds != all_datasets}
+
+    # Item counts too, not just which datasets are present: a run still being
+    # written appears complete by dataset while being short by items, and a
+    # row pooled over fewer items is quietly incomparable in exactly the same
+    # way as a row pooled over fewer datasets.
+    counts = defaultdict(lambda: defaultdict(int))
+    for r in scored:
+        counts[r.get("dataset")][r.get("config_name")] += 1
+    partial = defaultdict(list)
+    for dataset, per_cfg in counts.items():
+        expected = max(per_cfg.values())
+        for cfg, n in per_cfg.items():
+            if n < expected:
+                partial[cfg].append(f"{dataset} {n}/{expected}")
+
+    if not short and not partial:
+        return
+    print("!" * 92)
+    print("WARNING: uneven coverage. Rows pooled over different datasets or different")
+    print("item counts are not comparable; treat these rows as partial.")
+    for cfg in sorted(set(short) | set(partial)):
+        bits = []
+        if short.get(cfg):
+            bits.append("missing datasets: " + ", ".join(short[cfg]))
+        if partial.get(cfg):
+            bits.append("short: " + ", ".join(sorted(partial[cfg])))
+        print(f"  {cfg:28} {'; '.join(bits)}")
+    print("!" * 92)
+    print()
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -458,6 +500,7 @@ def main():
     scored = [score_record(r) for r in records]
     print(f"loaded {len(scored)} scored record(s) from {len(paths)} file(s), "
           f"split={args.split}\n")
+    _warn_uneven_coverage(scored)
 
     if args.command in ("failures", "all"):
         cmd_failures(scored, args)
