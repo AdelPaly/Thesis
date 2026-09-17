@@ -41,6 +41,6 @@ routing:
   enabled: true
   gate: input_properties
   fallback: llm
-  ambiguity_threshold: 2
+  ambiguity_threshold: 8
   gazetteer: wikidata
   gazetteer_top_n: 10

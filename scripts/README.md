@@ -125,7 +125,11 @@ it is the field standard and `score.py` reports it.
 | `run_all.py` | Drives `../src/runner.py` over a set of (configuration, dataset) pairs, one at a time, logging each to `../results/logs/run_<config>__<dataset>.log`. Sequential on purpose: two runners contend for the Wikidata rate limiter and clobber each other's caches. Resumable. |
 | `oracle_router.py` | Analysis-only. Per item, takes whichever component got it right — the ceiling for the routing idea. Computed from existing prediction files; it is **not** a configuration and has no YAML, because it chooses using the gold answer. |
 | `fit_gate.py` | Sweeps the routing gate's `ambiguity_threshold` on the **dev** split and reports what each value would do. Reads stored `routing_features` and component predictions, so no model runs. Imports the rule from `../src/pipeline.route_from_features` rather than reimplementing it. |
-| `analyze_failures.py` | Failure-mode analysis across the retired chapter-4 CSVs. Superseded by `analyse.py`. |
+| `analyse.py` | Failure attribution, paired statistics and the four report tables, all read from the prediction files. Subcommands `failures`, `tables`, `stats`, `all`. |
+| `stats.py` | Statistical primitives, all clustered by place: McNemar, Wilcoxon signed-rank, cluster bootstrap, paired effect intervals. |
+| `check_scorer.py` | Runs the new scorer over retired result CSVs converted to the record format, to catch sign errors and column mix-ups. |
+| `audit_retired_results.py` | Reproduces the METHODOLOGY.md claims about why the retired results are not comparable. |
+| `analyze_failures.py` | Failure-mode analysis across the retired chapter-4 CSVs. Superseded by `analyse.py` -- kept only because it is the generator of the committed `results/summary/table_FINAL_failure_modes.csv`. |
 | `diagnose_ner_recall.py` | NER-recall diagnostic — attributes pipeline misses to the Flair NER stage. |
 | `archive/` | Completed one-off scripts, kept as provenance for files on disk. See `archive/README.md`. |
 
@@ -149,6 +153,35 @@ python scripts/score.py --split test       # report once
 Rebuilding with `--force` moves places between sides and invalidates every
 threshold fitted on dev. `SALT` and `DEV_FRACTION` in `make_split.py` are
 constants for that reason.
+
+## Analysis
+
+```bash
+python scripts/analyse.py all --split test --out results/summary
+python scripts/check_scorer.py
+```
+
+`analyse.py` reads only `../results/predictions/*.jsonl` and
+`../splits/item_split.csv`. Metrics come from `score.py` and statistics from
+`stats.py`, so each has exactly one definition.
+
+**Failure attribution** classifies every wrong prediction by where it broke,
+from the stage fields the runner recorded rather than from the shape of the
+output: `no_ner_span`, `span_not_linked`, `wrong_entity`,
+`wrong_candidate_selected`, `correct_candidate_not_first`, `returned_nothing`.
+Two limits are worth stating when reporting it:
+
+* The datasets annotate a gold **place**, not a gold entity, so "wrong entity"
+  and "correct entity, wrong candidate" are separated by whether the gold
+  place appears in the linker's candidate set — the closest observable proxy.
+* A configuration with no intermediate stages (a single-call LLM, the constant
+  majority baseline) gets `no_intermediate_stages`. That is the finding, not a
+  gap: those pipelines cannot be debugged stage by stage.
+
+**Statistics** are clustered by place throughout, because items about the same
+place are not independent. McNemar pairs places, Wilcoxon ranks places, and
+the bootstrap resamples places with all of their items. Item-level McNemar is
+printed alongside for reference and labelled anti-conservative.
 
 ## API keys
 

@@ -1,0 +1,183 @@
+config   : refined_search (ner_dependent) hash=a166955127a3
+dataset  : social_media_clean -> src/social_media_dataset.csv (144 items)
+output   : results\predictions\refined_search__social_media_clean.jsonl
+  Wikidata cache loaded: 8573 entities, 8460 labels, 1178 coord lookups, 677 searches
+2026-09-17 22:11:42,783 --------------------------------------------------------------------------------
+2026-09-17 22:11:42,783 ERROR: The key 'flair/ner-large' was neither found on the ModelHub nor is this a valid path to a file on your system!
+2026-09-17 22:11:42,784  -> Please check https://huggingface.co/models?filter=flair for all available models.
+2026-09-17 22:11:42,784  -> Alternatively, point to a model file on your local drive.
+2026-09-17 22:11:42,784 --------------------------------------------------------------------------------
+2026-09-17 22:11:52,615 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast():
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
+  super().__init__(
+[1/144] ce11764b8bdeb186 -> Q217426
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast():
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
+  super().__init__(
+[2/144] 00598fcba940d826 -> Q1051147
+[3/144] 098fb8402c195a11 -> Q182059
+[4/144] 803695a567edac83 -> Q3718
+[5/144] 96274430b5a658d5 -> Q7903
+[6/144] f44d089f66d32698 -> Q3897
+[7/144] 2181714311b8d808 -> Q1960
+[8/144] 738ae4cad4461869 -> Q850031
+[9/144] 2badacf7dd1a7714 -> Q876485
+[10/144] 74daba7ff2abb260 -> Q42053
+[11/144] a0b1572cf085f19e -> Q1348
+[12/144] c9abf049c66ecfb8 -> Q3616
+[13/144] 3227eb724869810e -> Q1858
+[14/144] fd72d6a7714b29af -> no-result
+[15/144] 0e16ba5fb1a70fdf -> Q3692
+[16/144] cc3e09910899ce21 -> Q806534
+[17/144] f1a5bb32e0b1ed6f -> no-result
+[18/144] 45ef16baede33ab8 -> Q3711
+[19/144] 56ee32e78eadde28 -> Q270
+[20/144] adb5a48715a370ea -> Q129610
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 678 searches
+[21/144] 7e77f86e3613c85a -> Q495
+[22/144] 8347e09c2970bed2 -> Q484038
+[23/144] 9044581b853701a1 -> Q1899
+[24/144] 09a25544f2c08f4e -> no-result
+[25/144] df46d3f0ba8e0482 -> Q8050631
+[26/144] 369d192100160b0e -> Q1489
+[27/144] 4c332af84c3972ff -> Q5119798
+[28/144] ba978c378680d6bf -> Q36312
+[29/144] ec3d78ab7306fcdd -> Q3070
+[30/144] 7e504d8ed18b42c0 -> Q1930
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 679 searches
+[31/144] 27c62e21b81fc530 -> Q3306
+[32/144] 7f2c202b7130bf73 -> Q4929496
+[33/144] 097a671e42881171 -> no-result
+[34/144] 7fd1a3f0517578ee -> Q174
+[35/144] 0d38de70c2e6a462 -> no-result
+[36/144] 58f05891ebf83fa5 -> no-result
+[37/144] cfc238d383ec4c7a -> Q2933
+[38/144] b366221dd62df876 -> Q43509
+[39/144] 66ee03b43bc9e64d -> Q2868
+[40/144] 1a405b7e75e96ff6 -> Q1563
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 680 searches
+[41/144] 758b6038fca4ff22 -> Q37100
+[42/144] e782bbdce639fb37 -> Q210433
+[43/144] f36583a7294b5623 -> Q7308012
+[44/144] ee95c922b0c2693b -> no-result
+[45/144] 8eadbbb98221ba73 -> no-result
+[46/144] 27cab44a46b9311b -> no-result
+[47/144] f9bd26de0a703be9 -> no-result
+[48/144] 4dbcfe941d880ab3 -> no-result
+[49/144] 751da4e6802fe931 -> Q963152
+[50/144] 3737c1c8be0508a5 -> Q3579
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 685 searches
+[51/144] ddfdba8468e71db2 -> Q5468
+[52/144] be59fd7dacd1a10c -> Q225641
+[53/144] e94d494cef21bbe7 -> Q152902
+[54/144] d5da8513ce9d032f -> Q657072
+[55/144] e9ea5edf55ba84e5 -> Q844878
+[56/144] b52e02eacad58bac -> no-result
+[57/144] 3e0d27f43e4eae7b -> Q1361
+[58/144] 324abe337a078fad -> Q58422
+[59/144] f74fe1708a2186b7 -> Q4629
+[60/144] 145422a1ec03c16d -> Q333886
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 685 searches
+[61/144] 9c3272310410f647 -> Q182394
+[62/144] 7e1866c3e4c6c270 -> Q13360574
+[63/144] 5ea24ff4eae35e0e -> Q15847
+[64/144] 459a212766ea8f1a -> no-result
+[65/144] e384c4a8bee82a2d -> Q22889
+[66/144] c2925d3473db3da4 -> Q2066
+[67/144] 0fbf26aaad577a3e -> Q33959
+[68/144] 5486c94b548365cc -> Q159457
+[69/144] 543cf5411b2e44b9 -> Q14960
+[70/144] 18b7c59592a3ff17 -> Q26793
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 685 searches
+[71/144] 5c215870a693583d -> Q36647
+[72/144] da6eafef6e0bae26 -> Q1663
+[73/144] 4454269c111b215a -> Q2123
+[74/144] bdc0aaf8417962bc -> Q597842
+[75/144] 0e1938a36b3be571 -> Q40347
+[76/144] 556dbcb26f31535d -> Q165204
+[77/144] 19245ea4a721d813 -> no-result
+[78/144] 7f865561a4c26904 -> Q128323
+[79/144] c82128930fb76648 -> Q3043
+[80/144] 83434bb951209142 -> no-result
+  Cache save failed: [WinError 5] Access is denied: 'C:\\Users\\Adela\\PycharmProjects\\geo\\src\\.wikidata_cache\\label.pkl.tmp' -> 'C:\\Users\\Adela\\PycharmProjects\\geo\\src\\.wikidata_cache\\label.pkl'
+[81/144] a6e4612356ea8051 -> Q44821
+[82/144] 01ef62d754a537c9 -> Q52535
+[83/144] 83d286f25f716f72 -> Q40236
+[84/144] 28243aa8f86975ac -> Q8818
+[85/144] 9407c263842d10a1 -> Q2434746
+[86/144] cd47b7af7d358b35 -> Q1880
+[87/144] 74b929956b19e60c -> Q944697
+[88/144] 926c719b6ee984c8 -> Q180215
+[89/144] 732f2a603ddb282a -> Q200028
+[90/144] 9e726d246c333e9a -> Q11568
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 685 searches
+[91/144] b2e3e561018538f7 -> Q206687
+[92/144] c1623fe2e0f4168c -> Q704371
+[93/144] 9da04ef61bd81841 -> no-result
+[94/144] 3d1f17733a5c9eb4 -> Q619443
+[95/144] 687e31b989b3830a -> Q36260
+[96/144] 02d1a315796cbc7b -> Q7929970
+[97/144] 9cbc183eaf87def9 -> Q1342
+[98/144] 96a348fb33138a04 -> Q81882
+[99/144] d24ffb55715bad9f -> no-result
+[100/144] 82a8096354f21bdf -> Q3572
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 685 searches
+[101/144] dc7b69601338b5a7 -> no-result
+[102/144] c70c64a053ea9de3 -> Q157915
+[103/144] 4513367cf7e10366 -> Q187593
+[104/144] 6c5a081d6f9d81cd -> Q3630
+[105/144] efd9f7aedb0a1e2e -> Q85
+[106/144] 8f818dd332fdb2e4 -> Q18125
+[107/144] de5ee2c31422c5ca -> no-result
+[108/144] 6131985e32667994 -> Q1348
+[109/144] 352f3ed3f4171b85 -> Q3616
+[110/144] dea72eda4a0a045f -> no-result
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 686 searches
+[111/144] db6be36c91dbb0ec -> Q5690
+[112/144] 3c4e9356f0aa7117 -> no-result
+[113/144] 4a8c6428100b75db -> no-result
+[114/144] 4ecbea447083d04c -> Q126269
+[115/144] 2648bb4d7e4ac0c4 -> no-result
+[116/144] d070b732a7fa15eb -> Q68646
+[117/144] 98efdefdfe793e44 -> Q34370
+[118/144] 01d5b8124cd6d114 -> Q186545
+[119/144] c1c9b733dae3f4ff -> no-result
+[120/144] faae702d069e7b37 -> no-result
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 689 searches
+[121/144] fa499f11fd3d40da -> Q3238
+[122/144] 4e7c83d4899418e8 -> no-result
+[123/144] f4da43e8e664eab2 -> Q104026
+[124/144] 9df38422cdbda30b -> Q316390
+[125/144] c315d013c3708c12 -> no-result
+[126/144] 5112aebeb4425240 -> Q1335
+[127/144] 22c80bc119f1c6f7 -> no-result
+[128/144] ba692f165b15285d -> no-result
+[129/144] 7fc055ac67007414 -> no-result
+[130/144] 73a6994a7b1debf2 -> no-result
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 690 searches
+[131/144] a1d787e0a3869121 -> no-result
+[132/144] fd96cf44d205151a -> Q16556
+[133/144] 0f5967354f6558aa -> no-result
+[134/144] 9281bff92eabc2be -> no-result
+[135/144] 58215aae496b0b5f -> no-result
+[136/144] d6380d655128cb7e -> Q188656
+[137/144] 139201966a140e57 -> no-result
+[138/144] 820e948c5cd8d59d -> Q30
+[139/144] 5bd6082dc47fcb39 -> no-result
+[140/144] 3ca09ad1a7a6e6d4 -> no-result
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 693 searches
+[141/144] 2c1cad8c423019d9 -> no-result
+[142/144] 6a5cb7fdd4103693 -> no-result
+[143/144] 13c9d92c3e946526 -> no-result
+[144/144] a48cd757a6b3f2ee -> Q188313
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 695 searches
+
+wrote 144 record(s) to results\predictions\refined_search__social_media_clean.jsonl
+  with a prediction : 103
+  no result         : 41
+  errors            : 0
+no metrics computed here -- run scripts/score.py
+  Wikidata cache saved: 8573 entities, 8460 labels, 1178 coord lookups, 695 searches

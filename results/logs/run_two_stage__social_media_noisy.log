@@ -1,0 +1,89 @@
+config   : two_stage (ner_dependent) hash=d6c438acde07
+dataset  : social_media_noisy -> src/social_media_noisy.csv (144 items)
+output   : results\predictions\two_stage__social_media_noisy.jsonl
+  Wikidata cache loaded: 8574 entities, 8461 labels, 1178 coord lookups, 897 searches
+2026-09-17 23:11:14,598 --------------------------------------------------------------------------------
+2026-09-17 23:11:14,598 ERROR: The key 'flair/ner-large' was neither found on the ModelHub nor is this a valid path to a file on your system!
+2026-09-17 23:11:14,598  -> Please check https://huggingface.co/models?filter=flair for all available models.
+2026-09-17 23:11:14,600  -> Alternatively, point to a model file on your local drive.
+2026-09-17 23:11:14,600 --------------------------------------------------------------------------------
+2026-09-17 23:11:24,681 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+[1/144] 47ed1800dca427bb -> Q61
+[2/144] 314fb697a27aba62 -> Q202162
+[3/144] 059d15397f7fa533 -> no-result
+[4/144] babb05358d3a1367 -> Q3718
+[5/144] 6a2519ece29f94bc -> Q9005
+[6/144] 21df2f37625c9350 -> Q3897
+[7/144] 9a840f56465ed783 -> Q61
+[8/144] cbbdf05e58030f58 -> Q90
+[9/144] d29ee28f58dcd38f -> Q876485
+[10/144] 4f48882e3f3e6205 -> Q42053
+[11/144] 15d14320ee7e5f64 -> Q4985538
+[12/144] 3a358a5bbc3c0ef8 -> Q700222
+[13/144] 605788f81b3be50f -> Q5370376
+[14/144] 8e260e688d287c98 -> Q414052
+[15/144] 1efbbb07a2e2b056 -> Q180921
+[16/144] 925d52f96f70a0f7 -> no-result
+[17/144] 72368809983badca -> Q34006
+[18/144] 9012e2e26c91fe5b -> Q3711
+[19/144] 23d70dcf1c60d1d0 -> Q61
+[20/144] d3d06ba8439f25bb -> Q221645
+[21/144] f1ce390ae1a9cc1e -> Q1223
+[22/144] 1a9e0ad4d9954b10 -> no-result
+[23/144] d8f44998998adf0a -> Q270
+[24/144] 006fd996194812f8 -> Q61
+[25/144] 6f128e3a32b0d535 -> Q84
+[26/144] fd5f46cddf5e8b80 -> Q4985538
+[27/144] 3af8e16bd18d3ee1 -> Q49255
+[28/144] c19a4261192989ee -> Q649
+[29/144] 3e980008fd780e09 -> Q3070
+[30/144] b598c2e2c884b9fe -> Q1778321
+[31/144] d92f3537a2473bbb -> Q61
+[32/144] 4004bfb34ac54ab5 -> Q31703161
+[33/144] 728eba846a9d5233 -> Q61
+[34/144] 1730213cd8cea300 -> Q84
+[35/144] bb50cb17a7beb4f8 -> Q240
+[36/144] 58502efa3d01abfa -> Q61
+[37/144] a16390b6cff9280d -> Q2933
+[38/144] 06a41e135b53d45e -> Q43509
+[39/144] 41da6cf225116f26 -> Q166276
+[40/144] 4b83f60a96626d4f -> Q8652
+[41/144] bdac718145819d7f -> Q37100
+[42/144] 993d0ff9c78b21dd -> Q210531
+[43/144] 46e659ddd41b5a07 -> Q2910690
+[44/144] a102e17ede24e51c -> no-result
+[45/144] 342d04f86b31feb6 -> Q23482
+[46/144] ea2f4a673d1108fa -> Q3551
+[47/144] 5f542359fad8ca9c -> Q9301187
+[48/144] 6fc10c329db6fb27 -> Q49266
+[49/144] 923f41e8050cab6e -> Q61
+[50/144] e83fe406741b7d42 -> Q461793
+[51/144] 40a6f6c00942363e -> Q3130
+[52/144] 9f44ca118a5361de -> Q225641
+[53/144] deb45e07f61a5c95 -> Q389737
+[54/144] b906b48caa636464 -> Q657072
+[55/144] c458083300e1faed -> Q2841
+[56/144] c68509d3cd785e4b -> Q498172
+[57/144] 73992f2183bbe591 -> Q278667
+[58/144] 3af71838aa5ba872 -> Q9355495
+[59/144] 0bde0cd0e6587705 -> Q4629
+[60/144] e926e1f42a26c68b -> Q283196
+[61/144] 1a33b422696ca8d8 -> Q65110830
+[62/144] bd83931f04f8a693 -> Q136429262
+[63/144] cc9d59eed21b234e -> Q3285154
+[64/144] 0cc5b0e7ae6451c3 -> no-result
+[65/144] b821fccbd61bf844 -> Q22889
+[66/144] bda43990206f2670 -> Q135607
+[67/144] c03dde3ae9d2f6f9 -> Q33959
+[68/144] e6a900797ccbde2d -> Q18468188
+[69/144] 867f23984c2e3677 -> Q11088399
+[70/144] a99a0111e1f8019f -> Q33424536
+[71/144] bdd6cc33a5f2a217 -> Q36647
+[72/144] 9a5f4928d8a5f315 -> Q1663
+[73/144] b53b9d56896ab3f0 -> Q2123
+[74/144] 9e9640700a975c28 -> Q2044
+[75/144] 49cdc6c22400b407 -> Q40347
+[76/144] 07f2f95a07c94069 -> Q165204
+[77/144] f36fc13d45eb13f2 -> Q1778321
+[78/144] a466e92755f0d153 -> Q34986
+[79/144] 1dd28ae45c306f72 -> Q135411761

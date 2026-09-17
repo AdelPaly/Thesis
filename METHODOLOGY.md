@@ -41,6 +41,98 @@ Configurations and every threshold are chosen on **dev**. **Test is reported
 once.** Paired tests and bootstrap intervals resample **by place**, never by
 item, because items within a place are not independent.
 
+## Failure attribution
+
+Every wrong prediction is classified by where it broke, using the stage fields
+the runner recorded. The previous analysis inferred a granularity taxonomy
+(continent wrong / country wrong / far / not exact) from stored booleans; this
+one attributes to a stage:
+
+| level | meaning |
+|---|---|
+| `no_ner_span` | no mention was detected at all |
+| `span_not_linked` | mentions detected, the linker resolved none |
+| `wrong_entity` | linked, but the gold place is nowhere in the pipeline — not among the linker's candidates, not among the scored places |
+| `wrong_candidate_selected` | the linker *had* the gold place among its candidates and chose another |
+| `correct_candidate_not_first` | the gold place was in the final scored list, and the reranker did not put it first |
+| `returned_nothing` | stages completed, no prediction came out |
+| `no_intermediate_stages` | the configuration has no stages to attribute to |
+
+Three things to state when reporting this:
+
+**The gold annotation is a place, not an entity.** So `wrong_entity` and
+`wrong_candidate_selected` are separated by whether the gold place appears in
+the linker's candidate set, which is the closest observable proxy for "it had
+the right entity in hand". This is only possible because the records keep
+ReFinED's full ranked candidate set, not just the winner.
+
+**`no_intermediate_stages` is a result, not a gap.** A single-call LLM
+configuration, and the constant majority baseline, produce an answer with no
+observable intermediate state. Their failures cannot be localised, which is
+the cost of that design and should be reported as such rather than hidden.
+
+**A routed configuration is attributed per branch.** Because the branch is
+recorded, its two populations separate: failures on the linking branch get a
+stage, failures on the LLM branch get `no_intermediate_stages`. Without the
+branch on the record this split would be impossible, which was the original
+reason for recording it.
+
+## Statistical approach
+
+Every test and interval is clustered by **place**, because items about the same
+place are not independent — the datasets contain several items per place, and
+the synthetic sets were generated per place.
+
+* **Paired accuracy**: McNemar, where each *place* contributes one outcome per
+  system (whether that system got the majority of the place's items right).
+  Places where the systems tie are concordant and drop out. An exact binomial
+  p-value is used rather than the chi-square approximation, because the
+  discordant count is small at this sample size. The item-level test is printed
+  alongside and labelled: its pairs are not independent, so its p-value is
+  anti-conservative.
+* **Paired distances**: Wilcoxon signed-rank over places, each place reduced to
+  the median distance of its items per system. Only items where *both* systems
+  produced a coordinate can be paired; the count of usable pairs is always
+  reported, because substituting a number for a missing coordinate is precisely
+  what the Null Island bug did.
+* **Intervals**: cluster bootstrap, resampling places with replacement and
+  taking each sampled place with all of its items.
+* **Effect sizes**: the paired difference with a bootstrap interval, reported
+  next to every p-value. A test says whether a difference is distinguishable
+  from zero; only the interval says whether it is large enough to matter.
+
+## Scorer correctness check
+
+Before the new scorer was trusted, it was run over retired result CSVs
+converted into the new record format (`scripts/check_scorer.py`). The purpose
+is to catch sign errors and column mix-ups, which are invisible in a
+well-formatted table: a flipped haversine sign, lat and lon swapped, or gold
+and predicted transposed all still produce plausible numbers.
+
+The conversion applies the Null Island fix explicitly: a retired row whose
+predicted coordinate is exactly 0.0/0.0 with no predicted QID had no
+coordinate, and becomes `predicted_latlon: null`.
+
+Result, over three files chosen to include both a non-LLM and the
+worst-affected LLM run:
+
+| file | rows | disagreements | on Null Island rows | unexplained |
+|---|---|---|---|---|
+| `eval_FINAL_refined_clean_sm.csv` (no LLM) | 144 | 0 | 0 | **0** |
+| `eval_FINAL_two_stage_clean_journ.csv` (no LLM) | 72 | 0 | 0 | **0** |
+| `eval_FINAL_groq_llama_noisy_sm.csv` (LLM) | 144 | 9 (all `dist_km`) | 9 | **0** |
+
+On the two non-LLM files the new scorer reproduces the retired verdicts
+*exactly* — every one of exact, country, continent, within-161 km and the
+distance itself, to within 0.1 km, and identical aggregate metrics (46.5% /
+53.5% / 56.2%, mean 759.5 km). That is the sign-error and column-mix-up check
+passing: both implementations read the same coordinates and agree.
+
+On the LLM file the only disagreements are the 9 distance fields on Null Island
+rows, which is the fix working. Mean error falls from 2757.8 km to 2094.8 km
+(−663 km, −24%) and the count of items carrying a distance falls from 141 to
+132 — those 9 items now correctly have no distance rather than a ~6,000 km one.
+
 ## The geoparser tier was not re-run locally
 
 Mordecai3 is included as a configuration (`configs/mordecai3.yaml`) with a
