@@ -46,11 +46,58 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+CONFIG_DIR = REPO_ROOT / "configs"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from score import (PREDICTIONS_DIR, aggregate, attach_split,      # noqa: E402
                    find_prediction_files, load_predictions, score_record)
 import stats as st                                                # noqa: E402
+
+# Report order. A configuration declares its tier in its config file; the tier
+# is presentation metadata excluded from config_hash, so it orders rows without
+# being able to change a prediction. Rank falls back to the paradigm on the
+# records for anything with no config file left -- refined_gemma, whose
+# configuration was removed but whose result is still reported.
+TIER_RANK = {"0": 0, "1": 1, "2a": 2, "2b": 3, "3": 4, "4": 5, "5": 6,
+             "combo": 7, "oracle": 8}
+PARADIGM_RANK = {"baseline": 0, "geoparser": 1, "ner_dependent": 3,
+                 "dense_retrieval": 4, "ner_free": 5, "grounded_llm": 6,
+                 "routed": 7, "oracle": 8}
+
+
+def load_tiers(config_dir=CONFIG_DIR):
+    """{config name: tier} read straight from the YAML.
+
+    Reading config files for row order is not the scorer loading a model: no
+    model, no network, no import from src/. score.py stays free of this
+    entirely; only the report ordering needs it.
+    """
+    tiers = {}
+    try:
+        import yaml
+    except ImportError:
+        return tiers
+    for path in sorted(Path(config_dir).glob("*.yaml")):
+        if path.name == "datasets.yaml":
+            continue
+        try:
+            raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except Exception:                                  # noqa: BLE001
+            continue
+        if isinstance(raw, dict) and raw.get("name"):
+            tiers[raw["name"]] = str(raw.get("tier", "") or "")
+    return tiers
+
+
+def sort_key(name, records, tiers):
+    """Tier first, then paradigm, then name."""
+    tier = tiers.get(name, "")
+    if tier in TIER_RANK:
+        return (TIER_RANK[tier], name)
+    paradigms = {r.get("paradigm") for r in records}
+    paradigm = sorted(paradigms)[0] if paradigms else ""
+    return (PARADIGM_RANK.get(paradigm, 9), name)
+
 
 LEVELS = ["no_ner_span", "span_not_linked", "wrong_entity",
           "wrong_candidate_selected", "correct_candidate_not_first",
@@ -264,8 +311,9 @@ def cmd_tables(scored, args):
     for name, recs in groups.items():
         paradigms = {r.get("paradigm") for r in recs}
         by_paradigm[sorted(paradigms)[0] if paradigms else "unknown"].append(name)
+    tiers_map = load_tiers()
     for names_ in by_paradigm.values():
-        names_.sort()
+        names_.sort(key=lambda n: sort_key(n, groups[n], tiers_map))
 
     baselines = by_paradigm.get("baseline", [])
     ner_dependent = by_paradigm.get("ner_dependent", [])
@@ -281,9 +329,8 @@ def cmd_tables(scored, args):
     print(f"(split={args.split})")
     print("=" * 100)
     # Tier order: what kind of signal each can consume, cheapest first.
-    order = [n for n in (baselines + geoparser + ner_dependent + dense
-                         + ner_free + grounded + routed + oracle)
-             if n in present]
+    tiers = load_tiers()
+    order = sorted(present, key=lambda n: sort_key(n, groups[n], tiers))
     _print_metric_table(rows_for(order),
                         note="A place is either dev or test, so the most frequent DEV "
                              "place cannot be a test gold place: baseline_majority is "

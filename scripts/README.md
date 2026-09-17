@@ -14,10 +14,12 @@ the retired results are not comparable — see
 
 ---
 
-## 0. Corpus acquisition (optional, off the evaluation path)
+## 0. Corpus acquisition
 
-Neither of these feeds a configured dataset. They exist to build and clean the
-Bluesky dump, which is ~380 MB, not committed, and regenerable only from here.
+These build and clean the Bluesky dump: ~380 MB, not committed, and
+regenerable only from here. No configured dataset consumes it *yet* -- it is
+intended as the source of style exemplars for the next dataset, so treat it as
+on the path rather than as a leftover.
 
 | Script | Purpose |
 |--------|---------|

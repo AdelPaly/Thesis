@@ -261,7 +261,17 @@ class Pipeline:
     def _legacy_gate(self, text, out):
         """The original gate: did ReFinED link a Flair LOC to a QID that turns
         out to be a geographic-area type. It reads the FIRST SYSTEM'S OUTPUT,
-        which is why it behaves as a fallback rather than a router."""
+        which is why it behaves as a fallback rather than a router.
+
+    RETAINED DELIBERATELY, NOT DEAD CODE. No configuration uses this gate any
+    more -- refined_gemma was removed as a tier. Its RESULT is still reported,
+    because the legacy gate currently beats the rebuilt input-property gate
+    (-6.8 pp exact [-12.4, -1.1], p=0.021), and that comparison is going into
+    the write-up. Deleting this would make the reported row unreproducible even
+    with configs/refined_gemma.yaml restored from git history. Revisit after
+    submission.
+
+        """
         from wikidata import is_geographic_qid
         out.ner_spans = self._ner(text)
         loc = [e for e in out.ner_spans if e["type"] == "LOC"]

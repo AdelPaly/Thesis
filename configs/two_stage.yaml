@@ -1,4 +1,5 @@
 name: two_stage
+tier: "2a"
 paradigm: ner_dependent
 description: >
   Flair NER over every tag, Wikidata wbsearchentities top-10 retrieval per

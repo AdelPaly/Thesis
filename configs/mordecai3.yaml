@@ -1,4 +1,5 @@
 name: mordecai3
+tier: "1"
 paradigm: geoparser
 description: >
   Mordecai3 (Halterman 2023), a spaCy-based neural toponym resolver, reported

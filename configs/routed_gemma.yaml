@@ -1,4 +1,5 @@
 name: routed_gemma
+tier: "combo"
 paradigm: routed
 description: >
   Routed configuration with the rebuilt gate. The gate reads three properties

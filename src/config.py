@@ -101,6 +101,12 @@ class PipelineConfig:
     routing: RoutingConfig = field(default_factory=RoutingConfig)
     baseline: BaselineConfig = field(default_factory=BaselineConfig)
     geoparser: GeoparserConfig = field(default_factory=GeoparserConfig)
+    # Presentation metadata: which tier of the evaluation this configuration
+    # belongs to, by what kind of signal it can consume. Excluded from
+    # config_hash with `description`, because it orders report rows and does
+    # not change a single prediction -- forcing a re-run over row ordering
+    # would be absurd.
+    tier: str = ""
     description: str = ""
     config_hash: str = ""
     source_path: str = ""
@@ -118,9 +124,8 @@ class PipelineConfig:
         `description` and `source_path` are excluded: documentation and file
         location must not move the hash."""
         d = asdict(self)
-        d.pop("description", None)
-        d.pop("config_hash", None)
-        d.pop("source_path", None)
+        for presentation_only in ("tier", "description", "config_hash", "source_path"):
+            d.pop(presentation_only, None)
         return d
 
 
@@ -159,8 +164,8 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
     if not isinstance(raw, dict):
         raise ConfigError("configuration must be a YAML mapping")
 
-    known_sections = {"name", "paradigm", "description", "ner", "linking", "rerank",
-                      "llm", "routing", "baseline", "geoparser"}
+    known_sections = {"name", "paradigm", "tier", "description", "ner", "linking",
+                      "rerank", "llm", "routing", "baseline", "geoparser"}
     unknown = set(raw) - known_sections
     if unknown:
         raise ConfigError(f"unknown top-level key(s) {sorted(unknown)}; "
@@ -194,6 +199,7 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
     cfg = PipelineConfig(
         name=name,
         paradigm=paradigm,
+        tier=str(raw.get("tier", "") or ""),
         description=raw.get("description", "") or "",
         source_path=source_path,
         **built,

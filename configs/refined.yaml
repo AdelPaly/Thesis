@@ -1,4 +1,5 @@
 name: refined
+tier: "2b"
 paradigm: ner_dependent
 description: >
   Flair NER (LOC/PER/ORG) supplies the mentions; ReFinED in constrained-span

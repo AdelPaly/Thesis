@@ -1,4 +1,5 @@
 name: gemma
+tier: "4"
 paradigm: ner_free
 description: >
   Google Gemma 3 12B (instruction tuned), reading the whole text in one pass. No mention detection stage:

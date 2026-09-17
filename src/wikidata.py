@@ -465,7 +465,11 @@ def get_coords(entity_text, entity_type, top_n=10):
 GEO_PROP_CHAIN = ["P159", "P131", "P19", "P937", "P276"]
 
 
-# Geographic-area types for the refined_gemma routing gate. A ReFinED-linked
+# Geographic-area types for the legacy routing gate (is_geographic_qid).
+# RETAINED DELIBERATELY: no configuration uses this gate any more, but the
+# refined_gemma result it produced is still reported, because it beats the
+# rebuilt gate. Deleting this makes that row unreproducible. See
+# pipeline._legacy_gate. Revisit after submission. A ReFinED-linked
 # LOC whose P31 (directly or one P279 hop above) hits this set is a real
 # settlement / country / admin region. Anything outside (sports venues,
 # generic "old town" / "neighborhood" concepts, oceans, shopping centers)

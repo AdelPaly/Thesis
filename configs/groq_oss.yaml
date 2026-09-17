@@ -1,4 +1,5 @@
 name: groq_oss
+tier: "4"
 paradigm: ner_free
 description: >
   gpt-oss-120b served by Groq, reading the whole text in one pass. No mention detection stage:

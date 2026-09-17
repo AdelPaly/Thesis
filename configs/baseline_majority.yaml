@@ -1,4 +1,5 @@
 name: baseline_majority
+tier: "0"
 paradigm: baseline
 description: >
   Majority baseline. Always predicts the most frequent gold place in the DEV

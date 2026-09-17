@@ -1,4 +1,5 @@
 name: baseline_population
+tier: "0"
 paradigm: baseline
 description: >
   Population baseline. The existing Flair NER extracts toponyms (LOC only),
