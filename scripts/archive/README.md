@@ -9,6 +9,7 @@ there, the answer is here.
 |--------|-------------|
 | `add_noisy_coords.py` | Joined clean coordinates onto `src/social_media_noisy.csv` by `qid` (the noisy set is row-aligned with the clean set) and re-verified them against `P625`. Provenance for the coordinate columns of the noisy dataset. |
 | `enrich_within_161km.py` | Back-filled the `within_161km` column on `results/raw/eval_FINAL_*.csv` files produced before the old `evaluate.py` started writing it. Provenance for that column in the retired results. |
+| `analyze_failures.py` | Produced `results/summary/table_FINAL_failure_modes.csv` (committed) from the retired `results/raw/eval_FINAL_*.csv`. Its six-level taxonomy was a *granularity* breakdown (continent wrong / country wrong / beyond 161 km / not exact) inferred from stored booleans. Superseded by `scripts/analyse.py failures`, which attributes to a *stage* from recorded fields instead of inferring. Archived rather than deleted because it is the generator of that committed summary table. |
 | `restore_geocorpora_eval.py` | Reconstructed `src/geocorpora_eval.csv` from the ground-truth columns of an existing `eval_FINAL_*_geocorpora.csv`, so every mode was evaluated on the same row set. Provenance for that dataset file. |
 
 All three did `from add_coords import fetch_coords`, and `add_coords.py` is
