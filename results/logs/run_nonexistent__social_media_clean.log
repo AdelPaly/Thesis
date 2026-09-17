@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "C:\Users\Adela\PycharmProjects\geo\src\runner.py", line 283, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Adela\PycharmProjects\geo\src\runner.py", line 278, in main
+    run(args.config, args.dataset, limit=args.limit, overwrite=args.overwrite,
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        out_dir=Path(args.out_dir))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Adela\PycharmProjects\geo\src\runner.py", line 167, in run
+    cfg = load_config(config_name)
+  File "C:\Users\Adela\PycharmProjects\geo\src\config.py", line 296, in load_config
+    raise ConfigError(f"no such configuration file: {path}")
+config.ConfigError: no such configuration file: nonexistent

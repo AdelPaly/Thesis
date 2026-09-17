@@ -242,8 +242,7 @@ continent. Placeholder strings are now normalised to absent.
 ## Framing notes for the write-up
 
 **Every non-LLM configuration uses the same Flair NER.** Mention detection is
-held constant across `two_stage`, `refined`, `refined_search` and the routed
-configurations, which is what makes a linker comparison a comparison of linkers
+held constant across `two_stage`, `refined` and the routed configurations, which is what makes a linker comparison a comparison of linkers
 rather than of pipelines. State this as a design strength.
 
 This was checked rather than assumed, because the configurations do not filter

@@ -16,7 +16,8 @@ description: >
   Hand-specified, not learned. The single threshold (ambiguity_threshold) is
   fitted on the dev split only.
 
-  Contrast refined_gemma, whose gate asked whether ReFinED had linked a LOC to
+  Contrast refined_gemma -- no longer a configuration, but its result is still
+  reported as a comparison -- whose gate asked whether ReFinED had linked a LOC to
   a geographic QID. That reads the first system OUTPUT, which makes it a
   fallback rather than a router, and explains the collapse under noise: a
   noisy toponym still links to a geographic QID, so the gate fires and sends a

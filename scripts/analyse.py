@@ -255,18 +255,34 @@ def cmd_tables(scored, args):
     def rows_for(names, suffix=""):
         return [_row(n + suffix, groups[n]) for n in names if n in present]
 
-    baselines = ["baseline_majority", "baseline_population"]
-    ner_dependent = ["two_stage", "refined", "refined_search"]
-    ner_free = ["gemma", "groq_oss", "groq_llama"]
-    routed = ["refined_gemma", "refined_groq_oss", "refined_groq_llama",
-              "routed_gemma"]
-    oracle = [n for n in present if n.startswith("oracle")]
+    # Grouped by the paradigm ON THE RECORDS, not by a hardcoded list of
+    # configuration names. A list here would be a fifth copy of the mode
+    # registry, and it would go stale the moment a configuration is added or
+    # removed -- which is exactly what happened to the four copies that change
+    # 8 removed.
+    by_paradigm = defaultdict(list)
+    for name, recs in groups.items():
+        paradigms = {r.get("paradigm") for r in recs}
+        by_paradigm[sorted(paradigms)[0] if paradigms else "unknown"].append(name)
+    for names_ in by_paradigm.values():
+        names_.sort()
+
+    baselines = by_paradigm.get("baseline", [])
+    ner_dependent = by_paradigm.get("ner_dependent", [])
+    dense = by_paradigm.get("dense_retrieval", [])
+    ner_free = by_paradigm.get("ner_free", [])
+    grounded = by_paradigm.get("grounded_llm", [])
+    geoparser = by_paradigm.get("geoparser", [])
+    routed = by_paradigm.get("routed", [])
+    oracle = by_paradigm.get("oracle", [])
 
     print("=" * 100)
     print(f"TABLE 1  Baselines vs everything  -- is the task non-trivial?")
     print(f"(split={args.split})")
     print("=" * 100)
-    order = [n for n in baselines + ner_dependent + ner_free + routed + sorted(oracle)
+    # Tier order: what kind of signal each can consume, cheapest first.
+    order = [n for n in (baselines + geoparser + ner_dependent + dense
+                         + ner_free + grounded + routed + oracle)
              if n in present]
     _print_metric_table(rows_for(order),
                         note="A place is either dev or test, so the most frequent DEV "
@@ -278,36 +294,37 @@ def cmd_tables(scored, args):
     print("TABLE 2  NER-dependent vs NER-free, by condition")
     print("          -- does having a mention-detection stage matter?")
     print("=" * 100)
+    # "NER-free" and "LLM" are separate axes: dense retrieval has no mention
+    # detection and no LLM, so it is the cell that lets the contrast separate
+    # "no mention detection stage" from "parametric knowledge".
+    tagged = ([(n, "[mention-detect]") for n in ner_dependent]
+              + [(n, "[no-mention-detect]") for n in dense]
+              + [(n, "[llm, no-mention-detect]") for n in ner_free]
+              + [(n, "[llm, grounded]") for n in grounded])
     conditions = sorted({r.get("condition") for r in scored if r.get("condition")})
     for cond in conditions:
         print(f"-- condition {cond} --")
         rows = []
-        for name in ner_dependent + ner_free:
+        for name, tag in tagged:
             if name not in present:
                 continue
             sub = [r for r in groups[name] if r.get("condition") == cond]
-            tag = "  [ner-dep]" if name in ner_dependent else "  [ner-free]"
-            rows.append(_row(name + tag, sub))
+            rows.append(_row(f"{name}  {tag}", sub))
         _print_metric_table(rows)
     print("-- pooled over conditions --")
-    rows = []
-    for name in ner_dependent + ner_free:
-        if name in present:
-            tag = "  [ner-dep]" if name in ner_dependent else "  [ner-free]"
-            rows.append(_row(name + tag, groups[name]))
-    _print_metric_table(rows)
+    _print_metric_table([_row(f"{n}  {t}", groups[n]) for n, t in tagged
+                         if n in present])
 
     print("=" * 100)
     print("TABLE 3  Linker comparison, NER held constant -- which linker?")
     print("=" * 100)
     _print_metric_table(
         rows_for(ner_dependent),
-        note="All three use the same Flair ner-large over the same mentions, so "
-             "what varies is only how a mention becomes a place: wbsearchentities "
-             "retrieval + rerank (two_stage), ReFinED disambiguation (refined), or "
-             "ReFinED with a per-mention search fallback (refined_search). "
-             "ReFinED here is a TWO-STAGE pipeline, not end-to-end: Flair detects, "
-             "ReFinED disambiguates.")
+        note="Both use the same Flair ner-large over the same mentions (verified "
+             "identical on 144/144 items), so what varies is only how a mention "
+             "becomes a place: wbsearchentities retrieval + E5 rerank (two_stage) "
+             "versus ReFinED disambiguation (refined). ReFinED here is a TWO-STAGE "
+             "pipeline, not end-to-end: Flair detects, ReFinED disambiguates.")
 
     print("=" * 100)
     print("TABLE 4  Routed vs best component vs oracle")
@@ -315,8 +332,9 @@ def cmd_tables(scored, args):
     print("=" * 100)
     components = [n for n in ["refined", "gemma"] if n in present]
     rows = rows_for(components, "  [component]")
+    rows += rows_for([n for n in grounded if n in present], "  [grounded]")
     rows += rows_for([n for n in routed if n in present], "  [routed]")
-    rows += rows_for(sorted(oracle), "  [oracle]")
+    rows += rows_for(oracle, "  [oracle]")
     _print_metric_table(rows,
                         note="The oracle is analysis-only: it picks per item using the "
                              "gold answer, so it is a ceiling, not a system. The gap "
@@ -355,12 +373,19 @@ def cmd_tables(scored, args):
 
 # ---------------------------------------------------------------- statistics
 
+# Explicit pairs, because which comparisons are worth making is an analysis
+# decision, not something to enumerate automatically. Pairs naming a
+# configuration with no predictions on disk are skipped silently.
 COMPARISONS = [
     ("refined", "two_stage", "which linker: ReFinED vs search+rerank"),
-    ("refined_search", "refined", "does the search fallback help ReFinED"),
-    ("refined", "gemma", "NER-dependent vs NER-free"),
     ("refined", "baseline_population", "does the linker beat the population floor"),
     ("gemma", "baseline_population", "does the LLM beat the population floor"),
+    ("gemma", "groq_oss", "LLM model sensitivity"),
+    ("refined", "gemma", "mention detection vs parametric knowledge"),
+    ("dense_retrieval", "refined", "dense retrieval vs entity linking"),
+    ("dense_retrieval", "gemma", "no mention detection: retrieval vs parametric"),
+    ("grounded_gemma", "gemma", "does grounding the LLM in candidates help"),
+    ("grounded_gemma", "refined", "grounded LLM vs its retriever alone"),
     ("routed_gemma", "refined", "does the rebuilt router beat its best component"),
     ("routed_gemma", "refined_gemma", "rebuilt gate vs the legacy output-reading gate"),
     ("oracle_refined_gemma", "routed_gemma", "headroom left for the router"),

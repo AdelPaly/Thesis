@@ -1,191 +1,124 @@
-# `scripts/` — dataset construction, validation, and analysis
+# `scripts/`
 
-Utility scripts used to build, validate, and analyse the datasets in `src/`.
-They are standalone (run with `python scripts/<name>.py`) and assume the
-project layout, resolving paths relative to the repository root.
+Everything here is on the path from raw data to reported results, in the order
+it runs. Anything that had done its job and would never run again has been
+moved to [`archive/`](archive/README.md); anything superseded has been deleted.
 
-For dataset provenance and generation metadata (which model, when, validation
-results), see [`../DATASETS.md`](../DATASETS.md).
+Scripts are standalone (`python scripts/<name>.py`) and resolve paths relative
+to the repository root.
 
-## Generation
+For dataset provenance see [`../DATASETS.md`](../DATASETS.md). For the
+decisions behind the numbers — the split, the tiers, the failure taxonomy, why
+the retired results are not comparable — see
+[`../METHODOLOGY.md`](../METHODOLOGY.md).
 
-The synthetic datasets were generated **interactively** with Claude Opus 4.x
-from a written specification — there is no generation script. The specification
-is the reproducible artifact and lives at the repository root in
-[`../prompt`](../prompt). See `../DATASETS.md` for details.
+---
 
-### Programmatic generation via OpenRouter
+## 0. Corpus acquisition (optional, off the evaluation path)
 
-`generate_synthetic.py` regenerates a dataset from the same spec through
-[OpenRouter](https://openrouter.ai), using the client in `../src/llm_openrouter.py`.
-Set `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` (an OpenRouter model slug) in
-`src/.env`, or pass `--model` to override.
-
-```bash
-python src/llm_openrouter.py          # one-request smoke test of key + model
-python scripts/generate_synthetic.py --format social_media --out src/social_media_synthetic.csv
-python scripts/generate_synthetic.py --format journalistic --out src/journalistic_synthetic.csv
-```
-
-It generates in batches of signal type x continent (8 each, 144 rows total),
-tells each batch which locations are already used, and resumes if you
-interrupt it. Next to the CSV it writes a `.raw.jsonl` log of every
-request/response and a `.meta.json` with the model, date and spec hash
-(spec section 9.1). Rows are only checked for structure, so run
-`dataset_qids.py validate` and `dataset_coords.py add` on the output afterwards.
-
-### Real social media posts (English)
-
-`fetch_bluesky_en.py` filters the Bluesky dump
-[`alpindale/two-million-bluesky-posts`](https://huggingface.co/datasets/alpindale/two-million-bluesky-posts)
-(2,107,530 raw firehose posts) down to its English entries.
-
-```bash
-python scripts/fetch_bluesky_en.py
-```
-
-The dataset has a single config (`default`) and **no language field** — its
-schema is `text, created_at, author, uri, has_images, reply_to` — so English is
-detected locally with `langdetect`. That costs ~2.2 ms/post, which is ~72
-minutes single-core over 2M posts, hence `--num-proc` (default 10).
-
-Every row detected as English is kept with all six columns intact: no
-deduplication, no length limits, no content filtering. About **49.5%** of the
-dump is English, giving ~1.04M rows (~380 MB) at `../src/bluesky_en.jsonl`.
-Use `--format parquet` for a much smaller file, or `--limit N` for a trial run.
-
-## Validation
+Neither of these feeds a configured dataset. They exist to build and clean the
+Bluesky dump, which is ~380 MB, not committed, and regenerable only from here.
 
 | Script | Purpose |
 |--------|---------|
-| `dataset_qids.py validate <csv>` | Check every row's `qid` against Wikidata: the item exists, its English label matches the expected name, and its country (`P17`) matches the `country` column. Read-only. |
-| `dataset_qids.py repair <csv> [--out f]` | The same three checks, plus a Wikidata search for a candidate whose `P17` matches, rewriting `qid`. In place unless `--out`. Its run over the 144-row GeoCorpora sample produced `../results/logs/fix_qids_geocorpora_144.log`. |
+| `fetch_bluesky_en.py` | Filters the 2.1M-post Bluesky dump down to its English entries (~1.04M rows) with `langdetect`, since the dataset has no language field. |
+| `filter_adult_spam.py` | Strips solicitation spam from that dump using a two-tier vocabulary: unambiguous terms drop a post alone, ambiguous ones only alongside the "follow me / dm me / link in bio" grammar. Ordinary profanity is deliberately kept. |
 
-```bash
-python scripts/dataset_qids.py validate src/social_media_dataset.csv
-python scripts/dataset_qids.py validate src/journalistic_dataset.csv
-python scripts/dataset_qids.py repair   src/geocorpora_eval.csv
-```
-
-This replaces `validate_dataset.py` and `fix_qids.py`, which were the same
-capability split by dataset: one could only validate, the other could repair,
-and each carried its own copy of the SPARQL boilerplate. Either action now
-runs on any dataset.
-
-Uses only the **public Wikidata SPARQL / search APIs** — no API key needed.
-
-## Coordinate enrichment
+## 1. Dataset construction
 
 | Script | Purpose |
 |--------|---------|
-| `dataset_coords.py add <csv>` | Fill `latitude`/`longitude` from Wikidata `P625` for each row's `qid`, in place. Sources from the QID currently in the CSV, so manual QID edits flow through. |
-| `dataset_coords.py verify <csv>...` | Read-only check that stored coordinates still match `P625` (tolerance ~1.1 km). |
+| `generate_synthetic.py` | Regenerates a synthetic dataset from the spec at [`../prompt`](../prompt) via OpenRouter, in batches of signal type × continent, resumable, logging every request/response plus a `.meta.json` with model, date and spec hash. |
+| `dataset_qids.py validate \| repair` | Checks each row's `qid` against Wikidata (item exists, English label matches, `P17` country agrees) and optionally repairs it by searching for a candidate whose country matches. Either action runs on any dataset. |
+| `dataset_coords.py add \| verify` | Fills `latitude`/`longitude` from Wikidata `P625` for each row's `qid`, or checks the stored values still match (~1.1 km tolerance). |
 
-```bash
-python scripts/dataset_coords.py add    src/social_media_dataset.csv
-python scripts/dataset_coords.py verify src/social_media_dataset.csv src/journalistic_dataset.csv
-```
+Both use the one coordinate client, `src/wikidata.coords_for_qids`, and the one
+shared cache in `src/.wikidata_cache/`.
 
-This replaces `add_coords.py` and `verify_coords.py`. There is now **one
-coordinate client** — `src/wikidata.coords_for_qids`, reading `P625` through
-the same rate-limited `wbgetentities` path and the same `src/.wikidata_cache`
-the pipeline uses. The old pair reached the same fact through a SPARQL endpoint
-with a second cache at `src/.qid_coords_cache.pkl`; that transport and that
-cache are gone.
+## 2. The dev/test split
 
-`add_qids.py` (GeoNames `P1566` → QID) is deleted: it imported
-`prepare_geocorpora.py`, which exists nowhere in the repo or its history, so it
-could not run. `dataset_qids.py repair` is the surviving QID resolver.
+| Script | Purpose |
+|--------|---------|
+| `make_split.py` | Writes `../splits/place_split.csv` (the assignment) and `../splits/item_split.csv` (joined to item ids). Both committed. |
 
-## Evaluation and analysis
+The unit is a **place, not an item**, so posts about the same place cannot
+straddle the boundary. Global across datasets, stratified by
+(dataset, condition), deterministic from `sha256(SALT + place_key)`.
+Configurations and thresholds are chosen on **dev**; **test is reported once**.
+`--force` moves places between sides and invalidates every threshold fitted on
+dev, which is why `SALT` and `DEV_FRACTION` are constants.
 
-Evaluation itself lives outside this directory and is split in two, so that
-changing a metric never re-runs a model:
+## 3. Inference
 
 | Entry point | Purpose |
 |--------|---------|
-| `../src/runner.py` | Inference only. Runs one configuration (`../configs/*.yaml`) over one dataset and writes `../results/predictions/<config>__<dataset>.jsonl`. Computes no metrics. |
-| `score.py` | Metrics only. Reads those prediction files and computes everything. Imports nothing from `../src/`, loads no model, makes no network call. Sole home of the haversine implementation. |
+| `../src/runner.py` | Runs one configuration (`../configs/*.yaml`) over one dataset and writes per-item records to `../results/predictions/<config>__<dataset>.jsonl`. **Computes no metrics.** Resumable; a failed item is recorded with an `error`, never skipped. |
+| `run_all.py` | Drives the runner over a set of (configuration, dataset) pairs, one at a time, logging each to `../results/logs/`. Sequential on purpose: two runners contend for the Wikidata rate limiter and clobber each other's caches. |
+
+`configs/` is the registry — adding a file is enough to get a configuration
+run. `ORDER` in `run_all.py` is an ordering preference only; anything in
+`configs/` but not in `ORDER` still runs.
 
 ```bash
 python src/runner.py --list
-python src/runner.py --config refined --dataset social_media_clean
-python scripts/score.py --by condition
+python scripts/run_all.py
 ```
 
-The old `eval_acc161.py` + `_eval_acc161_worker.py` pair is deleted. It was a
-second copy of the inference loop with its own 8-column schema, existing only
-because some corpora have coordinates but no gold QIDs. The single record
-format allows a null `place_qid`, and `score.py` reports `exact` over the
-items that have one (`nQID` column). **Accuracy@161 km itself is unchanged** —
-it is the field standard and `score.py` reports it.
+## 4. Scoring
 
 | Script | Purpose |
 |--------|---------|
-| `run_all.py` | Drives `../src/runner.py` over a set of (configuration, dataset) pairs, one at a time, logging each to `../results/logs/run_<config>__<dataset>.log`. Sequential on purpose: two runners contend for the Wikidata rate limiter and clobber each other's caches. Resumable. |
-| `oracle_router.py` | Analysis-only. Per item, takes whichever component got it right — the ceiling for the routing idea. Computed from existing prediction files; it is **not** a configuration and has no YAML, because it chooses using the gold answer. |
-| `fit_gate.py` | Sweeps the routing gate's `ambiguity_threshold` on the **dev** split and reports what each value would do. Reads stored `routing_features` and component predictions, so no model runs. Imports the rule from `../src/pipeline.route_from_features` rather than reimplementing it. |
-| `analyse.py` | Failure attribution, paired statistics and the four report tables, all read from the prediction files. Subcommands `failures`, `tables`, `stats`, `all`. |
-| `stats.py` | Statistical primitives, all clustered by place: McNemar, Wilcoxon signed-rank, cluster bootstrap, paired effect intervals. |
-| `check_scorer.py` | Runs the new scorer over retired result CSVs converted to the record format, to catch sign errors and column mix-ups. |
-| `audit_retired_results.py` | Reproduces the METHODOLOGY.md claims about why the retired results are not comparable. |
-| `analyze_failures.py` | Failure-mode analysis across the retired chapter-4 CSVs. Superseded by `analyse.py` -- kept only because it is the generator of the committed `results/summary/table_FINAL_failure_modes.csv`. |
-| `diagnose_ner_recall.py` | NER-recall diagnostic — attributes pipeline misses to the Flair NER stage. |
-| `archive/` | Completed one-off scripts, kept as provenance for files on disk. See `archive/README.md`. |
-
-## The dev/test split
-
-`make_split.py` writes `../splits/place_split.csv` (the assignment) and
-`../splits/item_split.csv` (the same assignment joined to item ids). Both are
-committed, because the split has to be stable across runs.
-
-The unit is a **place, not an item**: posts about the same place cannot
-straddle the boundary. The assignment is global across datasets, stratified by
-(dataset, condition), and deterministic — a place's rank inside its stratum is
-`sha256(SALT + place_key)`, so it does not depend on row order.
+| `score.py` | Reads the prediction files and computes every metric. Imports nothing from `../src/`, loads no model, makes no network call. Sole home of the haversine implementation. |
 
 ```bash
-python scripts/make_split.py               # refuses to overwrite silently
-python scripts/score.py --split dev        # choose configurations and thresholds here
-python scripts/score.py --split test       # report once
+python scripts/score.py --split dev          # choose here
+python scripts/score.py --split test         # report once
+python scripts/score.py --by condition
 ```
 
-Rebuilding with `--force` moves places between sides and invalidates every
-threshold fitted on dev. `SALT` and `DEV_FRACTION` in `make_split.py` are
-constants for that reason.
+## 5. Analysis
 
-## Analysis
+| Script | Purpose |
+|--------|---------|
+| `analyse.py` | Failure attribution, paired statistics and the four report tables. Subcommands `failures`, `tables`, `stats`, `all`. Groups configurations by the `paradigm` on their records rather than by any hardcoded list. |
+| `stats.py` | Statistical primitives, all clustered by place: McNemar, Wilcoxon signed-rank, cluster bootstrap, paired effect intervals. |
+| `fit_gate.py` | Sweeps the routing gate's `ambiguity_threshold` on **dev** over stored `routing_features`. Imports the rule from `../src/pipeline.route_from_features` rather than reimplementing it, so a sweep cannot evaluate a different rule from the one the pipeline runs. |
+| `oracle_router.py` | Analysis only: per item, whichever component got it right — the ceiling for the routing idea. Not a configuration and has no YAML, because it chooses using the gold answer. |
 
 ```bash
 python scripts/analyse.py all --split test --out results/summary
-python scripts/check_scorer.py
 ```
 
-`analyse.py` reads only `../results/predictions/*.jsonl` and
-`../splits/item_split.csv`. Metrics come from `score.py` and statistics from
-`stats.py`, so each has exactly one definition.
+Failure attribution classifies each wrong prediction by the stage where it
+broke, read from recorded fields rather than inferred: `no_ner_span`,
+`span_not_linked`, `wrong_entity`, `wrong_candidate_selected`,
+`correct_candidate_not_first`, `returned_nothing`, plus
+`no_intermediate_stages` for architectures with no stages to attribute to.
+Statistics pair and resample by **place**, never by item.
 
-**Failure attribution** classifies every wrong prediction by where it broke,
-from the stage fields the runner recorded rather than from the shape of the
-output: `no_ner_span`, `span_not_linked`, `wrong_entity`,
-`wrong_candidate_selected`, `correct_candidate_not_first`, `returned_nothing`.
-Two limits are worth stating when reporting it:
+## 6. Verification
 
-* The datasets annotate a gold **place**, not a gold entity, so "wrong entity"
-  and "correct entity, wrong candidate" are separated by whether the gold
-  place appears in the linker's candidate set — the closest observable proxy.
-* A configuration with no intermediate stages (a single-call LLM, the constant
-  majority baseline) gets `no_intermediate_stages`. That is the finding, not a
-  gap: those pipelines cannot be debugged stage by stage.
+Run these after changing the scorer, or to re-check a claim.
 
-**Statistics** are clustered by place throughout, because items about the same
-place are not independent. McNemar pairs places, Wilcoxon ranks places, and
-the bootstrap resamples places with all of their items. Item-level McNemar is
-printed alongside for reference and labelled anti-conservative.
+| Script | Purpose |
+|--------|---------|
+| `check_scorer.py` | Runs the scorer over retired result CSVs converted to the record format, to catch sign errors and column mix-ups. Non-LLM files must agree exactly; LLM files are expected to disagree only on Null Island rows. |
+| `audit_retired_results.py` | Reproduces the METHODOLOGY.md claims about why the retired results are not comparable: the Null Island rows, the 178 rate-limit search failures, and the evidence that those failures degraded granularity rather than producing no-results. |
+
+## What is not here
+
+| Removed | Survivor |
+|---|---|
+| `eval_acc161.py`, `_eval_acc161_worker.py` | `src/runner.py` + `score.py`; a null `place_qid` is allowed in the record format |
+| `add_coords.py`, `verify_coords.py` | `dataset_coords.py` |
+| `validate_dataset.py`, `fix_qids.py` | `dataset_qids.py` |
+| `add_qids.py` | `dataset_qids.py repair` (it imported a module absent from the repo and its history) |
+| `diagnose_ner_recall.py` | `analyse.py failures`, which attributes from records without re-running Flair |
+| `analyze_failures.py` | `analyse.py failures` (archived, not deleted — it generated a committed summary table) |
 
 ## API keys
 
-None of the validation or enrichment scripts here contain hard-coded API keys —
-they use the public Wikidata endpoints. The *evaluation pipeline* in `src/`
-(not these scripts) reads its keys from environment variables loaded from a
-local `src/.env`, which is git-ignored and is never committed.
+No script here contains a key, and the Wikidata endpoints are public.
+`generate_synthetic.py` needs `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`, and
+the LLM configurations need `GOOGLE_API_KEY` / `GROQ_API_KEY`; all are read
+from a git-ignored `src/.env`.

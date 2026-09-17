@@ -27,12 +27,14 @@ from config import load_all_configs, load_datasets   # noqa: E402
 
 LOG_DIR = REPO_ROOT / "results" / "logs"
 
-# Cheap configurations first, so the expensive ones are never what stands
-# between you and a first look at the numbers.
-ORDER = ["baseline_majority", "gemma", "groq_oss", "groq_llama",
-         "baseline_population", "refined", "refined_search",
-         "routed_gemma", "refined_gemma", "refined_groq_oss",
-         "refined_groq_llama", "two_stage", "mordecai3"]
+# Cheap first, so the expensive runs are never what stands between you and a
+# first look at the numbers. Names absent from configs/ are skipped, and
+# configurations present in configs/ but missing here still run (appended), so
+# this is an ordering preference, not a registry.
+ORDER = ["baseline_majority", "baseline_population",
+         "gemma", "groq_oss",
+         "two_stage", "refined",
+         "routed_gemma", "mordecai3"]
 
 
 def main():
@@ -47,7 +49,13 @@ def main():
     args = p.parse_args()
 
     all_configs = load_all_configs()
-    names = args.configs or [c for c in ORDER if c in all_configs]
+    if args.configs:
+        names = args.configs
+    else:
+        # ORDER first, then anything else configs/ contains, so adding a
+        # configuration file is enough to get it run.
+        names = [c for c in ORDER if c in all_configs]
+        names += [c for c in sorted(all_configs) if c not in names]
     names = [n for n in names if n not in (args.skip or [])]
     datasets = args.datasets or list(load_datasets())
 
