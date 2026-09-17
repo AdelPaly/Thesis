@@ -1,0 +1,26 @@
+name: groq_oss
+paradigm: ner_free
+description: >
+  gpt-oss-120b served by Groq, reading the whole text in one pass. No mention detection stage:
+  the model is asked for city / country / continent directly, and the answer
+  is resolved against Wikidata. A continent-only answer carries no coordinate.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  search_fallback: false
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  backend: groq_oss
+  model: openai/gpt-oss-120b
+  cache_name: groq_gpt_oss_120b
+routing:
+  enabled: false
+  gate: null
+  fallback: null

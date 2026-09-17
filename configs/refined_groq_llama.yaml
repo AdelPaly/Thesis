@@ -1,0 +1,28 @@
+name: refined_groq_llama
+paradigm: routed
+description: >
+  Legacy routed configuration. The gate asks whether ReFinED linked a Flair
+  LOC to a QID that is a geographic-area type; if so the item takes the
+  refined path, otherwise it falls back to groq_llama. This gate reads the first
+  system's OUTPUT, which makes it a fallback rather than a router -- kept for
+  comparison against the input-property gate.
+ner:
+  model: flair/ner-large
+  entity_types: [LOC, PER, ORG]
+linking:
+  backend: refined
+  refined_model: wikipedia_model
+  refined_entity_set: wikipedia
+  search_fallback: false
+  top_n: 10
+rerank:
+  model: intfloat/multilingual-e5-base
+  enabled: true
+llm:
+  backend: groq_llama
+  model: meta-llama/llama-4-scout-17b-16e-instruct
+  cache_name: groq_llama4_scout_17b
+routing:
+  enabled: true
+  gate: legacy_is_geographic_qid
+  fallback: llm

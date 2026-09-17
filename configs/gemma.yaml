@@ -1,0 +1,26 @@
+name: gemma
+paradigm: ner_free
+description: >
+  Google Gemma 3 12B (instruction tuned), reading the whole text in one pass. No mention detection stage:
+  the model is asked for city / country / continent directly, and the answer
+  is resolved against Wikidata. A continent-only answer carries no coordinate.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  search_fallback: false
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  backend: gemma
+  model: gemma-3-12b-it
+  cache_name: gemma
+routing:
+  enabled: false
+  gate: null
+  fallback: null

@@ -1,0 +1,26 @@
+name: refined_search
+paradigm: ner_dependent
+description: >
+  refined, plus a per-mention fallback: any mention ReFinED cannot resolve to
+  coordinates gets a single wbsearchentities top-1 hit pushed through the same
+  property chain. ReFinED still owns disambiguation; the fallback only patches
+  mentions it has no answer for.
+ner:
+  model: flair/ner-large
+  entity_types: [LOC, PER, ORG]
+linking:
+  backend: refined
+  refined_model: wikipedia_model
+  refined_entity_set: wikipedia
+  search_fallback: true
+  top_n: 10
+rerank:
+  model: intfloat/multilingual-e5-base
+  enabled: true
+llm:
+  backend: null
+  model: null
+routing:
+  enabled: false
+  gate: null
+  fallback: null

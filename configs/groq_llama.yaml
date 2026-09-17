@@ -1,0 +1,26 @@
+name: groq_llama
+paradigm: ner_free
+description: >
+  Llama 4 Scout 17B served by Groq, reading the whole text in one pass. No mention detection stage:
+  the model is asked for city / country / continent directly, and the answer
+  is resolved against Wikidata. A continent-only answer carries no coordinate.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  search_fallback: false
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  backend: groq_llama
+  model: meta-llama/llama-4-scout-17b-16e-instruct
+  cache_name: groq_llama4_scout_17b
+routing:
+  enabled: false
+  gate: null
+  fallback: null

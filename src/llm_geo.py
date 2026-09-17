@@ -96,20 +96,33 @@ class LLMGeoPipeline(ABC):
             }
 
         if parsed.get("continent"):
+            # Continent-only: the model named a continent but nothing that
+            # resolves to a gazetteer entry. There is no coordinate here, so
+            # lat/lon stay None. Returning 0.0/0.0 would put the prediction on
+            # Null Island and hand the scorer a ~6000 km "error distance" for
+            # an item that produced no coordinate at all.
             return {
                 "entity": parsed["continent"],
                 "entity_type": "LOC",
-                "lat": 0.0, "lon": 0.0,
+                "lat": None, "lon": None,
                 "description": parsed["continent"],
-                "qid": "",
-                "country": "", "continent": parsed["continent"],
+                "qid": None,
+                "country": None, "continent": parsed["continent"],
             }
 
         return None
 
     def geolocate(self, text):
+        return self.geolocate_verbose(text)[0]
+
+    def geolocate_verbose(self, text):
+        """Return (candidate_or_None, raw_response_text).
+
+        The raw response is what the model actually said, before parsing --
+        the runner stores it in `llm_raw_response` so a parsing change can be
+        re-scored without another API call."""
         raw = self._get_response(text)
         parsed = self._parse_json(raw)
         if parsed is None or parsed.get("refused"):
-            return None
-        return self._resolve_to_candidate(parsed)
+            return None, raw
+        return self._resolve_to_candidate(parsed), raw

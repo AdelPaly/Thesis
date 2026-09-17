@@ -1,0 +1,26 @@
+name: refined
+paradigm: ner_dependent
+description: >
+  Flair NER (LOC/PER/ORG) supplies the mentions; ReFinED in constrained-span
+  mode links each one to a Wikidata QID; the shared property chain turns the
+  QID into coordinates; E5 reranks across mentions. Two stages, not
+  end-to-end: ReFinED is doing disambiguation only, Flair owns detection.
+ner:
+  model: flair/ner-large
+  entity_types: [LOC, PER, ORG]
+linking:
+  backend: refined
+  refined_model: wikipedia_model
+  refined_entity_set: wikipedia
+  search_fallback: false
+  top_n: 10
+rerank:
+  model: intfloat/multilingual-e5-base
+  enabled: true
+llm:
+  backend: null
+  model: null
+routing:
+  enabled: false
+  gate: null
+  fallback: null

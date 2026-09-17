@@ -1,0 +1,23 @@
+# Dataset registry. Paths are repo-relative. Every dataset carries the same
+# columns: text, qid, location_name, country, continent, signal_type,
+# latitude, longitude. A null qid is allowed (see scorer: place_qid may be
+# null for corpora that have coordinates but no gold Wikidata id).
+social_media_clean:
+  path: src/social_media_dataset.csv
+  description: Synthetic social-media posts, 48 items per signal condition.
+  noisy: false
+
+social_media_noisy:
+  path: src/social_media_noisy.csv
+  description: social_media_clean with typographic and orthographic noise applied.
+  noisy: true
+
+journalistic_clean:
+  path: src/journalistic_dataset.csv
+  description: Synthetic journalistic items (headline + body), 24 per condition.
+  noisy: false
+
+geocorpora:
+  path: src/geocorpora_eval.csv
+  description: GeoCorpora tweets resolved to Wikidata QIDs via GeoNames P1566.
+  noisy: false

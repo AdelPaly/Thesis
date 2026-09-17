@@ -1,15 +1,15 @@
-"""Groq API handler. Two pipeline instances are exposed, one per
-production model:
+"""Groq API handler.
 
-  geolocate_groq_oss   -> openai/gpt-oss-120b
-  geolocate_groq_llama -> meta-llama/llama-4-scout-17b-16e-instruct
+The model id and the cache name come from the configuration (`llm.model`,
+`llm.cache_name`); nothing here names a model. `build()` is the factory the
+pipeline calls, and instances are memoised per (model, cache) pair so a run
+opens one client.
 
-Both share the same SYSTEM_PROMPT (edit below). The per-call task spec
-lives in llm_geo.PROMPT and is sent as the user message — keep this
-system slot for behaviour shaping (format strictness, abstention policy).
+SYSTEM_PROMPT below is behaviour shaping (format strictness, abstention
+policy) and is sent as the `system` role on every call. The per-call task spec
+lives in llm_geo.PROMPT and is sent as the user message.
 
-GROQ_API_KEY is read from environment (loaded from src/.env by the
-worker entrypoints).
+GROQ_API_KEY is read from environment (loaded from src/.env by the runner).
 """
 import os
 import time
@@ -20,15 +20,14 @@ from groq import (Groq, APIConnectionError, APIStatusError,
 from llm_geo import LLMGeoPipeline
 
 # ============================================================
-# SYSTEM PROMPT — edit freely. Sent as the `system` role on every call.
+# SYSTEM PROMPT -- edit freely. Sent as the `system` role on every call.
 # ============================================================
 SYSTEM_PROMPT = """You are a precise geolocation assistant. Always respond with valid JSON exactly matching the schema in the user's message — no commentary, no markdown fences, no extra fields."""
 # ============================================================
 
-MODEL_OSS = "openai/gpt-oss-120b"
-MODEL_LLAMA = "meta-llama/llama-4-scout-17b-16e-instruct"
-
 _TRANSIENT = (APIConnectionError, RateLimitError, InternalServerError)
+
+_instances = {}
 
 
 class GroqPipeline(LLMGeoPipeline):
@@ -68,11 +67,8 @@ class GroqPipeline(LLMGeoPipeline):
         return self.send_message(prompt)
 
 
-_oss = GroqPipeline(MODEL_OSS, "groq_gpt_oss_120b")
-_llama = GroqPipeline(MODEL_LLAMA, "groq_llama4_scout_17b")
-
-geolocate_groq_oss = _oss.geolocate
-save_cache_oss = _oss.save_cache
-
-geolocate_groq_llama = _llama.geolocate
-save_cache_llama = _llama.save_cache
+def build(model_id, cache_name):
+    key = (model_id, cache_name)
+    if key not in _instances:
+        _instances[key] = GroqPipeline(model_id, cache_name)
+    return _instances[key]

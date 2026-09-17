@@ -45,3 +45,6 @@ src/geocorpora_144.csv
 src/bluesky_en.jsonl
 src/bluesky_en.parquet
 src/bluesky_en.jsonl.bak
+
+# Runner checkpoint temporaries
+results/predictions/*.tmp
