@@ -1,0 +1,50 @@
+name: mordecai3
+paradigm: geoparser
+description: >
+  Mordecai3 (Halterman 2023), a spaCy-based neural toponym resolver, reported
+  at 184 km mean error and 94 Accuracy@161km on GeoWebNews.
+
+  A geoparser is a TOPONYM RESOLVER: it needs a place name in the text. On
+  conditions where no toponym exists (condition A, and condition C where the
+  place is only implied) it cannot score above zero by construction. That is
+  the expected result and it is why a geoparser is in the comparison at all --
+  it bounds what toponym resolution alone can do. It is not a bug and it
+  should not be reported as one.
+
+  NOT RE-RUN LOCALLY -- numbers for this tier are cited from the published
+  literature. mordecai3 requires a local Elasticsearch 7.x instance holding
+  the GeoNames gazetteer at localhost:9200, and its pins (torch<2.0,
+  pandas<2.0, numpy<2.0) conflict with the installed stack; torch<2.0 has no
+  cp313 wheel, so the pin is unsatisfiable on Python 3.13 at any level of
+  effort. See METHODOLOGY.md ("The geoparser tier was not re-run locally") and
+  src/geoparser.py.
+
+  The configuration and the adapter are kept deliberately: a configuration
+  that fails with a recorded explanation documents the decision better than an
+  absent one, and this will run unchanged if the environment is ever built.
+
+  Edinburgh Geoparser and CLAVIN are deliberately NOT deployed -- both are
+  Java, both need local GeoNames instances, and their numbers can be cited
+  from the EUPEG comparison instead.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  search_fallback: false
+  top_n: 10
+rerank:
+  model: null
+  enabled: false
+llm:
+  backend: null
+  model: null
+routing:
+  enabled: false
+  gate: null
+  fallback: null
+geoparser:
+  backend: mordecai3
+  spacy_model: null

@@ -28,6 +28,8 @@ LLM_BACKENDS = {None, "gemma", "groq_oss", "groq_llama"}
 ROUTING_GATES = {"legacy_is_geographic_qid", "input_properties"}
 ROUTING_BRANCHES = {"llm", "linking", "geoparser"}
 BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
+GAZETTEERS = {"wikidata", "geonames"}
+GEOPARSERS = {"mordecai3"}
 
 
 class ConfigError(ValueError):
@@ -72,6 +74,7 @@ class RoutingConfig:
     fallback: str | None = None
     # Gate thresholds. Fitted on dev only.
     ambiguity_threshold: int = 2       # >= this many gazetteer hits == ambiguous
+    gazetteer: str = "wikidata"        # which gazetteer answers the count
     gazetteer_top_n: int = 10          # how many hits to ask for when counting
 
 
@@ -218,6 +221,14 @@ def _validate(cfg: PipelineConfig) -> None:
         raise ConfigError(f"llm.backend is {llm.backend!r} but llm.model is not set")
     if n.entity_types is not None and not n.entity_types:
         raise ConfigError("ner.entity_types is an empty list; use null to keep every tag")
+    if ba.gazetteer is not None and ba.gazetteer not in GAZETTEERS:
+        raise ConfigError(f"baseline.gazetteer must be one of {sorted(GAZETTEERS)}")
+    if ro.gazetteer not in GAZETTEERS:
+        raise ConfigError(f"routing.gazetteer must be one of {sorted(GAZETTEERS)}")
+    if gp.backend is not None and gp.backend not in GEOPARSERS:
+        raise ConfigError(f"geoparser.backend must be one of {sorted(GEOPARSERS)}")
+    if ro.ambiguity_threshold < 1:
+        raise ConfigError("routing.ambiguity_threshold must be >= 1")
     if li.backend == "refined" and not (li.refined_model and li.refined_entity_set):
         raise ConfigError("linking.backend is 'refined' but refined_model / "
                           "refined_entity_set are not both set")
@@ -266,6 +277,9 @@ def _validate(cfg: PipelineConfig) -> None:
     elif cfg.paradigm == "geoparser":
         if not gp.backend:
             raise ConfigError("paradigm 'geoparser' requires geoparser.backend")
+        if n.model:
+            raise ConfigError("paradigm 'geoparser' must not set ner.model -- a "
+                              "geoparser does its own toponym detection")
 
 
 def load_config(path: str | Path) -> PipelineConfig:

@@ -24,6 +24,25 @@ Do not guess if you have no confidence — refuse instead.
 Text: {text}"""
 
 
+# Models are asked for JSON null when a field is unknown, and mostly comply --
+# but a few responses put the *string* "null" (or "none", "unknown") in the
+# field instead. A truthy string sails through `if not name: continue`, so the
+# old code searched Wikidata for the literal word "null" and, for continent,
+# could emit a prediction whose continent is "null": never correct, yet counted
+# as a prediction, which suppresses the no-result rate. Measured across the
+# three response caches (1646 responses): 5 city, 3 country, 1 continent.
+_PLACEHOLDER_NAMES = {"", "null", "none", "nil", "n/a", "na", "unknown",
+                      "not specified", "unspecified", "no city", "no country"}
+
+
+def _clean_name(value):
+    """A place name, or None for anything that is not one."""
+    if not isinstance(value, str):
+        return None
+    name = value.strip()
+    return None if name.lower() in _PLACEHOLDER_NAMES else name
+
+
 class LLMGeoPipeline(ABC):
     """Base class — subclasses only implement _call_llm(prompt) -> str."""
 
@@ -73,7 +92,7 @@ class LLMGeoPipeline(ABC):
     def _resolve_to_candidate(self, parsed):
         """Cascading QID resolution: city -> country -> continent string."""
         for level in ("city", "country"):
-            name = parsed.get(level)
+            name = _clean_name(parsed.get(level))
             if not name:
                 continue
             qids = _search_entities(name, limit=1)
@@ -95,19 +114,20 @@ class LLMGeoPipeline(ABC):
                 "country": country, "continent": continent,
             }
 
-        if parsed.get("continent"):
+        continent = _clean_name(parsed.get("continent"))
+        if continent:
             # Continent-only: the model named a continent but nothing that
             # resolves to a gazetteer entry. There is no coordinate here, so
             # lat/lon stay None. Returning 0.0/0.0 would put the prediction on
             # Null Island and hand the scorer a ~6000 km "error distance" for
             # an item that produced no coordinate at all.
             return {
-                "entity": parsed["continent"],
+                "entity": continent,
                 "entity_type": "LOC",
                 "lat": None, "lon": None,
-                "description": parsed["continent"],
+                "description": continent,
                 "qid": None,
-                "country": None, "continent": parsed["continent"],
+                "country": None, "continent": continent,
             }
 
         return None

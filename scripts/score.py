@@ -47,6 +47,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
+ITEM_SPLIT_PATH = REPO_ROOT / "splits" / "item_split.csv"
 
 EARTH_RADIUS_KM = 6371.0
 # 161 km is the standard ~100 mile threshold used in the geoparsing literature
@@ -70,6 +71,33 @@ def haversine_km(a, b):
     dlam = math.radians(lon2 - lon1)
     h = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
     return EARTH_RADIUS_KM * 2 * math.asin(min(1.0, math.sqrt(h)))
+
+
+def load_item_split(path=ITEM_SPLIT_PATH):
+    """{(item_id, dataset): {"place_key", "split", "condition"}} from the
+    committed split file. Derived from the place-level assignment, so items
+    about the same place are always on the same side."""
+    import csv
+    if not Path(path).exists():
+        return {}
+    with open(path, encoding="utf-8") as f:
+        return {(r["item_id"], r["dataset"]): r for r in csv.DictReader(f)}
+
+
+def attach_split(records, split_index=None):
+    """Add `split` and `place_key` to each record. `place_key` is the pairing
+    unit for McNemar, Wilcoxon and the bootstrap: items within a place are not
+    independent, so nothing may resample or pair by item."""
+    split_index = load_item_split() if split_index is None else split_index
+    out = []
+    for rec in records:
+        info = split_index.get((rec.get("item_id"), rec.get("dataset")), {})
+        out.append({
+            **rec,
+            "split": info.get("split"),
+            "place_key": info.get("place_key") or rec.get("place_qid"),
+        })
+    return out
 
 
 def _norm(value):
@@ -188,6 +216,10 @@ def main():
                    help="explicit jsonl paths; defaults to results/predictions/")
     p.add_argument("--config", default=None, help="filter by configuration name")
     p.add_argument("--dataset", default=None, help="filter by dataset name")
+    p.add_argument("--split", default="all", choices=["all", "dev", "test"],
+                   help="which side of the place-level split to report "
+                        "(default all; configurations and thresholds are chosen "
+                        "on dev, test is reported once)")
     p.add_argument("--by", default=None,
                    choices=["condition", "paradigm", "routing_branch", "dataset"],
                    help="extra breakdown within each config/dataset pair")
@@ -199,7 +231,13 @@ def main():
     if not paths:
         raise SystemExit("no prediction files found -- run src/runner.py first")
 
-    scored = [score_record(r) for r in load_predictions(paths)]
+    records = attach_split(load_predictions(paths))
+    if args.split != "all":
+        records = [r for r in records if r.get("split") == args.split]
+        if not records:
+            raise SystemExit(f"no records on the {args.split} side")
+    scored = [score_record(r) for r in records]
+    print(f"split: {args.split}  records: {len(scored)}\n")
     rows = []
     for (cfg_name, ds), items in sorted(
             group_by_pairs(scored).items(), key=lambda kv: kv[0]):

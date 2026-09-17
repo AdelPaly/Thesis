@@ -1,0 +1,45 @@
+name: baseline_population
+paradigm: baseline
+description: >
+  Population baseline. The existing Flair NER extracts toponyms (LOC only),
+  each is looked up in the gazetteer, and the most populous candidate always
+  wins. No linker, no reranker, no context, no LLM. This is the hard floor:
+  in the Gritta et al. GeoWebNews comparison, spaCy NER plus a population
+  heuristic reached 95 Accuracy@161km at 210 km mean error, beating several
+  published geoparsers. Any configuration that does not clear this is not
+  earning its complexity.
+
+  gazetteer is 'wikidata' (population = P1082) rather than 'geonames' for two
+  reasons: no GEONAMES_USERNAME is configured in this repo, and GeoNames
+  returns GeoNames ids rather than QIDs, which makes exact-QID match
+  uncomputable for its predictions. The heuristic is identical either way --
+  most populous candidate for the surface form. Set gazetteer: geonames (and
+  GEONAMES_USERNAME) to switch transports.
+
+  linking.top_n is how many gazetteer hits per toponym are considered before
+  taking the most populous one, and linking.backend records that retrieval is
+  Wikidata search. No linker runs: nothing here disambiguates, which is the
+  point of a floor.
+ner:
+  model: flair/ner-large
+  entity_types: [LOC]
+linking:
+  backend: wikidata_search
+  refined_model: null
+  refined_entity_set: null
+  search_fallback: false
+  top_n: 10
+rerank:
+  model: null
+  enabled: false
+llm:
+  backend: null
+  model: null
+routing:
+  enabled: false
+  gate: null
+  fallback: null
+baseline:
+  strategy: most_populous
+  gazetteer: wikidata
+  min_population: 0

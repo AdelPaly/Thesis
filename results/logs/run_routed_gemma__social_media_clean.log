@@ -1,0 +1,180 @@
+config   : routed_gemma (routed) hash=92c7dd8d79da
+dataset  : social_media_clean -> src/social_media_dataset.csv (144 items)
+output   : results\predictions\routed_gemma__social_media_clean.jsonl
+  Wikidata cache loaded: 8511 entities, 8399 labels, 1178 coord lookups, 571 searches
+2026-09-17 21:44:18,839 --------------------------------------------------------------------------------
+2026-09-17 21:44:18,840 ERROR: The key 'flair/ner-large' was neither found on the ModelHub nor is this a valid path to a file on your system!
+2026-09-17 21:44:18,840  -> Please check https://huggingface.co/models?filter=flair for all available models.
+2026-09-17 21:44:18,841  -> Alternatively, point to a model file on your local drive.
+2026-09-17 21:44:18,841 --------------------------------------------------------------------------------
+2026-09-17 21:44:28,544 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast():
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
+  super().__init__(
+[1/144] ce11764b8bdeb186 -> Q217426 [linking]
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast():
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
+  super().__init__(
+[2/144] 00598fcba940d826 -> Q1051147 [linking]
+[3/144] 098fb8402c195a11 -> Q182059 [linking]
+[4/144] 803695a567edac83 -> Q3718 [linking]
+[5/144] 96274430b5a658d5 -> Q7903 [linking]
+[6/144] f44d089f66d32698 -> Q3897 [linking]
+[7/144] 2181714311b8d808 -> Q1960 [linking]
+[8/144] 738ae4cad4461869 -> Q850031 [linking]
+[9/144] 2badacf7dd1a7714 -> Q876485 [linking]
+[10/144] 74daba7ff2abb260 -> Q42053 [linking]
+[11/144] a0b1572cf085f19e -> Q1348 [linking]
+[12/144] c9abf049c66ecfb8 -> Q3616 [linking]
+[13/144] 3227eb724869810e -> Q1858 [linking]
+C:\Users\Adela\PycharmProjects\geo\src\llm_gemma.py:11: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+[14/144] fd72d6a7714b29af -> Q11751 [llm]
+[15/144] 0e16ba5fb1a70fdf -> Q3692 [linking]
+[16/144] cc3e09910899ce21 -> Q806534 [linking]
+[17/144] f1a5bb32e0b1ed6f -> no-result [linking]
+[18/144] 45ef16baede33ab8 -> Q3711 [linking]
+[19/144] 56ee32e78eadde28 -> Q270 [linking]
+[20/144] adb5a48715a370ea -> Q129610 [linking]
+[21/144] 7e77f86e3613c85a -> Q495 [linking]
+[22/144] 8347e09c2970bed2 -> no-result [linking]
+[23/144] 9044581b853701a1 -> Q1899 [linking]
+[24/144] 09a25544f2c08f4e -> no-result [linking]
+[25/144] df46d3f0ba8e0482 -> Q8050631 [linking]
+[26/144] 369d192100160b0e -> Q1489 [linking]
+[27/144] 4c332af84c3972ff -> Q5119798 [linking]
+[28/144] ba978c378680d6bf -> Q36312 [linking]
+[29/144] ec3d78ab7306fcdd -> Q3070 [linking]
+[30/144] 7e504d8ed18b42c0 -> Q1930 [linking]
+[31/144] 27c62e21b81fc530 -> Q3306 [linking]
+[32/144] 7f2c202b7130bf73 -> Q4929496 [linking]
+[33/144] 097a671e42881171 -> no-result [linking]
+[34/144] 7fd1a3f0517578ee -> Q174 [linking]
+[35/144] 0d38de70c2e6a462 -> Q2887 [llm]
+[36/144] 58f05891ebf83fa5 -> Q2841 [llm]
+[37/144] cfc238d383ec4c7a -> Q2933 [linking]
+[38/144] b366221dd62df876 -> Q43509 [linking]
+[39/144] 66ee03b43bc9e64d -> Q2868 [linking]
+[40/144] 1a405b7e75e96ff6 -> Q1563 [linking]
+[41/144] 758b6038fca4ff22 -> Q37100 [linking]
+[42/144] e782bbdce639fb37 -> Q210433 [linking]
+[43/144] f36583a7294b5623 -> Q7308012 [linking]
+[44/144] ee95c922b0c2693b -> no-result [linking]
+[45/144] 8eadbbb98221ba73 -> no-result [linking]
+[46/144] 27cab44a46b9311b -> no-result [linking]
+[47/144] f9bd26de0a703be9 -> no-result [linking]
+[48/144] 4dbcfe941d880ab3 -> no-result [linking]
+[49/144] 751da4e6802fe931 -> Q408 [llm]
+[50/144] 3737c1c8be0508a5 -> Q193409 [llm]
+[51/144] ddfdba8468e71db2 -> Q5468 [llm]
+[52/144] be59fd7dacd1a10c -> Q114 [llm]
+[53/144] e94d494cef21bbe7 -> Q924 [llm]
+[54/144] d5da8513ce9d032f -> Q1041 [llm]
+[55/144] e9ea5edf55ba84e5 -> Q750 [llm]
+[56/144] b52e02eacad58bac -> no-result [llm]
+[57/144] 3e0d27f43e4eae7b -> Q1361 [llm]
+[58/144] 324abe337a078fad -> Q58422 [llm]
+[59/144] f74fe1708a2186b7 -> Q735073 [llm]
+[60/144] 145422a1ec03c16d -> Q333886 [llm]
+[61/144] 9c3272310410f647 -> Q182394 [llm]
+[62/144] 7e1866c3e4c6c270 -> Q854 [llm]
+[63/144] 5ea24ff4eae35e0e -> Q15847 [llm]
+[64/144] 459a212766ea8f1a -> Q36167 [llm]
+[65/144] e384c4a8bee82a2d -> Q22889 [llm]
+[66/144] c2925d3473db3da4 -> Q2066 [llm]
+[67/144] 0fbf26aaad577a3e -> Q33959 [llm]
+[68/144] 5486c94b548365cc -> Q159457 [llm]
+[69/144] 543cf5411b2e44b9 -> Q14960 [llm]
+[70/144] 18b7c59592a3ff17 -> Q26793 [llm]
+[71/144] 5c215870a693583d -> Q36647 [llm]
+[72/144] da6eafef6e0bae26 -> Q1663 [llm]
+[73/144] 4454269c111b215a -> Q16 [llm]
+[74/144] bdc0aaf8417962bc -> Q30 [llm]
+[75/144] 0e1938a36b3be571 -> Q30 [llm]
+[76/144] 556dbcb26f31535d -> Q165204 [llm]
+[77/144] 19245ea4a721d813 -> Q16 [llm]
+[78/144] 7f865561a4c26904 -> Q39178 [llm]
+[79/144] c82128930fb76648 -> Q3043 [llm]
+[80/144] 83434bb951209142 -> Q15699 [llm]
+[81/144] a6e4612356ea8051 -> Q44821 [llm]
+[82/144] 01ef62d754a537c9 -> Q52535 [llm]
+[83/144] 83d286f25f716f72 -> Q40236 [llm]
+[84/144] 28243aa8f86975ac -> Q8818 [llm]
+[85/144] 9407c263842d10a1 -> Q2434746 [llm]
+[86/144] cd47b7af7d358b35 -> Q1880 [llm]
+[87/144] 74b929956b19e60c -> Q736 [llm]
+[88/144] 926c719b6ee984c8 -> Q180215 [llm]
+[89/144] 732f2a603ddb282a -> Q133116 [llm]
+[90/144] 9e726d246c333e9a -> Q11568 [llm]
+[91/144] b2e3e561018538f7 -> Q664 [llm]
+[92/144] c1623fe2e0f4168c -> Q408 [llm]
+[93/144] 9da04ef61bd81841 -> Q691 [llm]
+[94/144] 3d1f17733a5c9eb4 -> Q712 [llm]
+[95/144] 687e31b989b3830a -> Q683 [llm]
+[96/144] 02d1a315796cbc7b -> Q7929970 [linking]
+[97/144] 9cbc183eaf87def9 -> no-result [linking]
+[98/144] 96a348fb33138a04 -> no-result [linking]
+[99/144] d24ffb55715bad9f -> Q496368 [llm]
+[100/144] 82a8096354f21bdf -> Q3572 [linking]
+[101/144] dc7b69601338b5a7 -> no-result [linking]
+[102/144] c70c64a053ea9de3 -> Q157915 [linking]
+[103/144] 4513367cf7e10366 -> Q187593 [linking]
+[104/144] 6c5a081d6f9d81cd -> Q3630 [linking]
+[105/144] efd9f7aedb0a1e2e -> Q85 [linking]
+[106/144] 8f818dd332fdb2e4 -> Q18125 [linking]
+[107/144] de5ee2c31422c5ca -> Q949779 [llm]
+[108/144] 6131985e32667994 -> Q1348 [linking]
+[109/144] 352f3ed3f4171b85 -> Q3616 [linking]
+[110/144] dea72eda4a0a045f -> Q928 [llm]
+[111/144] db6be36c91dbb0ec -> no-result [linking]
+[112/144] 3c4e9356f0aa7117 -> Q597 [llm]
+[113/144] 4a8c6428100b75db -> Q4093 [llm]
+[114/144] 4ecbea447083d04c -> no-result [linking]
+[115/144] 2648bb4d7e4ac0c4 -> no-result [linking]
+[116/144] d070b732a7fa15eb -> Q68646 [linking]
+[117/144] 98efdefdfe793e44 -> Q34370 [linking]
+[118/144] 01d5b8124cd6d114 -> Q37836 [llm]
+[119/144] c1c9b733dae3f4ff -> Q81033 [llm]
+[120/144] faae702d069e7b37 -> Q935519 [llm]
+[121/144] fa499f11fd3d40da -> Q3238 [linking]
+[122/144] 4e7c83d4899418e8 -> Q1072019 [llm]
+[123/144] f4da43e8e664eab2 -> no-result [linking]
+[124/144] 9df38422cdbda30b -> Q316390 [linking]
+[125/144] c315d013c3708c12 -> Q44754 [llm]
+[126/144] 5112aebeb4425240 -> Q1335 [linking]
+[127/144] 22c80bc119f1c6f7 -> Q925424 [llm]
+[128/144] ba692f165b15285d -> Q736 [llm]
+[129/144] 7fc055ac67007414 -> Q155 [llm]
+[130/144] 73a6994a7b1debf2 -> Q750 [llm]
+[131/144] a1d787e0a3869121 -> Q949779 [llm]
+[132/144] fd96cf44d205151a -> Q16556 [linking]
+[133/144] 0f5967354f6558aa -> Q766 [llm]
+[134/144] 9281bff92eabc2be -> Q408 [llm]
+[135/144] 58215aae496b0b5f -> Q45301 [llm]
+[136/144] d6380d655128cb7e -> no-result [linking]
+[137/144] 139201966a140e57 -> no-result [linking]
+[138/144] 820e948c5cd8d59d -> Q30 [linking]
+[139/144] 5bd6082dc47fcb39 -> Q185221 [llm]
+[140/144] 3ca09ad1a7a6e6d4 -> no-result [linking]
+  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 572 searches
+[141/144] 2c1cad8c423019d9 -> Q712 [llm]
+[142/144] 6a5cb7fdd4103693 -> Q187861 [llm]
+[143/144] 13c9d92c3e946526 -> no-result [linking]
+[144/144] a48cd757a6b3f2ee -> no-result [linking]
+  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 572 searches
+
+wrote 144 record(s) to results\predictions\routed_gemma__social_media_clean.jsonl
+  with a prediction : 122
+  no result         : 22
+  errors            : 0
+no metrics computed here -- run scripts/score.py
+  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 572 searches

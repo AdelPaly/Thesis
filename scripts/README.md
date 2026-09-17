@@ -122,9 +122,33 @@ it is the field standard and `score.py` reports it.
 
 | Script | Purpose |
 |--------|---------|
-| `analyze_failures.py` | Failure-mode analysis across the chapter-4 evaluations. |
+| `run_all.py` | Drives `../src/runner.py` over a set of (configuration, dataset) pairs, one at a time, logging each to `../results/logs/run_<config>__<dataset>.log`. Sequential on purpose: two runners contend for the Wikidata rate limiter and clobber each other's caches. Resumable. |
+| `oracle_router.py` | Analysis-only. Per item, takes whichever component got it right — the ceiling for the routing idea. Computed from existing prediction files; it is **not** a configuration and has no YAML, because it chooses using the gold answer. |
+| `fit_gate.py` | Sweeps the routing gate's `ambiguity_threshold` on the **dev** split and reports what each value would do. Reads stored `routing_features` and component predictions, so no model runs. Imports the rule from `../src/pipeline.route_from_features` rather than reimplementing it. |
+| `analyze_failures.py` | Failure-mode analysis across the retired chapter-4 CSVs. Superseded by `analyse.py`. |
 | `diagnose_ner_recall.py` | NER-recall diagnostic — attributes pipeline misses to the Flair NER stage. |
 | `archive/` | Completed one-off scripts, kept as provenance for files on disk. See `archive/README.md`. |
+
+## The dev/test split
+
+`make_split.py` writes `../splits/place_split.csv` (the assignment) and
+`../splits/item_split.csv` (the same assignment joined to item ids). Both are
+committed, because the split has to be stable across runs.
+
+The unit is a **place, not an item**: posts about the same place cannot
+straddle the boundary. The assignment is global across datasets, stratified by
+(dataset, condition), and deterministic — a place's rank inside its stratum is
+`sha256(SALT + place_key)`, so it does not depend on row order.
+
+```bash
+python scripts/make_split.py               # refuses to overwrite silently
+python scripts/score.py --split dev        # choose configurations and thresholds here
+python scripts/score.py --split test       # report once
+```
+
+Rebuilding with `--force` moves places between sides and invalidates every
+threshold fitted on dev. `SALT` and `DEV_FRACTION` in `make_split.py` are
+constants for that reason.
 
 ## API keys
 

@@ -12,6 +12,7 @@ _CACHE_FILES = {
     "entity": os.path.join(_CACHE_DIR, "entity.pkl"),
     "label": os.path.join(_CACHE_DIR, "label.pkl"),
     "coords": os.path.join(_CACHE_DIR, "coords.pkl"),
+    "search": os.path.join(_CACHE_DIR, "search.pkl"),
 }
 
 
@@ -30,24 +31,30 @@ os.makedirs(_CACHE_DIR, exist_ok=True)
 _entity_cache = _load_pickle(_CACHE_FILES["entity"])   # QID -> entity data
 _label_cache = _load_pickle(_CACHE_FILES["label"])     # QID -> English label
 _coords_cache = _load_pickle(_CACHE_FILES["coords"])   # (text, type) -> candidates
-_initial_sizes = (len(_entity_cache), len(_label_cache), len(_coords_cache))
+_search_cache = _load_pickle(_CACHE_FILES["search"])   # (text, limit) -> [qid]
+_initial_sizes = (len(_entity_cache), len(_label_cache), len(_coords_cache),
+                  len(_search_cache))
 print(f"  Wikidata cache loaded: {_initial_sizes[0]} entities, "
-      f"{_initial_sizes[1]} labels, {_initial_sizes[2]} coord lookups")
+      f"{_initial_sizes[1]} labels, {_initial_sizes[2]} coord lookups, "
+      f"{_initial_sizes[3]} searches")
 
 
 def _save_caches():
     # Only write if something changed, to avoid clobbering with empty dicts on error.
-    sizes = (len(_entity_cache), len(_label_cache), len(_coords_cache))
+    sizes = (len(_entity_cache), len(_label_cache), len(_coords_cache),
+             len(_search_cache))
     if sizes == _initial_sizes:
         return
     try:
         for key, path in _CACHE_FILES.items():
             tmp = path + ".tmp"
-            data = {"entity": _entity_cache, "label": _label_cache, "coords": _coords_cache}[key]
+            data = {"entity": _entity_cache, "label": _label_cache,
+                    "coords": _coords_cache, "search": _search_cache}[key]
             with open(tmp, "wb") as f:
                 pickle.dump(data, f)
             os.replace(tmp, path)
-        print(f"  Wikidata cache saved: {sizes[0]} entities, {sizes[1]} labels, {sizes[2]} coord lookups")
+        print(f"  Wikidata cache saved: {sizes[0]} entities, {sizes[1]} labels, "
+              f"{sizes[2]} coord lookups, {sizes[3]} searches")
     except Exception as e:
         print(f"  Cache save failed: {e}")
 
@@ -84,6 +91,19 @@ def _api_get(params, timeout=15):
 
 
 def _search_entities(text, limit=10):
+    """wbsearchentities, disk-cached.
+
+    Search results were the one uncached call on the hot path: every LLM answer
+    and every gazetteer lookup re-queried Wikidata for a surface form, at the
+    rate limiter's 0.5 s floor plus latency, even when another configuration
+    had just asked the same question. Caching it is what makes a second run
+    over the same datasets close to free, which is the whole point of splitting
+    inference from scoring. A failed search is NOT cached, so a transient
+    network error does not become a permanent empty answer.
+    """
+    key = (text, limit)
+    if key in _search_cache:
+        return _search_cache[key]
     try:
         data = _api_get({
             "action": "wbsearchentities",
@@ -92,10 +112,12 @@ def _search_entities(text, limit=10):
             "limit": limit,
             "format": "json",
         })
-        return [item["id"] for item in data.get("search", [])]
     except Exception as e:
         print(f"  Search error: {e}")
         return []
+    hits = [item["id"] for item in data.get("search", [])]
+    _search_cache[key] = hits
+    return hits
 
 
 def _fetch_entities(qids):

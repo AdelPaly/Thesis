@@ -20,6 +20,7 @@ import hashlib
 import json
 import math
 import sys
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -35,6 +36,43 @@ from config import load_config, load_datasets, PipelineConfig   # noqa: E402
 from pipeline import Pipeline, set_debug                        # noqa: E402
 
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
+
+
+def code_rev() -> str:
+    """Short git revision of the working tree, with a dirty marker.
+
+    config_hash captures the configuration, but not the code. The placeholder-
+    name bug is the case in point: the fix changed what an LLM configuration
+    predicts without changing a single config file, so records written before
+    it were stale in a way nothing on the record could reveal. Recording the
+    revision makes that detectable, and the resume path reports how many
+    records came from a different one.
+    """
+    import subprocess
+    try:
+        rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+                             cwd=REPO_ROOT, capture_output=True, text=True,
+                             timeout=10)
+        if rev.returncode != 0:
+            return "unknown"
+        head = rev.stdout.strip()
+        status = subprocess.run(["git", "status", "--porcelain"],
+                                cwd=REPO_ROOT, capture_output=True, text=True,
+                                timeout=20)
+        dirty = "+dirty" if status.stdout.strip() else ""
+        return head + dirty
+    except Exception:                                     # noqa: BLE001
+        return "unknown"
+
+
+_CODE_REV = None
+
+
+def _cached_code_rev() -> str:
+    global _CODE_REV
+    if _CODE_REV is None:
+        _CODE_REV = code_rev()
+    return _CODE_REV
 
 
 def item_id(text: str) -> str:
@@ -71,6 +109,7 @@ def build_record(cfg: PipelineConfig, dataset: str, row, out) -> dict:
         "dataset": dataset,
         "config_name": cfg.name,
         "config_hash": cfg.config_hash,
+        "code_rev": _cached_code_rev(),
         "paradigm": cfg.paradigm,
         "text": row["text"],
         "place_qid": _clean(row.get("qid")),
@@ -83,6 +122,7 @@ def build_record(cfg: PipelineConfig, dataset: str, row, out) -> dict:
         "candidate_places": out.candidate_places,
         "routing_branch": out.routing_branch,
         "routing_rule": out.routing_rule,
+        "routing_features": out.routing_features,
         "predicted_qid": _clean(pred.get("qid")),
         "predicted_latlon": predicted_latlon,
         "predicted_country": _clean(pred.get("country")),
@@ -98,6 +138,7 @@ def _load_existing(path: Path, config_hash: str, overwrite: bool):
         return {}
     existing = {}
     stale = 0
+    other_rev = {}
     with path.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -107,10 +148,17 @@ def _load_existing(path: Path, config_hash: str, overwrite: bool):
             if rec.get("config_hash") != config_hash:
                 stale += 1
                 continue
+            rev = rec.get("code_rev", "unknown")
+            if rev != _cached_code_rev():
+                other_rev[rev] = other_rev.get(rev, 0) + 1
             existing[rec["item_id"]] = rec
     if stale:
         print(f"  {stale} record(s) in {path.name} were written by a different "
               f"config_hash and will be replaced")
+    if other_rev:
+        detail = ", ".join(f"{k}={v}" for k, v in sorted(other_rev.items()))
+        print(f"  note: {sum(other_rev.values())} resumed record(s) were written "
+              f"by different code ({detail}); pass --overwrite to recompute them")
     return existing
 
 
@@ -138,7 +186,7 @@ def run(config_name: str, dataset_name: str, limit=None, overwrite=False,
     if existing:
         print(f"resume   : {len(existing)} item(s) already done")
 
-    pipe = Pipeline(cfg)
+    pipe = Pipeline(cfg, dataset=dataset_name)
     records = []
     from wikidata import save_caches
 
@@ -175,12 +223,32 @@ def run(config_name: str, dataset_name: str, limit=None, overwrite=False,
     return out_path
 
 
-def _write(path: Path, records):
+def _write(path: Path, records, attempts=6):
+    """Write the records atomically, retrying the rename.
+
+    On Windows os.replace fails with PermissionError if any other process has
+    the destination open -- a scorer reading the predictions directory, or a
+    virus scanner touching the file, is enough. That took down a 144-item run
+    at item 100 once: the work was fine, the rename was not. The temporary file
+    is kept on final failure so a crash never destroys completed items.
+    """
     tmp = path.with_suffix(path.suffix + ".tmp")
     with tmp.open("w", encoding="utf-8") as f:
         for rec in records:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    tmp.replace(path)
+    for attempt in range(attempts):
+        try:
+            tmp.replace(path)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                print(f"  could not replace {path.name} after {attempts} attempts; "
+                      f"completed items are in {tmp.name}")
+                raise
+            wait = 0.5 * 2 ** attempt
+            print(f"  {path.name} is held by another process, retrying in {wait:.1f}s",
+                  flush=True)
+            time.sleep(wait)
 
 
 def main():
