@@ -1,13 +1,14 @@
-config   : routed_gemma (routed) hash=92c7dd8d79da
+config   : routed_gemma (routed) hash=28cddb968705
 dataset  : journalistic_clean -> src/journalistic_dataset.csv (72 items)
 output   : results\predictions\routed_gemma__journalistic_clean.jsonl
-  Wikidata cache loaded: 8511 entities, 8399 labels, 1178 coord lookups, 572 searches
-2026-09-17 21:48:14,991 --------------------------------------------------------------------------------
-2026-09-17 21:48:14,991 ERROR: The key 'flair/ner-large' was neither found on the ModelHub nor is this a valid path to a file on your system!
-2026-09-17 21:48:14,991  -> Please check https://huggingface.co/models?filter=flair for all available models.
-2026-09-17 21:48:14,991  -> Alternatively, point to a model file on your local drive.
-2026-09-17 21:48:14,992 --------------------------------------------------------------------------------
-2026-09-17 21:48:25,051 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+  72 record(s) in routed_gemma__journalistic_clean.jsonl were written by a different config_hash and will be replaced
+  Wikidata cache loaded: 8574 entities, 8461 labels, 1178 coord lookups, 897 searches
+2026-09-17 23:30:54,927 --------------------------------------------------------------------------------
+2026-09-17 23:30:54,927 ERROR: The key 'flair/ner-large' was neither found on the ModelHub nor is this a valid path to a file on your system!
+2026-09-17 23:30:54,927  -> Please check https://huggingface.co/models?filter=flair for all available models.
+2026-09-17 23:30:54,927  -> Alternatively, point to a model file on your local drive.
+2026-09-17 23:30:54,927 --------------------------------------------------------------------------------
+2026-09-17 23:31:06,374 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
 C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
   with autocast():
 C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
@@ -40,6 +41,10 @@ C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autoca
 [22/72] 16c6fee05afb50f5 -> Q34932 [linking]
 [23/72] 736b5c60b608dd33 -> Q1088438 [linking]
 [24/72] 7a8861aa69e2a51c -> Q1015773 [linking]
+[25/72] 703b9b72d1d945d7 -> Q3940 [linking]
+[26/72] 76af20a4b5c0a469 -> Q3579 [linking]
+[27/72] 93001f22f2bcdaaf -> Q5468 [linking]
+[28/72] 46275675ee733a02 -> Q844878 [linking]
 C:\Users\Adela\PycharmProjects\geo\src\llm_gemma.py:11: FutureWarning: 
 
 All support for the `google.generativeai` package has ended. It will no longer be receiving 
@@ -49,30 +54,26 @@ See README for more details:
 https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
 
   import google.generativeai as genai
-[25/72] 703b9b72d1d945d7 -> Q766 [llm]
-[26/72] 76af20a4b5c0a469 -> Q193409 [llm]
-[27/72] 93001f22f2bcdaaf -> Q5468 [llm]
-[28/72] 46275675ee733a02 -> Q750 [llm]
 [29/72] 631636566d137a4c -> Q1361 [llm]
 [30/72] 8ade6b213aa26792 -> Q333886 [llm]
-[31/72] b81806a83b6a5148 -> Q36167 [llm]
-[32/72] 95f4b339ff389e1c -> Q182394 [llm]
-[33/72] 2aea0164708e4d10 -> Q22889 [llm]
-[34/72] 48cb702319f8c88e -> Q36647 [llm]
+[31/72] b81806a83b6a5148 -> Q36167 [linking]
+[32/72] 95f4b339ff389e1c -> Q182394 [linking]
+[33/72] 2aea0164708e4d10 -> Q22889 [linking]
+[34/72] 48cb702319f8c88e -> Q36647 [linking]
 [35/72] f21192ef94260d40 -> Q26793 [llm]
-[36/72] 66ad01e966a0d801 -> Q1663 [llm]
-[37/72] 350d21276d56b5b4 -> Q16 [llm]
-[38/72] 6e5e7f66b22b2a08 -> Q30 [llm]
-[39/72] 79731763c25de6ed -> Q39178 [llm]
-[40/72] 56a095ce7748475d -> Q165204 [llm]
+[36/72] 66ad01e966a0d801 -> Q1663 [linking]
+[37/72] 350d21276d56b5b4 -> Q2123 [linking]
+[38/72] 6e5e7f66b22b2a08 -> Q40347 [linking]
+[39/72] 79731763c25de6ed -> Q128323 [linking]
+[40/72] 56a095ce7748475d -> Q165204 [linking]
 [41/72] 1d383333f371564d -> Q44821 [llm]
-[42/72] 956effbde6082d13 -> Q52535 [llm]
+[42/72] 956effbde6082d13 -> Q52535 [linking]
 [43/72] e3f173e6f68c60f8 -> Q8818 [llm]
 [44/72] 3060187b48116cbe -> Q1880 [linking]
-[45/72] b0d6902636efc2f9 -> Q133116 [llm]
-[46/72] 70f714f15532d89c -> Q11568 [llm]
-[47/72] 515fbe901c8a9dd9 -> Q664 [llm]
-[48/72] cb4b900aca19fe9c -> Q408 [llm]
+[45/72] b0d6902636efc2f9 -> Q200028 [linking]
+[46/72] 70f714f15532d89c -> Q11568 [linking]
+[47/72] 515fbe901c8a9dd9 -> Q206687 [linking]
+[48/72] cb4b900aca19fe9c -> Q704371 [linking]
 [49/72] cab16d507776675c -> no-result [linking]
 [50/72] e32e8eb42a16bff9 -> Q4093 [linking]
 [51/72] 549496c1f32ab7d2 -> Q1007665 [linking]
