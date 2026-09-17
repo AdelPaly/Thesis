@@ -119,6 +119,35 @@ The two variants answer a question neither can answer alone: **does grounding
 help because of the LLM or because of the retriever?** Same model, same prompt,
 same selection contract, different candidate source. Chosen on dev.
 
+### The LLM tiers are frozen by provider changes
+
+Two of the three LLM endpoints used in this work are no longer callable, which
+constrains what can still be re-run and how the LLM rows must be cited.
+
+| model | state | consequence |
+|---|---|---|
+| `gemma-3-12b-it` (tier 4 `gemma`, `routed_gemma`) | **no longer served** — the API returns `models/gemma-3-12b-it is not found for API version v1beta` | its results survive only because every response is cached; they can be re-scored forever but never re-collected |
+| `openai/gpt-oss-120b` (tier 4 `groq_oss`) | **API key expired** — `401 expired_api_key` | same: frozen at its cached responses |
+| `gemma-4-31b-it` (tier 5) | live | the only model available for new collection |
+
+This was discovered by tier 5, not by tier 4: the cached tiers never make a
+live call, so nothing revealed the breakage until a new prompt needed a new
+response. It is worth stating in the write-up as a reproducibility limitation
+of LLM tiers generally — a cached result is not a reproducible one, and the
+window in which a hosted model can be re-queried is shorter than the life of a
+thesis.
+
+**Consequence for tier 5.** Grounding must be compared against an ungrounded
+baseline *on the same model*, or the comparison measures the model change
+rather than the grounding. `configs/gemma4.yaml` is that matched control:
+identical to `gemma` except for the model id. The grounded-vs-ungrounded
+comparison is therefore `grounded_gemma` vs `gemma4`, not vs `gemma`.
+
+Tier 5 and its control are run on the **dev split only**. They are the two
+things Task 2 decides — which candidate source to ground with, and whether
+grounding helps — and both are dev decisions, so there is no reason to spend
+live API calls on test items that must not be looked at yet.
+
 ### Failure attribution for the new tiers
 
 Both tiers get labels appropriate to their architecture, and the table

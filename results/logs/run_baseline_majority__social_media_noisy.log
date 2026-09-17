@@ -1,7 +1,8 @@
-config   : baseline_majority (baseline) hash=8359d7821961
+config   : baseline_majority (baseline) hash=b126fcbd421b
 dataset  : social_media_noisy -> src/social_media_noisy.csv (144 items)
 output   : results\predictions\baseline_majority__social_media_noisy.jsonl
-  Wikidata cache loaded: 8335 entities, 8226 labels, 1178 coord lookups
+  144 record(s) in baseline_majority__social_media_noisy.jsonl were written by a different config_hash and will be replaced
+  Wikidata cache loaded: 11129 entities, 11001 labels, 1178 coord lookups, 898 searches
 [1/144] 47ed1800dca427bb -> Q1348
 [2/144] 314fb697a27aba62 -> Q1348
 [3/144] 059d15397f7fa533 -> Q1348

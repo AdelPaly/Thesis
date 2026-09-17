@@ -1,7 +1,8 @@
-config   : baseline_majority (baseline) hash=8359d7821961
+config   : baseline_majority (baseline) hash=b126fcbd421b
 dataset  : geocorpora -> src/geocorpora_eval.csv (144 items)
 output   : results\predictions\baseline_majority__geocorpora.jsonl
-  Wikidata cache loaded: 8335 entities, 8226 labels, 1178 coord lookups
+  144 record(s) in baseline_majority__geocorpora.jsonl were written by a different config_hash and will be replaced
+  Wikidata cache loaded: 11129 entities, 11001 labels, 1178 coord lookups, 898 searches
 [1/144] 2b33cec355c99f6f -> Q165352
 [2/144] e95a649c2391aea8 -> Q165352
 [3/144] 0d7563520db39f22 -> Q165352

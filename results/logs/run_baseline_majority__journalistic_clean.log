@@ -1,7 +1,8 @@
-config   : baseline_majority (baseline) hash=8359d7821961
+config   : baseline_majority (baseline) hash=b126fcbd421b
 dataset  : journalistic_clean -> src/journalistic_dataset.csv (72 items)
 output   : results\predictions\baseline_majority__journalistic_clean.jsonl
-  Wikidata cache loaded: 8335 entities, 8226 labels, 1178 coord lookups
+  72 record(s) in baseline_majority__journalistic_clean.jsonl were written by a different config_hash and will be replaced
+  Wikidata cache loaded: 11129 entities, 11001 labels, 1178 coord lookups, 898 searches
 [1/72] b03e1d1019708ccc -> Q1348
 [2/72] 22236d5ae27d10e7 -> Q1348
 [3/72] 3c1957ca9b07610b -> Q1348

@@ -332,6 +332,82 @@ def cmd_failures(scored, args):
         print(f"wrote {path}")
 
 
+# ------------------------------------------------------- grounding report
+
+def cmd_grounding(scored, args):
+    """Separate retrieval failure from selection failure for tier 5.
+
+    This is the number that says whether grounding is working: of the items
+    where the gold place WAS in the supplied candidate list, how often did the
+    model actually pick it? A low rate means the model is the bottleneck; a low
+    "gold supplied" rate means the retriever is.
+    """
+    grounded = [r for r in scored if r.get("selection") is not None]
+    if not grounded:
+        return
+    print("=" * 100)
+    print(f"GROUNDED SELECTION: retrieval failure vs selection failure "
+          f"(split={args.split})")
+    print("=" * 100)
+
+    by_config = defaultdict(list)
+    for rec in grounded:
+        by_config[rec.get("config_name")].append(rec)
+
+    header = (f"{'configuration':26} {'n':>5} {'gold supplied':>14} "
+              f"{'selected gold':>14} {'abstained':>10} {'abst. w/ gold':>14} "
+              f"{'violations':>11}")
+    print(header)
+    print("-" * len(header))
+    for name, recs in sorted(by_config.items()):
+        n = len(recs)
+        supplied = [r for r in recs
+                    if r.get("place_qid")
+                    and r["place_qid"] in [c.get("qid") for c in (r.get("candidate_places") or [])]]
+        sel = r_sel = 0
+        for r in supplied:
+            chosen = (r.get("selection") or {}).get("qid")
+            if chosen and chosen == r.get("place_qid"):
+                sel += 1
+        abstained = sum(1 for r in recs if (r.get("selection") or {}).get("abstained"))
+        abst_gold = sum(1 for r in supplied if (r.get("selection") or {}).get("abstained"))
+        viol = sum(1 for r in recs if (r.get("selection") or {}).get("violation"))
+        pct = lambda a, b: f"{a / b * 100:.1f}%" if b else "-"          # noqa: E731
+        print(f"{name:26} {n:>5} "
+              f"{f'{len(supplied)}/{n} ' + pct(len(supplied), n):>14} "
+              f"{f'{sel}/{len(supplied)} ' + pct(sel, len(supplied)):>14} "
+              f"{pct(abstained, n):>10} "
+              f"{f'{abst_gold}/{len(supplied)}':>14} "
+              f"{viol:>11}")
+    print()
+    print("  gold supplied = the retriever put the gold place in the list at all")
+    print("  selected gold = of those, the model chose it. This is the selection")
+    print("                  step in isolation: retrieval had already succeeded.")
+    print("  abst. w/ gold = declined although the gold place was in front of it")
+    print("  violations    = named something outside the supplied list")
+    print()
+
+    # By condition, since the tiers differ most by what signal the text carries.
+    for name, recs in sorted(by_config.items()):
+        conds = sorted({r.get("condition") for r in recs if r.get("condition")})
+        if not conds:
+            continue
+        print(f"-- {name}, by condition --")
+        print(f"{'condition':12} {'n':>5} {'gold supplied':>14} {'selected gold':>14}")
+        for cond in conds:
+            sub = [r for r in recs if r.get("condition") == cond]
+            supplied = [r for r in sub
+                        if r.get("place_qid")
+                        and r["place_qid"] in [c.get("qid") for c in (r.get("candidate_places") or [])]]
+            sel = sum(1 for r in supplied
+                      if (r.get("selection") or {}).get("qid") == r.get("place_qid"))
+            pct = lambda a, b: f"{a / b * 100:.1f}%" if b else "-"      # noqa: E731
+            print(f"{str(cond):12} {len(sub):>5} "
+                  f"{f'{len(supplied)}/{len(sub)} ' + pct(len(supplied), len(sub)):>14} "
+                  f"{f'{sel}/{len(supplied)} ' + pct(sel, len(supplied)):>14}")
+        print()
+
+
 # ---------------------------------------------------------------- tables
 
 METRIC_COLS = ["n", "n_gold_qid", "exact", "country", "continent",
@@ -511,8 +587,10 @@ COMPARISONS = [
     ("refined", "gemma", "mention detection vs parametric knowledge"),
     ("dense_retrieval", "refined", "dense retrieval vs entity linking"),
     ("dense_retrieval", "gemma", "no mention detection: retrieval vs parametric"),
-    ("grounded_gemma", "gemma", "does grounding the LLM in candidates help"),
-    ("grounded_gemma", "refined", "grounded LLM vs its retriever alone"),
+    ("grounded_gemma", "gemma4", "does grounding help (same model, matched control)"),
+    ("grounded_gemma", "dense_retrieval", "grounded LLM vs its retriever alone"),
+    ("grounded_gemma_linking", "grounded_gemma", "grounding from linking vs from dense"),
+    ("grounded_gemma_linking", "refined", "grounded LLM vs its retriever alone"),
     ("routed_gemma", "refined", "does the rebuilt router beat its best component"),
     ("routed_gemma", "refined_gemma", "rebuilt gate vs the legacy output-reading gate"),
     ("oracle_refined_gemma", "routed_gemma", "headroom left for the router"),
@@ -629,7 +707,8 @@ def _warn_uneven_coverage(scored):
 def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("command", choices=["failures", "tables", "stats", "all"])
+    p.add_argument("command",
+                   choices=["failures", "tables", "stats", "grounding", "all"])
     p.add_argument("--split", default="test", choices=["all", "dev", "test"])
     p.add_argument("--configs", nargs="*", default=None)
     p.add_argument("--datasets", nargs="*", default=None)
@@ -656,6 +735,8 @@ def main():
 
     if args.command in ("failures", "all"):
         cmd_failures(scored, args)
+    if args.command in ("grounding", "all"):
+        cmd_grounding(scored, args)
     if args.command in ("tables", "all"):
         cmd_tables(scored, args)
     if args.command in ("stats", "all"):
