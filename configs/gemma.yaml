@@ -11,7 +11,6 @@ linking:
   backend: none
   refined_model: null
   refined_entity_set: null
-  search_fallback: false
   top_n: 1
 rerank:
   model: null

@@ -126,19 +126,13 @@ class Pipeline:
                 for ent, link in linked]
 
     def _places_from_links(self, spans, linked_entities):
-        """Turn linked QIDs into geographic candidates via the property chain,
-        with the optional per-mention wbsearchentities fallback."""
-        from wikidata import resolve_qid_to_candidate, _search_entities
-        li = self.cfg.linking
+        """Turn linked QIDs into geographic candidates via the property chain."""
+        from wikidata import resolve_qid_to_candidate
         out = []
         for ent, link in zip(spans, linked_entities):
-            cand = None
-            if link["qid"]:
-                cand = resolve_qid_to_candidate(link["qid"], ent["text"], ent["type"])
-            if cand is None and li.search_fallback:
-                hits = _search_entities(ent["text"], limit=1)
-                if hits:
-                    cand = resolve_qid_to_candidate(hits[0], ent["text"], ent["type"])
+            if not link["qid"]:
+                continue
+            cand = resolve_qid_to_candidate(link["qid"], ent["text"], ent["type"])
             if cand:
                 out.append(cand)
         return out

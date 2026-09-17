@@ -47,7 +47,6 @@ class LinkingConfig:
     backend: str = "none"
     refined_model: str | None = None
     refined_entity_set: str | None = None
-    search_fallback: bool = False
     top_n: int = 10
 
 
