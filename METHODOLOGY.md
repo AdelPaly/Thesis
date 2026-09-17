@@ -173,7 +173,16 @@ they are deliberately not reproduced from memory here):
 ### Why this costs less than it looks
 
 The population baseline (`configs/baseline_population.yaml`) covers most of
-what the geoparser tier was there to establish. It is a toponym-plus-gazetteer
+what the geoparser tier was there to establish.
+
+One difference to state when citing it: this baseline takes population from
+**Wikidata P1082**, not from the GeoNames dump that Gritta et al. used, so it
+is the same heuristic over a different gazetteer rather than a reproduction of
+the published baseline. P1082 coverage is sparser for small settlements, and
+candidates with no population figure at all fall to a sitelink-count tie-break,
+which GeoNames would not need. Treat the published 95 Accuracy@161km as the
+heuristic's ceiling on a toponym-rich corpus, not as a number this
+configuration should be expected to hit. It is a toponym-plus-gazetteer
 system — NER extracts toponyms, the gazetteer is consulted, the most populous
 candidate always wins — and on GeoWebNews that design beat several published
 geoparsers. Unlike Mordecai3 it runs in this environment, on these datasets,

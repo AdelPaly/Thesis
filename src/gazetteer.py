@@ -1,41 +1,25 @@
 """Gazetteer lookups: candidate places for a surface form, with population.
 
-Two backends, named by configuration (`baseline.gazetteer`,
-`routing.gazetteer_*`):
+One backend, `wikidata`: the existing rate-limited wbsearchentities /
+wbgetentities client and the shared src/.wikidata_cache. Candidates are
+Wikidata QIDs, so a prediction is comparable to a gold QID, and population is
+P1082.
 
-  wikidata -- goes through the existing rate-limited wbsearchentities /
-              wbgetentities client and the shared src/.wikidata_cache. Returns
-              Wikidata QIDs, so a prediction is comparable to a gold QID.
-              Population is P1082.
+A GeoNames backend previously sat behind a config switch and was never once
+executed -- no GEONAMES_USERNAME is configured in this repo. It has been
+removed rather than carried: untested code that has never run is worse than
+absent code, and it returned GeoNames ids rather than QIDs, which would have
+made exact-QID match uncomputable for anything predicted through it. If
+GeoNames population data is wanted later, write it then and test it.
 
-  geonames -- the GeoNames search API. Requires GEONAMES_USERNAME in the
-              environment (free registration; 1000 credits/hour). Returns
-              GeoNames ids, NOT QIDs, so exact-QID match is not computable for
-              predictions made through this backend -- they score on distance,
-              country and continent only. Unexercised in this repo: no
-              GEONAMES_USERNAME is configured, so it has never run here.
+Candidates come back highest population first:
 
-Both return the same candidate shape, highest population first:
-
-    {"qid", "geonames_id", "name", "lat", "lon", "population",
-     "country", "continent", "description"}
+    {"qid", "name", "lat", "lon", "population", "country",
+     "continent", "description"}
 """
 from __future__ import annotations
 
-import os
-
-import requests
-
 import wikidata as wd
-
-GEONAMES_API = "http://api.geonames.org/searchJSON"
-GEONAMES_UA = {"User-Agent": "GeoThesisBot/1.0 (student research)"}
-
-# GeoNames reports a continent code; the datasets use names.
-_CONTINENT_BY_CODE = {
-    "AF": "Africa", "AS": "Asia", "EU": "Europe", "NA": "North America",
-    "OC": "Oceania", "SA": "South America", "AN": "Antarctica",
-}
 
 
 class GazetteerError(RuntimeError):
@@ -80,48 +64,12 @@ def _wikidata_candidates(name, top_n):
         country, continent = geo.get(qid, ("", ""))
         out.append({
             "qid": qid,
-            "geonames_id": None,
             "name": ent.get("labels", {}).get("en", {}).get("value", name),
             "lat": lat, "lon": lon,
             "population": _population(ent),
             "country": country, "continent": continent,
             "description": ent.get("descriptions", {}).get("en", {}).get("value", name),
             "sitelinks": len(ent.get("sitelinks", {})),
-        })
-    return out
-
-
-def _geonames_candidates(name, top_n):
-    username = os.environ.get("GEONAMES_USERNAME")
-    if not username:
-        raise GazetteerError(
-            "baseline.gazetteer is 'geonames' but GEONAMES_USERNAME is not set. "
-            "Register a free GeoNames account and put GEONAMES_USERNAME in "
-            "src/.env, or set baseline.gazetteer to 'wikidata'.")
-    resp = requests.get(GEONAMES_API, headers=GEONAMES_UA, timeout=30, params={
-        "q": name, "maxRows": top_n, "featureClass": "P", "style": "FULL",
-        "lang": "en", "username": username,
-    })
-    resp.raise_for_status()
-    data = resp.json()
-    if "status" in data:
-        raise GazetteerError(f"GeoNames error: {data['status']}")
-    out = []
-    for hit in data.get("geonames", []):
-        try:
-            lat, lon = float(hit["lat"]), float(hit["lng"])
-        except (KeyError, TypeError, ValueError):
-            continue
-        out.append({
-            "qid": None,
-            "geonames_id": str(hit.get("geonameId")),
-            "name": hit.get("name", name),
-            "lat": lat, "lon": lon,
-            "population": hit.get("population"),
-            "country": hit.get("countryName", ""),
-            "continent": _CONTINENT_BY_CODE.get(hit.get("continentCode", ""), ""),
-            "description": hit.get("fcodeName", ""),
-            "sitelinks": 0,
         })
     return out
 
@@ -136,8 +84,6 @@ def lookup(name, backend="wikidata", top_n=10, min_population=0):
     """
     if backend == "wikidata":
         cands = _wikidata_candidates(name, top_n)
-    elif backend == "geonames":
-        cands = _geonames_candidates(name, top_n)
     else:
         raise GazetteerError(f"unknown gazetteer backend {backend!r}")
 

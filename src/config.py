@@ -28,7 +28,7 @@ LLM_BACKENDS = {None, "gemma", "groq_oss", "groq_llama"}
 ROUTING_GATES = {"legacy_is_geographic_qid", "input_properties"}
 ROUTING_BRANCHES = {"llm", "linking", "geoparser"}
 BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
-GAZETTEERS = {"wikidata", "geonames"}
+GAZETTEERS = {"wikidata"}
 GEOPARSERS = {"mordecai3"}
 
 
