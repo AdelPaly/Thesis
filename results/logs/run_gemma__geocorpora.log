@@ -7,10 +7,11 @@ See README for more details:
 https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
 
   import google.generativeai as genai
-config   : gemma (ner_free) hash=837b013f563f
+config   : gemma (ner_free) hash=96268767ba4e
 dataset  : geocorpora -> src/geocorpora_eval.csv (144 items)
 output   : results\predictions\gemma__geocorpora.jsonl
-  Wikidata cache loaded: 8511 entities, 8399 labels, 1178 coord lookups, 475 searches
+  144 record(s) in gemma__geocorpora.jsonl were written by a different config_hash and will be replaced
+  Wikidata cache loaded: 11129 entities, 11001 labels, 1178 coord lookups, 898 searches
 [1/144] 2b33cec355c99f6f -> Q30
 [2/144] e95a649c2391aea8 -> Q668
 [3/144] 0d7563520db39f22 -> Q165352
@@ -21,25 +22,16 @@ output   : results\predictions\gemma__geocorpora.jsonl
 [8/144] 5ec4f834f3c0ddce -> Q846
 [9/144] cdd9d420314ca3aa -> Q645725
 [10/144] 8e4038922ecc5f76 -> Q11299
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 481 searches
 [11/144] 9b3c66b4ce0d1a79 -> Q228
 [12/144] fbcf3f3488f18487 -> Q974
 [13/144] 0e3764fba52792a4 -> Q52101
 [14/144] 6a30a43a5d11abc8 -> Q23661
 [15/144] 01782881b6869df6 -> Q30
 [16/144] adc176e49809471c -> Q1449
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
-  Rate limited, waiting 16s...
-  Rate limited, waiting 32s...
-  Search error: 429 Too Many Requests after retries
-[17/144] bd7b204ad5f04e12 -> no-result
+[17/144] bd7b204ad5f04e12 -> Q424
 [18/144] dea632ad31caf317 -> Q18013
 [19/144] 6a383511f559f780 -> Q1070763
 [20/144] 502ac6918ecb2eb7 -> Q84
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 488 searches
 [21/144] 6c99bc599efae73a -> Q30
 [22/144] 5f83eb1f66f67f69 -> Q30
 [23/144] 63eb9259d93c650a -> Q2085428
@@ -50,12 +42,6 @@ output   : results\predictions\gemma__geocorpora.jsonl
 [28/144] e9049cef3df04da5 -> no-result
 [29/144] 1ad2ac0696eaf031 -> Q85
 [30/144] e5fcd61fb46375be -> Q2227457
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 495 searches
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
-  Rate limited, waiting 16s...
 [31/144] 58fc220ffeae54ec -> Q2280
 [32/144] 51a16207204f8803 -> Q504114
 [33/144] ab6b968e17e91a3b -> Q30
@@ -66,17 +52,9 @@ output   : results\predictions\gemma__geocorpora.jsonl
 [38/144] a305985c542a0cbd -> Q1797326
 [39/144] e51b2960bd266c23 -> Q673662
 [40/144] e262c215d2e72a56 -> Q23197
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 504 searches
 [41/144] 339aff9028034d05 -> Q25395
 [42/144] 3668069e796f7671 -> Q30
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
-  Rate limited, waiting 16s...
-  Rate limited, waiting 32s...
-  Search error: 429 Too Many Requests after retries
-[43/144] c70e4b811d85cc3f -> Q183
+[43/144] c70e4b811d85cc3f -> Q64
 [44/144] 896316786fd7d22a -> Q23482
 [45/144] 9803a6cadde67dca -> Q1376790
 [46/144] f2d4b6774ecd6fad -> Q30
@@ -84,22 +62,16 @@ output   : results\predictions\gemma__geocorpora.jsonl
 [48/144] b4332740054d609f -> Q1032
 [49/144] 11cdb4301422013f -> Q30
 [50/144] 9dff291c9eff08c7 -> Q41819
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 511 searches
 [51/144] 266903f67d3f3ae8 -> Q30
 [52/144] 4bdd4159a0c5f105 -> Q1878732
 [53/144] e484d168ab7efd8d -> Q668
 [54/144] db63f70955329692 -> Q30
 [55/144] 4152acb0c3a3e7d4 -> Q148
 [56/144] 1b93a1e280a8a4d3 -> Q145
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
 [57/144] e92a977768a1ab3f -> Q1384
 [58/144] 26c973bc5b5ef96f -> Q1489
 [59/144] 7a21608a1e134e37 -> Q20
 [60/144] 3c23eac2694a69b2 -> Q47265
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 518 searches
 [61/144] 31d7386f3d55f3bb -> Q200077
 [62/144] a3aa720a3036e848 -> Q159
 [63/144] 9f9e91e114736e6f -> Q30
@@ -109,15 +81,7 @@ output   : results\predictions\gemma__geocorpora.jsonl
 [67/144] 96bb55372c608bb6 -> Q30
 [68/144] 30a0efa64755f309 -> Q30
 [69/144] 9270280ec49e4f97 -> Q30
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
-  Rate limited, waiting 16s...
-  Rate limited, waiting 32s...
-  Search error: 429 Too Many Requests after retries
-[70/144] 20efd96eb3762b08 -> no-result
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 525 searches
+[70/144] 20efd96eb3762b08 -> Q685
 [71/144] 015bb37a5707c534 -> Q617602
 [72/144] 42fd3ebd23616f18 -> Q794
 [73/144] 3478370688babeb1 -> no-result
@@ -128,23 +92,16 @@ output   : results\predictions\gemma__geocorpora.jsonl
 [78/144] 5afd3f5e0088a821 -> Q463679
 [79/144] cc4d1af53efcc713 -> Q651131
 [80/144] 242ace6221fd75ee -> Q1033
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 533 searches
 [81/144] 3399c4d596a35e06 -> Q1348
 [82/144] c80b1ad8fc52503e -> Q581920
 [83/144] f7d8fbc3a02d8525 -> Q833
 [84/144] 36192c54ac183071 -> Q12476750
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
-  Rate limited, waiting 16s...
 [85/144] c01858a1aa29eccf -> Q41621
 [86/144] 8937abcdfce5d2ec -> Q123766
 [87/144] e5b83065b7dd0588 -> Q327022
 [88/144] f2a1d4e094aacbb0 -> Q30
 [89/144] 0ef7fde75290b7bc -> Q3778560
 [90/144] 100489ce2248b010 -> Q2369961
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 540 searches
 [91/144] e13eb8dbed5703a6 -> Q331104
 [92/144] 367855568db65d2b -> Q30
 [93/144] 2d64c168284dd461 -> Q31
@@ -153,16 +110,8 @@ output   : results\predictions\gemma__geocorpora.jsonl
 [96/144] 408f5f32b39308cd -> Q1348
 [97/144] 6c73c944668a97dc -> Q668
 [98/144] 3a699de23a170316 -> Q12439
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
-  Rate limited, waiting 16s...
-  Rate limited, waiting 32s...
-  Search error: 429 Too Many Requests after retries
-[99/144] ed822f4f615d8272 -> Q30
+[99/144] ed822f4f615d8272 -> Q6106
 [100/144] 1fe1a36799c4c3f4 -> Q786770
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 546 searches
 [101/144] 2e3ceb23d1e758c9 -> Q408
 [102/144] 11a7acdf4a55927f -> Q18094
 [103/144] a1dd3bd63b7ff5ed -> Q646225
@@ -173,7 +122,6 @@ output   : results\predictions\gemma__geocorpora.jsonl
 [108/144] 02fcfbb1f088af60 -> Q218
 [109/144] 18295394d8f8c429 -> Q17
 [110/144] c47721438cc22ac7 -> no-result
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 553 searches
 [111/144] b6db6f8a6d691bbd -> no-result
 [112/144] aa54d221ba61a862 -> Q30
 [113/144] a69dcf3fac3630f2 -> Q1045
@@ -183,12 +131,7 @@ output   : results\predictions\gemma__geocorpora.jsonl
 [117/144] 185d77a2c5261153 -> Q131252
 [118/144] d6d3509eb5dad90b -> Q131252
 [119/144] 2646ed2cb41075fc -> Q617602
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
 [120/144] e14bb9b6f45ef3f0 -> Q100
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 556 searches
 [121/144] 1e14d9b853535bb5 -> Q2233544
 [122/144] 2f98d32009f33e72 -> Q2256
 [123/144] c02a99c4afafdbd7 -> Q8673
@@ -199,34 +142,23 @@ output   : results\predictions\gemma__geocorpora.jsonl
 [128/144] f94b256dfae6a167 -> Q42462
 [129/144] e4fbcaf548efe652 -> Q24826
 [130/144] ae8f307b73861d50 -> Q30
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 563 searches
 [131/144] a9ad29296a12967c -> Q1761
 [132/144] e5c522374ce41689 -> Q156459
 [133/144] f05c13eabfa2705b -> Q1033
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
-  Rate limited, waiting 16s...
-  Rate limited, waiting 32s...
-  Search error: 429 Too Many Requests after retries
-[134/144] 6a59e531c0a6a681 -> Q159
+[134/144] 6a59e531c0a6a681 -> Q649
 [135/144] 09a5e57646ed8cb1 -> Q30
 [136/144] e0fa55410b63c825 -> Q1930
 [137/144] 541d9e9dd6f3661e -> Q5869
 [138/144] cf96b1ca84b24e41 -> Q43
 [139/144] eb8d67d0f0ecbacd -> Q30
 [140/144] d61e30225c4b1afd -> Q90
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 569 searches
 [141/144] d7bc59e09b4451db -> Q165972
 [142/144] eb79b3c2c124b187 -> Q18419
 [143/144] 498c46aa522129e8 -> no-result
 [144/144] c2ce144a21aaae34 -> Q145
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 571 searches
 
 wrote 144 record(s) to results\predictions\gemma__geocorpora.jsonl
   with a prediction : 141
   no result         : 3
   errors            : 0
 no metrics computed here -- run scripts/score.py
-  Wikidata cache saved: 8511 entities, 8399 labels, 1178 coord lookups, 571 searches

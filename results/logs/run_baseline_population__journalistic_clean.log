@@ -1,13 +1,14 @@
-config   : baseline_population (baseline) hash=9ba3133eb4a0
+config   : baseline_population (baseline) hash=25033ff9ad9d
 dataset  : journalistic_clean -> src/journalistic_dataset.csv (72 items)
 output   : results\predictions\baseline_population__journalistic_clean.jsonl
-  Wikidata cache loaded: 8394 entities, 8284 labels, 1178 coord lookups, 91 searches
-2026-09-17 20:39:07,076 --------------------------------------------------------------------------------
-2026-09-17 20:39:07,076 ERROR: The key 'flair/ner-large' was neither found on the ModelHub nor is this a valid path to a file on your system!
-2026-09-17 20:39:07,076  -> Please check https://huggingface.co/models?filter=flair for all available models.
-2026-09-17 20:39:07,076  -> Alternatively, point to a model file on your local drive.
-2026-09-17 20:39:07,076 --------------------------------------------------------------------------------
-2026-09-17 20:39:17,936 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+  72 record(s) in baseline_population__journalistic_clean.jsonl were written by a different config_hash and will be replaced
+  Wikidata cache loaded: 11129 entities, 11001 labels, 1178 coord lookups, 898 searches
+2026-09-18 01:03:33,597 --------------------------------------------------------------------------------
+2026-09-18 01:03:33,597 ERROR: The key 'flair/ner-large' was neither found on the ModelHub nor is this a valid path to a file on your system!
+2026-09-18 01:03:33,597  -> Please check https://huggingface.co/models?filter=flair for all available models.
+2026-09-18 01:03:33,597  -> Alternatively, point to a model file on your local drive.
+2026-09-18 01:03:33,597 --------------------------------------------------------------------------------
+2026-09-18 01:03:43,394 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
 [1/72] b03e1d1019708ccc -> no-result
 [2/72] 22236d5ae27d10e7 -> Q722071
 [3/72] 3c1957ca9b07610b -> no-result
@@ -18,12 +19,7 @@ output   : results\predictions\baseline_population__journalistic_clean.jsonl
 [8/72] 732a96bd5812848a -> no-result
 [9/72] 0de892ebdecc5f99 -> no-result
 [10/72] a2a9593672fa5554 -> Q1625437
-  Wikidata cache saved: 8397 entities, 8287 labels, 1178 coord lookups, 98 searches
 [11/72] aeac854d4020ec65 -> no-result
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
 [12/72] 32b38d185cafd93e -> Q971700
 [13/72] b34fab6bb58d9644 -> no-result
 [14/72] bbc260f7c553e986 -> no-result
@@ -33,7 +29,6 @@ output   : results\predictions\baseline_population__journalistic_clean.jsonl
 [18/72] 153e9d23ea2094bd -> no-result
 [19/72] 4614908dc625623e -> no-result
 [20/72] ddcb7fdb788637c6 -> no-result
-  Wikidata cache saved: 8397 entities, 8287 labels, 1178 coord lookups, 102 searches
 [21/72] 7226c107db9a71a0 -> no-result
 [22/72] 16c6fee05afb50f5 -> no-result
 [23/72] 736b5c60b608dd33 -> no-result
@@ -44,11 +39,6 @@ output   : results\predictions\baseline_population__journalistic_clean.jsonl
 [28/72] 46275675ee733a02 -> Q750
 [29/72] 631636566d137a4c -> Q1361
 [30/72] 8ade6b213aa26792 -> Q10717
-  Wikidata cache saved: 8399 entities, 8289 labels, 1178 coord lookups, 104 searches
-  Rate limited, waiting 1s...
-  Rate limited, waiting 2s...
-  Rate limited, waiting 4s...
-  Rate limited, waiting 8s...
 [31/72] b81806a83b6a5148 -> Q36399
 [32/72] 95f4b339ff389e1c -> Q170568
 [33/72] 2aea0164708e4d10 -> Q1075440
@@ -59,7 +49,6 @@ output   : results\predictions\baseline_population__journalistic_clean.jsonl
 [38/72] 6e5e7f66b22b2a08 -> Q18677875
 [39/72] 79731763c25de6ed -> Q754
 [40/72] 56a095ce7748475d -> Q165204
-  Wikidata cache saved: 8400 entities, 8290 labels, 1178 coord lookups, 106 searches
 [41/72] 1d383333f371564d -> Q44821
 [42/72] 956effbde6082d13 -> Q52535
 [43/72] e3f173e6f68c60f8 -> Q5720
@@ -70,7 +59,6 @@ output   : results\predictions\baseline_population__journalistic_clean.jsonl
 [48/72] cb4b900aca19fe9c -> Q951713
 [49/72] cab16d507776675c -> no-result
 [50/72] e32e8eb42a16bff9 -> no-result
-  Wikidata cache saved: 8400 entities, 8290 labels, 1178 coord lookups, 106 searches
 [51/72] 549496c1f32ab7d2 -> no-result
 [52/72] 23b46506445a21f5 -> no-result
 [53/72] c52e10b3654190b0 -> no-result
@@ -81,7 +69,6 @@ output   : results\predictions\baseline_population__journalistic_clean.jsonl
 [58/72] 0b43808f68f9d920 -> no-result
 [59/72] 2931b8f2802e32be -> Q2586305
 [60/72] edb965f3574da6a7 -> no-result
-  Wikidata cache saved: 8401 entities, 8291 labels, 1178 coord lookups, 111 searches
 [61/72] 2a6d5ccc07d5b20c -> Q98
 [62/72] f49df61606e529b9 -> Q1646258
 [63/72] 86bc5c76c346dc4f -> no-result
@@ -92,14 +79,11 @@ output   : results\predictions\baseline_population__journalistic_clean.jsonl
 [68/72] 71799e64479c81a2 -> Q664609
 [69/72] 99118255c24c29f3 -> no-result
 [70/72] a00bbfc846c4666a -> no-result
-  Wikidata cache saved: 8402 entities, 8292 labels, 1178 coord lookups, 115 searches
 [71/72] 917c51d599f845fc -> no-result
 [72/72] 4aa78498b5768e2f -> no-result
-  Wikidata cache saved: 8402 entities, 8292 labels, 1178 coord lookups, 115 searches
 
 wrote 72 record(s) to results\predictions\baseline_population__journalistic_clean.jsonl
   with a prediction : 38
   no result         : 34
   errors            : 0
 no metrics computed here -- run scripts/score.py
-  Wikidata cache saved: 8402 entities, 8292 labels, 1178 coord lookups, 115 searches
