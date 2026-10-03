@@ -9,8 +9,7 @@ no network call, and needs no API key: it only reads
 results/predictions/*.jsonl. Changing a metric definition is a re-run of this
 file, not of the pipeline.
 
-It is also the single home of the haversine implementation, which previously
-existed three times (evaluate.py, eval_acc161.py, _eval_acc161_worker.py).
+It is also the single home of the haversine implementation.
 
 Metric definitions
 ------------------
@@ -23,8 +22,7 @@ exact          : predicted_qid == place_qid, over items that HAVE a gold QID.
                  coordinates but no gold Wikidata id, and reporting those as
                  0% exact would be wrong. The n_gold_qid column is the
                  denominator, so a dataset without gold QIDs reports exact as
-                 "-" rather than zero. This is the capability that made the
-                 separate eval_acc161 path exist; it is now in the one scorer.
+                 "-" rather than zero.
 country        : exact, or predicted_country == gold_country. The hierarchy is
                  derived HERE, at report time, not baked into stored booleans.
 continent      : country, or predicted_continent == gold_continent.
@@ -221,7 +219,7 @@ def main():
                         "(default all; configurations and thresholds are chosen "
                         "on dev, test is reported once)")
     p.add_argument("--by", default=None,
-                   choices=["condition", "paradigm", "routing_branch", "dataset"],
+                   choices=["condition", "paradigm", "dataset"],
                    help="extra breakdown within each config/dataset pair")
     p.add_argument("--out", default=None, help="write the table to a CSV file")
     args = p.parse_args()

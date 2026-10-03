@@ -1,14 +1,13 @@
 """One parameterised geolocation path, driven entirely by a PipelineConfig.
 
-This replaces the six near-duplicate `geolocate_*` functions that used to live
-in main.py. Which NER model runs, which linker links, whether a reranker is
-used, which LLM answers and whether anything is routed are all read off the
-config -- there is no per-configuration code path.
+Which NER model runs, which linker links, whether a reranker is used and which
+LLM answers are all read off the config -- there is no per-configuration code
+path.
 
 `Pipeline.run(text)` returns a `PipelineOutput` carrying every intermediate
 stage, not just the winning candidate: the NER spans, the linked entities with
 their confidences and ReFinED's own candidate set, the fully scored candidate
-place list, and (for routed configurations) the branch that was taken. The
+place list and, for grounded configurations, the selection record. The
 runner serialises those straight into the prediction record.
 """
 from __future__ import annotations
@@ -24,12 +23,6 @@ class PipelineOutput:
     ner_spans: list = field(default_factory=list)
     linked_entities: list = field(default_factory=list)
     candidate_places: list = field(default_factory=list)
-    routing_branch: str | None = None
-    routing_rule: str | None = None
-    # The gate's input features, structured. routing_rule is the human-readable
-    # form of the same thing; this is what a threshold sweep reads, so that
-    # refitting the threshold needs no re-run and no string parsing.
-    routing_features: dict | None = None
     prediction: dict | None = None
     llm_raw_response: str | None = None
     # Grounded LLM only: which candidate was selected, whether it abstained,
@@ -54,42 +47,6 @@ def _candidate_record(cand):
         # score in this row cannot be interpreted after the fact.
         "description": cand.get("description"),
     }
-
-
-def route_from_features(features, fallback="llm", ambiguity_threshold=2,
-                        has_geoparser=False):
-    """The routing rule, as a pure function of the gate's input features.
-
-    features: {"toponym_present": bool, "max_candidates": int | None,
-               "non_loc_spans": int}
-
-    Returns (branch, reason). Hand-specified, not learned:
-
-      no toponym, entity spans present             -> linking
-      toponym present, unambiguous                 -> geoparser if configured,
-                                                      else linking
-      toponym present, ambiguous, entities present -> linking
-      toponym present, ambiguous, no entity spans  -> llm
-      nothing detected                             -> fallback
-
-    Lives here, as one function, because scripts/fit_gate.py sweeps the
-    threshold over stored features and must evaluate the same rule the
-    pipeline executes rather than a copy of it.
-    """
-    non_loc = features.get("non_loc_spans") or 0
-    if not features.get("toponym_present"):
-        if non_loc:
-            return "linking", "no toponym, entity spans present"
-        return fallback, "nothing detected"
-
-    max_candidates = features.get("max_candidates") or 0
-    ambiguous = max_candidates >= ambiguity_threshold
-    if not ambiguous:
-        return ("geoparser" if has_geoparser else "linking",
-                "toponym present, unambiguous")
-    if non_loc:
-        return "linking", "toponym ambiguous, entity spans present"
-    return "llm", "toponym ambiguous, no entity spans"
 
 
 class Pipeline:
@@ -159,8 +116,6 @@ class Pipeline:
             backend = self.cfg.llm.backend
             if backend == "gemma":
                 from llm_gemma import build
-            elif backend in ("groq_oss", "groq_llama"):
-                from llm_groq import build
             else:
                 raise ValueError(f"unknown llm.backend {backend!r}")
             self._llm = build(self.cfg.llm.model, self.cfg.llm.cache_name)
@@ -313,118 +268,15 @@ class Pipeline:
             out.error = f"selection violation: {selection['violation']}"
         out.prediction = chosen
 
-    def save_llm_cache_grounded(self):
-        if self._grounded is not None:
-            self._grounded.save_cache()
-
-    # ----------------------------------------------------------- geoparser
-
-    def _run_geoparser_path(self, text, out):
-        from geoparser import geoparse
-        gp = self.cfg.geoparser
-        spans, candidates = geoparse(text, gp.backend, gp.spacy_model)
-        out.ner_spans = spans
-        out.candidate_places = [_candidate_record(c) for c in candidates]
-        out.prediction = candidates[0] if candidates else None
-
-    # ---------------------------------------------------------------- gates
-
-    def _legacy_gate(self, text, out):
-        """The original gate: did ReFinED link a Flair LOC to a QID that turns
-        out to be a geographic-area type. It reads the FIRST SYSTEM'S OUTPUT,
-        which is why it behaves as a fallback rather than a router.
-
-    RETAINED DELIBERATELY, NOT DEAD CODE. No configuration uses this gate any
-    more -- refined_gemma was removed as a tier. Its RESULT is still reported,
-    because the legacy gate currently beats the rebuilt input-property gate
-    (-6.8 pp exact [-12.4, -1.1], p=0.021), and that comparison is going into
-    the write-up. Deleting this would make the reported row unreproducible even
-    with configs/refined_gemma.yaml restored from git history. Revisit after
-    submission.
-
-        """
-        from wikidata import is_geographic_qid
-        out.ner_spans = self._ner(text)
-        loc = [e for e in out.ner_spans if e["type"] == "LOC"]
-        out.routing_features = {
-            "toponym_present": bool(loc),
-            "max_candidates": None,          # this gate never asks a gazetteer
-            "non_loc_spans": len(out.ner_spans) - len(loc),
-        }
-        if not loc:
-            out.routing_rule = "no LOC span -> fallback"
-            return self.cfg.routing.fallback
-        out.linked_entities = self._link(text, out.ner_spans)
-        fired = any(is_geographic_qid(le["qid"])
-                    for le in out.linked_entities
-                    if le["mention_type"] == "LOC")
-        out.routing_rule = ("LOC linked to a geographic QID -> linking"
-                            if fired else "no LOC linked to a geographic QID -> fallback")
-        return "linking" if fired else self.cfg.routing.fallback
-
-    def _input_properties_gate(self, text, out):
-        """Route on properties of the INPUT, computed before any system runs.
-
-        Three features, all read off the text:
-          * is a toponym present          -- a LOC span from NER
-          * is that toponym ambiguous     -- candidate count from a gazetteer
-          * how many non-LOC spans exist  -- PER / ORG / MISC mentions
-
-        Rule (hand-specified, not learned):
-
-          no toponym, entity spans present             -> entity-linking path
-          toponym present, unambiguous                 -> geoparser, else linking
-          toponym present, ambiguous, entities present -> linking (the entity
-                                                          disambiguates)
-          toponym present, ambiguous, no entities      -> LLM
-          nothing detected                             -> LLM
-
-        The old gate asked "did ReFinED link something that turned out to be a
-        place", which reads the first system OUTPUT. A noisy toponym still
-        links to a geographic QID, so that gate fired and sent a poisoned input
-        down the ReFinED path. This gate never consults a system answer.
-        """
-        from gazetteer import count_candidates
-        ro = self.cfg.routing
-
-        out.ner_spans = self._ner(text)
-        loc = [e for e in out.ner_spans if e["type"] == "LOC"]
-        non_loc = [e for e in out.ner_spans if e["type"] != "LOC"]
-
-        if loc:
-            max_count = max(count_candidates(e["text"], backend=ro.gazetteer,
-                                             top_n=ro.gazetteer_top_n)
-                            for e in loc)
-        else:
-            max_count = None
-
-        out.routing_features = {
-            "toponym_present": bool(loc),
-            "max_candidates": max_count,
-            "non_loc_spans": len(non_loc),
-        }
-        branch, why = route_from_features(
-            out.routing_features,
-            fallback=ro.fallback,
-            ambiguity_threshold=ro.ambiguity_threshold,
-            has_geoparser=bool(self.cfg.geoparser.backend),
-        )
-        out.routing_rule = (
-            f"toponym={int(bool(loc))} candidates={max_count} "
-            f"non_loc={len(non_loc)} -> {branch} ({why})")
-        return branch
-
     # ---------------------------------------------------------------- paths
 
     def _run_linking_path(self, text, out):
         """NER -> linking (or search retrieval) -> rerank -> top-1."""
-        if not out.ner_spans:
-            out.ner_spans = self._ner(text)
+        out.ner_spans = self._ner(text)
         if self.cfg.linking.backend == "wikidata_search":
             candidates = self._places_from_search(out.ner_spans)
         else:
-            if not out.linked_entities:
-                out.linked_entities = self._link(text, out.ner_spans)
+            out.linked_entities = self._link(text, out.ner_spans)
             candidates = self._places_from_links(out.ner_spans, out.linked_entities)
         candidates = self._rank(text, candidates)
         out.candidate_places = [_candidate_record(c) for c in candidates]
@@ -451,23 +303,10 @@ class Pipeline:
                 self._run_linking_path(text, out)
             elif paradigm == "ner_free":
                 self._run_llm_path(text, out)
-            elif paradigm == "routed":
-                branch = self._route(text, out)
-                out.routing_branch = branch
-                if branch == "linking":
-                    self._run_linking_path(text, out)
-                elif branch == "llm":
-                    self._run_llm_path(text, out)
-                elif branch == "geoparser":
-                    self._run_geoparser_path(text, out)
-                else:
-                    raise ValueError(f"unhandled routing branch {branch!r}")
             elif paradigm == "dense_retrieval":
                 self._run_dense_path(text, out)
             elif paradigm == "grounded_llm":
                 self._run_grounded_path(text, out)
-            elif paradigm == "geoparser":
-                self._run_geoparser_path(text, out)
             elif paradigm == "baseline":
                 strategy = self.cfg.baseline.strategy
                 if strategy == "most_populous":
@@ -484,14 +323,6 @@ class Pipeline:
             if _DEBUG:
                 traceback.print_exc()
         return out
-
-    def _route(self, text, out):
-        gate = self.cfg.routing.gate
-        if gate == "legacy_is_geographic_qid":
-            return self._legacy_gate(text, out)
-        if gate == "input_properties":
-            return self._input_properties_gate(text, out)
-        raise ValueError(f"unknown routing gate {gate!r}")
 
 
 _UNSET = object()

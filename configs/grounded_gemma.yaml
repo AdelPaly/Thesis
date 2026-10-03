@@ -26,10 +26,6 @@ llm:
   backend: gemma
   model: gemma-4-31b-it
   cache_name: gemma4_31b
-routing:
-  enabled: false
-  gate: null
-  fallback: null
 dense:
   encoder: intfloat/multilingual-e5-base
   pool: gold_plus_predicted

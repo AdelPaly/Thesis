@@ -93,9 +93,3 @@ def lookup(name, backend="wikidata", top_n=10, min_population=0):
     cands.sort(key=lambda c: (c["population"] or -1, c["sitelinks"]), reverse=True)
     return cands
 
-
-def count_candidates(name, backend="wikidata", top_n=10):
-    """How many distinct places a surface form could denote -- the ambiguity
-    signal the routing gate reads off the input. Counts gazetteer entries that
-    have coordinates, so non-places in the search results do not inflate it."""
-    return len(lookup(name, backend=backend, top_n=top_n))

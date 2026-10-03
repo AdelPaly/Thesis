@@ -56,13 +56,10 @@ import stats as st                                                # noqa: E402
 # Report order. A configuration declares its tier in its config file; the tier
 # is presentation metadata excluded from config_hash, so it orders rows without
 # being able to change a prediction. Rank falls back to the paradigm on the
-# records for anything with no config file left -- refined_gemma, whose
-# configuration was removed but whose result is still reported.
-TIER_RANK = {"0": 0, "1": 1, "2a": 2, "2b": 3, "3": 4, "4": 5, "5": 6,
-             "combo": 7, "oracle": 8}
-PARADIGM_RANK = {"baseline": 0, "geoparser": 1, "ner_dependent": 3,
-                 "dense_retrieval": 4, "ner_free": 5, "grounded_llm": 6,
-                 "routed": 7, "oracle": 8}
+# records for anything with no config file left.
+TIER_RANK = {"0": 0, "2a": 2, "2b": 3, "3": 4, "4": 5, "5": 6}
+PARADIGM_RANK = {"baseline": 0, "ner_dependent": 3, "dense_retrieval": 4,
+                 "ner_free": 5, "grounded_llm": 6}
 
 
 def load_tiers(config_dir=CONFIG_DIR):
@@ -191,8 +188,8 @@ def attribute(rec):
         return "gold_not_retrieved"
 
     # No observable stage at all. Two different situations:
-    #   * it still produced an answer -- a single-call LLM, the constant
-    #     majority baseline, or an oracle row inherited from one of those.
+    #   * it still produced an answer -- a single-call LLM or the constant
+    #     majority baseline.
     #     Nothing in the record can say where it went wrong, which is the
     #     finding rather than a gap.
     #   * it produced nothing either, so the configuration simply returned
@@ -203,7 +200,7 @@ def attribute(rec):
     if not spans and not places:
         if has_pred:
             return "no_intermediate_stages"
-        if rec.get("paradigm") in ("ner_dependent", "routed", "geoparser", "baseline"):
+        if rec.get("paradigm") in ("ner_dependent", "baseline"):
             return "no_ner_span"
         return "returned_nothing"
 
@@ -304,17 +301,6 @@ def cmd_failures(scored, args):
         rec["_pxc"] = f"{rec.get('paradigm')} / {rec.get('condition')}"
     print_crosstab(crosstab(failures, "_pxc", all_records=scored),
                    "paradigm / condition")
-    print("-- by routing branch (routed configurations only) --")
-    routed = [r for r in failures if r.get("routing_branch")]
-    if routed:
-        for rec in scored:
-            if rec.get("routing_branch"):
-                rec["_cxb"] = f"{rec.get('config_name')} / {rec.get('routing_branch')}"
-        branch_records = [r for r in scored if r.get("routing_branch")]
-        print_crosstab(crosstab(routed, "_cxb", all_records=branch_records),
-                       "config / branch")
-    else:
-        print("(none)\n")
 
     if args.out:
         path = Path(args.out) / f"table_failure_attribution_{args.split}.csv"
@@ -322,10 +308,10 @@ def cmd_failures(scored, args):
         with path.open("w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
             w.writerow(["config", "dataset", "paradigm", "condition",
-                        "routing_branch", "failure_level", "n"])
+                        "failure_level", "n"])
             counts = Counter((r.get("config_name"), r.get("dataset"),
                               r.get("paradigm"), r.get("condition"),
-                              r.get("routing_branch"), r.get("failure_level"))
+                              r.get("failure_level"))
                              for r in failures)
             for key, n in sorted(counts.items(), key=lambda kv: str(kv[0])):
                 w.writerow([*key, n])
@@ -476,9 +462,6 @@ def cmd_tables(scored, args):
     dense = by_paradigm.get("dense_retrieval", [])
     ner_free = by_paradigm.get("ner_free", [])
     grounded = by_paradigm.get("grounded_llm", [])
-    geoparser = by_paradigm.get("geoparser", [])
-    routed = by_paradigm.get("routed", [])
-    oracle = by_paradigm.get("oracle", [])
 
     print("=" * 100)
     print(f"TABLE 1  Baselines vs everything  -- is the task non-trivial?")
@@ -530,21 +513,6 @@ def cmd_tables(scored, args):
              "pipeline, not end-to-end: Flair detects, ReFinED disambiguates.")
 
     print("=" * 100)
-    print("TABLE 4  Routed vs best component vs oracle")
-    print("          -- does combining help, and how much headroom remains?")
-    print("=" * 100)
-    components = [n for n in ["refined", "gemma"] if n in present]
-    rows = rows_for(components, "  [component]")
-    rows += rows_for([n for n in grounded if n in present], "  [grounded]")
-    rows += rows_for([n for n in routed if n in present], "  [routed]")
-    rows += rows_for(oracle, "  [oracle]")
-    _print_metric_table(rows,
-                        note="The oracle is analysis-only: it picks per item using the "
-                             "gold answer, so it is a ceiling, not a system. The gap "
-                             "between a routed row and the oracle is the headroom the "
-                             "routing idea still has.")
-
-    print("=" * 100)
     print("APPENDIX  All configurations")
     print("=" * 100)
     _print_metric_table([_row(n, groups[n]) for n in sorted(present)])
@@ -582,18 +550,14 @@ def cmd_tables(scored, args):
 COMPARISONS = [
     ("refined", "two_stage", "which linker: ReFinED vs search+rerank"),
     ("refined", "baseline_population", "does the linker beat the population floor"),
-    ("gemma", "baseline_population", "does the LLM beat the population floor"),
-    ("gemma", "groq_oss", "LLM model sensitivity"),
-    ("refined", "gemma", "mention detection vs parametric knowledge"),
+    ("gemma4", "baseline_population", "does the LLM beat the population floor"),
+    ("refined", "gemma4", "mention detection vs parametric knowledge"),
     ("dense_retrieval", "refined", "dense retrieval vs entity linking"),
-    ("dense_retrieval", "gemma", "no mention detection: retrieval vs parametric"),
+    ("dense_retrieval", "gemma4", "no mention detection: retrieval vs parametric"),
     ("grounded_gemma", "gemma4", "does grounding help (same model, matched control)"),
     ("grounded_gemma", "dense_retrieval", "grounded LLM vs its retriever alone"),
     ("grounded_gemma_linking", "grounded_gemma", "grounding from linking vs from dense"),
     ("grounded_gemma_linking", "refined", "grounded LLM vs its retriever alone"),
-    ("routed_gemma", "refined", "does the rebuilt router beat its best component"),
-    ("routed_gemma", "refined_gemma", "rebuilt gate vs the legacy output-reading gate"),
-    ("oracle_refined_gemma", "routed_gemma", "headroom left for the router"),
 ]
 
 

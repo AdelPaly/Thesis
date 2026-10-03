@@ -4,9 +4,7 @@ Retrieval-augmented, not routed: candidates are retrieved first, handed to the
 model as a numbered list, and the model's job is to SELECT from that list or to
 decline. It may not name a place that is not in the list.
 
-Why this rather than more routing: the oracle shows roughly 20 pp of headroom
-that routing does not capture, and the rebuilt gate underperforms both its
-components. Retrieval-augmented generation is the direction adjacent tasks have
+Retrieval-augmented generation is the direction adjacent tasks have
 taken (Img2Loc for image geolocation, Spatial-RAG for spatial QA); the
 text-geolocation equivalent is unexplored. Combining the paradigms is a cleaner
 contribution than choosing between them.
@@ -72,7 +70,7 @@ def format_candidates(candidates):
 
 
 class GroundedSelector:
-    """Wraps a provider pipeline (llm_gemma / llm_groq) for the raw call, with
+    """Wraps a provider pipeline (llm_gemma) for the raw call, with
     its own prompt and its own response cache."""
 
     def __init__(self, provider, cache_name):

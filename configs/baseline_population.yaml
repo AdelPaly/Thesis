@@ -35,10 +35,6 @@ rerank:
 llm:
   backend: null
   model: null
-routing:
-  enabled: false
-  gate: null
-  fallback: null
 baseline:
   strategy: most_populous
   gazetteer: wikidata

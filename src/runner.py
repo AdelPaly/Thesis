@@ -120,9 +120,6 @@ def build_record(cfg: PipelineConfig, dataset: str, row, out) -> dict:
         "ner_spans": out.ner_spans,
         "linked_entities": out.linked_entities,
         "candidate_places": out.candidate_places,
-        "routing_branch": out.routing_branch,
-        "routing_rule": out.routing_rule,
-        "routing_features": out.routing_features,
         "predicted_qid": _clean(pred.get("qid")),
         "predicted_latlon": predicted_latlon,
         "predicted_country": _clean(pred.get("country")),
@@ -196,13 +193,14 @@ def run(config_name: str, dataset_name: str, limit=None, overwrite=False,
     if limit is not None:
         df = df.head(limit)
 
+    out_dir = Path(out_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{cfg.name}__{dataset_name}.jsonl"
 
     print(f"config   : {cfg.name} ({cfg.paradigm}) hash={cfg.config_hash[:12]}")
     print(f"dataset  : {dataset_name} -> {spec.path} ({len(df)} items"
           + (f", split={split}" if split else "") + ")")
-    print(f"output   : {out_path.relative_to(REPO_ROOT)}")
+    print(f"output   : {_display(out_path)}")
 
     existing = _load_existing(out_path, cfg.config_hash, overwrite)
     if existing:
@@ -224,8 +222,7 @@ def run(config_name: str, dataset_name: str, limit=None, overwrite=False,
         if rec["error"]:
             n_err += 1
         status = rec["predicted_qid"] or ("ERROR" if rec["error"] else "no-result")
-        branch = f" [{rec['routing_branch']}]" if rec["routing_branch"] else ""
-        print(f"[{len(records)}/{len(df)}] {iid} -> {status}{branch}", flush=True)
+        print(f"[{len(records)}/{len(df)}] {iid} -> {status}", flush=True)
         if len(records) % checkpoint_every == 0:
             save_caches()
             pipe.save_llm_cache()
@@ -237,12 +234,20 @@ def run(config_name: str, dataset_name: str, limit=None, overwrite=False,
 
     n_pred = sum(1 for r in records if r["predicted_qid"] or r["predicted_latlon"]
                  or r["predicted_continent"])
-    print(f"\nwrote {len(records)} record(s) to {out_path.relative_to(REPO_ROOT)}")
+    print(f"\nwrote {len(records)} record(s) to {_display(out_path)}")
     print(f"  with a prediction : {n_pred}")
     print(f"  no result         : {len(records) - n_pred - n_err}")
     print(f"  errors            : {n_err}")
     print("no metrics computed here -- run scripts/score.py")
     return out_path
+
+
+def _display(path: Path) -> str:
+    """Repo-relative when the path is inside the repo, absolute otherwise."""
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
 
 
 def _write(path: Path, records, attempts=6):
@@ -277,9 +282,9 @@ def main():
     from config import load_all_configs
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--config", required=True,
+    p.add_argument("--config",
                    help="configuration name or path to a configs/*.yaml file")
-    p.add_argument("--dataset", required=True, help="dataset name from configs/datasets.yaml")
+    p.add_argument("--dataset", help="dataset name from configs/datasets.yaml")
     p.add_argument("--limit", type=int, default=None, help="only the first N items")
     p.add_argument("--overwrite", action="store_true",
                    help="recompute every item instead of resuming")
@@ -297,6 +302,8 @@ def main():
         for name, spec in load_datasets().items():
             print(f"{name:22} {spec.path}")
         return
+    if not args.config or not args.dataset:
+        p.error("--config and --dataset are required (or use --list)")
 
     set_debug(args.debug)
     run(args.config, args.dataset, limit=args.limit, overwrite=args.overwrite,

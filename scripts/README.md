@@ -1,15 +1,13 @@
 # `scripts/`
 
 Everything here is on the path from raw data to reported results, in the order
-it runs. Anything that had done its job and would never run again has been
-moved to [`archive/`](archive/README.md); anything superseded has been deleted.
+it runs.
 
 Scripts are standalone (`python scripts/<name>.py`) and resolve paths relative
 to the repository root.
 
 For dataset provenance see [`../DATASETS.md`](../DATASETS.md). For the
-decisions behind the numbers — the split, the tiers, the failure taxonomy, why
-the retired results are not comparable — see
+decisions behind the numbers — the split, the tiers, the failure taxonomy — see
 [`../METHODOLOGY.md`](../METHODOLOGY.md).
 
 ---
@@ -82,10 +80,8 @@ python scripts/score.py --by condition
 
 | Script | Purpose |
 |--------|---------|
-| `analyse.py` | Failure attribution, paired statistics and the four report tables. Subcommands `failures`, `tables`, `stats`, `all`. Groups configurations by the `paradigm` on their records rather than by any hardcoded list. |
+| `analyse.py` | Failure attribution, the grounded-selection report, paired statistics and the report tables. Subcommands `failures`, `grounding`, `tables`, `stats`, `all`. Groups configurations by the `paradigm` on their records rather than by any hardcoded list. |
 | `stats.py` | Statistical primitives, all clustered by place: McNemar, Wilcoxon signed-rank, cluster bootstrap, paired effect intervals. |
-| `fit_gate.py` | Sweeps the routing gate's `ambiguity_threshold` on **dev** over stored `routing_features`. Imports the rule from `../src/pipeline.route_from_features` rather than reimplementing it, so a sweep cannot evaluate a different rule from the one the pipeline runs. |
-| `oracle_router.py` | Analysis only: per item, whichever component got it right — the ceiling for the routing idea. Not a configuration and has no YAML, because it chooses using the gold answer. |
 
 ```bash
 python scripts/analyse.py all --split test --out results/summary
@@ -98,29 +94,9 @@ broke, read from recorded fields rather than inferred: `no_ner_span`,
 `no_intermediate_stages` for architectures with no stages to attribute to.
 Statistics pair and resample by **place**, never by item.
 
-## 6. Verification
-
-Run these after changing the scorer, or to re-check a claim.
-
-| Script | Purpose |
-|--------|---------|
-| `check_scorer.py` | Runs the scorer over retired result CSVs converted to the record format, to catch sign errors and column mix-ups. Non-LLM files must agree exactly; LLM files are expected to disagree only on Null Island rows. |
-| `audit_retired_results.py` | Reproduces the METHODOLOGY.md claims about why the retired results are not comparable: the Null Island rows, the 178 rate-limit search failures, and the evidence that those failures degraded granularity rather than producing no-results. |
-
-## What is not here
-
-| Removed | Survivor |
-|---|---|
-| `eval_acc161.py`, `_eval_acc161_worker.py` | `src/runner.py` + `score.py`; a null `place_qid` is allowed in the record format |
-| `add_coords.py`, `verify_coords.py` | `dataset_coords.py` |
-| `validate_dataset.py`, `fix_qids.py` | `dataset_qids.py` |
-| `add_qids.py` | `dataset_qids.py repair` (it imported a module absent from the repo and its history) |
-| `diagnose_ner_recall.py` | `analyse.py failures`, which attributes from records without re-running Flair |
-| `analyze_failures.py` | `analyse.py failures` (archived, not deleted — it generated a committed summary table) |
-
 ## API keys
 
 No script here contains a key, and the Wikidata endpoints are public.
 `generate_synthetic.py` needs `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`, and
-the LLM configurations need `GOOGLE_API_KEY` / `GROQ_API_KEY`; all are read
+the LLM configurations need `GOOGLE_API_KEY`; all are read
 from a git-ignored `src/.env`.

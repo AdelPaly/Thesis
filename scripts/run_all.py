@@ -2,7 +2,7 @@
 time, and log each one.
 
     python scripts/run_all.py                       # every runnable config x dataset
-    python scripts/run_all.py --configs refined gemma
+    python scripts/run_all.py --configs refined gemma4
     python scripts/run_all.py --datasets social_media_clean
 
 Sequential on purpose. Two runner processes would contend for the Wikidata
@@ -32,11 +32,10 @@ LOG_DIR = REPO_ROOT / "results" / "logs"
 # configurations present in configs/ but missing here still run (appended), so
 # this is an ordering preference, not a registry.
 ORDER = ["baseline_majority", "baseline_population",
-         "gemma", "groq_oss",
+         "gemma4",
          "dense_retrieval",
          "grounded_gemma", "grounded_gemma_linking",
-         "two_stage", "refined",
-         "routed_gemma", "mordecai3"]
+         "two_stage", "refined"]
 
 
 def main():
@@ -45,9 +44,8 @@ def main():
     p.add_argument("--configs", nargs="*", default=None)
     p.add_argument("--datasets", nargs="*", default=None)
     p.add_argument("--limit", type=int, default=None)
-    p.add_argument("--skip", nargs="*", default=["mordecai3"],
-                   help="configurations to leave out (default: mordecai3, which "
-                        "cannot run in this environment)")
+    p.add_argument("--skip", nargs="*", default=[],
+                   help="configurations to leave out")
     args = p.parse_args()
 
     all_configs = load_all_configs()

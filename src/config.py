@@ -22,17 +22,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = REPO_ROOT / "configs"
 DATASET_REGISTRY = CONFIG_DIR / "datasets.yaml"
 
-PARADIGMS = {"ner_dependent", "ner_free", "geoparser", "routed", "baseline",
-             "dense_retrieval", "grounded_llm"}
+PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
+             "grounded_llm"}
 LINKING_BACKENDS = {"refined", "wikidata_search", "none"}
-LLM_BACKENDS = {None, "gemma", "groq_oss", "groq_llama"}
-ROUTING_GATES = {"legacy_is_geographic_qid", "input_properties"}
-ROUTING_BRANCHES = {"llm", "linking", "geoparser"}
+LLM_BACKENDS = {None, "gemma"}
 BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
 GAZETTEERS = {"wikidata"}
 DENSE_POOLS = {"gold_only", "gold_plus_predicted"}
 CANDIDATE_SOURCES = {"dense", "linking"}
-GEOPARSERS = {"mordecai3"}
 
 
 class ConfigError(ValueError):
@@ -70,20 +67,9 @@ class LLMConfig:
 
 
 @dataclass(frozen=True)
-class RoutingConfig:
-    enabled: bool = False
-    gate: str | None = None
-    fallback: str | None = None
-    # Gate thresholds. Fitted on dev only.
-    ambiguity_threshold: int = 2       # >= this many gazetteer hits == ambiguous
-    gazetteer: str = "wikidata"        # which gazetteer answers the count
-    gazetteer_top_n: int = 10          # how many hits to ask for when counting
-
-
-@dataclass(frozen=True)
 class BaselineConfig:
     strategy: str | None = None        # most_populous | majority_dev_place
-    gazetteer: str | None = None       # geonames
+    gazetteer: str | None = None       # wikidata
     min_population: int = 0
 
 
@@ -113,12 +99,6 @@ class GroundedConfig:
 
 
 @dataclass(frozen=True)
-class GeoparserConfig:
-    backend: str | None = None         # mordecai3
-    spacy_model: str | None = None
-
-
-@dataclass(frozen=True)
 class PipelineConfig:
     name: str
     paradigm: str
@@ -126,9 +106,7 @@ class PipelineConfig:
     linking: LinkingConfig = field(default_factory=LinkingConfig)
     rerank: RerankConfig = field(default_factory=RerankConfig)
     llm: LLMConfig = field(default_factory=LLMConfig)
-    routing: RoutingConfig = field(default_factory=RoutingConfig)
     baseline: BaselineConfig = field(default_factory=BaselineConfig)
-    geoparser: GeoparserConfig = field(default_factory=GeoparserConfig)
     dense: DenseConfig = field(default_factory=DenseConfig)
     grounded: GroundedConfig = field(default_factory=GroundedConfig)
     # Presentation metadata: which tier of the evaluation this configuration
@@ -195,8 +173,7 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
         raise ConfigError("configuration must be a YAML mapping")
 
     known_sections = {"name", "paradigm", "tier", "description", "ner", "linking",
-                      "rerank", "llm", "routing", "baseline", "geoparser",
-                      "dense", "grounded"}
+                      "rerank", "llm", "baseline", "dense", "grounded"}
     unknown = set(raw) - known_sections
     if unknown:
         raise ConfigError(f"unknown top-level key(s) {sorted(unknown)}; "
@@ -214,9 +191,7 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
         "linking": (LinkingConfig, _section(raw, "linking")),
         "rerank": (RerankConfig, _section(raw, "rerank")),
         "llm": (LLMConfig, _section(raw, "llm")),
-        "routing": (RoutingConfig, _section(raw, "routing")),
         "baseline": (BaselineConfig, _section(raw, "baseline")),
-        "geoparser": (GeoparserConfig, _section(raw, "geoparser")),
         "dense": (DenseConfig, _section(raw, "dense")),
         "grounded": (GroundedConfig, _section(raw, "grounded")),
     }
@@ -244,8 +219,7 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
 
 def _validate(cfg: PipelineConfig) -> None:
     n, li, rr, llm = cfg.ner, cfg.linking, cfg.rerank, cfg.llm
-    ro, ba, gp = cfg.routing, cfg.baseline, cfg.geoparser
-    de, gr = cfg.dense, cfg.grounded
+    ba, de, gr = cfg.baseline, cfg.dense, cfg.grounded
 
     if li.backend not in LINKING_BACKENDS:
         raise ConfigError(f"linking.backend must be one of {sorted(LINKING_BACKENDS)}")
@@ -268,12 +242,6 @@ def _validate(cfg: PipelineConfig) -> None:
         raise ConfigError("ner.entity_types is an empty list; use null to keep every tag")
     if ba.gazetteer is not None and ba.gazetteer not in GAZETTEERS:
         raise ConfigError(f"baseline.gazetteer must be one of {sorted(GAZETTEERS)}")
-    if ro.gazetteer not in GAZETTEERS:
-        raise ConfigError(f"routing.gazetteer must be one of {sorted(GAZETTEERS)}")
-    if gp.backend is not None and gp.backend not in GEOPARSERS:
-        raise ConfigError(f"geoparser.backend must be one of {sorted(GEOPARSERS)}")
-    if ro.ambiguity_threshold < 1:
-        raise ConfigError("routing.ambiguity_threshold must be >= 1")
     if li.backend == "refined" and not (li.refined_model and li.refined_entity_set):
         raise ConfigError("linking.backend is 'refined' but refined_model / "
                           "refined_entity_set are not both set")
@@ -283,8 +251,6 @@ def _validate(cfg: PipelineConfig) -> None:
             raise ConfigError("paradigm 'ner_dependent' requires ner.model")
         if li.backend == "none":
             raise ConfigError("paradigm 'ner_dependent' requires a linking backend")
-        if ro.enabled:
-            raise ConfigError("paradigm 'ner_dependent' cannot have routing.enabled")
 
     elif cfg.paradigm == "ner_free":
         if not llm.backend:
@@ -292,23 +258,6 @@ def _validate(cfg: PipelineConfig) -> None:
         if n.model:
             raise ConfigError("paradigm 'ner_free' must not set ner.model -- that is "
                               "what makes it NER-free")
-        if ro.enabled:
-            raise ConfigError("paradigm 'ner_free' cannot have routing.enabled")
-
-    elif cfg.paradigm == "routed":
-        if not ro.enabled:
-            raise ConfigError("paradigm 'routed' requires routing.enabled: true")
-        if ro.gate not in ROUTING_GATES:
-            raise ConfigError(f"routing.gate must be one of {sorted(ROUTING_GATES)}")
-        if ro.fallback not in ROUTING_BRANCHES:
-            raise ConfigError(f"routing.fallback must be one of {sorted(ROUTING_BRANCHES)}")
-        if not n.model:
-            raise ConfigError("paradigm 'routed' requires ner.model -- the gate reads "
-                              "NER spans off the input")
-        if ro.fallback == "llm" and not llm.backend:
-            raise ConfigError("routing.fallback is 'llm' but llm.backend is not set")
-        if ro.fallback == "geoparser" and not gp.backend:
-            raise ConfigError("routing.fallback is 'geoparser' but geoparser.backend is not set")
 
     elif cfg.paradigm == "baseline":
         if ba.strategy not in BASELINE_STRATEGIES:
@@ -349,13 +298,6 @@ def _validate(cfg: PipelineConfig) -> None:
             if li.backend == "none":
                 raise ConfigError("grounded.candidate_source is 'linking' but "
                                   "linking.backend is 'none'")
-
-    elif cfg.paradigm == "geoparser":
-        if not gp.backend:
-            raise ConfigError("paradigm 'geoparser' requires geoparser.backend")
-        if n.model:
-            raise ConfigError("paradigm 'geoparser' must not set ner.model -- a "
-                              "geoparser does its own toponym detection")
 
 
 def load_config(path: str | Path) -> PipelineConfig:

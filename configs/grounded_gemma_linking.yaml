@@ -24,10 +24,6 @@ llm:
   backend: gemma
   model: gemma-4-31b-it
   cache_name: gemma4_31b
-routing:
-  enabled: false
-  gate: null
-  fallback: null
 grounded:
   candidate_source: linking
   top_k: 10

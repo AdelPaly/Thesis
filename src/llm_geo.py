@@ -132,9 +132,6 @@ class LLMGeoPipeline(ABC):
 
         return None
 
-    def geolocate(self, text):
-        return self.geolocate_verbose(text)[0]
-
     def geolocate_verbose(self, text):
         """Return (candidate_or_None, raw_response_text).
 

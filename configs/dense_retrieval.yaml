@@ -32,10 +32,6 @@ rerank:
 llm:
   backend: null
   model: null
-routing:
-  enabled: false
-  gate: null
-  fallback: null
 dense:
   encoder: intfloat/multilingual-e5-base
   pool: gold_plus_predicted

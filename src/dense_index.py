@@ -69,13 +69,11 @@ def _dataset_gold_qids():
 
 
 def _predicted_qids():
-    """Every place any configuration has proposed, including retired runs."""
+    """Every place any configuration has proposed."""
     out = set()
     if not PREDICTIONS_DIR.exists():
         return out
-    paths = list(PREDICTIONS_DIR.glob("*.jsonl"))
-    paths += list((PREDICTIONS_DIR / "retired").glob("*.jsonl"))
-    for path in paths:
+    for path in PREDICTIONS_DIR.glob("*.jsonl"):
         with path.open(encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
