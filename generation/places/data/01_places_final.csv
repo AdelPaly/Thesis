@@ -1,0 +1,103 @@
+place_name,type,country,continent,wikidata_id,clue_count,clue_total,capped,wikimedia_sitelinks,wikidata_links,places_sharing_name,area_km2
+Lagos,town,Nigeria,Africa,Q8673,246,12655,true,,12795,24,1171.3
+Abidjan,town,Ivory Coast,Africa,Q1515,206,1434,true,,1398,3,2119.0
+Dodoma,town,Tanzania,Africa,Q3866,68,68,false,,79,4,2576.0
+Lüderitz,town,Namibia,Africa,Q159325,36,36,false,53,44,4,15.3
+Leptis Magna,manmade structure,Libya,Africa,Q191504,31,39,true,,89,3,3.875
+Bafang,town,Cameroon,Africa,Q667828,26,26,false,23,29,1,
+Birao,town,Central African Republic,Africa,Q864999,13,13,false,33,14,5,
+Tidjikja,town,Mauritania,Africa,Q757041,12,12,false,,13,2,3929.0
+Hopetown,town,South Africa,Africa,Q618063,13,13,false,14,13,7,73.86
+Kabinda,town,Democratic Republic of the Congo,Africa,Q3191660,11,11,false,,16,2,27
+Bimbo,town,Central African Republic,Africa,Q863461,10,10,false,,12,21,
+Ambam,town,Cameroon,Africa,Q2841553,10,10,false,,14,3,
+"Cala, Eastern Cape",town,South Africa,Africa,Q3642317,8,8,false,7,9,1,
+Oranjemund,town,Namibia,Africa,Q1404518,7,7,false,26,11,2,
+Tjebu,town,Egypt,Africa,Q548283,6,6,false,,10,1,
+Great Pyramid of Giza,manmade structure,Egypt,Africa,Q37200,5,5,false,,27,1,0.0530611
+Gunjur,town,The Gambia,Africa,Q687816,5,5,false,13,6,3,
+Kabul,town,Afghanistan,Asia,Q5838,189,1267,true,,1305,12,275.0
+Phnom Penh,town,Cambodia,Asia,Q1850,186,843,true,,945,6,678.5
+Medina,town,Saudi Arabia,Asia,Q35484,178,979,true,,1053,64,589.0
+Chiang Mai,town,Thailand,Asia,Q52028,174,339,true,,322,6,405.0
+Dehloran,town,Iran,Asia,Q862457,30,77,true,26,83,1,
+Qurayyat,town,Oman,Asia,Q3414795,27,54,true,16,61,4,
+Amarah,town,Iraq,Asia,Q366010,53,74,true,,80,1,
+Iwo Jima,island,Japan,Asia,Q201633,48,58,true,,69,3,23.73
+Hat Yai,town,Thailand,Asia,Q651286,26,26,false,,29,7,21
+Mafraq,town,Jordan,Asia,Q276747,16,16,false,,23,3,14
+Jask,town,Iran,Asia,Q719781,16,16,false,35,29,3,
+Agutaya,town,Philippines,Asia,Q111351,10,10,false,24,17,1,37.31
+Sitra,island,Bahrain,Asia,Q1416753,9,9,false,,13,6,22.45
+Elamanchili,town,India,Asia,Q3415001,5,5,false,12,9,1,10.36
+Neustadt bei Coburg,town,Germany,Europe,Q32074,91,288,true,47,279,2,61.89
+Tirana,town,Albania,Europe,Q19689,207,2317,true,,4841,6,41.8
+Poitiers,town,France,Europe,Q6616,189,1897,true,,1939,5,42.11
+Kerch,town,Ukraine,Europe,Q157065,118,484,true,,527,7,108.0
+Tuzla,town,Bosnia and Herzegovina,Europe,Q174684,115,533,true,,559,23,302.4
+Hanko,town,Finland,Europe,Q216790,95,571,true,,653,8,117.4
+Alaçam district,town,Turkey,Europe,Q1947471,29,79,true,28,83,1,598.0
+Sozopol,town,Bulgaria,Europe,Q271925,60,60,false,,75,3,41.829
+Podgorica City Stadium,manmade structure,Montenegro,Europe,Q1166175,52,116,true,,60,1,
+Delos,island,Greece,Europe,Q173148,39,68,true,,93,18,3.506
+Skerries,town,Ireland,Europe,Q2268677,19,19,false,23,26,10,
+Transtrand,town,Sweden,Europe,Q3352868,6,6,false,15,8,2,2.43
+Cîșlița-Prut,town,Moldova,Europe,Q2438100,5,5,false,10,5,1,
+Ushguli,town,Georgia,Europe,Q1011028,4,4,false,,3,1,
+Southend,town,United Kingdom,Europe,Q7569511,4,4,false,5,4,15,
+Guatemala City,town,Guatemala,North America,Q1555,192,2342,true,,1737,4,692.0
+Santo Domingo,town,Dominican Republic,North America,Q34820,192,2454,true,,2110,108,1302.2
+Panama City,town,Panama,North America,Q3306,190,1480,true,,4376,4,275.0
+Las Cruces,town,United States,North America,Q33264,172,262,true,,269,50,199.5
+Jinotega,town,Nicaragua,North America,Q1026296,38,102,true,39,112,3,880.3
+Chilliwack,town,Canada,North America,Q983026,80,120,true,,141,7,261.6
+Metropolitan Museum of Art,manmade structure,United States,North America,Q160236,54,28797,true,,81570,1,
+Guantánamo,town,Cuba,North America,Q185156,53,152,true,,163,4,741.4
+Juigalpa,town,Nicaragua,North America,Q1025801,32,56,true,,61,3,726.8
+Guna Yala,town,Panama,North America,Q919017,28,208,true,,222,1,2358.2
+Cozumel Island,island,Mexico,North America,Q20119933,23,23,false,52,36,1,539.0
+Acajutla,town,El Salvador,North America,Q937292,15,15,false,,21,3,166.6
+Tikal,manmade structure,Guatemala,North America,Q181172,12,12,false,,19,7,
+Rogersville,town,Canada,North America,Q3439667,11,11,false,12,12,11,7.23
+Port-Salut,town,Haiti,North America,Q1025363,11,11,false,22,12,2,48.79
+Denali,mountain,United States,North America,Q130018,7,7,false,,35,7,
+Paradise Island,island,The Bahamas,North America,Q3181503,7,7,false,,11,26,2.77
+Melbourne,town,Australia,Oceania,Q3141,241,10145,true,,10193,40,9993.0
+Christchurch,town,New Zealand,Oceania,Q79990,208,3082,true,,3353,33,295.1
+Port Moresby,town,Papua New Guinea,Oceania,Q36526,162,303,true,,312,2,240.0
+Whangārei,town,New Zealand,Oceania,Q744239,122,335,true,,394,2,57.06
+Funafuti,island,Tuvalu,Oceania,Q34126,77,77,false,,134,3,2.4
+Akaroa,town,New Zealand,Oceania,Q416098,67,80,true,28,108,7,1.766
+Tarawa,island,Kiribati,Oceania,Q2486,27,27,false,,40,4,31.02
+Bulls,town,New Zealand,Oceania,Q834869,19,19,false,13,26,10,
+Upolu,island,Samoa,Oceania,Q274569,17,17,false,,42,1,1125.0
+Yaren District,town,Nauru,Oceania,Q31026,14,14,false,114,23,1,1.5
+Sir John Guise Stadium,manmade structure,Papua New Guinea,Oceania,Q2289928,15,15,false,8,9,1,
+Chatham Island,island,New Zealand,Oceania,Q1427436,6,6,false,,75,8,920.0
+Tikopia,island,Solomon Islands,Oceania,Q889519,5,5,false,,7,3,5
+Balgo,town,Australia,Oceania,Q804942,6,6,false,13,6,2,
+Capricornia Cays National Park,national park,Australia,Oceania,Q1034937,5,5,false,8,7,3,180.0
+Samarai,town,Papua New Guinea,Oceania,Q938379,3,3,false,11,4,2,0.29
+Cartagena,town,Colombia,South America,Q657461,160,754,true,116,757,32,572.0
+Bogotá,town,Colombia,South America,Q2841,235,6192,true,,7090,3,1578.0
+Guayaquil,town,Ecuador,South America,Q43509,207,1866,true,,1713,4,354.5
+Río Gallegos,town,Argentina,South America,Q44242,70,184,true,57,206,1,
+Rio Branco,town,Brazil,South America,Q171612,111,593,true,,615,7,8835.5
+San Nicolás de los Arroyos,town,Argentina,South America,Q377965,82,250,true,,254,2,
+Pichilemu,town,Chile,South America,Q25304,61,84,true,103,106,4,10.07
+Carora,town,Venezuela,South America,Q1044689,60,86,true,,93,2,
+Arena Fonte Nova,manmade structure,Brazil,South America,Q6499360,50,50,true,,31,1,
+Tocopilla,town,Chile,South America,Q188192,36,45,true,,57,7,7.95
+Young,town,Uruguay,South America,Q1005607,26,26,false,22,29,43,9.665
+Ciudad del Plata,town,Uruguay,South America,Q370254,23,23,false,,27,1,27.533
+Riberalta,town,Bolivia,South America,Q941357,18,18,false,31,20,2,20.1
+Arroyos y Esteros,town,Paraguay,South America,Q2639218,10,10,false,,14,1,537.0
+San Lorenzo de Tarapacá,town,Chile,South America,Q3471546,9,9,false,6,13,2,
+Ronov,town,Czech Republic,Europe,Q2166107,10,10,false,6,12,5,1.7
+Malmberget,town,Sweden,Europe,Q83718,39,43,true,28,47,6,0.7
+Mörön,town,Mongolia,Asia,Q572951,8,8,false,44,13,5,102.9
+Arvaikheer,town,Mongolia,Asia,Q717684,7,7,false,37,12,2,173.0
+Quảng Ngãi,town,Vietnam,Asia,Q33994,31,31,false,34,36,5,160.2
+Ceres,town,Argentina,South America,Q2544458,36,36,false,8,39,118,
+Acrelândia,town,Brazil,South America,Q953086,15,15,false,37,23,1,1.6
+Halls Creek,town,Australia,Oceania,Q992686,24,24,false,16,26,13,44.0

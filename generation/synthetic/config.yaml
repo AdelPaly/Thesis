@@ -1,0 +1,365 @@
+# Configuration for plan.py, generate.py, build_exemplars.py and finalise.py.
+#
+# Nothing in either script hardcodes a path, a model or a count. Everything
+# that could reasonably be revised between runs lives here.
+
+paths:
+  # Relative to this file. The place inputs are built by ../places/
+  # (see ../places/build_inputs.py); everything else lives here.
+
+  # inputs
+  places_csv:        ../places/data/01_places_final.csv
+  clue_sets:         ../places/data/05_clue_sets.jsonl
+  place_aliases:     ../places/data/04b_place_aliases.jsonl
+  name_leakage:      ../places/data/05_name_leakage.csv
+  clue_types:        ../places/data/05b_clue_types.jsonl
+  random_stream:     sampler/geo_random.txt
+  style_exemplars:   data/style_exemplars.jsonl   # built by build_exemplars.py
+  bluesky_dump:      data/bluesky_en.jsonl        # source for build_exemplars.py
+
+  # outputs
+  item_plan:         output/item_plan.jsonl
+  plan_rejections:   output/plan_rejections.jsonl
+  raw_generations:   output/raw_generations.jsonl
+  raw_response_log:  output/raw_responses.jsonl
+  dataset_csv:       output/synthetic_dataset.csv  # written by finalise.py
+  finalise_report:   output/finalise_report.csv    # written by finalise.py
+
+  # state
+  plan_stream_state: state/plan_stream.json
+
+
+# --------------------------------------------------------------------------- #
+# plan.py
+# --------------------------------------------------------------------------- #
+
+plan:
+  # Items per (place, condition) before the surplus pass. A place that cannot
+  # support a condition contributes nothing for it and is logged in
+  # output/plan_rejections.jsonl.
+  replicates:
+    A1: 2          # one entity clue, no place name
+    A3: 2          # three entity clues, no place name
+    B: 1           # ambiguous place name, context disambiguates, no clue
+    AB: 1          # ambiguous place name plus one entity clue
+    CEILING: 1     # place named plainly - the upper bound on any system
+    NOISE_A1: 1    # A1 plus one entity from another continent
+    NOISE_B: 1     # B plus one entity from another continent
+
+  # The model will sometimes name the place in a condition that forbids it.
+  # Those items are dropped in stage 7, so the plan has to be larger than the
+  # target set. 1.3 assumes a leak rate near 20 per cent with room to spare;
+  # measure it on a smoke run and set this from the measurement.
+  surplus_factor: 1.3
+
+  # No (place, condition) pair may exceed this, so the surplus cannot pile up
+  # on a handful of clue-rich places.
+  max_replicates_per_pair: 6
+
+  # The inclusive range the integers in sampler/geo_random.txt were requested
+  # with from random.org (the min and max of the request, not of the file).
+  # Draws use rejection sampling against this range, so they are exactly
+  # uniform; the planner refuses to run until both are set, and refuses a file
+  # holding any integer outside them.
+  random_min: 1
+  random_max: 1000000
+
+  # A1, AB, NOISE_A1 and every NOISE distractor use one clue on its own. A
+  # clue that several places satisfy gives such an item no single correct
+  # answer, so only clues with place_ambiguity at or below this are drawn.
+  # It is a ceiling: raising it admits more, and more ambiguous, clues.
+  max_place_ambiguity_for_single_clue: 1
+
+  # A clue whose label contains its place's name (05_name_leakage.csv,
+  # strict test) makes the name unavoidable and the item fails stage 7. When
+  # true, such clues are never drawn, and a best set containing one is not
+  # used for A3. Each exclusion is written to the rejection log.
+  exclude_leaking_clues: true
+
+  # A clue that is itself a place name (05b_clue_types.jsonl: a village,
+  # island, river, street, time zone...) forces a place name into a post whose
+  # prompt forbids one, or adds a second toponym to an AB item. When true,
+  # such clues are never drawn, a best set containing one is not used for A3,
+  # and each exclusion is logged. On 2026-10-01 this was 74 of 614 clue
+  # entities; A3 then fits 70 places rather than 87, A1 99 rather than 102.
+  exclude_toponym_clues: true
+
+  # A clue whose own label names the place or its country: any surface form
+  # of the place ("Rock-cut tombs of Qaw el-Kebir" for Tjebu, "USS Mount
+  # McKinley" for Denali), or the country's name or English demonym from
+  # 04b_place_aliases.jsonl ("Tuvalu Association of Sports", "MIAT Mongolian
+  # Airlines"). The 05_name_leakage.csv test checks only the bare place name
+  # and missed these; 4 of 20 smoke posts on 2026-10-01 leaked this way. When
+  # true, such clues are never drawn and each exclusion is logged.
+  exclude_label_leaks: true
+
+  # An ambiguous surface form that already carries a qualifier ("Las Cruces,
+  # NM") or contains the country's name ("Guatemala City", "Panama") cannot
+  # serve as the ambiguous toponym: the B/AB constraint forbids exactly those
+  # additions. When true, such forms are held back from B, AB and NOISE_B and
+  # logged. Exact forms are never filtered.
+  exclude_qualified_ambiguous_forms: true
+
+  # CEILING is the upper bound, so it should name the place the plainest way:
+  # the bare label when that is unique, otherwise "<name>, <country>". When
+  # true, every other exact form (altLabels, nicknames, native-language names)
+  # is held back from CEILING and logged. The 2026-10-01 smoke run drew
+  # "Ō-hine-puhiawe" for Bulls, which the model wrote as a festival name, and
+  # "Whangas" for Whangārei.
+  ceiling_plain_name: true
+
+
+registers:
+  - name: personal_update
+    description: >-
+      First person, present or recent past, addressed to people who already
+      know the writer. No explanation of context.
+    slots: [time_of_day, activity, mood_marker]
+    length_bands: [short, medium]
+
+  - name: local_complaint
+    description: >-
+      Mild irritation about something local and mundane. Assumes the reader
+      shares the surroundings.
+    slots: [time_of_day, irritant, mood_marker]
+    length_bands: [short, medium]
+
+  - name: event_mention
+    description: >-
+      A note about something happening nearby, written as if the reader could
+      plausibly attend.
+    slots: [time_reference, event_kind]
+    length_bands: [short, medium]
+
+  - name: photo_caption
+    description: >-
+      A caption for a photograph the reader cannot see. Fragmentary, often
+      without a main verb.
+    slots: [time_of_day, visual_detail]
+    length_bands: [very_short, short]
+
+  - name: reply_in_thread
+    description: >-
+      A reply to someone else, so it begins mid-conversation and carries no
+      framing.
+    slots: [stance, mood_marker]
+    length_bands: [very_short, short]
+
+  - name: recommendation
+    description: >-
+      Recommending or warning against something to an unspecified local
+      audience.
+    slots: [stance, activity]
+    length_bands: [short, medium]
+
+
+# Slot values. The plan picks one per slot per item, which is where the
+# variation in the corpus comes from. Adding values here widens the corpus;
+# asking the model to "vary the wording" does not.
+slots:
+  time_of_day:
+    - early morning
+    - mid morning
+    - lunchtime
+    - mid afternoon
+    - just before sunset
+    - after dark
+    - very late at night
+
+  time_reference:
+    - this weekend
+    - next week
+    - tomorrow
+    - later today
+    - at the end of the month
+    - in a fortnight
+
+  activity:
+    - walking somewhere
+    - waiting for transport
+    - queueing
+    - eating
+    - working
+    - looking for parking
+    - sheltering from the weather
+    - meeting someone
+
+  irritant:
+    - roadworks
+    - a closure with no notice
+    - noise
+    - queues
+    - prices
+    - something broken and unrepaired
+    - poor signage
+
+  event_kind:
+    - a market
+    - a concert
+    - a talk
+    - a sports fixture
+    - a festival
+    - a fundraiser
+    - a repair or open day
+
+  visual_detail:
+    - the light
+    - a building
+    - the water
+    - the sky
+    - a street
+    - something growing
+    - a queue of people
+
+  stance:
+    - agreeing
+    - disagreeing mildly
+    - adding a detail
+    - warning
+    - recommending
+
+  mood_marker:
+    - flat
+    - cheerful
+    - tired
+    - impatient
+    - fond
+    - resigned
+
+
+# --------------------------------------------------------------------------- #
+# generate.py
+# --------------------------------------------------------------------------- #
+
+generation:
+  # Any OpenAI-compatible /chat/completions endpoint. The model must NOT be one
+  # of the systems under evaluation: generating the dataset with a model that
+  # later appears in the results table gives it an advantage no experiment can
+  # measure away. That rules out Gemma and the Groq-served models here.
+  # DeepSeek is not among the evaluated systems (confirmed 2026-09-30).
+  #
+  # Pinned, not the ~deepseek/deepseek-flash-latest alias. On 2026-09-30 the
+  # alias pointed at this model at the same price, but an alias can move, and
+  # a run that spans the move would mix two generators in one dataset. Paid
+  # model: $0.02/M input, $0.396/M output, so a full 1080-item pass is at most
+  # about $0.35 even if every reply hits max_tokens.
+  base_url: https://openrouter.ai/api/v1
+  model: deepseek/deepseek-v4.1-flash
+  api_key_env: OPENROUTER_API_KEY
+
+  # Optional. OpenRouter uses these for attribution and ignores them if absent.
+  extra_headers:
+    HTTP-Referer: https://vse.cz
+    X-Title: Thesis dataset generation
+
+  # json_schema where the provider supports it, json_object as a fallback,
+  # none if it supports neither.
+  #
+  # deepseek-v4.1-flash lists both response_format and structured_outputs in
+  # its supported_parameters (checked 2026-09-30), so json_schema. If a smoke
+  # run returns HTTP 400 rows, the provider is rejecting the schema (the
+  # nullable naming_form_used is the usual culprit): set this to none. The
+  # prompt states the schema either way, and the parser pulls the first
+  # balanced JSON object out of whatever comes back.
+  #
+  # Earlier notes, kept for when the model changes: nemotron-3.5-lightning:free
+  # supports neither and must be none; nemotron-3-super-120b-a12b:free
+  # supports both.
+  structured_output: json_schema
+
+  # The model accepts a seed. Sent per item, derived from item_id. Providers
+  # treat it as best effort.
+  send_seed: true
+
+  # The model is reasoning-capable. Excluding reasoning keeps the content field
+  # clean, but only hides the thinking: it still counts against max_tokens.
+  exclude_reasoning: true
+
+  # low | medium | high, or null for the model's default. The smoke run on
+  # 2026-09-30 at the default effort with max_tokens 800 spent all 800 tokens
+  # reasoning on 2 of 3 items and returned empty content; the one that
+  # finished used 543. Low effort plus the larger budget below is the fix.
+  reasoning_effort: low
+
+  temperature: 1.0
+  top_p: 1.0
+  # Reasoning and the JSON answer share this budget. At 2000, low effort still
+  # ran out on 3 of 10 smoke items (reasoning 792-1675 tokens on the 7 that
+  # finished). At $0.396/M output a full 1080-item pass is at most about $1.70
+  # even if every reply used all 4000.
+  max_tokens: 4000
+  timeout_seconds: 120
+
+  exemplars_per_prompt: 3
+
+  # The 20/minute and 1000/day limits apply to OpenRouter's :free models only,
+  # and this model is paid. A short pause stays polite; any 429 is caught by
+  # the backoff below, retried, and recorded. For a :free model go back to
+  # 3.5 seconds, which keeps under 20/minute.
+  delay_between_calls_seconds: 0.5
+  max_attempts: 6
+  backoff_base_seconds: 2.0
+  backoff_max_seconds: 120.0
+
+
+prompt:
+  # "In English" is stated in both. The 2026-10-01 smoke run had no language
+  # instruction, and a CEILING item for Cîșlița-Prut came back in Romanian.
+  system: >-
+    You write short social media posts in English, in the voice of ordinary
+    people. You follow the instructions you are given exactly, including
+    instructions about what must not appear in the text. You return JSON and
+    nothing else.
+
+  task: >-
+    Write one social media post by someone who lives in, or is currently in, a
+    particular place. The post is ordinary: the writer is not describing where
+    they are, they are talking about their day and happen to be somewhere. A
+    reader who knows the region could work out roughly where they are from what
+    is mentioned; the writer is not trying to make that easy or hard. Write the
+    post in English, whatever language the names you are given are in; keep
+    those names exactly as written.
+
+  # How each clue's entity type is written in the prompt. The plan keeps
+  # stage 4's property family codes; these are only the words the model sees.
+  # A family not listed here gets no type note: named_after (the relation
+  # label already says it) and other (P495, P1435 - too mixed to name).
+  entity_type_labels:
+    person: a person
+    place_or_org: a place or organisation
+    work_or_event: a work or event
+
+  # Length bands, referenced by the plan.
+  length_bands:
+    very_short: one line, under 15 words
+    short: one or two sentences, 15 to 35 words
+    medium: three to five sentences, 35 to 80 words
+
+  # Constraint templates. One is inserted per item depending on the condition.
+  # Keep these blunt and specific: a hedged constraint is one the model
+  # negotiates with.
+  forbidden_toponym: >-
+    Hard constraint. The post must not contain any place name at all. Do not
+    write "{place_name}". Do not write "{country}". Do not write any other
+    settlement, region, province, island, mountain, park, street or country
+    name, in any language or spelling. Do not write a demonym or an adjective
+    formed from a place name. Do not write a postcode, a dialling code, an
+    airport code or a road number. The reader must be able to work out the
+    location only from the entities you were told to mention and from
+    everyday detail. If you cannot write the post without naming a place,
+    write about something smaller instead.
+
+  ambiguous_toponym: >-
+    Hard constraint. The only place name in the post is "{surface}", written
+    exactly like that and on its own. Do not add a country, region, province,
+    state or any other qualifier to it, and do not write "{place_name}" or
+    "{country}" anywhere. That name is shared by several places in the world,
+    and it must stay ambiguous on its own. The surrounding detail should be
+    consistent with the intended place without naming it - climate, currency,
+    language, distances, the entities you were told to mention.
+
+  exact_toponym: >-
+    Write the place name "{surface}" plainly in the post, the way someone
+    would who assumes their reader knows where they live. This item is the
+    upper bound for the experiment, so the location should be obvious from the
+    text. Do not add qualifiers the writer would not use.

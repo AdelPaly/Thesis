@@ -1,0 +1,148 @@
+﻿place_name,type,country,continent,wikidata_id,clue_count,clue_total,capped,wikimedia_sitelinks,wikidata_links,places_sharing_name,area_km2,clues_raw,clues_usable,resolving_sets,best_set_ambiguity,families_available,stage_passed
+Lagos,town,Nigeria,Africa,Q8673,246,12655,true,,12795,24,1171.3,246,208,1507,1,4,sets
+Abidjan,town,Ivory Coast,Africa,Q1515,206,1434,true,,1398,3,2119.0,206,163,1507,1,3,sets
+Dodoma,town,Tanzania,Africa,Q3866,68,68,false,,79,4,2576.0,68,47,1507,1,2,sets
+Lüderitz,town,Namibia,Africa,Q159325,36,36,false,53,44,4,15.3,36,25,1506,1,2,sets
+Leptis Magna,manmade structure,Libya,Africa,Q191504,31,39,true,,89,3,3.875,31,25,1507,1,2,sets
+São Tomé Island,island,São Tomé and Príncipe,Africa,Q233124,27,27,false,,79,1,855.0,27,27,1507,1,3,sets
+Bafang,town,Cameroon,Africa,Q667828,26,26,false,23,29,1,,26,18,1507,1,2,sets
+Sangardo,town,Guinea,Africa,Q7417855,13,13,false,,14,2,,13,0,0,,0,dropped
+Birao,town,Central African Republic,Africa,Q864999,13,13,false,33,14,5,,13,12,1507,1,1,sets
+Tidjikja,town,Mauritania,Africa,Q757041,12,12,false,,13,2,3929.0,12,11,957,1,2,sets
+Hopetown,town,South Africa,Africa,Q618063,13,13,false,14,13,7,73.86,13,9,336,1,2,sets
+Kabinda,town,Democratic Republic of the Congo,Africa,Q3191660,11,11,false,,16,2,27,11,9,336,1,2,sets
+Bimbo,town,Central African Republic,Africa,Q863461,10,10,false,,12,21,,10,10,582,1,1,sets
+Ambam,town,Cameroon,Africa,Q2841553,10,10,false,,14,3,,10,4,5,1,2,sets
+"Cala, Eastern Cape",town,South Africa,Africa,Q3642317,8,8,false,7,9,1,,8,8,91,1,1,sets
+Oranjemund,town,Namibia,Africa,Q1404518,7,7,false,26,11,2,,7,5,16,1,2,sets
+Mounana,town,Gabon,Africa,Q1200140,6,6,false,,10,1,,6,4,5,1,2,sets
+Tjebu,town,Egypt,Africa,Q548283,6,6,false,,10,1,,6,6,41,1,1,sets
+Great Pyramid of Giza,manmade structure,Egypt,Africa,Q37200,5,5,false,,27,1,0.0530611,5,5,16,1,2,sets
+Gunjur,town,The Gambia,Africa,Q687816,5,5,false,13,6,3,,5,5,16,1,1,sets
+Bokoro,town,Chad,Africa,Q2909258,3,3,false,15,5,7,,3,2,0,,1,clues_only
+Cassinga,town,Angola,Africa,Q1048377,2,2,false,,3,3,,2,0,0,,0,dropped
+Kilwa Kisiwani,island,Tanzania,Africa,Q1741475,1,1,false,,8,1,,1,1,0,,1,clues_only
+Mpal,town,Senegal,Africa,Q933396,1,1,false,,3,1,,1,1,0,,1,clues_only
+Dilolo,town,Democratic Republic of the Congo,Africa,Q1015069,1,1,false,13,3,3,,1,0,0,,0,dropped
+Kabul,town,Afghanistan,Asia,Q5838,189,1267,true,,1305,12,275.0,189,128,1507,1,3,sets
+Phnom Penh,town,Cambodia,Asia,Q1850,186,843,true,,945,6,678.5,186,169,1507,1,4,sets
+Medina,town,Saudi Arabia,Asia,Q35484,178,979,true,,1053,64,589.0,178,133,1507,1,5,sets
+Chiang Mai,town,Thailand,Asia,Q52028,174,339,true,,322,6,405.0,174,143,1507,1,4,sets
+Dehloran,town,Iran,Asia,Q862457,30,77,true,26,83,1,,30,8,182,1,2,sets
+Qurayyat,town,Oman,Asia,Q3414795,27,54,true,16,61,4,,27,23,1507,1,2,sets
+Amarah,town,Iraq,Asia,Q366010,53,74,true,,80,1,,53,41,1507,1,2,sets
+Iwo Jima,island,Japan,Asia,Q201633,48,58,true,,69,3,23.73,48,38,1491,1,2,sets
+Hat Yai,town,Thailand,Asia,Q651286,26,26,false,,29,7,21,26,22,1507,1,2,sets
+Coka,town,People's Republic of China,Asia,Q5141692,25,25,true,6,27,3,451.0,25,0,0,,0,dropped
+Mafraq,town,Jordan,Asia,Q276747,16,16,false,,23,3,14,16,13,1507,1,2,sets
+Jask,town,Iran,Asia,Q719781,16,16,false,35,29,3,,16,7,91,1,2,sets
+Agutaya,town,Philippines,Asia,Q111351,10,10,false,24,17,1,37.31,10,6,16,1,1,sets
+Sitra,island,Bahrain,Asia,Q1416753,9,9,false,,13,6,22.45,9,5,16,1,2,sets
+Tommot,town,Russia,Asia,Q196669,5,5,false,,7,3,26,5,1,0,,1,clues_only
+Lahugala,town,Sri Lanka,Asia,Q27447856,4,4,false,6,5,1,,4,2,0,,1,clues_only
+Elamanchili,town,India,Asia,Q3415001,5,5,false,12,9,1,10.36,5,4,5,1,1,sets
+Borobudur Temple,manmade structure,Indonesia,Asia,Q42798,3,3,false,,17,1,0.6257,3,2,0,,2,clues_only
+Boroldoy,town,Kyrgyzstan,Asia,Q2855537,3,3,false,,4,1,1.4,3,2,0,,1,clues_only
+Neft Daşları,town,Azerbaijan,Asia,Q1537647,4,4,false,30,6,1,,4,2,0,,2,clues_only
+Hacıbədəlli,town,Azerbaijan,Asia,Q284365,2,2,false,,2,1,,2,1,0,,1,clues_only
+Chagai,town,Pakistan,Asia,Q4506637,2,2,false,8,4,3,,2,2,0,,1,clues_only
+Khara-Khoto,manmade structure,People's Republic of China,Asia,Q1584528,1,1,false,,8,1,,1,1,0,,1,clues_only
+Tiwi,town,Oman,Asia,Q3529971,1,1,false,,2,11,,1,0,0,,0,dropped
+Don Marcelino,town,Philippines,Asia,Q314796,1,1,false,23,7,1,407.3,1,1,0,,1,clues_only
+Neustadt bei Coburg,town,Germany,Europe,Q32074,91,288,true,47,279,2,61.89,91,60,1507,1,3,sets
+Tirana,town,Albania,Europe,Q19689,207,2317,true,,4841,6,41.8,207,151,1507,1,4,sets
+Poitiers,town,France,Europe,Q6616,189,1897,true,,1939,5,42.11,189,113,1507,1,3,sets
+Kerch,town,Ukraine,Europe,Q157065,118,484,true,,527,7,108.0,118,48,1507,1,2,sets
+Tuzla,town,Bosnia and Herzegovina,Europe,Q174684,115,533,true,,559,23,302.4,115,72,1507,1,4,sets
+Hanko,town,Finland,Europe,Q216790,95,571,true,,653,8,117.4,95,78,1506,1,3,sets
+Alaçam district,town,Turkey,Europe,Q1947471,29,79,true,28,83,1,598.0,29,29,1507,1,2,sets
+Sozopol,town,Bulgaria,Europe,Q271925,60,60,false,,75,3,41.829,60,41,1507,1,2,sets
+Podgorica City Stadium,manmade structure,Montenegro,Europe,Q1166175,52,116,true,,60,1,,52,52,1507,1,2,sets
+Delos,island,Greece,Europe,Q173148,39,68,true,,93,18,3.506,39,19,1507,1,3,sets
+Skerries,town,Ireland,Europe,Q2268677,19,19,false,23,26,10,,19,19,1507,1,1,sets
+Transtrand,town,Sweden,Europe,Q3352868,6,6,false,15,8,2,2.43,6,4,5,1,1,sets
+Katthammarsvik,town,Sweden,Europe,Q1736833,5,5,false,8,5,1,0.97,5,2,0,,1,clues_only
+Cîșlița-Prut,town,Moldova,Europe,Q2438100,5,5,false,10,5,1,,5,4,5,1,1,sets
+Ushguli,town,Georgia,Europe,Q1011028,4,4,false,,3,1,,4,3,1,1,1,sets
+Southend,town,United Kingdom,Europe,Q7569511,4,4,false,5,4,15,,4,3,1,1,2,sets
+Tory Island,island,Ireland,Europe,Q1147050,2,2,false,,6,7,3,2,0,0,,0,dropped
+Kato Scholari,town,Greece,Europe,Q12282736,2,2,false,,6,1,,2,1,0,,1,clues_only
+Voksenåsen,mountain,Norway,Europe,Q4589162,2,2,false,,2,1,,2,1,0,,1,clues_only
+Alcudia de Guadix,town,Spain,Europe,Q2602794,2,2,false,5,3,1,,2,0,0,,0,dropped
+Tamariu,town,Spain,Europe,Q2167192,4,4,false,14,15,6,,4,3,0,,2,clues_only
+Mount Olympus,mountain,Cyprus,Europe,Q819979,1,1,false,,15,26,,1,0,0,,0,dropped
+Ornes,town,Norway,Europe,Q672144,1,1,false,,2,5,,1,1,0,,1,clues_only
+Dolobiv,town,Ukraine,Europe,Q4165083,1,1,false,,2,1,11.89,1,0,0,,0,dropped
+Grindhausen,town,Luxembourg,Europe,Q2144085,1,1,false,,2,1,3.25,1,1,0,,1,clues_only
+Guatemala City,town,Guatemala,North America,Q1555,192,2342,true,,1737,4,692.0,192,179,1507,1,4,sets
+Santo Domingo,town,Dominican Republic,North America,Q34820,192,2454,true,,2110,108,1302.2,192,154,1507,1,4,sets
+Panama City,town,Panama,North America,Q3306,190,1480,true,,4376,4,275.0,190,175,1507,1,5,sets
+Las Cruces,town,United States,North America,Q33264,172,262,true,,269,50,199.5,172,148,1507,1,3,sets
+Jinotega,town,Nicaragua,North America,Q1026296,38,102,true,39,112,3,880.3,38,36,1466,1,2,sets
+Chilliwack,town,Canada,North America,Q983026,80,120,true,,141,7,261.6,80,61,1507,1,2,sets
+Metropolitan Museum of Art,manmade structure,United States,North America,Q160236,54,28797,true,,81570,1,,54,53,1507,1,3,sets
+Guantánamo,town,Cuba,North America,Q185156,53,152,true,,163,4,741.4,53,43,1507,1,2,sets
+Cat Island,island,The Bahamas,North America,Q1050154,27,46,true,36,52,43,388.0,27,19,1507,1,2,sets
+Juigalpa,town,Nicaragua,North America,Q1025801,32,56,true,,61,3,726.8,32,28,1416,1,2,sets
+Guna Yala,town,Panama,North America,Q919017,28,208,true,,222,1,2358.2,28,18,1507,1,2,sets
+Cozumel Island,island,Mexico,North America,Q20119933,23,23,false,52,36,1,539.0,23,20,1507,1,4,sets
+Acajutla,town,El Salvador,North America,Q937292,15,15,false,,21,3,166.6,15,6,41,1,2,sets
+Carriacou Island,island,Grenada,North America,Q795647,13,13,false,,17,1,33.67,13,13,1507,1,4,sets
+Tikal,manmade structure,Guatemala,North America,Q181172,12,12,false,,19,7,,12,6,41,1,2,sets
+Rogersville,town,Canada,North America,Q3439667,11,11,false,12,12,11,7.23,11,9,336,1,2,sets
+Port-Salut,town,Haiti,North America,Q1025363,11,11,false,22,12,2,48.79,11,6,41,1,1,sets
+Denali,mountain,United States,North America,Q130018,7,7,false,,35,7,,7,4,5,1,2,sets
+Paradise Island,island,The Bahamas,North America,Q3181503,7,7,false,,11,26,2.77,7,3,1,1,1,sets
+Financial District,town,United States,North America,Q599301,6,6,false,,9,10,1.191,6,6,41,1,1,sets
+Île à Vache,island,Haiti,North America,Q292606,2,2,false,,8,1,51.8,2,2,0,,1,clues_only
+Punta Sur,manmade structure,Mexico,North America,Q3925731,2,2,false,,2,15,,2,1,0,,1,clues_only
+Canaries,town,Saint Lucia,North America,Q1032796,2,2,false,12,3,6,,2,2,0,,1,clues_only
+Princess Mary Lake,lake,Canada,North America,Q990429,1,1,false,8,3,1,471.0,1,1,0,,1,clues_only
+Cuyutlán,town,Mexico,North America,Q5197119,1,1,false,8,3,3,1.5,1,0,0,,0,dropped
+Melbourne,town,Australia,Oceania,Q3141,241,10145,true,,10193,40,9993.0,241,203,1507,1,4,sets
+Christchurch,town,New Zealand,Oceania,Q79990,208,3082,true,,3353,33,295.1,208,174,1507,1,3,sets
+Port Moresby,town,Papua New Guinea,Oceania,Q36526,162,303,true,,312,2,240.0,162,145,1507,1,4,sets
+Whangārei,town,New Zealand,Oceania,Q744239,122,335,true,,394,2,57.06,122,100,1507,1,4,sets
+Funafuti,island,Tuvalu,Oceania,Q34126,77,77,false,,134,3,2.4,77,65,1507,1,2,sets
+Akaroa,town,New Zealand,Oceania,Q416098,67,80,true,28,108,7,1.766,67,60,1507,1,2,sets
+Tarawa,island,Kiribati,Oceania,Q2486,27,27,false,,40,4,31.02,27,24,1507,1,2,sets
+Bulls,town,New Zealand,Oceania,Q834869,19,19,false,13,26,10,,19,17,1507,1,2,sets
+Upolu,island,Samoa,Oceania,Q274569,17,17,false,,42,1,1125.0,17,16,1507,1,3,sets
+Yaren District,town,Nauru,Oceania,Q31026,14,14,false,114,23,1,1.5,14,14,1507,1,2,sets
+Sir John Guise Stadium,manmade structure,Papua New Guinea,Oceania,Q2289928,15,15,false,8,9,1,,15,15,1507,1,2,sets
+Chatham Island,island,New Zealand,Oceania,Q1427436,6,6,false,,75,8,920.0,6,4,5,1,1,sets
+Tikopia,island,Solomon Islands,Oceania,Q889519,5,5,false,,7,3,5,5,4,5,1,1,sets
+Balgo,town,Australia,Oceania,Q804942,6,6,false,13,6,2,,6,6,41,1,2,sets
+Capricornia Cays National Park,national park,Australia,Oceania,Q1034937,5,5,false,8,7,3,180.0,5,5,16,1,1,sets
+Muttaburra,town,Australia,Oceania,Q6944072,6,6,false,6,10,1,,6,2,0,,2,clues_only
+Kiunga,town,Papua New Guinea,Oceania,Q985928,5,5,false,13,6,7,,5,2,0,,2,clues_only
+Niulakita,island,Tuvalu,Oceania,Q632489,3,3,false,,6,1,0.42,3,1,0,,1,clues_only
+Nikunau,island,Kiribati,Oceania,Q1059287,3,3,false,,17,4,18.2,3,1,0,,1,clues_only
+Samarai,town,Papua New Guinea,Oceania,Q938379,3,3,false,11,4,2,0.29,3,3,1,1,1,sets
+Telefomin,town,Papua New Guinea,Oceania,Q992136,3,3,false,8,3,1,,3,1,0,,1,clues_only
+Gibson,town,Australia,Oceania,Q5559270,3,3,false,7,7,31,735.3,3,1,0,,1,clues_only
+Cartagena,town,Colombia,South America,Q657461,160,754,true,116,757,32,572.0,160,117,1507,1,4,sets
+Bogotá,town,Colombia,South America,Q2841,235,6192,true,,7090,3,1578.0,235,185,1507,1,4,sets
+Guayaquil,town,Ecuador,South America,Q43509,207,1866,true,,1713,4,354.5,207,150,1507,1,3,sets
+Río Gallegos,town,Argentina,South America,Q44242,70,184,true,57,206,1,,70,42,1507,1,3,sets
+Rio Branco,town,Brazil,South America,Q171612,111,593,true,,615,7,8835.5,111,67,1507,1,3,sets
+San Nicolás de los Arroyos,town,Argentina,South America,Q377965,82,250,true,,254,2,,82,56,1507,1,2,sets
+Pichilemu,town,Chile,South America,Q25304,61,84,true,103,106,4,10.07,61,51,1507,1,3,sets
+Carora,town,Venezuela,South America,Q1044689,60,86,true,,93,2,,60,31,1507,1,3,sets
+Arena Fonte Nova,manmade structure,Brazil,South America,Q6499360,50,50,true,,31,1,,50,46,1507,1,2,sets
+Tocopilla,town,Chile,South America,Q188192,36,45,true,,57,7,7.95,36,31,1507,1,2,sets
+Young,town,Uruguay,South America,Q1005607,26,26,false,22,29,43,9.665,26,21,1507,1,2,sets
+Ciudad del Plata,town,Uruguay,South America,Q370254,23,23,false,,27,1,27.533,23,16,1507,1,2,sets
+Cabruta,town,Venezuela,South America,Q930297,18,18,false,,19,2,,18,1,0,,1,clues_only
+Riberalta,town,Bolivia,South America,Q941357,18,18,false,31,20,2,20.1,18,15,1507,1,2,sets
+Arroyos y Esteros,town,Paraguay,South America,Q2639218,10,10,false,,14,1,537.0,10,9,336,1,1,sets
+San Lorenzo de Tarapacá,town,Chile,South America,Q3471546,9,9,false,6,13,2,,9,7,91,1,2,sets
+Macas,town,Ecuador,South America,Q1014554,3,3,false,28,8,3,11.89,3,2,0,,2,clues_only
+Chan Chan,manmade structure,Peru,South America,Q277540,1,1,false,,6,5,20,1,1,0,,1,clues_only
+Cordillera Blanca,mountain,Peru,South America,Q804330,1,1,false,,80,4,,1,1,0,,1,clues_only
+Pozo Colorado,town,Paraguay,South America,Q1315847,1,1,false,,1,2,,1,0,0,,0,dropped
+Adicora,town,Venezuela,South America,Q2825491,1,1,false,,2,2,,1,0,0,,0,dropped
+Anzoategui,town,Argentina,South America,Q2882630,1,1,false,,1,1,,1,0,0,,0,dropped
+San Rafael de Velasco,town,Bolivia,South America,Q746773,1,1,false,12,3,1,,1,1,0,,1,clues_only
+Mount Roraima,mountain,Guyana,South America,Q4777,1,1,false,59,15,1,50,1,1,0,,1,clues_only
+Nassau Mountains,mountain,Suriname,South America,Q20019224,1,1,false,8,3,2,,1,1,0,,1,clues_only

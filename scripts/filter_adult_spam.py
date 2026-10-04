@@ -2,7 +2,7 @@
 
 Bluesky's firehose carries a steady stream of solicitation spam ("follow me
 for...", OnlyFans promos, findom bait). This removes it from
-``src/bluesky_en.jsonl`` while leaving ordinary speech alone.
+``generation/synthetic/data/bluesky_en.jsonl`` while leaving ordinary speech alone.
 
 A flat blocklist does not work here, because the vocabulary overlaps with
 perfectly normal posts. Measured over the 1,052,788-row dump:
@@ -85,8 +85,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--path", type=pathlib.Path,
-                    default=ROOT / "src" / "bluesky_en.jsonl",
-                    help="dump to clean (default: src/bluesky_en.jsonl)")
+                    default=ROOT / "generation" / "synthetic" / "data" / "bluesky_en.jsonl",
+                    help="dump to clean (default: generation/synthetic/data/bluesky_en.jsonl)")
     ap.add_argument("--dry-run", action="store_true",
                     help="report what would be removed without rewriting")
     ap.add_argument("--backup", action="store_true",

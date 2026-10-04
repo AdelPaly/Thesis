@@ -54,7 +54,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=pathlib.Path,
-                    help="output path (default: src/bluesky_en.<format>)")
+                    help="output path (default: generation/synthetic/data/bluesky_en.<format>)")
     ap.add_argument("--format", choices=("jsonl", "parquet"), default="jsonl",
                     help="output format (default: jsonl, same shape as the source)")
     ap.add_argument("--num-proc", type=int, default=10,
@@ -63,7 +63,7 @@ def main():
                     help="only process the first N posts (for a quick trial run)")
     args = ap.parse_args()
 
-    out = args.out or (ROOT / "src" / f"bluesky_en.{args.format}")
+    out = args.out or (ROOT / "generation" / "synthetic" / "data" / f"bluesky_en.{args.format}")
     if not out.is_absolute():
         out = ROOT / out
     out.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,7 @@
+clue_qid,clue_label,toponym,reason,reviewed
+Q10825607,Citadel of Quang Ngai,false,"a fort, not a place name: matched admin_area only through a P279 subclass chain",2026-10-01
+Q31212379,Vladycká tvrz,false,"a fortified house, not a place name: matched admin_area only through a P279 subclass chain",2026-10-01
+Q77066710,United States Army 232nd General Hospital,false,"a military hospital, not a place name: matched admin_area only through a P279 subclass chain",2026-10-01
+Q772781,Yeni-Kale,false,"a fortress, not a place name: matched admin_area only through a P279 subclass chain",2026-10-01
+Q91110,Castillo de San Felipe de Barajas,false,"a castle, not a place name: matched admin_area only through a P279 subclass chain",2026-10-01
+Q7063491,Notre Dame du Calvaire Abbey,false,"a Trappist monastery, not a place name: matched settlement only through a P279 subclass chain",2026-10-01

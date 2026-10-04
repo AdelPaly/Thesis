@@ -1,0 +1,103 @@
+﻿place_qid,place_name,clue_count,scored,pa_min,pa_median,pa_max,all_high_ambiguity,n_person,n_place_or_org,n_work_or_event,n_named_after,n_other
+Q8673,Lagos,208,208,1,1.0,15,false,75,79,42,0,12
+Q1515,Abidjan,163,163,1,1.0,26,false,66,72,25,0,0
+Q3866,Dodoma,47,47,1,1.0,4,false,25,22,0,0,0
+Q159325,Lüderitz,25,25,1,1.0,20,false,15,10,0,0,0
+Q191504,Leptis Magna,25,25,1,1.0,1,false,5,20,0,0,0
+Q667828,Bafang,18,18,1,1.0,2,false,17,1,0,0,0
+Q864999,Birao,12,12,1,1.0,1,false,0,12,0,0,0
+Q757041,Tidjikja,11,11,1,1.0,3,false,9,2,0,0,0
+Q618063,Hopetown,9,9,1,1.0,2,false,8,1,0,0,0
+Q3191660,Kabinda,9,9,1,1.0,9,false,5,4,0,0,0
+Q863461,Bimbo,10,10,1,1.0,3,false,10,0,0,0,0
+Q2841553,Ambam,4,4,1,1.0,1,false,2,2,0,0,0
+Q3642317,"Cala, Eastern Cape",8,8,1,1.0,1,false,8,0,0,0,0
+Q1404518,Oranjemund,5,5,1,1.0,1,false,4,1,0,0,0
+Q548283,Tjebu,6,6,1,1.0,1,false,0,6,0,0,0
+Q37200,Great Pyramid of Giza,5,5,1,1.0,20,false,0,0,1,4,0
+Q687816,Gunjur,5,5,1,1.0,1,false,5,0,0,0,0
+Q5838,Kabul,128,128,1,1.0,12,false,61,58,9,0,0
+Q1850,Phnom Penh,169,169,1,1.0,8,false,51,89,27,2,0
+Q35484,Medina,133,133,1,1.0,8,false,57,45,29,1,1
+Q52028,Chiang Mai,143,143,1,1.0,18,false,49,69,23,2,0
+Q862457,Dehloran,8,8,1,1.0,1,false,5,3,0,0,0
+Q3414795,Qurayyat,23,23,1,1.0,1,false,1,22,0,0,0
+Q366010,Amarah,41,41,1,1.0,3,false,29,12,0,0,0
+Q201633,Iwo Jima,38,38,1,1.0,6,false,26,12,0,0,0
+Q651286,Hat Yai,22,22,1,1.0,2,false,11,11,0,0,0
+Q276747,Mafraq,13,13,1,1.0,2,false,7,6,0,0,0
+Q719781,Jask,7,7,1,1.0,2,false,1,6,0,0,0
+Q111351,Agutaya,6,6,1,1.0,1,false,0,6,0,0,0
+Q1416753,Sitra,5,5,1,1.0,1,false,3,2,0,0,0
+Q3415001,Elamanchili,4,4,1,1.0,3,false,4,0,0,0,0
+Q32074,Neustadt bei Coburg,60,60,1,1.0,5,false,43,16,0,1,0
+Q19689,Tirana,151,151,1,1.0,37,false,66,66,18,1,0
+Q6616,Poitiers,113,113,1,1.0,58,false,72,25,16,0,0
+Q157065,Kerch,48,48,1,1.0,4,false,35,13,0,0,0
+Q174684,Tuzla,72,72,1,1.0,6,false,38,31,2,1,0
+Q216790,Hanko,78,78,1,1.0,20,false,50,24,4,0,0
+Q1947471,Alaçam district,29,29,1,1.0,2,false,3,26,0,0,0
+Q271925,Sozopol,41,41,1,1.0,2,false,29,12,0,0,0
+Q1166175,Podgorica City Stadium,52,52,1,1.0,2,false,0,27,25,0,0
+Q173148,Delos,19,19,1,1.0,2,false,5,13,1,0,0
+Q2268677,Skerries,19,19,1,1.0,1,false,19,0,0,0,0
+Q3352868,Transtrand,4,4,1,1.0,1,false,4,0,0,0,0
+Q2438100,Cîșlița-Prut,4,4,1,1.0,1,false,4,0,0,0,0
+Q1011028,Ushguli,3,3,1,1.0,1,false,3,0,0,0,0
+Q7569511,Southend,3,3,1,1.0,2,false,2,1,0,0,0
+Q1555,Guatemala City,179,179,1,1.0,5,false,62,89,27,1,0
+Q34820,Santo Domingo,154,154,1,1.0,4,false,60,72,20,2,0
+Q3306,Panama City,175,175,1,1.0,15,false,58,86,28,1,2
+Q33264,Las Cruces,148,148,1,1.0,6,false,50,80,18,0,0
+Q1026296,Jinotega,36,36,1,2.0,3,false,12,24,0,0,0
+Q983026,Chilliwack,61,61,1,1.0,6,false,42,19,0,0,0
+Q160236,Metropolitan Museum of Art,53,53,1,1.0,16,false,0,25,27,1,0
+Q185156,Guantánamo,43,43,1,1.0,21,false,29,14,0,0,0
+Q1025801,Juigalpa,28,28,1,2.0,3,false,5,23,0,0,0
+Q919017,Guna Yala,18,18,1,1.0,2,false,2,16,0,0,0
+Q20119933,Cozumel Island,20,20,1,1.0,2,false,12,5,2,1,0
+Q937292,Acajutla,6,6,1,1.0,1,false,3,3,0,0,0
+Q181172,Tikal,6,6,1,1.0,18,false,5,1,0,0,0
+Q3439667,Rogersville,9,9,1,1.0,1,false,7,2,0,0,0
+Q1025363,Port-Salut,6,6,1,1.0,1,false,6,0,0,0,0
+Q130018,Denali,4,4,1,1.0,1,false,3,0,0,1,0
+Q3181503,Paradise Island,3,3,1,1.0,1,false,0,3,0,0,0
+Q3141,Melbourne,203,203,1,1.0,11,false,74,79,49,1,0
+Q79990,Christchurch,174,174,1,1.0,28,false,75,72,27,0,0
+Q36526,Port Moresby,145,145,1,1.0,6,false,53,71,19,2,0
+Q744239,Whangārei,100,100,1,1.0,31,false,51,34,14,1,0
+Q34126,Funafuti,65,65,1,1.0,3,false,25,40,0,0,0
+Q416098,Akaroa,60,60,1,1.0,1,false,39,21,0,0,0
+Q2486,Tarawa,24,24,1,1.0,1,false,15,9,0,0,0
+Q834869,Bulls,17,17,1,1.0,1,false,12,5,0,0,0
+Q274569,Upolu,16,16,1,1.0,2,false,4,1,11,0,0
+Q31026,Yaren District,14,14,1,1.0,2,false,5,9,0,0,0
+Q2289928,Sir John Guise Stadium,15,15,1,1.0,2,false,0,8,7,0,0
+Q1427436,Chatham Island,4,4,1,1.0,1,false,4,0,0,0,0
+Q889519,Tikopia,4,4,1,1.0,1,false,0,4,0,0,0
+Q804942,Balgo,6,6,1,1.0,2,false,4,2,0,0,0
+Q1034937,Capricornia Cays National Park,5,5,1,1.0,1,false,0,5,0,0,0
+Q938379,Samarai,3,3,1,1.0,1,false,3,0,0,0,0
+Q657461,Cartagena,117,117,1,1.0,5,false,50,36,30,1,0
+Q2841,Bogotá,185,185,1,1.0,4,false,65,73,41,6,0
+Q43509,Guayaquil,150,150,1,1.0,2,false,51,63,36,0,0
+Q44242,Río Gallegos,42,42,1,1.0,2,false,26,15,0,1,0
+Q171612,Rio Branco,67,67,1,1.0,3,false,35,31,0,1,0
+Q377965,San Nicolás de los Arroyos,56,56,1,1.0,2,false,48,8,0,0,0
+Q25304,Pichilemu,51,51,1,1.0,13,false,22,28,1,0,0
+Q1044689,Carora,31,31,1,1.0,32,false,27,3,1,0,0
+Q6499360,Arena Fonte Nova,46,46,1,1.0,12,false,0,24,22,0,0
+Q188192,Tocopilla,31,31,1,1.0,2,false,27,4,0,0,0
+Q1005607,Young,21,21,1,1.0,2,false,20,1,0,0,0
+Q370254,Ciudad del Plata,16,16,1,1.0,1,false,2,14,0,0,0
+Q941357,Riberalta,15,15,1,1.0,4,false,11,4,0,0,0
+Q2639218,Arroyos y Esteros,9,9,1,1.0,1,false,9,0,0,0,0
+Q3471546,San Lorenzo de Tarapacá,7,7,1,1.0,1,false,5,2,0,0,0
+Q2166107,Ronov,9,9,1,1.0,2,false,8,1,0,0,0
+Q83718,Malmberget,30,30,1,1.0,75,false,25,3,2,0,0
+Q572951,Mörön,6,6,1,1.0,8,false,3,2,1,0,0
+Q717684,Arvaikheer,5,5,1,1.0,8,false,2,2,1,0,0
+Q33994,Quảng Ngãi,28,28,1,1.0,2,false,4,24,0,0,0
+Q2544458,Ceres,12,12,1,1.0,1,false,11,1,0,0,0
+Q953086,Acrelândia,3,3,1,1.0,1,false,0,3,0,0,0
+Q992686,Halls Creek,18,18,1,1.0,2,false,4,14,0,0,0

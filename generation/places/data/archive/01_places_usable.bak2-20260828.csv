@@ -1,0 +1,148 @@
+place_name,type,country,continent,wikidata_id,selection_method,origin,clue_count,wikimedia_sitelinks,wikidata_links,places_sharing_name,area_km2,note
+Lagos,town,Nigeria,Africa,Q8673,query,retained,246,,12795,24,1171.3,24 places share this name
+Abidjan,town,Ivory Coast,Africa,Q1515,query,retained,206,,1398,3,2119.0,3 places share this name
+Dodoma,town,Tanzania,Africa,Q3866,spatial,retained,68,,79,4,2576.0,4 places share this name; large area (2576 km2)
+Lüderitz,town,Namibia,Africa,Q159325,spatial,replacement,36,53,44,4,15.3,4 places share this name
+Leptis Magna,manmade structure,Libya,Africa,Q191504,query,retained,31,,89,3,3.9,3 places share this name
+São Tomé Island,island,São Tomé and Príncipe,Africa,Q233124,query,retained,27,,79,1,855.0,
+Bafang,town,Cameroon,Africa,Q667828,spatial,replacement,26,23,29,1,,
+Sangardo,town,Guinea,Africa,Q7417855,spatial,retained,13,,14,2,,few Wikidata links - may yield no clues; 2 places share this name
+Birao,town,Central African Republic,Africa,Q864999,spatial,replacement,13,33,14,5,,5 places share this name
+Tidjikja,town,Mauritania,Africa,Q757041,spatial,retained,12,,13,2,3929.0,few Wikidata links - may yield no clues; 2 places share this name; large area (3929 km2)
+Hopetown,town,South Africa,Africa,Q618063,spatial,replacement,13,14,13,7,73.9,7 places share this name
+Kabinda,town,Democratic Republic of the Congo,Africa,Q3191660,query,retained,11,,16,2,27.0,2 places share this name
+Bimbo,town,Central African Republic,Africa,Q863461,query,retained,10,,12,21,,few Wikidata links - may yield no clues; 21 places share this name
+Ambam,town,Cameroon,Africa,Q2841553,spatial,retained,10,,14,3,,few Wikidata links - may yield no clues; 3 places share this name
+"Cala, Eastern Cape",town,South Africa,Africa,Q3642317,spatial,replacement,8,7,9,1,,
+Oranjemund,town,Namibia,Africa,Q1404518,spatial,replacement,7,26,11,2,,2 places share this name
+Mounana,town,Gabon,Africa,Q1200140,spatial,retained,6,,10,1,,few Wikidata links - may yield no clues
+Tjebu,town,Egypt,Africa,Q548283,spatial,retained,6,,10,1,,few Wikidata links - may yield no clues
+Great Pyramid of Giza,manmade structure,Egypt,Africa,Q37200,query,retained,5,,27,1,0.1,
+Gunjur,town,The Gambia,Africa,Q687816,spatial,replacement,5,13,6,3,,3 places share this name
+Bokoro,town,Chad,Africa,Q2909258,spatial,replacement,3,15,5,7,,7 places share this name
+Cassinga,town,Angola,Africa,Q1048377,spatial,retained,2,,3,3,,few Wikidata links - may yield no clues; 3 places share this name
+Kilwa Kisiwani,island,Tanzania,Africa,Q1741475,query,retained,1,,8,1,,few Wikidata links - may yield no clues
+Mpal,town,Senegal,Africa,Q933396,query,retained,1,,3,1,,few Wikidata links - may yield no clues
+Dilolo,town,Democratic Republic of the Congo,Africa,Q1015069,spatial,replacement,1,13,3,3,,hard case: few clues; 3 places share this name
+Kabul,town,Afghanistan,Asia,Q5838,query,retained,189,,1305,12,,12 places share this name
+Phnom Penh,town,Cambodia,Asia,Q1850,spatial,retained,186,,945,6,678.5,6 places share this name
+Medina,town,Saudi Arabia,Asia,Q35484,query,retained,178,,1053,64,589.0,64 places share this name
+Chiang Mai,town,Thailand,Asia,Q52028,query,retained,174,,322,6,405.0,6 places share this name
+Dehloran,town,Iran,Asia,Q862457,spatial,replacement,30,26,83,1,,
+Qurayyat,town,Oman,Asia,Q3414795,spatial,replacement,27,16,61,4,,4 places share this name
+Amarah,town,Iraq,Asia,Q366010,spatial,retained,53,,80,1,,
+Iwo Jima,island,Japan,Asia,Q201633,query,retained,48,,69,3,23.7,3 places share this name
+Hat Yai,town,Thailand,Asia,Q651286,query,retained,26,,29,7,21.0,7 places share this name
+Coka,town,People's Republic of China,Asia,Q5141692,spatial,replacement,25,6,27,3,451.0,3 places share this name
+Mafraq,town,Jordan,Asia,Q276747,query,retained,16,,23,3,14.0,3 places share this name
+Jask,town,Iran,Asia,Q719781,spatial,replacement,16,35,29,3,,3 places share this name
+Agutaya,town,Philippines,Asia,Q111351,spatial,replacement,10,24,17,1,37.3,
+Sitra,island,Bahrain,Asia,Q1416753,query,retained,9,,13,6,22.4,few Wikidata links - may yield no clues; 6 places share this name
+Tommot,town,Russia,Asia,Q196669,spatial,retained,5,,7,3,26.0,few Wikidata links - may yield no clues; 3 places share this name
+Lahugala,town,Sri Lanka,Asia,Q27447856,spatial,replacement,4,6,5,1,,
+Elamanchili,town,India,Asia,Q3415001,spatial,replacement,5,12,9,1,10.4,
+Borobudur Temple,manmade structure,Indonesia,Asia,Q42798,query,retained,3,,17,1,0.6,
+Boroldoy,town,Kyrgyzstan,Asia,Q2855537,query,retained,3,,4,1,1.4,few Wikidata links - may yield no clues
+Neft Daşları,town,Azerbaijan,Asia,Q1537647,spatial,replacement,4,30,6,1,,
+Hacıbədəlli,town,Azerbaijan,Asia,Q284365,query,retained,2,,2,1,,few Wikidata links - may yield no clues
+Chagai,town,Pakistan,Asia,Q4506637,spatial,replacement,2,8,4,3,,hard case: few clues; 3 places share this name
+Khara-Khoto,manmade structure,People's Republic of China,Asia,Q1584528,spatial,retained,1,,8,1,,few Wikidata links - may yield no clues
+Tiwi,town,Oman,Asia,Q3529971,spatial,retained,1,,2,11,,few Wikidata links - may yield no clues; 11 places share this name
+Don Marcelino,town,Philippines,Asia,Q314796,spatial,replacement,1,23,7,1,407.3,hard case: few clues
+Neustadt bei Coburg,town,Germany,Europe,Q32074,spatial,replacement,91,47,279,2,61.9,2 places share this name
+Tirana,town,Albania,Europe,Q19689,query,retained,207,,4841,6,,6 places share this name
+Poitiers,town,France,Europe,Q6616,spatial,retained,189,,1939,5,42.1,5 places share this name
+Kerch,town,Ukraine,Europe,Q157065,query,retained,118,,527,7,108.0,7 places share this name
+Tuzla,town,Bosnia and Herzegovina,Europe,Q174684,query,retained,115,,559,23,302.4,23 places share this name
+Hanko,town,Finland,Europe,Q216790,spatial,retained,95,,653,8,682.6,8 places share this name
+Alaçam district,town,Turkey,Europe,Q1947471,spatial,replacement,29,28,83,1,598.0,
+Sozopol,town,Bulgaria,Europe,Q271925,query,retained,60,,75,3,41.8,3 places share this name
+Podgorica City Stadium,manmade structure,Montenegro,Europe,Q1166175,query,retained,52,,60,1,,
+Delos,island,Greece,Europe,Q173148,query,retained,39,,93,18,3.5,18 places share this name
+Skerries,town,Ireland,Europe,Q2268677,spatial,replacement,19,23,26,10,,10 places share this name
+Transtrand,town,Sweden,Europe,Q3352868,spatial,replacement,6,15,8,2,2.4,2 places share this name
+Katthammarsvik,town,Sweden,Europe,Q1736833,spatial,replacement,5,8,5,1,1.0,
+Cîșlița-Prut,town,Moldova,Europe,Q2438100,spatial,replacement,5,10,5,1,,
+Ushguli,town,Georgia,Europe,Q1011028,query,retained,4,,3,1,,few Wikidata links - may yield no clues
+Southend,town,United Kingdom,Europe,Q7569511,spatial,replacement,4,5,4,15,,15 places share this name
+Tory Island,island,Ireland,Europe,Q1147050,spatial,retained,2,,6,7,3.0,few Wikidata links - may yield no clues; 7 places share this name
+Kato Scholari,town,Greece,Europe,Q12282736,spatial,retained,2,,6,1,,few Wikidata links - may yield no clues
+Voksenåsen,mountain,Norway,Europe,Q4589162,query,retained,2,,2,1,,few Wikidata links - may yield no clues
+Alcudia de Guadix,town,Spain,Europe,Q2602794,spatial,replacement,2,5,3,1,,hard case: few clues
+Tamariu,town,Spain,Europe,Q2167192,spatial,replacement,4,14,15,6,,hard case: few clues; 6 places share this name
+Mount Olympus,mountain,Cyprus,Europe,Q819979,query,retained,1,,15,26,,26 places share this name
+Ornes,town,Norway,Europe,Q672144,spatial,retained,1,,2,5,,few Wikidata links - may yield no clues; 5 places share this name
+Dolobiv,town,Ukraine,Europe,Q4165083,spatial,retained,1,,2,1,11.9,few Wikidata links - may yield no clues
+Grindhausen,town,Luxembourg,Europe,Q2144085,query,retained,1,,2,1,3.2,few Wikidata links - may yield no clues
+Guatemala City,town,Guatemala,North America,Q1555,query,retained,192,,1737,4,692.0,4 places share this name
+Santo Domingo,town,Dominican Republic,North America,Q34820,query,retained,192,,2110,108,1302.2,108 places share this name
+Panama City,town,Panama,North America,Q3306,query,retained,190,,4376,4,275.0,4 places share this name
+Las Cruces,town,United States,North America,Q33264,spatial,retained,172,,269,50,0.3,50 places share this name
+Jinotega,town,Nicaragua,North America,Q1026296,spatial,replacement,38,39,112,3,880.3,3 places share this name
+Chilliwack,town,Canada,North America,Q983026,query,retained,80,,141,7,261.6,7 places share this name
+Metropolitan Museum of Art,manmade structure,United States,North America,Q160236,query,retained,54,,81570,1,,
+Guantánamo,town,Cuba,North America,Q185156,query,retained,53,,163,4,741.4,4 places share this name
+Cat Island,island,The Bahamas,North America,Q1050154,spatial,replacement,27,36,52,43,388.0,43 places share this name
+Juigalpa,town,Nicaragua,North America,Q1025801,spatial,retained,32,,61,3,726.8,3 places share this name
+Guna Yala,town,Panama,North America,Q919017,query,retained,28,,222,1,2358.2,
+Cozumel Island,island,Mexico,North America,Q20119933,spatial,replacement,23,52,36,1,539.0,
+Acajutla,town,El Salvador,North America,Q937292,spatial,retained,15,,21,3,166.6,3 places share this name
+Carriacou Island,island,Grenada,North America,Q795647,query,retained,13,,17,1,33.7,
+Tikal,manmade structure,Guatemala,North America,Q181172,query,retained,12,,19,7,,7 places share this name
+Rogersville,town,Canada,North America,Q3439667,spatial,replacement,11,12,12,11,7.2,11 places share this name
+Port-Salut,town,Haiti,North America,Q1025363,spatial,replacement,11,22,12,2,48.8,2 places share this name
+Denali,mountain,United States,North America,Q130018,spatial,retained,7,,35,7,,7 places share this name
+Paradise Island,island,The Bahamas,North America,Q3181503,spatial,retained,7,,11,26,2.8,few Wikidata links - may yield no clues; 26 places share this name
+Financial District,town,United States,North America,Q599301,query,retained,6,,9,10,1.2,few Wikidata links - may yield no clues; 10 places share this name
+Île à Vache,island,Haiti,North America,Q292606,query,retained,2,,8,1,51.8,few Wikidata links - may yield no clues
+Punta Sur,manmade structure,Mexico,North America,Q3925731,spatial,retained,2,,2,15,,few Wikidata links - may yield no clues; 15 places share this name
+Canaries,town,Saint Lucia,North America,Q1032796,spatial,replacement,2,12,3,6,,hard case: few clues; 6 places share this name
+Princess Mary Lake,lake,Canada,North America,Q990429,spatial,replacement,1,8,3,1,471.0,hard case: few clues
+Cuyutlán,town,Mexico,North America,Q5197119,spatial,replacement,1,8,3,3,1.5,hard case: few clues; 3 places share this name
+Melbourne,town,Australia,Oceania,Q3141,query,retained,241,,10193,40,9993.0,40 places share this name
+Christchurch,town,New Zealand,Oceania,Q79990,query,retained,208,,3353,33,295.1,33 places share this name
+Port Moresby,town,Papua New Guinea,Oceania,Q36526,query,retained,162,,312,2,240.0,2 places share this name
+Whangārei,town,New Zealand,Oceania,Q744239,spatial,retained,122,,394,2,57.1,2 places share this name
+Funafuti,island,Tuvalu,Oceania,Q34126,query,retained,77,,134,3,,3 places share this name
+Akaroa,town,New Zealand,Oceania,Q416098,spatial,replacement,67,28,108,7,1.8,7 places share this name
+Tarawa,island,Kiribati,Oceania,Q2486,query,retained,27,,40,4,31.0,4 places share this name
+Bulls,town,New Zealand,Oceania,Q834869,spatial,replacement,19,13,26,10,,10 places share this name
+Upolu,island,Samoa,Oceania,Q274569,query,retained,17,,42,1,,
+Yaren District,town,Nauru,Oceania,Q31026,spatial,replacement,14,114,23,1,1.5,
+Sir John Guise Stadium,manmade structure,Papua New Guinea,Oceania,Q2289928,spatial,replacement,15,8,9,1,,
+Chatham Island,island,New Zealand,Oceania,Q1427436,query,retained,6,,75,8,920.0,8 places share this name
+Tikopia,island,Solomon Islands,Oceania,Q889519,query,retained,5,,7,3,,few Wikidata links - may yield no clues; 3 places share this name
+Balgo,town,Australia,Oceania,Q804942,spatial,replacement,6,13,6,2,,2 places share this name
+Capricornia Cays National Park,national park,Australia,Oceania,Q1034937,spatial,replacement,5,8,7,3,180.0,3 places share this name
+Muttaburra,town,Australia,Oceania,Q6944072,spatial,replacement,6,6,10,1,,
+Kiunga,town,Papua New Guinea,Oceania,Q985928,spatial,replacement,5,13,6,7,,7 places share this name
+Niulakita,island,Tuvalu,Oceania,Q632489,spatial,retained,3,,6,1,0.4,few Wikidata links - may yield no clues
+Nikunau,island,Kiribati,Oceania,Q1059287,spatial,retained,3,,17,4,18.2,4 places share this name
+Samarai,town,Papua New Guinea,Oceania,Q938379,spatial,replacement,3,11,4,2,0.3,2 places share this name
+Telefomin,town,Papua New Guinea,Oceania,Q992136,spatial,replacement,3,8,3,1,,
+Gibson,town,Australia,Oceania,Q5559270,spatial,replacement,3,7,7,31,735.3,hard case: few clues; 31 places share this name
+Cartagena,town,Colombia,South America,Q657461,spatial,replacement,160,116,757,32,572.0,32 places share this name
+Bogotá,town,Colombia,South America,Q2841,query,retained,235,,7090,3,1578.0,3 places share this name
+Guayaquil,town,Ecuador,South America,Q43509,query,retained,207,,1713,4,354.5,4 places share this name
+Río Gallegos,town,Argentina,South America,Q44242,spatial,replacement,70,57,206,1,,
+Rio Branco,town,Brazil,South America,Q171612,spatial,retained,111,,615,7,8835.5,7 places share this name; large area (8836 km2)
+San Nicolás de los Arroyos,town,Argentina,South America,Q377965,query,retained,82,,254,2,,2 places share this name
+Pichilemu,town,Chile,South America,Q25304,spatial,replacement,61,103,106,4,10.1,4 places share this name
+Carora,town,Venezuela,South America,Q1044689,query,retained,60,,93,2,,2 places share this name
+Arena Fonte Nova,manmade structure,Brazil,South America,Q6499360,query,retained,50,,31,1,,
+Tocopilla,town,Chile,South America,Q188192,spatial,retained,36,,57,7,8.0,7 places share this name
+Young,town,Uruguay,South America,Q1005607,spatial,replacement,26,22,29,43,9.7,43 places share this name
+Ciudad del Plata,town,Uruguay,South America,Q370254,query,retained,23,,27,1,27.5,
+Cabruta,town,Venezuela,South America,Q930297,spatial,retained,18,,19,2,,2 places share this name
+Riberalta,town,Bolivia,South America,Q941357,spatial,replacement,18,31,20,2,20.1,2 places share this name
+Arroyos y Esteros,town,Paraguay,South America,Q2639218,spatial,retained,10,,14,1,537.0,few Wikidata links - may yield no clues
+San Lorenzo de Tarapacá,town,Chile,South America,Q3471546,spatial,replacement,9,6,13,2,,2 places share this name
+Macas,town,Ecuador,South America,Q1014554,spatial,replacement,3,28,8,3,11.9,3 places share this name
+Chan Chan,manmade structure,Peru,South America,Q277540,spatial,retained,1,,6,5,14.1,few Wikidata links - may yield no clues; 5 places share this name
+Cordillera Blanca,mountain,Peru,South America,Q804330,query,retained,1,,80,4,,4 places share this name
+Pozo Colorado,town,Paraguay,South America,Q1315847,spatial,retained,1,,1,2,,few Wikidata links - may yield no clues; 2 places share this name
+Adicora,town,Venezuela,South America,Q2825491,spatial,retained,1,,2,2,,few Wikidata links - may yield no clues; 2 places share this name
+Anzoategui,town,Argentina,South America,Q2882630,spatial,retained,1,,1,1,,few Wikidata links - may yield no clues
+San Rafael de Velasco,town,Bolivia,South America,Q746773,spatial,replacement,1,12,3,1,,hard case: few clues
+Mount Roraima,mountain,Guyana,South America,Q4777,spatial,replacement,1,59,15,1,50.0,hard case: few clues
+Nassau Mountains,mountain,Suriname,South America,Q20019224,spatial,replacement,1,8,3,2,,hard case: few clues; 2 places share this name

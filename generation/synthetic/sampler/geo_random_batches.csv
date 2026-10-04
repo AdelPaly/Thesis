@@ -1,0 +1,5 @@
+batch,first_line,last_line,count,fetched_utc,source
+1,1,10000,10000,,"random.org integers 1..1000000 (fetch details not recorded)"
+2,10001,20000,10000,2026-09-30T22:11:08Z,"https://www.random.org/integers/?num=10000&min=1&max=1000000&col=1&base=10&format=plain&rnd=new"
+3,20001,30000,10000,2026-09-30T22:21:20Z,"https://www.random.org/integers/?num=10000&min=1&max=1000000&col=1&base=10&format=plain&rnd=new"
+4,30001,40000,10000,2026-10-03T12:11:22Z,"https://www.random.org/integers/?num=10000&min=1&max=1000000&col=1&base=10&format=plain&rnd=new"
