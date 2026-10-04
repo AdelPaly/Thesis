@@ -1,6 +1,15 @@
-# Place list — column provenance (written for the 147-row candidate list; 01_places_final.csv uses the same columns)
+# Place list — column provenance
 
-147 places. 90 `origin=retained`, 57 `origin=replacement`.
+Written for the 147-row candidate list (`archive/01_places_usable.bak-areas.csv`,
+15 columns). The shipped `01_places_final.csv` has 102 rows and these 12 columns:
+
+`place_name, type, country, continent, wikidata_id, clue_count, clue_total, capped, wikimedia_sitelinks, wikidata_links, places_sharing_name, area_km2`
+
+It has no `origin`, `selection_method` or `note` column, so everything below
+about those applies to the candidate list only. The 147 candidates were 90
+`origin=retained` and 57 `origin=replacement`; 94 of them are in the final 102
+(59 retained, 35 replacement), plus 8 places added later. See `README.md` for
+the 155 / 147 / 102 place counts.
 
 ## Frozen columns
 
@@ -8,7 +17,7 @@
 |---|---|---|
 | `wikidata_links` | 2026-08-28 (Stage 8) | Inbound-link counts rise as Wikidata grows. Re-deriving on a schedule yields a permanent trickle of one- and two-unit differences that mean nothing and train a reader to ignore the report. Not refreshed. |
 
-`scripts/verify_usable.py` still checks the column, but reports growth as
+`scripts/verify_usable.py` still checks the column (when the input has it), but reports growth as
 `inbound_links:drift_since_freeze` rather than as a disagreement. Only a
 divergence too large to be growth — over 1% *and* over 2 absolute — fails.
 At the freeze date 18 of 147 rows had already drifted, all by ≤3 links.
@@ -20,7 +29,7 @@ Re-derived on demand, expected to match Wikidata exactly.
 | column | source |
 |---|---|
 | `area_km2` | Normalised P2046 (`psn:`, square metres ÷ 1e6). Best-rank statement; largest where several share best rank; largest non-deprecated if none is best-rank. Blank means the item has no P2046. Re-derived 2026-08-28 by `scripts/04_fix_areas.py`. |
-| `wikimedia_sitelinks` | `wikibase:sitelinks`. Populated only on the 57 replacement rows; blank on all 90 retained. Not frozen — one row (Akaroa) is already stale by +1. |
+| `wikimedia_sitelinks` | `wikibase:sitelinks`. In the candidate list populated only on the 57 replacement rows, blank on all 90 retained; in the 102-row final file 43 rows have it. Not frozen — one row (Akaroa) is already stale by +1. |
 | `places_sharing_name` | Count of items with `rdfs:label "<place_name>"@en`. |
 | `country`, `continent` | P17, and P30 of the P17 country. |
 
@@ -28,9 +37,9 @@ Re-derived on demand, expected to match Wikidata exactly.
 
 | column | meaning |
 |---|---|
-| `clue_count` | Capped sample size — 14 queries × ≤25 clues each, seed `wanderer-2026`. What generation draws from. Saturates; **not** an abundance measure. |
-| `clue_total` | Uncapped count over the same 14 queries. Use this for difficulty and any ordinal analysis. Heavy-tailed — rank or log-scale it. |
-| `capped` | True where ≥1 query hit the 25 cap, i.e. where `clue_count` understates. 47 of 147 rows. |
+| `clue_count` | Capped sample size — 14 queries × ≤25 clues each, seed `wanderer-2026`. What generation draws from. For a rebuilt set, `build_inputs.py` fills it from the number of clues `02_clues.py` collected. Saturates; **not** an abundance measure. |
+| `clue_total` | Uncapped count over the same 14 queries (added by `03_clue_totals.py`, which needs `clue_count`). Use this for difficulty and any ordinal analysis. Heavy-tailed — rank or log-scale it. |
+| `capped` | True where ≥1 query hit the 25 cap, i.e. where `clue_count` understates. 47 of the 147 candidate rows, 46 of the final 102. |
 
 ## Surface forms — `04b_place_aliases.jsonl`
 
@@ -66,8 +75,17 @@ Esteros (Esteros).
   Nothing has ever been removed at that threshold; in the shipped file the rule
   behaved as an advisory note, and inconsistently — 3 of the 10 carry a
   "large area" note, 7 do not. Exclusion remains an open dataset decision.
-- **`01_places_final.csv`** (102 rows) shares this file's 15 columns, but how
-  the 102 were chosen from the 147 is not recorded here yet.
+- **How the 102 were chosen** from the candidates is now defined by
+  `build_inputs.choose_survivors` (a place needs at least one best set that
+  resolves to it alone; with `--per-continent` each continent is cut to the places
+  with the most resolving best sets, then by name). The files do not record that
+  the shipped 102 came from exactly that call: 99 of the 147 candidates reached
+  stage `sets` and 94 are in the final file.
+- **Repeated clue entities in `05_clue_sets.jsonl`.** The committed file was
+  written before `05_score_sets.py` deduplicated clues by `clue_qid`: 50 of its
+  490 `best_sets` (in 18 places) name the same clue entity twice, because a clue
+  reached by two properties was two records. Fixed in the script; the file, and
+  everything planned from it, has not been regenerated.
 - **Type mapping** is human judgement. `scripts/verify_usable.py` dumps
-  `assigned_type` against the item's P31 labels to `data/verify_types.csv` for
-  review and never auto-validates it.
+  `assigned_type` against the item's P31 labels to `data/verify_usable_types.csv`
+  for review and never auto-validates it.

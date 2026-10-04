@@ -38,16 +38,25 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
+
+from io_utils import leaks_strict, read_jsonl, utf8_stdout, write_jsonl_atomic
 
 ROOT = Path(__file__).resolve().parent.parent
 CLUES = ROOT / "data" / "02_clues.jsonl"
 OUT = ROOT / "data" / "02_clues_filtered.jsonl"
 REMOVED = ROOT / "data" / "03_removed_clues.jsonl"
 PLACES = ROOT / "data" / "01_places_final.csv"
+
+REASON_NO_LABEL = "no_label"
+REASON_LEAK = "name_leakage"
+NAME_WIDTH = 26             # place-name column width in the emptied-places table
+CONTINENT_WIDTH = 15
+PROPERTY_LABEL_WIDTH = 40
+EXIT_OK = 0
+EXIT_BAD_INPUT = 2
 
 BUCKETS = (
     ("0", lambda n: n == 0),
@@ -57,12 +66,8 @@ BUCKETS = (
 )
 
 
-def leaks_strict(place: str, label: str) -> bool:
-    """The specified test, as written in 05_name_leakage.py: substring, folded."""
-    return place.casefold() in label.casefold()
-
-
 def load_places(path: Path) -> dict[str, dict[str, str]]:
+    """Places CSV keyed by wikidata_id; {} if the file is absent."""
     if not path.exists():
         return {}
     with path.open(encoding="utf-8-sig", newline="") as handle:
@@ -70,67 +75,42 @@ def load_places(path: Path) -> dict[str, dict[str, str]]:
 
 
 def distribution(counts: dict[str, int], places: list[str]) -> list[tuple[str, int]]:
+    """How many places fall in each clue-count bucket."""
     return [(name, sum(1 for q in places if test(counts.get(q, 0)))) for name, test in BUCKETS]
 
 
-def main(argv: list[str] | None = None) -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
-    except Exception:  # pragma: no cover
-        pass
-
-    parser = argparse.ArgumentParser(description="Filter leaking and unlabelled clues.")
-    parser.add_argument("--clues", type=Path, default=CLUES)
-    parser.add_argument("--out", type=Path, default=OUT)
-    parser.add_argument("--removed", type=Path, default=REMOVED)
-    parser.add_argument("--places", type=Path, default=PLACES)
-    parser.add_argument("--dry-run", action="store_true",
-                        help="report only; write neither output file")
-    args = parser.parse_args(argv)
-
-    if not args.clues.exists():
-        print(f"clue file not found: {args.clues}", file=sys.stderr)
-        return 2
-    if args.out.resolve() == args.clues.resolve() or args.removed.resolve() == args.clues.resolve():
-        print("refusing to overwrite the input clue file", file=sys.stderr)
-        return 2
-
-    records = [json.loads(line) for line in args.clues.open(encoding="utf-8") if line.strip()]
-    if not records:
-        print("no clue records", file=sys.stderr)
-        return 2
-
-    # ---- classify ----
+def classify(records: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Split records into (kept, dropped); dropped rows carry removed_reason."""
     kept: list[dict] = []
     dropped: list[dict] = []
     for record in records:
         label = record.get("clue_label")
         reasons = []
         if label is None:
-            reasons.append("no_label")
+            reasons.append(REASON_NO_LABEL)
         elif leaks_strict(record["place_name"], label):
-            reasons.append("name_leakage")
+            reasons.append(REASON_LEAK)
         if reasons:
             dropped.append({**record, "removed_reason": "+".join(reasons)})
         else:
             kept.append(record)
+    return kept, dropped
 
+
+def write_outputs(out: Path, removed: Path, kept: list[dict], dropped: list[dict]) -> None:
+    """Write survivors and removed records atomically."""
+    write_jsonl_atomic(out, kept)
+    write_jsonl_atomic(removed, dropped)
+
+
+def print_report(args: argparse.Namespace, records: list[dict], kept: list[dict],
+                 dropped: list[dict]) -> None:
+    """The console report: counts, per-place distribution, emptied places, per-property."""
     by_reason = Counter(r["removed_reason"] for r in dropped)
-    leak_n = sum(n for reason, n in by_reason.items() if "name_leakage" in reason)
-    nolabel_n = sum(n for reason, n in by_reason.items() if "no_label" in reason)
+    leak_n = sum(n for reason, n in by_reason.items() if REASON_LEAK in reason)
+    nolabel_n = sum(n for reason, n in by_reason.items() if REASON_NO_LABEL in reason)
     both_n = sum(n for reason, n in by_reason.items() if "+" in reason)
 
-    # ---- write ----
-    if not args.dry_run:
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        for path, rows in ((args.out, kept), (args.removed, dropped)):
-            tmp = path.with_suffix(path.suffix + ".tmp")
-            with tmp.open("w", encoding="utf-8", newline="\n") as handle:
-                for row in rows:
-                    handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-            tmp.replace(path)
-
-    # ---- report ----
     places = sorted({r["place_qid"] for r in records})
     name_of = {r["place_qid"]: r["place_name"] for r in records}
     before = Counter(r["place_qid"] for r in records)
@@ -166,34 +146,43 @@ def main(argv: list[str] | None = None) -> int:
     print("\n" + "=" * 70)
     print(f"PLACES LEFT AT ZERO: {len(emptied)}")
     if emptied:
+        reasons_by_place: dict[str, Counter] = defaultdict(Counter)
+        for r in dropped:
+            reasons_by_place[r["place_qid"]][r["removed_reason"]] += 1
         print(f"\n{'qid':<11} {'name':<26} {'continent':<15} {'had':>5} "
               f"{'leak':>5} {'nolab':>6}")
         print("-" * 72)
         for qid in sorted(emptied, key=lambda q: -before[q]):
             meta = place_meta.get(qid, {})
-            reasons = Counter(r["removed_reason"] for r in dropped if r["place_qid"] == qid)
-            print(f"{qid:<11} {(meta.get('place_name') or name_of[qid])[:26]:<26} "
-                  f"{(meta.get('continent') or '?')[:15]:<15} {before[qid]:>5} "
-                  f"{reasons.get('name_leakage', 0):>5} {reasons.get('no_label', 0):>6}")
+            reasons = reasons_by_place[qid]
+            print(f"{qid:<11} {(meta.get('place_name') or name_of[qid])[:NAME_WIDTH]:<26} "
+                  f"{(meta.get('continent') or '?')[:CONTINENT_WIDTH]:<15} {before[qid]:>5} "
+                  f"{reasons.get(REASON_LEAK, 0):>5} {reasons.get(REASON_NO_LABEL, 0):>6}")
         if not place_meta:
             print(f"\n  (continent unavailable: {args.places} not found)")
 
     print("\n" + "=" * 70)
     print("BY PROPERTY")
-    props = sorted({r["property"] for r in records}, key=lambda p: -sum(
-        1 for r in records if r["property"] == p))
+    records_by_prop: dict[str, list[dict]] = defaultdict(list)
+    for r in records:
+        records_by_prop[r["property"]].append(r)
+    props = sorted({r["property"] for r in records}, key=lambda p: -len(records_by_prop[p]))
     prop_label = {r["property"]: r["property_label"] for r in records}
+    gone_by_prop: dict[str, Counter] = defaultdict(Counter)
+    for r in dropped:
+        gone_by_prop[r["property"]][r["removed_reason"]] += 1
+    survived_by_prop = Counter(r["property"] for r in kept)
     print(f"\n{'property':<9} {'before':>7} {'leak':>6} {'nolab':>6} {'after':>7} "
           f"{'kept':>7}  {'label':<40}")
     print("-" * 90)
     for prop in props:
-        group = [r for r in records if r["property"] == prop]
-        gone = Counter(r["removed_reason"] for r in dropped if r["property"] == prop)
-        survived = sum(1 for r in kept if r["property"] == prop)
+        group = records_by_prop[prop]
+        gone = gone_by_prop[prop]
+        survived = survived_by_prop[prop]
         rate = f"{survived/len(group):.1%}" if group else "-"
-        print(f"{prop:<9} {len(group):>7} {gone.get('name_leakage', 0):>6} "
-              f"{gone.get('no_label', 0):>6} {survived:>7} {rate:>7}  "
-              f"{prop_label.get(prop, '')[:40]:<40}")
+        print(f"{prop:<9} {len(group):>7} {gone.get(REASON_LEAK, 0):>6} "
+              f"{gone.get(REASON_NO_LABEL, 0):>6} {survived:>7} {rate:>7}  "
+              f"{prop_label.get(prop, '')[:PROPERTY_LABEL_WIDTH]:<40}")
     print("-" * 90)
     print(f"{'ALL':<9} {len(records):>7} {leak_n:>6} {nolabel_n:>6} {len(kept):>7} "
           f"{len(kept)/len(records):>6.1%}")
@@ -217,8 +206,43 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\nwrote {args.out}      {len(kept)} records")
         print(f"wrote {args.removed}  {len(dropped)} records (+ removed_reason)")
         print(f"input {args.clues} untouched")
-    return 0
+
+
+def parse_args(argv: list[str] | None) -> argparse.Namespace:
+    """Command-line options."""
+    parser = argparse.ArgumentParser(description="Filter leaking and unlabelled clues.")
+    parser.add_argument("--clues", type=Path, default=CLUES)
+    parser.add_argument("--out", type=Path, default=OUT)
+    parser.add_argument("--removed", type=Path, default=REMOVED)
+    parser.add_argument("--places", type=Path, default=PLACES)
+    parser.add_argument("--dry-run", action="store_true",
+                        help="report only; write neither output file")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entry: load -> classify -> write -> report."""
+    args = parse_args(argv)
+
+    if not args.clues.exists():
+        print(f"clue file not found: {args.clues}", file=sys.stderr)
+        return EXIT_BAD_INPUT
+    if args.out.resolve() == args.clues.resolve() or args.removed.resolve() == args.clues.resolve():
+        print("refusing to overwrite the input clue file", file=sys.stderr)
+        return EXIT_BAD_INPUT
+
+    records = read_jsonl(args.clues)
+    if not records:
+        print("no clue records", file=sys.stderr)
+        return EXIT_BAD_INPUT
+
+    kept, dropped = classify(records)
+    if not args.dry_run:
+        write_outputs(args.out, args.removed, kept, dropped)
+    print_report(args, records, kept, dropped)
+    return EXIT_OK
 
 
 if __name__ == "__main__":
+    utf8_stdout()
     raise SystemExit(main())

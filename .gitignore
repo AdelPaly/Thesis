@@ -50,3 +50,11 @@ results/predictions/*.tmp
 
 # Dense retrieval index cache (embedding matrix)
 src/.dense_index/
+
+# Backups and superseded snapshots: kept on disk, not in git (git history is the
+# backup). Scripts write these next to the data they rewrite.
+*.bak
+*.bak-*
+*.bak[0-9]*
+generation/places/data/*/
+generation/synthetic/output/archive/

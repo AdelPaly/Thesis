@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stage 6a - item planning.
+plan.py - item planning (step 1 of 3: plan.py, generate.py, finalise.py).
 
 WHAT THIS SCRIPT DOES
     Decides every item that will be generated, and writes one JSON object per
@@ -20,10 +20,13 @@ WHAT THIS SCRIPT DOES
     The plan is a reviewable artefact. Read it, diff it, edit it by hand if you
     want, and only then run generate.py against it.
 
+    plan.py also publishes the name-matching helpers (fold, contains_word)
+    that finalise.py uses for its checks, so planner and validator agree.
+
 WHAT THIS SCRIPT MUST NEVER DO
     - make network calls of any kind
     - call a language model
-    - compute metrics or validate generated text (that is stage 7)
+    - compute metrics or validate generated text (that is finalise.py)
     - silently substitute a different place, clue or condition when the one it
       wanted is unavailable. Unavailable means infeasible: the pair is skipped
       and the reason is written to the rejection log.
@@ -72,7 +75,7 @@ NOTE ON CLUE SELECTION
     is known to resolve and three loose clues carry no such guarantee.
 
     No discriminativeness score exists upstream. The field is kept in the plan
-    as null so stage 7 can see the absence rather than mistake it for a value.
+    as null so finalise.py and the analysis can see the absence rather than mistake it for a value.
     place_ambiguity, surface_ambiguity and source_set_sizes travel with each
     clue for analysis.
 
@@ -93,15 +96,17 @@ USAGE
     are keyed by item_id, and a new plan has new ids, so replacing the plan
     after generation has started orphans every row already generated. With
     --replace the old plan and rejection log are moved to output/archive/ with a
-    timestamp, so they remain available to stage 7.
+    timestamp, so they remain available to finalise.py.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import functools
 import hashlib
 import json
+import os
 import re
 import sys
 import unicodedata
@@ -121,6 +126,13 @@ HERE = Path(__file__).resolve().parent
 
 PLAN_VERSION = "1"
 
+# Defaults for the plan: section of config.yaml. config.yaml is the source of
+# truth; these apply only when a key is absent from it.
+DEFAULT_MAX_PLACE_AMBIGUITY = 1
+DEFAULT_SURPLUS_FACTOR = 1.0
+DEFAULT_MAX_REPLICATES_PER_PAIR = 6
+DEFAULT_LENGTH_BANDS = ["medium"]
+
 # The conditions, and what each one requires to be feasible for a given place.
 # n_clues        how many entity clues appear in the text
 # needs_toponym  "ambiguous" -> an alias shared with other places must exist
@@ -136,6 +148,37 @@ CONDITION_SPECS: dict[str, dict[str, Any]] = {
     "NOISE_A1": {"n_clues": 1, "needs_toponym": None,        "noise": True},
     "NOISE_B":  {"n_clues": 0, "needs_toponym": "ambiguous", "noise": True},
 }
+
+
+# --------------------------------------------------------------------------- #
+# small shared helpers (finalise.py and build_exemplars.py import these)
+# --------------------------------------------------------------------------- #
+
+def utc_now() -> str:
+    """The current UTC time as an ISO 8601 string, to the second."""
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def configure_stdout() -> None:
+    """Make stdout and stderr UTF-8: place names are not ASCII and the Windows
+    console default codepage cannot print them."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+def atomic_write_text(path: Path, text: str, newline: str | None = None) -> None:
+    """
+    Write text to path through a temporary file and os.replace, so a crash
+    leaves either the old file or the complete new one, never a partial file.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    with tmp.open("w", encoding="utf-8", newline=newline) as handle:
+        handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(tmp, path)
 
 
 # --------------------------------------------------------------------------- #
@@ -212,18 +255,18 @@ class RandomStream:
         return int(state.get("position", 0))
 
     def save_cursor(self) -> None:
-        self.state_path.parent.mkdir(parents=True, exist_ok=True)
-        self.state_path.write_text(
+        """Persist the cursor atomically (a crash cannot leave a torn file)."""
+        atomic_write_text(
+            self.state_path,
             json.dumps(
                 {
                     "position": self.position,
                     "stream_file": str(self.path),
                     "stream_length": len(self.values),
-                    "updated_utc": _utc_now(),
+                    "updated_utc": utc_now(),
                 },
                 indent=2,
             ),
-            encoding="utf-8",
         )
 
     def _next(self) -> int:
@@ -313,14 +356,29 @@ class Place:
     name_forms: list[str] = field(default_factory=list)
     country_forms: list[str] = field(default_factory=list)
     region_forms: list[str] = field(default_factory=list)
+    # distractor_clues() memoised per donor qid; see reset_caches().
+    _distractors: dict[str, list[dict[str, Any]]] = field(
+        default_factory=dict, repr=False, compare=False)
+
+    def reset_caches(self) -> None:
+        """Forget memoised distractors. Call after name_forms or any donor's
+        single_clues change (load_clue_sets does)."""
+        self._distractors.clear()
 
     def distractor_clues(self, donor: "Place") -> list[dict[str, Any]]:
-        """The donor's eligible clues whose labels name nothing of this place."""
-        return [
-            c for c in donor.single_clues
-            if _label_leak(c["clue_label"], self.name_forms, self.country_forms,
-                           self.region_forms) is None
-        ]
+        """
+        The donor's eligible clues whose labels name nothing of this place.
+        Memoised per donor; do not mutate the returned list.
+        """
+        cached = self._distractors.get(donor.qid)
+        if cached is None:
+            cached = [
+                c for c in donor.single_clues
+                if label_leak(c["clue_label"], self.name_forms, self.country_forms,
+                              self.region_forms) is None
+            ]
+            self._distractors[donor.qid] = cached
+        return cached
 
     def ambiguous_forms(self) -> list[dict[str, Any]]:
         return [f for f in self.surface_forms if f.get("kind") == "ambiguous_alias"]
@@ -433,18 +491,27 @@ def _load_clue_types(path: Path) -> dict[str, dict[str, Any]]:
     return types
 
 
-def _fold(text: str) -> str:
+@functools.lru_cache(maxsize=None)
+def fold(text: str) -> str:
     """Case- and accent-insensitive form, so "Panamá" matches "Panama"."""
     decomposed = unicodedata.normalize("NFKD", text)
     return "".join(ch for ch in decomposed if not unicodedata.combining(ch)).casefold()
 
 
-def _contains_word(haystack: str, needle: str) -> bool:
+@functools.lru_cache(maxsize=None)
+def _word_pattern(folded_needle: str) -> re.Pattern[str]:
+    return re.compile(rf"(?<!\w){re.escape(folded_needle)}(?!\w)")
+
+
+def contains_word(haystack: str, needle: str) -> bool:
     """needle occurs in haystack as a whole word, ignoring case and accents."""
-    needle = _fold(needle).strip()
-    return bool(needle) and re.search(
-        rf"(?<!\w){re.escape(needle)}(?!\w)", _fold(haystack)
-    ) is not None
+    needle = fold(needle).strip()
+    return bool(needle) and _word_pattern(needle).search(fold(haystack)) is not None
+
+
+# Underscore aliases kept for older callers.
+_fold = fold
+_contains_word = contains_word
 
 
 def _is_qualified(text: str, country_forms: list[str]) -> bool:
@@ -457,11 +524,11 @@ def _is_qualified(text: str, country_forms: list[str]) -> bool:
     """
     if "," in text:
         return True
-    return any(_contains_word(text, form) for form in country_forms)
+    return any(contains_word(text, form) for form in country_forms)
 
 
-def _label_leak(label: str, place_forms: list[str], country_forms: list[str],
-                region_forms: list[str] = ()) -> str | None:
+def label_leak(label: str, place_forms: Sequence[str], country_forms: Sequence[str],
+               region_forms: Sequence[str] = ()) -> str | None:
     """
     Why a clue's own label gives the answer away, or None. The strict test in
     05_name_leakage.csv checks only the bare place name; this also checks every
@@ -470,15 +537,264 @@ def _label_leak(label: str, place_forms: list[str], country_forms: list[str],
     "MIAT Mongolian Airlines"). Whole words only, ignoring case and accents.
     """
     for form in place_forms:
-        if _contains_word(label, form):
+        if contains_word(label, form):
             return f'label contains the place name or alias "{form}"'
     for form in country_forms:
-        if _contains_word(label, form):
+        if contains_word(label, form):
             return f'label contains the country or its demonym "{form}"'
     for form in region_forms:
-        if _contains_word(label, form):
+        if contains_word(label, form):
             return f'label contains a region the place is in "{form}"'
     return None
+
+
+_label_leak = label_leak  # underscore alias kept for older callers
+
+
+@dataclass(frozen=True)
+class ClueRules:
+    """The plan: flags that decide which clues and forms are held back."""
+    max_place_ambiguity: int = DEFAULT_MAX_PLACE_AMBIGUITY
+    exclude_leaks: bool = True
+    exclude_qualified: bool = True
+    exclude_toponyms: bool = True
+    exclude_label_leaks: bool = True
+    ceiling_plain_name: bool = True
+
+    @classmethod
+    def from_config(cls, plan_cfg: dict[str, Any]) -> "ClueRules":
+        return cls(
+            max_place_ambiguity=int(plan_cfg.get(
+                "max_place_ambiguity_for_single_clue", DEFAULT_MAX_PLACE_AMBIGUITY)),
+            exclude_leaks=bool(plan_cfg.get("exclude_leaking_clues", True)),
+            exclude_qualified=bool(plan_cfg.get("exclude_qualified_ambiguous_forms", True)),
+            exclude_toponyms=bool(plan_cfg.get("exclude_toponym_clues", True)),
+            exclude_label_leaks=bool(plan_cfg.get("exclude_label_leaks", True)),
+            ceiling_plain_name=bool(plan_cfg.get("ceiling_plain_name", True)),
+        )
+
+
+def check_alias_record(alias_path: Path, alias_line: int,
+                       alias_record: dict[str, Any]) -> None:
+    """Abort when a 04b_place_aliases.jsonl record lacks a field the planner needs."""
+    for key in ("surface_forms", "country_forms", "region_forms"):
+        if key not in alias_record:
+            raise SystemExit(f"{alias_path}:{alias_line} has no {key} field. "
+                             f"Re-run scripts/04b_place_aliases.py.")
+
+
+def name_forms_of(place: Place, alias_record: dict[str, Any]
+                  ) -> tuple[list[str], list[str], list[str]]:
+    """
+    (place forms, country forms, region forms): the strings that name this
+    place and its country. The derived "<name>, <country>" is left out of the
+    place forms: it is the name plus the country, and each of those is checked
+    on its own.
+    """
+    place_forms = [place.name] + [
+        f["text"] for f in alias_record["surface_forms"] or []
+        if f.get("source") != "derived"
+    ]
+    country_forms = [f["text"] for f in alias_record["country_forms"] or []]
+    region_forms = [f["text"] for f in alias_record["region_forms"] or []]
+    return place_forms, country_forms, region_forms
+
+
+def best_sets_of(clue_path: Path, clue_sets: dict[str, tuple[int, dict]],
+                 qid: str) -> list[dict[str, Any]]:
+    """The place's best_sets entries, [] when stage 5 exported none."""
+    if qid not in clue_sets:
+        return []
+    line_no, record = clue_sets[qid]
+    if "best_sets" not in record:
+        raise SystemExit(
+            f"{clue_path}:{line_no} has no best_sets field; it holds "
+            f"{sorted(record)}. Check the stage 5 export."
+        )
+    return record["best_sets"] or []
+
+
+def collect_clues(
+    qid: str,
+    best_sets: list[dict[str, Any]],
+    clue_path: Path,
+    types_path: Path,
+    clue_types: dict[str, dict[str, Any]],
+    leaks: set[tuple[str, str, str]],
+    place_forms: list[str],
+    country_forms: list[str],
+    region_forms: list[str],
+) -> dict[tuple[str, str], dict[str, Any]]:
+    """
+    The union of best_sets[].clues[], de-duplicated on (clue_qid, property),
+    keyed by that pair. Each clue records the sizes of the sets it appeared in.
+    """
+    by_key: dict[tuple[str, str], dict[str, Any]] = {}
+    for set_index, entry in enumerate(best_sets):
+        for raw in entry.get("clues") or []:
+            for key in ("clue_qid", "clue_label", "property"):
+                if not raw.get(key):
+                    raise SystemExit(
+                        f"{clue_path}: {qid} best_sets[{set_index}] has a clue "
+                        f"missing {key!r}: {raw}"
+                    )
+            if not raw.get("property_label"):
+                raise SystemExit(
+                    f"{clue_path}: {qid} has a clue with no property_label. "
+                    f"Re-run scripts/05_score_sets.py, which now carries it "
+                    f"through from 04_clues_scored.jsonl."
+                )
+            key = (raw["clue_qid"], raw["property"])
+            if raw["clue_qid"] not in clue_types:
+                raise SystemExit(
+                    f"{types_path} has no row for clue {raw['clue_qid']} "
+                    f"({raw['clue_label']}). Re-run scripts/05b_clue_types.py."
+                )
+            if key not in by_key:
+                by_key[key] = {
+                    "clue_qid": raw["clue_qid"],
+                    "clue_label": raw["clue_label"],
+                    "property": raw["property"],
+                    "property_label": raw["property_label"],
+                    "entity_type": raw.get("property_family"),
+                    "place_ambiguity": raw.get("place_ambiguity"),
+                    "surface_ambiguity": raw.get("surface_ambiguity"),
+                    "discriminativeness": None,
+                    "source_set_sizes": [],
+                    "leaks_place_name": (qid, raw["clue_qid"], raw["property"]) in leaks,
+                    "is_toponym": clue_types[raw["clue_qid"]]["toponym"],
+                    "label_leak": label_leak(raw["clue_label"], place_forms,
+                                              country_forms, region_forms),
+                }
+            by_key[key]["source_set_sizes"].append(entry.get("size", len(entry["clues"])))
+    return by_key
+
+
+def clue_excluded_because(
+    clue: dict[str, Any], clue_types: dict[str, dict[str, Any]], rules: ClueRules
+) -> str | None:
+    """Why this clue is held back from every condition, or None."""
+    if rules.exclude_leaks and clue["leaks_place_name"]:
+        return "leaks the place name (leak_strict)"
+    if rules.exclude_toponyms and clue["is_toponym"]:
+        cats = clue_types[clue["clue_qid"]].get("categories") or []
+        return f"is itself a place name ({', '.join(cats)})"
+    if rules.exclude_label_leaks and clue["label_leak"]:
+        return clue["label_leak"]
+    return None
+
+
+def select_clues(
+    qid: str,
+    place: Place,
+    best_sets: list[dict[str, Any]],
+    by_key: dict[tuple[str, str], dict[str, Any]],
+    clue_types: dict[str, dict[str, Any]],
+    rules: ClueRules,
+) -> list[dict[str, Any]]:
+    """
+    Fill place.clues, place.single_clues and place.triple_sets from the
+    collected clues and return one clue_excluded record per held-back clue.
+    A best_sets entry containing an excluded clue is excluded whole.
+    """
+    place.clues = list(by_key.values())
+    reasons = {id(c): clue_excluded_because(c, clue_types, rules) for c in place.clues}
+
+    held_back = [
+        {
+            "record": "clue_excluded",
+            "place_qid": qid,
+            "place_name": place.name,
+            "clue_qid": clue["clue_qid"],
+            "clue_label": clue["clue_label"],
+            "property": clue["property"],
+            "reason": reasons[id(clue)],
+        }
+        for clue in place.clues if reasons[id(clue)]
+    ]
+    usable = [c for c in place.clues if reasons[id(c)] is None]
+    place.single_clues = [
+        c for c in usable
+        if c["place_ambiguity"] is not None
+        and c["place_ambiguity"] <= rules.max_place_ambiguity
+    ]
+    place.triple_sets = []
+    for set_index, entry in enumerate(best_sets):
+        if len(entry.get("clues") or []) != 3 or entry.get("resolves") is not True:
+            continue
+        members = [by_key[(c["clue_qid"], c["property"])] for c in entry["clues"]]
+        if any(reasons[id(c)] for c in members):
+            continue
+        place.triple_sets.append({"source_set_index": set_index, "clues": members})
+    return held_back
+
+
+def ceiling_source_of(source_forms: list[dict[str, Any]], rules: ClueRules) -> str | None:
+    """
+    The one source of exact form CEILING may use: the plain label when it is
+    unique, otherwise the derived "<name>, <country>". None when
+    ceiling_plain_name is off and every exact form is allowed.
+    """
+    if not rules.ceiling_plain_name:
+        return None
+    label_exact = any(f.get("source") == "label" and f.get("kind") == "exact"
+                      for f in source_forms)
+    return "label" if label_exact else "derived"
+
+
+def form_excluded_because(
+    form: dict[str, Any], country_forms: list[str], ceiling_source: str | None,
+    rules: ClueRules,
+) -> str | None:
+    """Why this surface form is held back, or None."""
+    kind = form.get("kind")
+    if (rules.exclude_qualified and kind == "ambiguous_alias"
+            and _is_qualified(form["text"], country_forms)):
+        return "ambiguous form already qualified or contains the country"
+    if ceiling_source and kind == "exact" and form.get("source") != ceiling_source:
+        return (f"exact form other than the plain name; CEILING uses the "
+                f"{'unique label' if ceiling_source == 'label' else 'derived name, country'}")
+    return None
+
+
+def filter_forms(
+    qid: str,
+    place: Place,
+    source_forms: list[dict[str, Any]],
+    country_forms: list[str],
+    rules: ClueRules,
+) -> list[dict[str, Any]]:
+    """
+    Fill place.surface_forms with the forms that survive and return one
+    form_excluded record per form held back.
+
+    CEILING is the only consumer of exact forms. With ceiling_plain_name set it
+    gets one: the plain label when that is unique, otherwise the derived
+    "<name>, <country>". Any other exact form - an altLabel, a nickname, a
+    native-language name - is held back, because an obscure form ("Whangas",
+    "Ō-hine-puhiawe") makes the upper bound harder than the conditions it
+    bounds.
+    """
+    ceiling_source = ceiling_source_of(source_forms, rules)
+    held_back: list[dict[str, Any]] = []
+    forms = []
+    for form in source_forms:
+        reason = form_excluded_because(form, country_forms, ceiling_source, rules)
+        if reason:
+            held_back.append({
+                "record": "form_excluded",
+                "place_qid": qid,
+                "place_name": place.name,
+                "text": form["text"],
+                "kind": form.get("kind"),
+                "source": form.get("source"),
+                "shared_by": form.get("shared_by"),
+                "reason": reason,
+            })
+            continue
+        forms.append(form)
+    place.surface_forms = forms
+    return held_back
 
 
 def load_clue_sets(
@@ -503,12 +819,12 @@ def load_clue_sets(
     The place attributes come from the place CSV via load_places().
 
     THE CLUE LIST is the union of best_sets[].clues[], de-duplicated on
-    (clue_qid, property). Stage 5 exports only its best sets, so this is the
-    pool the planner draws from, and it is a ranked selection, not every clue
-    that passed the filter. Each clue carries:
+    (clue_qid, property) (collect_clues). Stage 5 exports only its best sets,
+    so this is the pool the planner draws from, and it is a ranked selection,
+    not every clue that passed the filter. Each clue carries:
         entity_type         <- property_family
-        discriminativeness  null: no such score exists upstream, and stage 7
-                            must be able to see that
+        discriminativeness  null: no such score exists upstream, and
+                            finalise.py must be able to see that
         source_set_sizes    the sizes of the best_sets containing it
         leaks_place_name    from 05_name_leakage.csv (strict test)
 
@@ -521,7 +837,7 @@ def load_clue_sets(
     random three-clue group has no such guarantee.
 
     LEAKING CLUES are excluded from both when exclude_leaking_clues is set. A
-    set containing a leaking clue is excluded whole.
+    set containing a leaking clue is excluded whole (select_clues).
 
     TOPONYM CLUES - a village, island, river, street, time zone - are excluded
     the same way when exclude_toponym_clues is set. Such a clue puts a real
@@ -541,15 +857,11 @@ def load_clue_sets(
     back when exclude_qualified_ambiguous_forms is set.
 
     EXACT FORMS, which only CEILING uses, are cut to one when
-    ceiling_plain_name is set: the plain label if it is unique, otherwise the
-    derived "<name>, <country>". CEILING is meant to name the place plainly.
+    ceiling_plain_name is set (filter_forms): the plain label if it is unique,
+    otherwise the derived "<name>, <country>". CEILING is meant to name the
+    place plainly.
     """
-    max_pa = int(plan_cfg.get("max_place_ambiguity_for_single_clue", 1))
-    exclude_leaks = bool(plan_cfg.get("exclude_leaking_clues", True))
-    exclude_qualified = bool(plan_cfg.get("exclude_qualified_ambiguous_forms", True))
-    exclude_toponyms = bool(plan_cfg.get("exclude_toponym_clues", True))
-    exclude_label_leaks = bool(plan_cfg.get("exclude_label_leaks", True))
-    ceiling_plain_name = bool(plan_cfg.get("ceiling_plain_name", True))
+    rules = ClueRules.from_config(plan_cfg)
 
     clue_sets = _read_jsonl_by_place(clue_path, "clue set")
     aliases = _read_jsonl_by_place(alias_path, "place alias")
@@ -564,158 +876,26 @@ def load_clue_sets(
                              f"the place set, e.g. {extra[:3]}")
 
     for qid, place in places.items():
-        # ---- the strings that name this place and its country ----
         if qid not in aliases:
             raise SystemExit(f"{alias_path} has no record for {qid} ({place.name}). "
                              f"Re-run scripts/04b_place_aliases.py.")
         alias_line, alias_record = aliases[qid]
-        for key in ("surface_forms", "country_forms", "region_forms"):
-            if key not in alias_record:
-                raise SystemExit(f"{alias_path}:{alias_line} has no {key} field. "
-                                 f"Re-run scripts/04b_place_aliases.py.")
-        # The derived "<name>, <country>" is left out: it is the name plus the
-        # country, and each of those is checked on its own.
-        place_forms = [place.name] + [
-            f["text"] for f in alias_record["surface_forms"] or []
-            if f.get("source") != "derived"
-        ]
-        country_forms = [f["text"] for f in alias_record["country_forms"] or []]
-        region_forms = [f["text"] for f in alias_record["region_forms"] or []]
+        check_alias_record(alias_path, alias_line, alias_record)
+        place_forms, country_forms, region_forms = name_forms_of(place, alias_record)
         place.name_forms = place_forms
         place.country_forms = country_forms
         place.region_forms = region_forms
 
-        # ---- clues ----
-        if qid in clue_sets:
-            line_no, record = clue_sets[qid]
-            if "best_sets" not in record:
-                raise SystemExit(
-                    f"{clue_path}:{line_no} has no best_sets field; it holds "
-                    f"{sorted(record)}. Check the stage 5 export."
-                )
-            best_sets = record["best_sets"] or []
-        else:
-            best_sets = []
+        best_sets = best_sets_of(clue_path, clue_sets, qid)
+        by_key = collect_clues(qid, best_sets, clue_path, types_path, clue_types,
+                               leaks, place_forms, country_forms, region_forms)
+        held_back += select_clues(qid, place, best_sets, by_key, clue_types, rules)
+        held_back += filter_forms(qid, place, alias_record["surface_forms"] or [],
+                                  country_forms, rules)
 
-        by_key: dict[tuple[str, str], dict[str, Any]] = {}
-        for set_index, entry in enumerate(best_sets):
-            for raw in entry.get("clues") or []:
-                for key in ("clue_qid", "clue_label", "property"):
-                    if not raw.get(key):
-                        raise SystemExit(
-                            f"{clue_path}: {qid} best_sets[{set_index}] has a clue "
-                            f"missing {key!r}: {raw}"
-                        )
-                if not raw.get("property_label"):
-                    raise SystemExit(
-                        f"{clue_path}: {qid} has a clue with no property_label. "
-                        f"Re-run scripts/05_score_sets.py, which now carries it "
-                        f"through from 04_clues_scored.jsonl."
-                    )
-                key = (raw["clue_qid"], raw["property"])
-                if raw["clue_qid"] not in clue_types:
-                    raise SystemExit(
-                        f"{types_path} has no row for clue {raw['clue_qid']} "
-                        f"({raw['clue_label']}). Re-run scripts/05b_clue_types.py."
-                    )
-                if key not in by_key:
-                    by_key[key] = {
-                        "clue_qid": raw["clue_qid"],
-                        "clue_label": raw["clue_label"],
-                        "property": raw["property"],
-                        "property_label": raw["property_label"],
-                        "entity_type": raw.get("property_family"),
-                        "place_ambiguity": raw.get("place_ambiguity"),
-                        "surface_ambiguity": raw.get("surface_ambiguity"),
-                        "discriminativeness": None,
-                        "source_set_sizes": [],
-                        "leaks_place_name": (qid, raw["clue_qid"], raw["property"]) in leaks,
-                        "is_toponym": clue_types[raw["clue_qid"]]["toponym"],
-                        "label_leak": _label_leak(raw["clue_label"], place_forms,
-                                                  country_forms, region_forms),
-                    }
-                by_key[key]["source_set_sizes"].append(entry.get("size", len(entry["clues"])))
-
-        place.clues = list(by_key.values())
-
-        def excluded_because(clue: dict[str, Any]) -> str | None:
-            if exclude_leaks and clue["leaks_place_name"]:
-                return "leaks the place name (leak_strict)"
-            if exclude_toponyms and clue["is_toponym"]:
-                cats = clue_types[clue["clue_qid"]].get("categories") or []
-                return f"is itself a place name ({', '.join(cats)})"
-            if exclude_label_leaks and clue["label_leak"]:
-                return clue["label_leak"]
-            return None
-
-        for clue in place.clues:
-            reason = excluded_because(clue)
-            if reason:
-                held_back.append({
-                    "record": "clue_excluded",
-                    "place_qid": qid,
-                    "place_name": place.name,
-                    "clue_qid": clue["clue_qid"],
-                    "clue_label": clue["clue_label"],
-                    "property": clue["property"],
-                    "reason": reason,
-                })
-        usable = [c for c in place.clues if excluded_because(c) is None]
-        place.single_clues = [
-            c for c in usable
-            if c["place_ambiguity"] is not None and c["place_ambiguity"] <= max_pa
-        ]
-        place.triple_sets = []
-        for set_index, entry in enumerate(best_sets):
-            if len(entry.get("clues") or []) != 3 or entry.get("resolves") is not True:
-                continue
-            members = [by_key[(c["clue_qid"], c["property"])] for c in entry["clues"]]
-            if any(excluded_because(c) for c in members):
-                continue
-            place.triple_sets.append({"source_set_index": set_index, "clues": members})
-
-        # ---- surface forms ----
-        # CEILING is the only consumer of exact forms. With ceiling_plain_name
-        # set it gets one: the plain label when that is unique, otherwise the
-        # derived "<name>, <country>". Any other exact form - an altLabel, a
-        # nickname, a native-language name - is held back, because an obscure
-        # form ("Whangas", "Ō-hine-puhiawe") makes the upper bound harder than
-        # the conditions it bounds.
-        source_forms = alias_record["surface_forms"] or []
-        ceiling_source = None
-        if ceiling_plain_name:
-            label_exact = any(f.get("source") == "label" and f.get("kind") == "exact"
-                              for f in source_forms)
-            ceiling_source = "label" if label_exact else "derived"
-
-        def form_excluded_because(form: dict[str, Any]) -> str | None:
-            kind = form.get("kind")
-            if (exclude_qualified and kind == "ambiguous_alias"
-                    and _is_qualified(form["text"], country_forms)):
-                return "ambiguous form already qualified or contains the country"
-            if ceiling_source and kind == "exact" and form.get("source") != ceiling_source:
-                return (f"exact form other than the plain name; CEILING uses the "
-                        f"{'unique label' if ceiling_source == 'label' else 'derived name, country'}")
-            return None
-
-        forms = []
-        for form in source_forms:
-            reason = form_excluded_because(form)
-            if reason:
-                held_back.append({
-                    "record": "form_excluded",
-                    "place_qid": qid,
-                    "place_name": place.name,
-                    "text": form["text"],
-                    "kind": form.get("kind"),
-                    "source": form.get("source"),
-                    "shared_by": form.get("shared_by"),
-                    "reason": reason,
-                })
-                continue
-            forms.append(form)
-        place.surface_forms = forms
-
+    # The name forms and donor clues just changed, so drop memoised distractors.
+    for place in places.values():
+        place.reset_caches()
     return held_back
 
 
@@ -954,12 +1134,13 @@ def build_slate(
     Surplus pass: extra replicates are drawn at random until the surplus target
     is met. The surplus exists because the model will sometimes name the place
     outright in a condition that forbids it. Those items are dropped at
-    validation in stage 7, so the plan has to be larger than the target set.
+    validation in finalise.py, so the plan has to be larger than the target set.
     """
     plan_cfg = config["plan"]
     replicates: dict[str, int] = plan_cfg["replicates"]
-    surplus_factor = float(plan_cfg.get("surplus_factor", 1.0))
-    max_per_pair = int(plan_cfg.get("max_replicates_per_pair", 6))
+    surplus_factor = float(plan_cfg.get("surplus_factor", DEFAULT_SURPLUS_FACTOR))
+    max_per_pair = int(plan_cfg.get("max_replicates_per_pair",
+                                    DEFAULT_MAX_REPLICATES_PER_PAIR))
 
     unknown = set(replicates) - set(CONDITION_SPECS)
     if unknown:
@@ -1047,7 +1228,7 @@ def plan_items(
         surface_form = choose_surface_form(place, condition, stream)
         noise_entity = choose_noise_entity(place, condition, places, stream)
         register = choose_register(config, stream)
-        length_band = stream.pick(register.get("length_bands", ["medium"]))
+        length_band = stream.pick(register.get("length_bands", DEFAULT_LENGTH_BANDS))
         slots = choose_slots(register, config, stream)
 
         payload: dict[str, Any] = {
@@ -1103,7 +1284,7 @@ def plan_items(
             "start": position_before,
             "end": stream.position,
         }
-        payload["planned_utc"] = _utc_now()
+        payload["planned_utc"] = utc_now()
         items.append(payload)
 
     return items, rejections
@@ -1130,13 +1311,10 @@ def _signal_label(condition: str) -> str:
 
 
 def write_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> int:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    n = 0
-    with path.open("w", encoding="utf-8") as handle:
-        for record in records:
-            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-            n += 1
-    return n
+    """Write records as JSONL atomically (tmp file + os.replace). Returns the count."""
+    lines = [json.dumps(record, ensure_ascii=False) + "\n" for record in records]
+    atomic_write_text(path, "".join(lines))
+    return len(lines)
 
 
 def archive_existing(paths: Iterable[Path]) -> list[Path]:
@@ -1202,11 +1380,7 @@ def summarise(items: list[dict[str, Any]], rejections: list[dict[str, Any]]) -> 
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    # Place names are not ASCII; the Windows console default codepage cannot
-    # print them.
-    for stream in (sys.stdout, sys.stderr):
-        if hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8", errors="replace")
+    configure_stdout()
     parser = argparse.ArgumentParser(description="Plan the generation items.")
     parser.add_argument("--config", type=Path, default=HERE / "config.yaml")
     parser.add_argument("--out", type=Path, default=None,
@@ -1230,14 +1404,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     leakage_path = Path(paths["name_leakage"])
     types_path = Path(paths["clue_types"])
     stream_path = Path(paths["random_stream"])
-    state_path = Path(paths.get("plan_stream_state", "state/plan_stream.json"))
-    plan_path = args.out or Path(paths.get("item_plan", "output/item_plan.jsonl"))
-    reject_path = Path(paths.get("plan_rejections", "output/plan_rejections.jsonl"))
+    state_path = Path(paths["plan_stream_state"])
+    plan_path = args.out or Path(paths["item_plan"])
+    reject_path = Path(paths["plan_rejections"])
 
     # Checked before any work is done, so a refused run spends nothing.
     if plan_path.exists() and not args.dry_run and not args.replace:
-        generations = Path(paths.get("raw_generations",
-                                     "output/raw_generations.jsonl"))
+        generations = Path(paths["raw_generations"])
         warning = (f"\n{generations} exists, so generation has already started "
                    f"against the current plan. Replacing the plan orphans those "
                    f"rows." if generations.exists() else "")
@@ -1300,13 +1473,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("\ndry run: nothing written, stream cursor not advanced")
         return 0
 
+    # The cursor goes first. The plan records the stream positions it used, so
+    # if the run dies after this line the integers are burned, never reused:
+    # the invariant that no integer serves two decisions survives a crash. The
+    # cost is a gap in the stream, which is harmless.
+    stream.save_cursor()
+
     if args.replace:
         for archived in archive_existing([plan_path, reject_path]):
             print(f"archived {archived}")
 
     n_items = write_jsonl(plan_path, items)
     n_rejects = write_jsonl(reject_path, rejections)
-    stream.save_cursor()
 
     print(f"\nwrote {n_items} items to {plan_path}")
     print(f"wrote {n_rejects} rejections to {reject_path}")
@@ -1322,8 +1500,7 @@ def _as_int(value: Any, default: int) -> int:
         return default
 
 
-def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+_utc_now = utc_now  # underscore alias kept for older callers
 
 
 if __name__ == "__main__":

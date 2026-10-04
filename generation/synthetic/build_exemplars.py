@@ -27,30 +27,43 @@ must be a real reply, photo_caption must have had an image.
 
 Labels are cached in data/exemplar_labels.jsonl, so an interrupted run
 resumes and a re-run with a larger --per-register only labels what it needs.
+The exemplar file is only rewritten when at least one exemplar was chosen, so
+a run that fails before labelling anything cannot wipe an existing file.
 """
 from __future__ import annotations
 
 import argparse
+import copy
 import importlib.util
 import json
 import random
 import re
 import sys
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
 import generate as gen  # noqa: E402  (config, .env, OpenRouter client)
+import plan             # noqa: E402  (configure_stdout, atomic_write_text)
 
-_spam_path = HERE.parent.parent / "scripts" / "filter_adult_spam.py"
-_spec = importlib.util.spec_from_file_location("filter_adult_spam", _spam_path)
-_spam = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_spam)
+SPAM_FILTER_PATH = HERE.parent.parent / "scripts" / "filter_adult_spam.py"
 
+# TODO: move to a paths: key in config.yaml (that file is edited elsewhere);
+# --label-cache overrides it meanwhile.
 LABEL_CACHE = HERE / "data" / "exemplar_labels.jsonl"
+
+MIN_WORDS = 4              # shortest candidate post, in whitespace-separated words
+MAX_WORDS = 60             # longest candidate post
+MIN_LETTERS = 15           # fewest alphabetic characters in a candidate
+LABEL_MAX_TOKENS = 8000    # floor for max_tokens: the model reasons before it answers
+DEFAULT_PER_REGISTER = 30
+DEFAULT_BATCH = 10
+DEFAULT_MAX_CALLS = 150
+DEFAULT_SEED = "exemplars-2026"
+DRY_RUN_PREVIEW = 10       # candidates shown by --dry-run
+PREVIEW_CHARS = 110
 
 _URL = re.compile(r"https?://|www\.|\.(com|org|net|co|io|uk)\b|…$|\.\.\.$", re.I)
 _HANDLE = re.compile(r"[@#]\w")
@@ -58,17 +71,30 @@ _WORD = re.compile(r"[A-Za-z][A-Za-z'’\-]*")
 _ALLOWED_CAPS = {"I", "I'm", "I’m", "I've", "I’ve", "I'll", "I’ll", "I'd", "I’d",
                  "OK", "TV", "AM", "PM"}
 
+_spam_module = None
+
+
+def spam_filter():
+    """scripts/filter_adult_spam.py, loaded on first use rather than at import
+    (loading executes that script)."""
+    global _spam_module
+    if _spam_module is None:
+        spec = importlib.util.spec_from_file_location("filter_adult_spam", SPAM_FILTER_PATH)
+        _spam_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(_spam_module)
+    return _spam_module
+
 
 def passes_text_filter(text: str) -> bool:
     words = text.split()
-    if not 4 <= len(words) <= 60:
+    if not MIN_WORDS <= len(words) <= MAX_WORDS:
         return False
     if _URL.search(text) or _HANDLE.search(text) or "\n\n\n" in text:
         return False
-    if _spam.classify(text):
+    if spam_filter().classify(text):
         return False
     letters = sum(ch.isalpha() for ch in text)
-    if letters < 15 or sum(ch.isascii() for ch in text if ch.isalpha()) < letters:
+    if letters < MIN_LETTERS or sum(ch.isascii() for ch in text if ch.isalpha()) < letters:
         return False
     # No capitalised word except sentence-initially: a cheap proper-noun filter.
     sentence_start = True
@@ -118,7 +144,28 @@ Posts:
 {posts}"""
 
 
+def parse_labels(raw: str, batch: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """
+    The labels in a model answer, keyed by post uri. Raises JSONDecodeError,
+    TypeError or ValueError when the answer is not the expected shape; the
+    caller decides what to do about that.
+    """
+    labels = {}
+    for entry in json.loads(raw).get("labels", []):
+        n = int(entry.get("n", 0))
+        if 1 <= n <= len(batch):
+            labels[batch[n - 1]["uri"]] = {
+                "register": str(entry.get("register") or "none").strip(),
+                "names_anything": bool(entry.get("names_anything", True)),
+            }
+    return labels
+
+
+_parse_failure_logged = False   # log the first unusable answer only, not every one
+
+
 def label_batch(client, config, registers, batch) -> dict[str, dict[str, Any]]:
+    global _parse_failure_logged
     register_lines = "\n".join(f'    {r["name"]}: {" ".join(r["description"].split())}'
                                for r in registers)
     post_lines = "\n".join(f"{i}. {c['text'].replace(chr(10), ' / ')}"
@@ -127,17 +174,14 @@ def label_batch(client, config, registers, batch) -> dict[str, dict[str, Any]]:
                  "content": LABEL_PROMPT.format(registers=register_lines, posts=post_lines)}]
     content, _meta, _log = gen.call_with_backoff(client, messages, config)
     raw = gen.extract_json_object(content or "") or "{}"
-    labels = {}
     try:
-        for entry in json.loads(raw).get("labels", []):
-            n = int(entry.get("n", 0))
-            if 1 <= n <= len(batch):
-                labels[batch[n - 1]["uri"]] = {
-                    "register": str(entry.get("register") or "none").strip(),
-                    "names_anything": bool(entry.get("names_anything", True)),
-                }
-    except (json.JSONDecodeError, TypeError, ValueError):
-        pass
+        labels = parse_labels(raw, batch)
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        labels = {}
+        if not _parse_failure_logged:
+            _parse_failure_logged = True
+            print(f"  label answer unusable ({type(exc).__name__}: {exc}); "
+                  f"later failures are not logged again", file=sys.stderr)
     if not labels:
         # Usually the reasoning used up max_tokens and no JSON arrived. Not
         # cached, so the batch is tried again on the next run.
@@ -188,21 +232,131 @@ def acceptable(cand: dict[str, Any], label: dict[str, Any], names: set[str]) -> 
     return register
 
 
+class ExemplarPool:
+    """
+    The exemplars chosen so far per register, and the candidates still waiting
+    to be labelled, bucketed by the register they might fit.
+    """
+
+    def __init__(self, names: set[str], per_register: int, batch_size: int) -> None:
+        self.names = names
+        self.per_register = per_register
+        self.batch_size = batch_size
+        self.chosen: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        self.buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        self.seen: set[str] = set()
+
+    def take(self, cand: dict[str, Any], label: dict[str, Any]) -> None:
+        """Keep the candidate if its label makes it an exemplar and there is room."""
+        register = acceptable(cand, label, self.names)
+        if register and len(self.chosen[register]) < self.per_register:
+            self.chosen[register].append(cand)
+
+    def full(self) -> bool:
+        return all(len(self.chosen[n]) >= self.per_register for n in self.names)
+
+    def add_candidates(self, candidates: list[dict[str, Any]],
+                       cached: dict[str, dict[str, Any]]) -> None:
+        """Use cached labels where there are any, bucket the rest for labelling."""
+        for cand in candidates:
+            if cand["uri"] in cached:
+                self.take(cand, cached[cand["uri"]])
+            else:
+                for name in bucket_of(cand):
+                    self.buckets[name].append(cand)
+
+    def next_batch(self) -> list[dict[str, Any]]:
+        """Posts for the register that is furthest behind."""
+        short = sorted((len(self.chosen[n]), n) for n in self.names
+                       if len(self.chosen[n]) < self.per_register and self.buckets[n])
+        if not short:
+            return []
+        bucket = self.buckets[short[0][1]]
+        batch = []
+        while bucket and len(batch) < self.batch_size:
+            cand = bucket.pop()
+            if cand["uri"] not in self.seen:
+                self.seen.add(cand["uri"])
+                batch.append(cand)
+        return batch
+
+    def progress(self) -> str:
+        return " ".join(f"{n}={len(self.chosen[n])}" for n in sorted(self.names))
+
+
+def make_label_client(config: dict[str, Any]):
+    """
+    A ChatClient set up for labelling: JSON object output, temperature 0, and
+    a token budget of at least LABEL_MAX_TOKENS (the model reasons before it
+    answers and the reasoning shares the budget). The overrides go into a copy
+    of the config handed to the constructor, so the client is not mutated from
+    outside. Returns (client, the overridden config).
+    """
+    label_config = copy.deepcopy(config)
+    settings = label_config["generation"]
+    settings["structured_output"] = "json_object"
+    settings["temperature"] = 0.0
+    settings["max_tokens"] = max(int(settings.get("max_tokens", 600)), LABEL_MAX_TOKENS)
+    return gen.ChatClient(label_config), label_config
+
+
+def label_candidates(pool: ExemplarPool, client, config, registers,
+                     cache_path: Path, max_calls: int) -> int:
+    """Label batches until every register is full or max_calls is reached.
+    Appends every label to the cache. Returns the number of calls made."""
+    calls = 0
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    with cache_path.open("a", encoding="utf-8") as cache_out:
+        while not pool.full() and calls < max_calls:
+            batch = pool.next_batch()
+            if not batch:
+                break
+            try:
+                labels = label_batch(client, config, registers, batch)
+            except gen.ApiError as exc:
+                print(f"  call failed ({exc}); stopping - re-run to resume", file=sys.stderr)
+                break
+            calls += 1
+            if not labels:
+                print(f"  call {calls}: no usable answer, batch skipped", flush=True)
+                continue
+            for cand in batch:
+                cache_out.write(json.dumps({"uri": cand["uri"], "label": labels[cand["uri"]]},
+                                           ensure_ascii=False) + "\n")
+                pool.take(cand, labels[cand["uri"]])
+            cache_out.flush()
+            print(f"  call {calls}: {pool.progress()}", flush=True)
+    return calls
+
+
+def exemplar_lines(chosen: dict[str, list[dict[str, Any]]]) -> str:
+    """The style_exemplars.jsonl content for the chosen posts."""
+    lines = []
+    for register in sorted(chosen):
+        for cand in chosen[register]:
+            lines.append(json.dumps({"register": register, "text": cand["text"],
+                                     "source": cand["uri"],
+                                     "created_at": cand["created_at"]},
+                                    ensure_ascii=False) + "\n")
+    return "".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
-    for stream in (sys.stdout, sys.stderr):
-        if hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8", errors="replace")
+    plan.configure_stdout()
 
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", type=Path, default=HERE / "config.yaml")
     parser.add_argument("--env-file", type=Path, default=HERE / ".env")
-    parser.add_argument("--per-register", type=int, default=30,
+    parser.add_argument("--label-cache", type=Path, default=LABEL_CACHE,
+                        help="where labels are cached (default data/exemplar_labels.jsonl)")
+    parser.add_argument("--per-register", type=int, default=DEFAULT_PER_REGISTER,
                         help="exemplars to collect per register (default 30)")
-    parser.add_argument("--batch", type=int, default=10, help="posts per labelling call")
-    parser.add_argument("--max-calls", type=int, default=150,
+    parser.add_argument("--batch", type=int, default=DEFAULT_BATCH,
+                        help="posts per labelling call")
+    parser.add_argument("--max-calls", type=int, default=DEFAULT_MAX_CALLS,
                         help="stop after this many labelling calls")
-    parser.add_argument("--seed", default="exemplars-2026",
+    parser.add_argument("--seed", default=DEFAULT_SEED,
                         help="shuffles the candidates; same seed, same order")
     parser.add_argument("--dry-run", action="store_true",
                         help="count candidates and show a few, call nothing")
@@ -226,92 +380,33 @@ def main(argv: list[str] | None = None) -> int:
           f"{sum(c['has_images'] for c in candidates)} with images)")
 
     if args.dry_run:
-        for cand in candidates[:10]:
-            print(f"  - {cand['text'][:110]}")
+        for cand in candidates[:DRY_RUN_PREVIEW]:
+            print(f"  - {cand['text'][:PREVIEW_CHARS]}")
         print("\ndry run: nothing labelled, nothing written")
         return 0
 
     cached: dict[str, dict[str, Any]] = {}
-    if LABEL_CACHE.exists():
-        for row in gen.read_jsonl(LABEL_CACHE):
-            cached[row["uri"]] = row["label"]
+    for row in gen.read_jsonl(args.label_cache):   # [] when the cache does not exist
+        cached[row["uri"]] = row["label"]
 
-    chosen: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    pool = ExemplarPool(names, args.per_register, args.batch)
+    pool.add_candidates(candidates, cached)
 
-    def take(cand, label):
-        register = acceptable(cand, label, names)
-        if register and len(chosen[register]) < args.per_register:
-            chosen[register].append(cand)
+    client, label_config = make_label_client(config)
+    label_candidates(pool, client, label_config, registers, args.label_cache,
+                     args.max_calls)
 
-    def full() -> bool:
-        return all(len(chosen[n]) >= args.per_register for n in names)
+    total = sum(len(v) for v in pool.chosen.values())
+    if total == 0:
+        print(f"\nnothing chosen, so {out_path} was left untouched", file=sys.stderr)
+        return 1
+    plan.atomic_write_text(out_path, exemplar_lines(pool.chosen))
 
-    buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for cand in candidates:
-        if cand["uri"] in cached:
-            take(cand, cached[cand["uri"]])
-        else:
-            for name in bucket_of(cand):
-                buckets[name].append(cand)
-    seen: set[str] = set()
-
-    def next_batch() -> list[dict[str, Any]]:
-        """Posts for the register that is furthest behind."""
-        short = sorted((len(chosen[n]), n) for n in names
-                       if len(chosen[n]) < args.per_register and buckets[n])
-        if not short:
-            return []
-        bucket = buckets[short[0][1]]
-        batch = []
-        while bucket and len(batch) < args.batch:
-            cand = bucket.pop()
-            if cand["uri"] not in seen:
-                seen.add(cand["uri"])
-                batch.append(cand)
-        return batch
-
-    client = gen.ChatClient(config)
-    client.structured_output = "json_object"
-    client.temperature = 0.0
-    # The model reasons before answering and the reasoning shares this budget;
-    # at the generation default a batch can run out before the JSON arrives.
-    client.max_tokens = max(client.max_tokens, 8000)
-    calls = 0
-    with LABEL_CACHE.open("a", encoding="utf-8") as cache_out:
-        while not full() and calls < args.max_calls:
-            batch = next_batch()
-            if not batch:
-                break
-            try:
-                labels = label_batch(client, config, registers, batch)
-            except gen.ApiError as exc:
-                print(f"  call failed ({exc}); stopping - re-run to resume", file=sys.stderr)
-                break
-            calls += 1
-            if not labels:
-                print(f"  call {calls}: no usable answer, batch skipped", flush=True)
-                continue
-            for cand in batch:
-                cache_out.write(json.dumps({"uri": cand["uri"], "label": labels[cand["uri"]]},
-                                           ensure_ascii=False) + "\n")
-                take(cand, labels[cand["uri"]])
-            cache_out.flush()
-            counts = " ".join(f"{n}={len(chosen[n])}" for n in sorted(names))
-            print(f"  call {calls}: {counts}", flush=True)
-
-    with out_path.open("w", encoding="utf-8") as handle:
-        for register in sorted(chosen):
-            for cand in chosen[register]:
-                handle.write(json.dumps({"register": register, "text": cand["text"],
-                                         "source": cand["uri"],
-                                         "created_at": cand["created_at"]},
-                                        ensure_ascii=False) + "\n")
-
-    print(f"\nwrote {sum(len(v) for v in chosen.values())} exemplars to {out_path}")
+    print(f"\nwrote {total} exemplars to {out_path}")
     for name in sorted(names):
-        flag = "" if len(chosen[name]) >= args.per_register else "   (short)"
-        print(f"  {name:<16} {len(chosen[name]):>3}{flag}")
-    if not full():
+        flag = "" if len(pool.chosen[name]) >= args.per_register else "   (short)"
+        print(f"  {name:<16} {len(pool.chosen[name]):>3}{flag}")
+    if not pool.full():
         print("\nsome registers are short; re-run (cached labels are reused) or "
               "raise --max-calls")
     return 0

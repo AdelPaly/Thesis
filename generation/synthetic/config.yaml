@@ -1,7 +1,11 @@
 # Configuration for plan.py, generate.py, build_exemplars.py and finalise.py.
 #
-# Nothing in either script hardcodes a path, a model or a count. Everything
-# that could reasonably be revised between runs lives here.
+# No script hardcodes a path, a model or a count. Everything that could
+# reasonably be revised between runs lives here, including the prompt wording
+# (the prompt: section below). Editing the model, the prompt: section or a
+# sampling setting changes the config_hash that generate.py stores on every
+# row; a resume over rows with a different hash is refused unless --force-mixed
+# is passed.
 
 paths:
   # Relative to this file. The place inputs are built by ../places/
@@ -47,7 +51,7 @@ plan:
     NOISE_B: 1     # B plus one entity from another continent
 
   # The model will sometimes name the place in a condition that forbids it.
-  # Those items are dropped in stage 7, so the plan has to be larger than the
+  # Those items are dropped in finalise.py, so the plan has to be larger than the
   # target set. 1.3 assumes a leak rate near 20 per cent with room to spare;
   # measure it on a smoke run and set this from the measurement.
   surplus_factor: 1.3
@@ -71,7 +75,7 @@ plan:
   max_place_ambiguity_for_single_clue: 1
 
   # A clue whose label contains its place's name (05_name_leakage.csv,
-  # strict test) makes the name unavoidable and the item fails stage 7. When
+  # strict test) makes the name unavoidable and the item fails finalise.py. When
   # true, such clues are never drawn, and a best set containing one is not
   # used for A3. Each exclusion is written to the rejection log.
   exclude_leaking_clues: true
@@ -240,9 +244,10 @@ generation:
   #
   # Pinned, not the ~deepseek/deepseek-flash-latest alias. On 2026-09-30 the
   # alias pointed at this model at the same price, but an alias can move, and
-  # a run that spans the move would mix two generators in one dataset. Paid
-  # model: $0.02/M input, $0.396/M output, so a full 1080-item pass is at most
-  # about $0.35 even if every reply hits max_tokens.
+  # a run that spans the move would mix two generators in one dataset (the
+  # config_hash check also catches an edited model name). Paid model:
+  # $0.02/M input, $0.396/M output, so a full pass over the 984-item plan is at
+  # most about $0.32 even if every reply hits max_tokens.
   base_url: https://openrouter.ai/api/v1
   model: deepseek/deepseek-v4.1-flash
   api_key_env: OPENROUTER_API_KEY
@@ -267,8 +272,8 @@ generation:
   # supports both.
   structured_output: json_schema
 
-  # The model accepts a seed. Sent per item, derived from item_id. Providers
-  # treat it as best effort.
+  # The model accepts a seed. Sent per item, derived from item_id and masked to
+  # 31 bits. Providers treat it as best effort.
   send_seed: true
 
   # The model is reasoning-capable. Excluding reasoning keeps the content field
@@ -285,7 +290,7 @@ generation:
   top_p: 1.0
   # Reasoning and the JSON answer share this budget. At 2000, low effort still
   # ran out on 3 of 10 smoke items (reasoning 792-1675 tokens on the 7 that
-  # finished). At $0.396/M output a full 1080-item pass is at most about $1.70
+  # finished). At $0.396/M output a full 984-item pass is at most about $1.55
   # even if every reply used all 4000.
   max_tokens: 4000
   timeout_seconds: 120
@@ -299,9 +304,15 @@ generation:
   delay_between_calls_seconds: 0.5
   max_attempts: 6
   backoff_base_seconds: 2.0
-  backoff_max_seconds: 120.0
+  backoff_max_seconds: 120.0     # also caps a server's Retry-After
+  jitter_fraction: 0.25          # random extra wait, as a share of the delay
+  error_body_head_chars: 400     # response body kept per failed attempt
 
 
+# Everything the model reads is here. generate.py adds only the clue and slot
+# values from the plan, the exemplar posts, and the field names of the output
+# shape (taken from RESPONSE_SCHEMA). Placeholders in {braces} are filled by
+# str.format, so a literal brace in any template below must be doubled.
 prompt:
   # "In English" is stated in both. The 2026-10-01 smoke run had no language
   # instruction, and a CEILING item for Cîșlița-Prut came back in Romanian.
@@ -321,7 +332,7 @@ prompt:
     those names exactly as written.
 
   # How each clue's entity type is written in the prompt. The plan keeps
-  # stage 4's property family codes; these are only the words the model sees.
+  # the places pipeline's property family codes; these are only the words the model sees.
   # A family not listed here gets no type note: named_after (the relation
   # label already says it) and other (P495, P1435 - too mixed to name).
   entity_type_labels:
@@ -363,3 +374,56 @@ prompt:
     would who assumes their reader knows where they live. This item is the
     upper bound for the experiment, so the location should be obvious from the
     text. Do not add qualifiers the writer would not use.
+
+
+  # Line templates for the entity block. {type_note} is " (a person)" and so
+  # on from entity_type_labels, or empty.
+  entities_header: >-
+    Entities the post must mention, by name, in full:
+
+  clue_line: >-
+    - "{label}"{type_note} - relation to the location: {relation}
+
+  noise_entity: >-
+    - "{label}" - mention by name. Do not connect it to the writer's location
+    in any way; it belongs somewhere else.
+
+  surface_ambiguous: >-
+    Place name the post must use, written exactly like this and with nothing
+    added to it: "{surface}"
+
+  surface_exact: >-
+    Place name the post must use, written exactly like this: "{surface}"
+
+  # Introduces the real-post tone references. Keep "copy nothing".
+  exemplar_intro: >-
+    Tone and rhythm references. Copy nothing from these - not a phrase, not a
+    name, not a subject. They show how people in this register punctuate,
+    abbreviate and break lines:
+
+  # The slot block. Slot lines themselves ("Time of day: lunchtime") come from
+  # the plan.
+  register_line: >-
+    Register: {register}
+
+  length_line: >-
+    Length: {length}
+
+  register_notes_line: >-
+    Register notes: {notes}
+
+  slots_footer: >-
+    Use every value above. They are the specifics of this post and they are
+    not suggestions.
+
+  # The output-shape block. The field list and its order come from
+  # RESPONSE_SCHEMA in generate.py; this is the wording for each. A schema
+  # field with no wording here is a load error.
+  output_intro: >-
+    Return one JSON object and nothing else, with these fields:
+
+  output_fields:
+    post_text: the post itself
+    entities_referenced: every named entity you wrote, exactly as written
+    naming_form_used: the place name you wrote, exactly as written, or null if you wrote none
+    register: the register you followed

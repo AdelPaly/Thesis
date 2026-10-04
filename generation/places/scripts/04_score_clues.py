@@ -53,31 +53,25 @@ Usage:
     py -3 scripts/04_score_clues.py [--clues data/02_clues_filtered.jsonl]
                                     [--high N] [--limit N] [--no-altlabel]
                                     [--no-cache] [--dry-run]
+
+--no-cache ignores the cache and does not write it.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
-import json
+import io
 import statistics
 import sys
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from importlib import import_module
-
-_clues = import_module("02_clues")
-
-QueryError = _clues.QueryError
-sparql = _clues.sparql
-value_of = _clues.value_of
-qid_from_uri = _clues.qid_from_uri
-SLEEP_BETWEEN = _clues.SLEEP_BETWEEN
-SPORTS_ORG_CLASS = _clues.SPORTS_ORG_CLASS
+from clue_queries import SLEEP_BETWEEN, SPORTS_ORG_CLASS
+from io_utils import read_jsonl, utf8_stdout, write_jsonl_atomic, write_text_atomic
+from jsoncache import JsonCache, cache_key
+from wdqs import QueryError, escape_literal, qid_from_uri, sparql, value_of
 
 ROOT = Path(__file__).resolve().parent.parent
 CLUES = ROOT / "data" / "02_clues_filtered.jsonl"
@@ -90,6 +84,17 @@ CACHE_VERSION = 1
 QID_CHUNK = 150      # entities bound into one VALUES block for count queries
 LABEL_CHUNK = 80     # label strings per surface-ambiguity query
 ALIAS_CHUNK = 200    # entities per alias query
+CHUNK_PROGRESS_EVERY = 5      # print "n/total chunks" every N successful chunks
+DEFAULT_HIGH = 5              # place ambiguity at or above this counts as high
+ZERO_EXAMPLES_SHOWN = 8
+FAILURES_SHOWN = 10
+LABEL_SNIPPET = 40
+CLUE_LABEL_SNIPPET = 44
+ERROR_SNIPPET = 110
+PLACE_NAME_WIDTH = 24
+EXIT_OK = 0
+EXIT_FAILED_LOOKUPS = 1
+EXIT_BAD_INPUT = 2
 
 # The mapping as specified. P495 and P1435 are deliberately absent -- see
 # UNMAPPED handling below; they are not silently assigned.
@@ -121,6 +126,10 @@ SURFACE_BUCKETS = (
     ("5-19", lambda n: 5 <= n <= 19),
     ("20+", lambda n: n >= 20),
 )
+
+SUMMARY_FIELDS = (["place_qid", "place_name", "clue_count", "scored",
+                   "pa_min", "pa_median", "pa_max", "all_high_ambiguity"]
+                  + [f"n_{f}" for f in FAMILY_ORDER])
 
 
 # --------------------------------------------------------------------------
@@ -163,11 +172,6 @@ GROUP BY ?clue
 """
 
 
-def escape_literal(text: str) -> str:
-    out = text.replace("\\", "\\\\").replace('"', '\\"')
-    return out.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
-
-
 def surface_count_query(labels: list[str]) -> str:
     """Entities carrying the string as an English label OR alias.
 
@@ -186,6 +190,7 @@ GROUP BY ?label
 
 
 def alias_query(qids: list[str], altlabel: bool) -> str:
+    """Aliases (P1449, P1705 and optionally English skos:altLabel) for a batch of entities."""
     values = " ".join(f"wd:{q}" for q in qids)
     blocks = [
         '{ ?clue wdt:P1449 ?alias . BIND("P1449" AS ?src) }',
@@ -237,13 +242,14 @@ def run_chunked(items: list, chunk: int, build, collect, label: str,
             continue
         collect(batch, rows, out)
         done += 1
-        if done % 5 == 0 or done == total:
+        if done % CHUNK_PROGRESS_EVERY == 0 or done == total:
             print(f"      {label}: {done}/{max(total, done)} chunks", flush=True)
         time.sleep(SLEEP_BETWEEN)
     return out
 
 
 def collect_place_counts(batch: list[str], rows: list[dict], out: dict) -> None:
+    """Fill `out[qid] = (n_all, n_geo)` for every clue in the batch."""
     seen = {}
     for row in rows:
         clue = value_of(row, "clue")
@@ -259,6 +265,7 @@ def collect_place_counts(batch: list[str], rows: list[dict], out: dict) -> None:
 
 
 def collect_surface_counts(batch: list[str], rows: list[dict], out: dict) -> None:
+    """Fill `out[label] = number of entities carrying it` for every label in the batch."""
     seen = {}
     for row in rows:
         text = value_of(row, "label")
@@ -269,6 +276,7 @@ def collect_surface_counts(batch: list[str], rows: list[dict], out: dict) -> Non
 
 
 def collect_aliases(batch: list[str], rows: list[dict], out: dict) -> None:
+    """Fill `out[qid] = [[alias, source], ...]` (deduplicated) for every entity in the batch."""
     found: dict[str, list] = {q: [] for q in batch}
     for row in rows:
         clue = value_of(row, "clue")
@@ -283,116 +291,62 @@ def collect_aliases(batch: list[str], rows: list[dict], out: dict) -> None:
     out.update(found)
 
 
-# --------------------------------------------------------------------------
-# Cache
-# --------------------------------------------------------------------------
-
-def load_cache(use_cache: bool) -> dict:
-    if not use_cache or not CACHE_PATH.exists():
-        return {}
-    try:
-        payload = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    if payload.get("version") != CACHE_VERSION:
-        return {}
-    return payload.get("entries", {})
-
-
-def save_cache(entries: dict) -> None:
-    CACHE_PATH.write_text(
-        json.dumps({"version": CACHE_VERSION, "entries": entries}, ensure_ascii=False),
-        encoding="utf-8",
-    )
-
-
 def bucket_row(values: list[int], buckets) -> list[int]:
+    """How many of `values` fall in each bucket."""
     return [sum(1 for v in values if test(v)) for _, test in buckets]
 
 
 # --------------------------------------------------------------------------
-# Main
+# Load / plan
 # --------------------------------------------------------------------------
 
-def main(argv: list[str] | None = None) -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
-    except Exception:  # pragma: no cover
-        pass
+def limit_places(records: list[dict], limit: int) -> tuple[list[dict], int]:
+    """Keep only records of the first `limit` distinct places (input order)."""
+    keep = []
+    seen: dict[str, None] = {}
+    for record in records:
+        if record["place_qid"] not in seen:
+            if len(seen) >= limit:
+                continue
+            seen[record["place_qid"]] = None
+        keep.append(record)
+    return keep, len(seen)
 
-    parser = argparse.ArgumentParser(description="Score clues for ambiguity.")
-    parser.add_argument("--clues", type=Path, default=CLUES)
-    parser.add_argument("--out", type=Path, default=OUT_JSONL)
-    parser.add_argument("--summary", type=Path, default=OUT_CSV)
-    parser.add_argument("--high", type=int, default=5,
-                        help="place ambiguity at or above this counts as high (default 5)")
-    parser.add_argument("--limit", type=int,
-                        help="only score the first N places (partial output; for testing)")
-    parser.add_argument("--no-altlabel", action="store_true",
-                        help="aliases from P1449/P1705 only, ignoring skos:altLabel")
-    parser.add_argument("--no-cache", action="store_true")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="report the query plan and exit without querying")
-    args = parser.parse_args(argv)
 
-    if not args.clues.exists():
-        print(f"clue file not found: {args.clues}", file=sys.stderr)
-        return 2
-
-    records = [json.loads(line) for line in args.clues.open(encoding="utf-8") if line.strip()]
-    if not records:
-        print("no clue records", file=sys.stderr)
-        return 2
-
-    if args.limit:
-        keep = []
-        seen: list[str] = []
-        for record in records:
-            if record["place_qid"] not in seen:
-                if len(seen) >= args.limit:
-                    continue
-                seen.append(record["place_qid"])
-            keep.append(record)
-        records = keep
-        print(f"!! --limit {args.limit}: scoring {len(seen)} places, "
-              f"{len(records)} records. Output is PARTIAL.\n")
-
-    # ---- family tagging ----
+def tag_families(records: list[dict]) -> list[str]:
+    """Set property_family on every record; returns the properties left as 'other'."""
     for record in records:
         record["property_family"] = FAMILIES.get(record["property"], "other")
-    unmapped = sorted({r["property"] for r in records if r["property_family"] == "other"})
+    return sorted({r["property"] for r in records if r["property_family"] == "other"})
 
-    # ---- work plan ----
-    by_prop: dict[str, list[str]] = defaultdict(list)
-    for record in records:
-        by_prop[record["property"]].append(record["clue_qid"])
-    pairs = {p: sorted(set(q)) for p, q in by_prop.items()}
-    labels = sorted({r["clue_label"] for r in records if r["clue_label"]})
-    all_qids = sorted({r["clue_qid"] for r in records})
 
+def print_plan(records: list[dict], pairs: dict[str, list[str]], labels: list[str],
+               all_qids: list[str], no_altlabel: bool) -> None:
+    """The work plan: what will be scored."""
     print(f"records            : {len(records)}")
     print(f"places             : {len({r['place_qid'] for r in records})}")
     print(f"distinct clues     : {len(all_qids)}")
     print(f"(clue, property)   : {sum(len(v) for v in pairs.values())} to score for place ambiguity")
     print(f"distinct labels    : {len(labels)} to score for surface ambiguity")
     print(f"aliases            : {len(all_qids)} entities "
-          f"({'P1449/P1705 only' if args.no_altlabel else 'altLabel + P1449/P1705'})")
-    if args.dry_run:
-        return 0
+          f"({'P1449/P1705 only' if no_altlabel else 'altLabel + P1449/P1705'})")
 
-    use_cache = not args.no_cache
-    cache = load_cache(use_cache)
-    failures: list[tuple[str, str]] = []
 
-    # ---- place ambiguity, per property ----
+# --------------------------------------------------------------------------
+# Compute: query (with cache) then attach scores
+# --------------------------------------------------------------------------
+
+def fetch_place_counts(pairs: dict[str, list[str]], cache: JsonCache,
+                       failures: list[tuple[str, str]]) -> dict[tuple[str, str], tuple[int, int]]:
+    """Pass 1: (n_all, n_geo) per (clue, property), from cache or WDQS."""
     print("\npass 1: place ambiguity", flush=True)
     place_counts: dict[tuple[str, str], tuple[int, int]] = {}
     for prop in sorted(pairs, key=lambda p: -len(pairs[p])):
         want = []
         for qid in pairs[prop]:
-            ck = f"pa|{qid}|{prop}"
-            if use_cache and ck in cache:
-                place_counts[(qid, prop)] = tuple(cache[ck])
+            ck = cache_key("pa", qid, prop)
+            if ck in cache:
+                place_counts[(qid, prop)] = tuple(cache.get(ck))
             else:
                 want.append(qid)
         print(f"  {prop:<8} {len(pairs[prop]):>5} clues, {len(want):>5} to query", flush=True)
@@ -405,18 +359,21 @@ def main(argv: list[str] | None = None) -> int:
         )
         for qid, value in got.items():
             place_counts[(qid, prop)] = value
-            cache[f"pa|{qid}|{prop}"] = list(value)
-        if use_cache:
-            save_cache(cache)
+            cache.set(cache_key("pa", qid, prop), list(value))
+        cache.save()
+    return place_counts
 
-    # ---- surface ambiguity ----
+
+def fetch_surface_counts(labels: list[str], cache: JsonCache,
+                         failures: list[tuple[str, str]]) -> dict[str, int]:
+    """Pass 2: entities-per-label counts, from cache or WDQS."""
     print("\npass 2: surface ambiguity", flush=True)
     surface: dict[str, int] = {}
     want_labels = []
     for text in labels:
-        ck = f"sa|{text}"
-        if use_cache and ck in cache:
-            surface[text] = cache[ck]
+        ck = cache_key("sa", text)
+        if ck in cache:
+            surface[text] = cache.get(ck)
         else:
             want_labels.append(text)
     print(f"  {len(labels)} labels, {len(want_labels)} to query", flush=True)
@@ -425,38 +382,41 @@ def main(argv: list[str] | None = None) -> int:
                           collect_surface_counts, "surface", failures)
         for text, value in got.items():
             surface[text] = value
-            cache[f"sa|{text}"] = value
-        if use_cache:
-            save_cache(cache)
+            cache.set(cache_key("sa", text), value)
+        cache.save()
+    return surface
 
-    # ---- aliases ----
+
+def fetch_alias_lists(all_qids: list[str], no_altlabel: bool, cache: JsonCache,
+                      failures: list[tuple[str, str]]) -> dict[str, list]:
+    """Pass 3: [alias, source] pairs per clue entity, from cache or WDQS."""
     print("\npass 3: aliases", flush=True)
     aliases: dict[str, list] = {}
-    suffix = "P" if args.no_altlabel else "A"
+    suffix = "P" if no_altlabel else "A"
     want_qids = []
     for qid in all_qids:
-        ck = f"al{suffix}|{qid}"
-        if use_cache and ck in cache:
-            aliases[qid] = cache[ck]
+        ck = cache_key(f"al{suffix}", qid)
+        if ck in cache:
+            aliases[qid] = cache.get(ck)
         else:
             want_qids.append(qid)
     print(f"  {len(all_qids)} entities, {len(want_qids)} to query", flush=True)
     if want_qids:
         got = run_chunked(
             want_qids, ALIAS_CHUNK,
-            lambda batch: alias_query(batch, not args.no_altlabel),
+            lambda batch: alias_query(batch, not no_altlabel),
             collect_aliases, "aliases", failures,
         )
         for qid, value in got.items():
             aliases[qid] = value
-            cache[f"al{suffix}|{qid}"] = value
-        if use_cache:
-            save_cache(cache)
+            cache.set(cache_key(f"al{suffix}", qid), value)
+        cache.save()
+    return aliases
 
-    if use_cache:
-        save_cache(cache)
 
-    # ---- attach scores ----
+def attach_scores(records: list[dict], place_counts: dict, surface: dict[str, int],
+                  aliases: dict[str, list]) -> None:
+    """Add place_ambiguity, surface_ambiguity, aliases (and _-prefixed scratch fields)."""
     for record in records:
         counts = place_counts.get((record["clue_qid"], record["property"]))
         record["place_ambiguity"] = None if counts is None else counts[1]
@@ -466,21 +426,64 @@ def main(argv: list[str] | None = None) -> int:
         record["aliases"] = [a for a, _ in aliases.get(record["clue_qid"], [])]
         record["_alias_src"] = [s for _, s in aliases.get(record["clue_qid"], [])]
 
-    if not args.dry_run:
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        tmp = args.out.with_suffix(args.out.suffix + ".tmp")
-        with tmp.open("w", encoding="utf-8", newline="\n") as handle:
-            for record in records:
-                row = {k: v for k, v in record.items() if not k.startswith("_")}
-                handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-        tmp.replace(args.out)
 
-    # ================================================================
-    # Report
-    # ================================================================
-    scored = [r for r in records if r["place_ambiguity"] is not None]
-    unscored = len(records) - len(scored)
+def group_by_place(records: list[dict]) -> dict[str, list[dict]]:
+    """Records grouped by place_qid, in first-seen place order."""
+    groups: dict[str, list[dict]] = {}
+    for record in records:
+        groups.setdefault(record["place_qid"], []).append(record)
+    return groups
 
+
+def summarise_places(groups: dict[str, list[dict]], high_threshold: int) -> list[dict]:
+    """One summary row per place (the 04_score_summary.csv rows, plus an 'all_high' flag)."""
+    rows = []
+    for qid, group in groups.items():
+        vals = [r["place_ambiguity"] for r in group if r["place_ambiguity"] is not None]
+        fam = Counter(r["property_family"] for r in group)
+        high = bool(vals) and all(v >= high_threshold for v in vals)
+        rows.append({
+            "place_qid": qid,
+            "place_name": group[0]["place_name"],
+            "clue_count": len(group),
+            "scored": len(vals),
+            "pa_min": min(vals) if vals else "",
+            "pa_median": f"{statistics.median(vals):.1f}" if vals else "",
+            "pa_max": max(vals) if vals else "",
+            "all_high_ambiguity": str(high).lower(),
+            **{f"n_{f}": fam.get(f, 0) for f in FAMILY_ORDER},
+        })
+    return rows
+
+
+# --------------------------------------------------------------------------
+# Write
+# --------------------------------------------------------------------------
+
+def write_scored(path: Path, records: list[dict]) -> None:
+    """Write the scored records (without _-prefixed scratch fields) atomically."""
+    write_jsonl_atomic(
+        path,
+        ({k: v for k, v in record.items() if not k.startswith("_")} for record in records),
+    )
+
+
+def write_summary(path: Path, summary_rows: list[dict]) -> None:
+    """Write the per-place summary CSV (UTF-8 with BOM, LF line endings) atomically."""
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=SUMMARY_FIELDS, lineterminator="\n",
+                            extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(summary_rows)
+    write_text_atomic(path, buffer.getvalue(), encoding="utf-8-sig")
+
+
+# --------------------------------------------------------------------------
+# Report
+# --------------------------------------------------------------------------
+
+def print_family_report(records: list[dict], unmapped: list[str]) -> None:
+    """Clues and places per property family."""
     print("\n" + "=" * 70)
     print("PROPERTY FAMILY")
     print(f"\n{'family':<15} {'clues':>7} {'places':>7}  {'properties'}")
@@ -499,10 +502,12 @@ def main(argv: list[str] | None = None) -> int:
               f"({sum(1 for r in records if r['property_family'] == 'other')} records) "
               f"rather than assigned to a family they were not given.")
 
+
+def print_place_ambiguity_report(scored: list[dict], unscored: int) -> None:
+    """Distribution of place ambiguity by family, zero-score warnings, coordinate effect."""
     print("\n" + "=" * 70)
     print(f"PLACE AMBIGUITY   ({len(scored)} scored"
           + (f", {unscored} unscored" if unscored else "") + ")")
-    values = [r["place_ambiguity"] for r in scored]
     heads = [name for name, _ in AMBIGUITY_BUCKETS]
     print(f"\n{'family':<15} {'clues':>7} " + " ".join(f"{h:>6}" for h in heads)
           + f" {'median':>7} {'max':>6}")
@@ -525,9 +530,9 @@ def main(argv: list[str] | None = None) -> int:
               f"coordinate,")
         print(f"   so the place they came from is not counted as a place. "
               f"Affects {len({r['place_qid'] for r in zero})} places.")
-        for record in zero[:8]:
+        for record in zero[:ZERO_EXAMPLES_SHOWN]:
             print(f"     {record['place_name']:<20} {record['property']:<8} "
-                  f"{(record['clue_label'] or '')[:40]}")
+                  f"{(record['clue_label'] or '')[:LABEL_SNIPPET]}")
 
     diverge = [r for r in scored if r["_pa_all"] != r["place_ambiguity"]]
     print(f"\ncoordinate restriction changed the count for {len(diverge)}/{len(scored)} clues")
@@ -542,6 +547,9 @@ def main(argv: list[str] | None = None) -> int:
               f"{statistics.median([r['_pa_all'] for r in group]):>11.1f} "
               f"{statistics.median([r['place_ambiguity'] for r in group]):>11.1f}")
 
+
+def print_surface_report(records: list[dict], scored: list[dict]) -> None:
+    """Distribution of surface ambiguity by family and the entity-vs-string cross."""
     print("\n" + "=" * 70)
     surf = [r for r in records if r["surface_ambiguity"] is not None]
     print(f"SURFACE AMBIGUITY   ({len(surf)} scored)")
@@ -572,6 +580,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"unique entity but string >= 5   : {entity_only} "
               f"({entity_only/len(both):.1%})  -- clean clue, ambiguous surface")
 
+
+def print_alias_report(records: list[dict]) -> None:
+    """How many clues have aliases, and from which source."""
     with_alias = [r for r in records if r["aliases"]]
     src_counts = Counter(s for r in records for s in r["_alias_src"])
     print(f"\naliases: {len(with_alias)}/{len(records)} clues have at least one "
@@ -579,81 +590,133 @@ def main(argv: list[str] | None = None) -> int:
     for src, n in src_counts.most_common():
         print(f"  {src:<10} {n:>6}")
 
-    # ---- per place ----
-    places: list[str] = []
-    for record in records:
-        if record["place_qid"] not in places:
-            places.append(record["place_qid"])
-    name_of = {r["place_qid"]: r["place_name"] for r in records}
 
+def print_place_report(groups: dict[str, list[dict]], high_threshold: int) -> list[str]:
+    """Per-place distribution table and the all-high list. Returns the all-high place qids."""
     print("\n" + "=" * 70)
-    print(f"PER-PLACE PLACE-AMBIGUITY DISTRIBUTION   (high = >= {args.high})")
+    print(f"PER-PLACE PLACE-AMBIGUITY DISTRIBUTION   (high = >= {high_threshold})")
     heads = [name for name, _ in AMBIGUITY_BUCKETS]
     print(f"\n{'place':<24} {'qid':<11} {'n':>4} " + " ".join(f"{h:>5}" for h in heads)
           + f" {'min':>4} {'med':>6} {'max':>5}  flag")
     print("-" * 88)
-    summary_rows = []
     all_high_places = []
-    for qid in places:
-        group = [r for r in records if r["place_qid"] == qid]
+    for qid, group in groups.items():
         vals = [r["place_ambiguity"] for r in group if r["place_ambiguity"] is not None]
-        fam = Counter(r["property_family"] for r in group)
         row = bucket_row(vals, AMBIGUITY_BUCKETS) if vals else [0] * len(heads)
-        high = bool(vals) and all(v >= args.high for v in vals)
+        high = bool(vals) and all(v >= high_threshold for v in vals)
         if high:
             all_high_places.append(qid)
-        print(f"{name_of[qid][:24]:<24} {qid:<11} {len(group):>4} "
+        print(f"{group[0]['place_name'][:PLACE_NAME_WIDTH]:<24} {qid:<11} {len(group):>4} "
               + " ".join(f"{c:>5}" for c in row)
               + (f" {min(vals):>4} {statistics.median(vals):>6.1f} {max(vals):>5}"
                  if vals else f" {'-':>4} {'-':>6} {'-':>5}")
               + ("  ALL-HIGH" if high else ""))
-        summary_rows.append({
-            "place_qid": qid,
-            "place_name": name_of[qid],
-            "clue_count": len(group),
-            "scored": len(vals),
-            "pa_min": min(vals) if vals else "",
-            "pa_median": f"{statistics.median(vals):.1f}" if vals else "",
-            "pa_max": max(vals) if vals else "",
-            "all_high_ambiguity": str(high).lower(),
-            **{f"n_{f}": fam.get(f, 0) for f in FAMILY_ORDER},
-        })
 
     print("\n" + "=" * 70)
-    print(f"PLACES WHOSE CLUES ARE ALL HIGH-AMBIGUITY (>= {args.high}): "
+    print(f"PLACES WHOSE CLUES ARE ALL HIGH-AMBIGUITY (>= {high_threshold}): "
           f"{len(all_high_places)}")
     for qid in all_high_places:
-        group = [r for r in records if r["place_qid"] == qid]
+        group = groups[qid]
         vals = [r["place_ambiguity"] for r in group if r["place_ambiguity"] is not None]
-        print(f"  {name_of[qid]:<22} {qid:<11} {len(group):>3} clues, "
+        print(f"  {group[0]['place_name']:<22} {qid:<11} {len(group):>3} clues, "
               f"min {min(vals)}, median {statistics.median(vals):.1f}")
         for record in sorted(group, key=lambda r: r["place_ambiguity"] or 0)[:3]:
             print(f"      {record['property']:<8} pa={record['place_ambiguity']:<4} "
-                  f"{(record['clue_label'] or '')[:44]}")
+                  f"{(record['clue_label'] or '')[:CLUE_LABEL_SNIPPET]}")
+    return all_high_places
 
-    # ---- summary CSV ----
-    if not args.dry_run:
-        fields = (["place_qid", "place_name", "clue_count", "scored",
-                   "pa_min", "pa_median", "pa_max", "all_high_ambiguity"]
-                  + [f"n_{f}" for f in FAMILY_ORDER])
-        with args.summary.open("w", encoding="utf-8-sig", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
-            writer.writeheader()
-            writer.writerows(summary_rows)
 
+def print_failures(failures: list[tuple[str, str]]) -> None:
+    """Warn about lookups that failed even after splitting."""
     if failures:
         print(f"\n!! {len(failures)} lookups failed after splitting; "
               f"their scores are null. Re-run to retry just those.")
-        for item, err in failures[:10]:
-            print(f"   {item}: {err[:110]}")
+        for item, err in failures[:FAILURES_SHOWN]:
+            print(f"   {item}: {err[:ERROR_SNIPPET]}")
 
+
+# --------------------------------------------------------------------------
+# Main
+# --------------------------------------------------------------------------
+
+def parse_args(argv: list[str] | None) -> argparse.Namespace:
+    """Command-line options."""
+    parser = argparse.ArgumentParser(description="Score clues for ambiguity.")
+    parser.add_argument("--clues", type=Path, default=CLUES)
+    parser.add_argument("--out", type=Path, default=OUT_JSONL)
+    parser.add_argument("--summary", type=Path, default=OUT_CSV)
+    parser.add_argument("--high", type=int, default=DEFAULT_HIGH,
+                        help=f"place ambiguity at or above this counts as high "
+                             f"(default {DEFAULT_HIGH})")
+    parser.add_argument("--limit", type=int,
+                        help="only score the first N places (partial output; for testing)")
+    parser.add_argument("--no-altlabel", action="store_true",
+                        help="aliases from P1449/P1705 only, ignoring skos:altLabel")
+    parser.add_argument("--no-cache", action="store_true",
+                        help="ignore the cache and do not write it")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="report the query plan and exit without querying")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entry: load -> plan -> query -> score -> write -> report."""
+    args = parse_args(argv)
+
+    if not args.clues.exists():
+        print(f"clue file not found: {args.clues}", file=sys.stderr)
+        return EXIT_BAD_INPUT
+
+    records = read_jsonl(args.clues)
+    if not records:
+        print("no clue records", file=sys.stderr)
+        return EXIT_BAD_INPUT
+
+    if args.limit:
+        records, n_places = limit_places(records, args.limit)
+        print(f"!! --limit {args.limit}: scoring {n_places} places, "
+              f"{len(records)} records. Output is PARTIAL.\n")
+
+    unmapped = tag_families(records)
+
+    by_prop: dict[str, list[str]] = defaultdict(list)
+    for record in records:
+        by_prop[record["property"]].append(record["clue_qid"])
+    pairs = {p: sorted(set(q)) for p, q in by_prop.items()}
+    labels = sorted({r["clue_label"] for r in records if r["clue_label"]})
+    all_qids = sorted({r["clue_qid"] for r in records})
+
+    print_plan(records, pairs, labels, all_qids, args.no_altlabel)
     if args.dry_run:
-        print("\n--dry-run: nothing written")
-    else:
-        print(f"\nwrote {args.out}       {len(records)} records")
-        print(f"wrote {args.summary}  {len(summary_rows)} places")
-    return 1 if failures else 0
+        return EXIT_OK
+
+    cache = JsonCache(CACHE_PATH, CACHE_VERSION, enabled=not args.no_cache)
+    failures: list[tuple[str, str]] = []
+    place_counts = fetch_place_counts(pairs, cache, failures)
+    surface = fetch_surface_counts(labels, cache, failures)
+    aliases = fetch_alias_lists(all_qids, args.no_altlabel, cache, failures)
+    cache.save()
+
+    attach_scores(records, place_counts, surface, aliases)
+    write_scored(args.out, records)
+
+    scored = [r for r in records if r["place_ambiguity"] is not None]
+    print_family_report(records, unmapped)
+    print_place_ambiguity_report(scored, len(records) - len(scored))
+    print_surface_report(records, scored)
+    print_alias_report(records)
+
+    groups = group_by_place(records)
+    print_place_report(groups, args.high)
+    summary_rows = summarise_places(groups, args.high)
+    write_summary(args.summary, summary_rows)
+
+    print_failures(failures)
+    print(f"\nwrote {args.out}       {len(records)} records")
+    print(f"wrote {args.summary}  {len(summary_rows)} places")
+    return EXIT_FAILED_LOOKUPS if failures else EXIT_OK
 
 
 if __name__ == "__main__":
+    utf8_stdout()
     raise SystemExit(main())

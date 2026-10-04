@@ -53,28 +53,27 @@ Output:
 Usage:
     python3 scripts/04b_place_aliases.py [--places data/01_places_final.csv]
                                          [--no-altlabel] [--no-cache] [--dry-run]
+
+--no-cache ignores the cache and does not write it.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
-import json
 import re
 import sys
 from collections import Counter
+from importlib import import_module
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+from io_utils import utf8_stdout, write_jsonl_atomic
+from jsoncache import JsonCache, cache_key
+from wdqs import qid_from_uri, value_of
 
-from importlib import import_module
-
-_clues = import_module("02_clues")
+# Query builders and collectors shared with 04; they live in a numeric-prefix
+# module, so this is the one place that needs import_module.
 _score = import_module("04_score_clues")
-
-value_of = _clues.value_of
-qid_from_uri = _clues.qid_from_uri
-
 alias_query = _score.alias_query
 collect_aliases = _score.collect_aliases
 surface_count_query = _score.surface_count_query
@@ -91,28 +90,35 @@ CACHE_PATH = ROOT / "data" / "04b_alias_cache.json"
 CACHE_VERSION = 1
 
 SOURCE_ORDER = ["label", "P1449", "P1705", "altLabel", "derived"]
+KINDS_REPORTED = ("ambiguous_alias", "exact", "unmatched")
+
+REGION_CHUNK = 25         # P131+ is expensive; a 102-place block timed out on WDQS
+MIN_REGION_FORM_LETTERS = 4   # shorter forms ("ON" for Ontario) match ordinary words
+AMBIGUOUS_MIN_SHARED = 2  # shared_by at or above this is an ambiguous alias
+BAD_PLACES_SHOWN = 5
+FAILURES_SHOWN = 10
+ERROR_SNIPPET = 110
+EXIT_OK = 0
+EXIT_FAILED_LOOKUPS = 1
+EXIT_BAD_INPUT = 2
+
+# Trailing words that only say what kind of region it is. "Övörkhangai
+# Province" appears in clue labels as plain "Övörkhangai", so the bare name is
+# added alongside the full one.
+REGION_TYPE_WORDS = {
+    "province", "district", "region", "county", "municipality", "department",
+    "state", "governorate", "oblast", "prefecture", "commune", "aimag",
+    "parish", "canton", "borough", "division", "territory", "city", "town",
+    "subdistrict", "regency", "emirate", "voivodeship", "kreis", "landkreis",
+}
 
 
-def load_cache(use_cache: bool) -> dict:
-    if not use_cache or not CACHE_PATH.exists():
-        return {}
-    try:
-        payload = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    if payload.get("version") != CACHE_VERSION:
-        return {}
-    return payload.get("entries", {})
-
-
-def save_cache(entries: dict) -> None:
-    CACHE_PATH.write_text(
-        json.dumps({"version": CACHE_VERSION, "entries": entries}, ensure_ascii=False),
-        encoding="utf-8",
-    )
-
+# --------------------------------------------------------------------------
+# Queries and collectors
+# --------------------------------------------------------------------------
 
 def country_query(qids: list[str]) -> str:
+    """English label and demonyms (P1549) of each place's P17 country."""
     values = " ".join(f"wd:{q}" for q in qids)
     return f"""
 SELECT DISTINCT ?place ?text ?src WHERE {{
@@ -125,7 +131,12 @@ SELECT DISTINCT ?place ?text ?src WHERE {{
 """
 
 
-def collect_country_forms(batch: list[str], rows: list[dict], out: dict) -> None:
+def collect_text_forms(batch: list[str], rows: list[dict], out: dict) -> None:
+    """Fill `out[qid] = [[text, source], ...]` (deduplicated) from ?place/?text/?src rows.
+
+    Used for country forms and for region names alike: both queries return the
+    same three columns.
+    """
     found: dict[str, list] = {q: [] for q in batch}
     for row in rows:
         place = value_of(row, "place")
@@ -137,9 +148,6 @@ def collect_country_forms(batch: list[str], rows: list[dict], out: dict) -> None
         if qid in found and entry not in found[qid]:
             found[qid].append(entry)
     out.update(found)
-
-
-REGION_CHUNK = 25    # P131+ is expensive; a 102-place block timed out on WDQS
 
 
 def region_query(qids: list[str]) -> str:
@@ -154,6 +162,7 @@ SELECT DISTINCT ?place ?region WHERE {{
 
 
 def collect_regions(batch: list[str], rows: list[dict], out: dict) -> None:
+    """Fill `out[qid] = sorted region QIDs` for every place in the batch."""
     found: dict[str, list[str]] = {q: [] for q in batch}
     for row in rows:
         place = value_of(row, "place")
@@ -180,16 +189,9 @@ SELECT DISTINCT ?place ?text ?src WHERE {{
 """
 
 
-# Trailing words that only say what kind of region it is. "Övörkhangai
-# Province" appears in clue labels as plain "Övörkhangai", so the bare name is
-# added alongside the full one.
-REGION_TYPE_WORDS = {
-    "province", "district", "region", "county", "municipality", "department",
-    "state", "governorate", "oblast", "prefecture", "commune", "aimag",
-    "parish", "canton", "borough", "division", "territory", "city", "town",
-    "subdistrict", "regency", "emirate", "voivodeship", "kreis", "landkreis",
-}
-
+# --------------------------------------------------------------------------
+# Pure helpers
+# --------------------------------------------------------------------------
 
 def usable_region_form(text: str) -> bool:
     """
@@ -198,7 +200,7 @@ def usable_region_form(text: str) -> bool:
     and ISO-style codes such as "TH-90".
     """
     letters = sum(ch.isalpha() for ch in text)
-    if letters < 4:
+    if letters < MIN_REGION_FORM_LETTERS:
         return False
     if re.fullmatch(r"[A-Z0-9][A-Z0-9 .\-]*", text):
         return False
@@ -206,6 +208,7 @@ def usable_region_form(text: str) -> bool:
 
 
 def region_variants(text: str) -> list[str]:
+    """The region name plus the same with a leading/trailing type word dropped, usable only."""
     out = [text]
     words = text.split()
     if len(words) >= 2 and words[-1].casefold() in REGION_TYPE_WORDS:
@@ -216,7 +219,8 @@ def region_variants(text: str) -> list[str]:
 
 
 def kind_of(shared_by: int) -> str:
-    if shared_by >= 2:
+    """ambiguous_alias, exact or unmatched, by how many entities share the string."""
+    if shared_by >= AMBIGUOUS_MIN_SHARED:
         return "ambiguous_alias"
     if shared_by == 1:
         return "exact"
@@ -224,78 +228,63 @@ def kind_of(shared_by: int) -> str:
 
 
 def as_int(value: str | None) -> int | None:
+    """int(float(value)), or None for blank / non-numeric input."""
     try:
         return int(float(value)) if value not in (None, "") else None
     except ValueError:
         return None
 
 
-def main(argv: list[str] | None = None) -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
-    except Exception:  # pragma: no cover
-        pass
+def source_rank(source: str) -> int:
+    """Position of an alias source in SOURCE_ORDER (unknown sources sort last)."""
+    return SOURCE_ORDER.index(source) if source in SOURCE_ORDER else len(SOURCE_ORDER)
 
-    parser = argparse.ArgumentParser(description="Collect place surface forms.")
-    parser.add_argument("--places", type=Path, default=PLACES)
-    parser.add_argument("--out", type=Path, default=OUT_JSONL)
-    parser.add_argument("--no-altlabel", action="store_true",
-                        help="aliases from P1449/P1705 only, ignoring skos:altLabel")
-    parser.add_argument("--no-cache", action="store_true")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="report the query plan and exit without querying")
-    args = parser.parse_args(argv)
 
-    if not args.places.exists():
-        print(f"place file not found: {args.places}", file=sys.stderr)
-        return 2
+# --------------------------------------------------------------------------
+# Load
+# --------------------------------------------------------------------------
 
-    with args.places.open(encoding="utf-8-sig", newline="") as handle:
-        places = [row for row in csv.DictReader(handle) if (row.get("wikidata_id") or "").strip()]
-    if not places:
-        print("no places", file=sys.stderr)
-        return 2
+def load_places(path: Path) -> list[dict]:
+    """Rows of the places CSV that have a wikidata_id."""
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        return [row for row in csv.DictReader(handle) if (row.get("wikidata_id") or "").strip()]
 
-    bad = [p["wikidata_id"] for p in places if as_int(p.get("places_sharing_name")) is None]
-    if bad:
-        print(f"places_sharing_name is blank or not a number for {len(bad)} places: "
-              f"{bad[:5]}", file=sys.stderr)
-        return 2
 
-    qids = [p["wikidata_id"].strip() for p in places]
-    use_cache = not args.no_cache
-    cache = load_cache(use_cache)
-    failures: list[tuple[str, str]] = []
-    suffix = "P" if args.no_altlabel else "A"
+# --------------------------------------------------------------------------
+# Cached, chunked fetching
+# --------------------------------------------------------------------------
 
-    print(f"places             : {len(places)}")
-    print(f"aliases            : "
-          f"{'P1449/P1705 only' if args.no_altlabel else 'altLabel + P1449/P1705'}")
-
-    # ---- pass 1: aliases ----
-    aliases: dict[str, list] = {}
-    want = []
-    for qid in qids:
-        key = f"al{suffix}|{qid}"
-        if use_cache and key in cache:
-            aliases[qid] = cache[key]
+def split_cached(items: list[str], prefix: str, cache: JsonCache) -> tuple[dict, list[str]]:
+    """Partition `items` into (cached values by item, items still to query)."""
+    found: dict = {}
+    want: list[str] = []
+    for item in items:
+        key = cache_key(prefix, item)
+        if key in cache:
+            found[item] = cache.get(key)
         else:
-            want.append(qid)
-    print(f"\npass 1: aliases     {len(qids)} places, {len(want)} to query")
-    if args.dry_run:
-        print("\n--dry-run: nothing queried, nothing written")
-        return 0
-    if want:
-        got = run_chunked(want, ALIAS_CHUNK,
-                          lambda batch: alias_query(batch, not args.no_altlabel),
-                          collect_aliases, "aliases", failures)
-        for qid, value in got.items():
-            aliases[qid] = value
-            cache[f"al{suffix}|{qid}"] = value
-        if use_cache:
-            save_cache(cache)
+            want.append(item)
+    return found, want
 
-    # ---- assemble candidate forms, first source wins ----
+
+def fill_missing(found: dict, want: list[str], prefix: str, cache: JsonCache, chunk: int,
+                 build, collect, label: str, failures: list[tuple[str, str]]) -> dict:
+    """Query `want` in chunks, store results in `found` and the cache, save the cache."""
+    if want:
+        got = run_chunked(want, chunk, build, collect, label, failures)
+        for item, value in got.items():
+            found[item] = value
+            cache.set(cache_key(prefix, item), value)
+        cache.save()
+    return found
+
+
+# --------------------------------------------------------------------------
+# Compute
+# --------------------------------------------------------------------------
+
+def build_forms_by_place(places: list[dict], aliases: dict[str, list]) -> dict[str, list[dict]]:
+    """Candidate surface forms per place, first source wins ({'text', 'source'} dicts)."""
     forms_by_place: dict[str, list[dict]] = {}
     for place in places:
         qid = place["wikidata_id"].strip()
@@ -303,9 +292,7 @@ def main(argv: list[str] | None = None) -> int:
         country = place["country"].strip()
         derived = f"{name}, {country}"
         candidates = [(name, "label")]
-        found = sorted(aliases.get(qid, []),
-                       key=lambda pair: SOURCE_ORDER.index(pair[1])
-                       if pair[1] in SOURCE_ORDER else len(SOURCE_ORDER))
+        found = sorted(aliases.get(qid, []), key=lambda pair: source_rank(pair[1]))
         candidates += [(text.strip(), src) for text, src in found
                        if text.strip() and text.strip() != derived]
         candidates.append((derived, "derived"))
@@ -318,164 +305,91 @@ def main(argv: list[str] | None = None) -> int:
             seen.add(text)
             forms.append({"text": text, "source": src})
         forms_by_place[qid] = forms
+    return forms_by_place
 
-    # ---- pass 2: shared_by for alias strings ----
-    alias_texts = sorted({f["text"] for forms in forms_by_place.values()
-                          for f in forms if f["source"] not in ("label", "derived")})
-    surface: dict[str, int] = {}
-    want_texts = []
-    for text in alias_texts:
-        key = f"sa|{text}"
-        if use_cache and key in cache:
-            surface[text] = cache[key]
-        else:
-            want_texts.append(text)
-    print(f"\npass 2: shared_by   {len(alias_texts)} alias strings, "
-          f"{len(want_texts)} to query")
-    if want_texts:
-        got = run_chunked(want_texts, LABEL_CHUNK, surface_count_query,
-                          collect_surface_counts, "surface", failures)
-        for text, value in got.items():
-            surface[text] = value
-            cache[f"sa|{text}"] = value
-        if use_cache:
-            save_cache(cache)
 
-    # ---- pass 3: country forms ----
-    # The strings that name the place's country: the CSV country, the P17
-    # country's English label, and its English demonyms (P1549). Not surface
-    # forms of the place -- never offered as a toponym -- but the planner needs
-    # them to spot a clue label that gives the country away ("New Zealand
-    # Cricket", "MIAT Mongolian Airlines"), which the A prompts forbid.
-    country_forms: dict[str, list] = {}
-    want = []
-    for qid in qids:
-        key = f"cf|{qid}"
-        if use_cache and key in cache:
-            country_forms[qid] = cache[key]
-        else:
-            want.append(qid)
-    print(f"\npass 3: country     {len(qids)} places, {len(want)} to query")
-    if want:
-        got = run_chunked(want, ALIAS_CHUNK, country_query,
-                          collect_country_forms, "country", failures)
-        for qid, value in got.items():
-            country_forms[qid] = value
-            cache[f"cf|{qid}"] = value
-        if use_cache:
-            save_cache(cache)
-
-    # ---- pass 4: region forms ----
-    # Names of the regions the place sits inside, for the same leak check as
-    # country_forms: "Museum of Övörkhangai Province" in an Arvaikheer item
-    # writes the province name into a post that may not carry one.
-    # Two plain queries rather than one: joining the names onto the P131+ path
-    # in a single query timed out on WDQS even for one place, while each half
-    # on its own returns in under a second.
-    region_ids: dict[str, list] = {}
-    want = []
-    for qid in qids:
-        key = f"rg|{qid}"
-        if use_cache and key in cache:
-            region_ids[qid] = cache[key]
-        else:
-            want.append(qid)
-    print(f"\npass 4a: regions    {len(qids)} places, {len(want)} to query")
-    if want:
-        got = run_chunked(want, REGION_CHUNK, region_query,
-                          collect_regions, "regions", failures)
-        for qid, value in got.items():
-            region_ids[qid] = value
-            cache[f"rg|{qid}"] = value
-        if use_cache:
-            save_cache(cache)
-
-    all_regions = sorted({r for ids in region_ids.values() for r in ids})
-    region_names: dict[str, list] = {}
-    want = []
-    for rid in all_regions:
-        key = f"rn|{rid}"
-        if use_cache and key in cache:
-            region_names[rid] = cache[key]
-        else:
-            want.append(rid)
-    print(f"pass 4b: names      {len(all_regions)} regions, {len(want)} to query")
-    if want:
-        got = run_chunked(want, ALIAS_CHUNK, region_name_query,
-                          collect_country_forms, "region names", failures)
-        for rid, value in got.items():
-            region_names[rid] = value
-            cache[f"rn|{rid}"] = value
-        if use_cache:
-            save_cache(cache)
-
-    region_raw: dict[str, list] = {
-        qid: [pair for rid in region_ids.get(qid, []) for pair in region_names.get(rid, [])]
-        for qid in qids
-    }
-
-    # ---- records ----
-    out_records = []
+def measure_forms(place: dict, forms: list[dict], surface: dict[str, int]) -> tuple[list[dict], int]:
+    """Attach kind/shared_by to each form. Returns (forms, number left unmeasured)."""
+    out = []
     unmeasured = 0
+    for form in forms:
+        src = form["source"]
+        if src == "label":
+            shared_by = as_int(place["places_sharing_name"])
+        elif src == "derived":
+            shared_by = 1
+        elif form["text"] in surface:
+            shared_by = surface[form["text"]]
+        else:
+            # The count query failed after splitting. No number, so no kind:
+            # written as unmeasured rather than guessed.
+            unmeasured += 1
+            out.append({"text": form["text"], "kind": "unmeasured",
+                        "shared_by": None, "source": src})
+            continue
+        kind = "exact" if src == "derived" else kind_of(shared_by)
+        out.append({"text": form["text"], "kind": kind,
+                    "shared_by": shared_by, "source": src})
+    return out, unmeasured
+
+
+def country_forms_for(csv_country: str, forms: list) -> tuple[list[dict], set[str]]:
+    """The CSV country first, then the P17 label and demonyms, deduplicated."""
+    seen_country = {csv_country}
+    country = [{"text": csv_country, "source": "csv"}]
+    for text, src in forms:
+        if text not in seen_country:
+            seen_country.add(text)
+            country.append({"text": text, "source": src})
+    return country, seen_country
+
+
+def region_forms_for(raw: list, taken: set[str]) -> list[dict]:
+    """Usable region forms, skipping any already covered by the place or country forms."""
+    regions, seen_region = [], set()
+    for text, src in raw:
+        for variant in region_variants(text.strip()):
+            folded = variant.casefold()
+            if folded in taken or folded in seen_region:
+                continue
+            seen_region.add(folded)
+            regions.append({"text": variant,
+                            "source": src if variant == text.strip() else f"{src}, type word dropped"})
+    return regions
+
+
+def build_records(places: list[dict], forms_by_place: dict[str, list[dict]],
+                  surface: dict[str, int], country_forms: dict[str, list],
+                  region_raw: dict[str, list]) -> tuple[list[dict], int]:
+    """One output record per place. Returns (records, number of unmeasured forms)."""
+    out_records = []
+    unmeasured_total = 0
     for place in places:
         qid = place["wikidata_id"].strip()
-        forms = []
-        for form in forms_by_place[qid]:
-            src = form["source"]
-            if src == "label":
-                shared_by = as_int(place["places_sharing_name"])
-            elif src == "derived":
-                shared_by = 1
-            elif form["text"] in surface:
-                shared_by = surface[form["text"]]
-            else:
-                # The count query failed after splitting. No number, so no kind:
-                # written as unmeasured rather than guessed.
-                unmeasured += 1
-                forms.append({"text": form["text"], "kind": "unmeasured",
-                              "shared_by": None, "source": src})
-                continue
-            kind = "exact" if src == "derived" else kind_of(shared_by)
-            forms.append({"text": form["text"], "kind": kind,
-                          "shared_by": shared_by, "source": src})
+        forms, unmeasured = measure_forms(place, forms_by_place[qid], surface)
+        unmeasured_total += unmeasured
         csv_country = place["country"].strip()
-        seen_country = {csv_country}
-        country = [{"text": csv_country, "source": "csv"}]
-        for text, src in country_forms.get(qid, []):
-            if text not in seen_country:
-                seen_country.add(text)
-                country.append({"text": text, "source": src})
+        country, seen_country = country_forms_for(csv_country, country_forms.get(qid, []))
         # A region form that is also the place's own name or a country form is
         # already checked under those, and would be misreported here.
         taken = {f["text"].casefold() for f in forms} | {t.casefold() for t in seen_country}
-        regions, seen_region = [], set()
-        for text, src in region_raw.get(qid, []):
-            for variant in region_variants(text.strip()):
-                folded = variant.casefold()
-                if folded in taken or folded in seen_region:
-                    continue
-                seen_region.add(folded)
-                regions.append({"text": variant,
-                                "source": src if variant == text.strip() else f"{src}, type word dropped"})
         out_records.append({
             "place_qid": qid,
             "place_name": place["place_name"].strip(),
             "country": csv_country,
             "surface_forms": forms,
             "country_forms": country,
-            "region_forms": regions,
+            "region_forms": region_forms_for(region_raw.get(qid, []), taken),
         })
+    return out_records, unmeasured_total
 
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    tmp = args.out.with_suffix(args.out.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8", newline="\n") as handle:
-        for record in out_records:
-            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-    tmp.replace(args.out)
 
-    # ================================================================
-    # Report
-    # ================================================================
+# --------------------------------------------------------------------------
+# Report
+# --------------------------------------------------------------------------
+
+def print_report(out_records: list[dict]) -> None:
+    """Counts of surface forms by kind and by (source, kind)."""
     all_forms = [f for r in out_records for f in r["surface_forms"]]
     by_kind = Counter(f["kind"] for f in all_forms)
     by_source_kind = Counter((f["source"], f["kind"]) for f in all_forms)
@@ -491,23 +405,134 @@ def main(argv: list[str] | None = None) -> int:
     print(f"places with no ambiguous form   : {len(no_ambiguous)}")
     print(f"places with >= 1 ambiguous form : {len(out_records) - len(no_ambiguous)}")
 
-    print(f"\n{'source':<10} " + " ".join(f"{k:>16}" for k in
-                                        ("ambiguous_alias", "exact", "unmatched")))
+    print(f"\n{'source':<10} " + " ".join(f"{k:>16}" for k in KINDS_REPORTED))
     print("-" * 62)
     for src in SOURCE_ORDER:
-        row = [by_source_kind[(src, k)] for k in ("ambiguous_alias", "exact", "unmatched")]
+        row = [by_source_kind[(src, k)] for k in KINDS_REPORTED]
         if any(row):
             print(f"{src:<10} " + " ".join(f"{n:>16}" for n in row))
 
+
+def print_failures(failures: list[tuple[str, str]], unmeasured: int) -> None:
+    """Warn about lookups that failed even after splitting."""
     if failures:
         print(f"\n!! {len(failures)} lookups failed after splitting; {unmeasured} forms "
               f"written as unmeasured. Re-run to retry just those.")
-        for item, err in failures[:10]:
-            print(f"   {item}: {err[:110]}")
+        for item, err in failures[:FAILURES_SHOWN]:
+            print(f"   {item}: {err[:ERROR_SNIPPET]}")
 
+
+# --------------------------------------------------------------------------
+# Main
+# --------------------------------------------------------------------------
+
+def parse_args(argv: list[str] | None) -> argparse.Namespace:
+    """Command-line options."""
+    parser = argparse.ArgumentParser(description="Collect place surface forms.")
+    parser.add_argument("--places", type=Path, default=PLACES)
+    parser.add_argument("--out", type=Path, default=OUT_JSONL)
+    parser.add_argument("--no-altlabel", action="store_true",
+                        help="aliases from P1449/P1705 only, ignoring skos:altLabel")
+    parser.add_argument("--no-cache", action="store_true",
+                        help="ignore the cache and do not write it")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="report the query plan and exit without querying")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entry: load -> query (cached, chunked) -> build records -> write -> report."""
+    args = parse_args(argv)
+
+    if not args.places.exists():
+        print(f"place file not found: {args.places}", file=sys.stderr)
+        return EXIT_BAD_INPUT
+
+    places = load_places(args.places)
+    if not places:
+        print("no places", file=sys.stderr)
+        return EXIT_BAD_INPUT
+
+    bad = [p["wikidata_id"] for p in places if as_int(p.get("places_sharing_name")) is None]
+    if bad:
+        print(f"places_sharing_name is blank or not a number for {len(bad)} places: "
+              f"{bad[:BAD_PLACES_SHOWN]}", file=sys.stderr)
+        return EXIT_BAD_INPUT
+
+    qids = [p["wikidata_id"].strip() for p in places]
+    cache = JsonCache(CACHE_PATH, CACHE_VERSION, enabled=not args.no_cache)
+    failures: list[tuple[str, str]] = []
+    alias_prefix = "alP" if args.no_altlabel else "alA"
+
+    print(f"places             : {len(places)}")
+    print(f"aliases            : "
+          f"{'P1449/P1705 only' if args.no_altlabel else 'altLabel + P1449/P1705'}")
+
+    # ---- pass 1: aliases ----
+    aliases, want = split_cached(qids, alias_prefix, cache)
+    print(f"\npass 1: aliases     {len(qids)} places, {len(want)} to query")
+    if args.dry_run:
+        print("\n--dry-run: nothing queried, nothing written")
+        return EXIT_OK
+    fill_missing(aliases, want, alias_prefix, cache, ALIAS_CHUNK,
+                 lambda batch: alias_query(batch, not args.no_altlabel),
+                 collect_aliases, "aliases", failures)
+
+    forms_by_place = build_forms_by_place(places, aliases)
+
+    # ---- pass 2: shared_by for alias strings ----
+    alias_texts = sorted({f["text"] for forms in forms_by_place.values()
+                          for f in forms if f["source"] not in ("label", "derived")})
+    surface, want_texts = split_cached(alias_texts, "sa", cache)
+    print(f"\npass 2: shared_by   {len(alias_texts)} alias strings, "
+          f"{len(want_texts)} to query")
+    fill_missing(surface, want_texts, "sa", cache, LABEL_CHUNK, surface_count_query,
+                 collect_surface_counts, "surface", failures)
+
+    # ---- pass 3: country forms ----
+    # The strings that name the place's country: the CSV country, the P17
+    # country's English label, and its English demonyms (P1549). Not surface
+    # forms of the place -- never offered as a toponym -- but the planner needs
+    # them to spot a clue label that gives the country away ("New Zealand
+    # Cricket", "MIAT Mongolian Airlines"), which the A prompts forbid.
+    country_forms, want = split_cached(qids, "cf", cache)
+    print(f"\npass 3: country     {len(qids)} places, {len(want)} to query")
+    fill_missing(country_forms, want, "cf", cache, ALIAS_CHUNK, country_query,
+                 collect_text_forms, "country", failures)
+
+    # ---- pass 4: region forms ----
+    # Names of the regions the place sits inside, for the same leak check as
+    # country_forms: "Museum of Övörkhangai Province" in an Arvaikheer item
+    # writes the province name into a post that may not carry one.
+    # Two plain queries rather than one: joining the names onto the P131+ path
+    # in a single query timed out on WDQS even for one place, while each half
+    # on its own returns in under a second.
+    region_ids, want = split_cached(qids, "rg", cache)
+    print(f"\npass 4a: regions    {len(qids)} places, {len(want)} to query")
+    fill_missing(region_ids, want, "rg", cache, REGION_CHUNK, region_query,
+                 collect_regions, "regions", failures)
+
+    all_regions = sorted({r for ids in region_ids.values() for r in ids})
+    region_names, want = split_cached(all_regions, "rn", cache)
+    print(f"pass 4b: names      {len(all_regions)} regions, {len(want)} to query")
+    fill_missing(region_names, want, "rn", cache, ALIAS_CHUNK, region_name_query,
+                 collect_text_forms, "region names", failures)
+
+    region_raw: dict[str, list] = {
+        qid: [pair for rid in region_ids.get(qid, []) for pair in region_names.get(rid, [])]
+        for qid in qids
+    }
+
+    out_records, unmeasured = build_records(places, forms_by_place, surface,
+                                            country_forms, region_raw)
+    write_jsonl_atomic(args.out, out_records)
+
+    print_report(out_records)
+    print_failures(failures, unmeasured)
     print(f"\nwrote {args.out}   {len(out_records)} places")
-    return 1 if failures else 0
+    return EXIT_FAILED_LOOKUPS if failures else EXIT_OK
 
 
 if __name__ == "__main__":
+    utf8_stdout()
     raise SystemExit(main())

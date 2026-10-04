@@ -13,9 +13,10 @@ import requests
 logger = logging.getLogger(__name__)
 
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
-# Wikimedia's User-Agent policy asks for a real contact. EDIT THIS to your own
-# URL or email before running at scale.
-CONTACT = "https://github.com/BrookeYada/geo"
+# Wikimedia's User-Agent policy asks for a real contact. Set WDQS_CONTACT (an
+# email or URL) in your environment; the default is the project's public
+# repository, so no personal address is committed.
+CONTACT = os.environ.get("WDQS_CONTACT") or "https://github.com/AdelPaly/Thesis"
 HEADERS = {"User-Agent": f"GeoThesisBot/1.0 (student research; {CONTACT})"}
 
 MIN_REQUEST_INTERVAL = 0.5     # seconds between API calls

@@ -38,21 +38,20 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import sys
 from collections import Counter, defaultdict
+from importlib import import_module
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from importlib import import_module
+from io_utils import read_jsonl, utf8_stdout, write_jsonl_atomic  # noqa: E402
+from jsoncache import JsonCache, cache_key  # noqa: E402
+from wdqs import qid_from_uri, value_of  # noqa: E402
 
-_clues = import_module("02_clues")
-_score = import_module("04_score_clues")
-
-value_of = _clues.value_of
-qid_from_uri = _clues.qid_from_uri
-run_chunked = _score.run_chunked
+# 04's chunked-query runner. The module name starts with a digit, so it cannot be
+# a plain `import`; this is the only place the numbered module is reached.
+run_chunked = import_module("04_score_clues").run_chunked
 
 ROOT = Path(__file__).resolve().parent.parent
 CLUE_SETS = ROOT / "data" / "05_clue_sets.jsonl"
@@ -80,6 +79,7 @@ CATEGORIES = {
 
 
 def category_query(qids: list[str]) -> str:
+    """SPARQL: which toponym categories each entity falls in (P31/P279* of the class)."""
     values = " ".join(f"wd:{q}" for q in qids)
     classes = " ".join(f'(wd:{q} "{name}")' for name, q in CATEGORIES.items())
     return f"""
@@ -92,6 +92,7 @@ SELECT DISTINCT ?e ?cat WHERE {{
 
 
 def instance_query(qids: list[str]) -> str:
+    """SPARQL: the English labels of each entity's direct P31 values."""
     values = " ".join(f"wd:{q}" for q in qids)
     return f"""
 SELECT ?e ?typeLabel WHERE {{
@@ -103,6 +104,10 @@ SELECT ?e ?typeLabel WHERE {{
 
 
 def collect_multi(key: str):
+    """A result collector that gathers the sorted distinct values of `key` per entity `?e`.
+
+    Entities in the batch that return no rows map to an empty list (a real answer).
+    """
     def collect(batch: list[str], rows: list[dict], out: dict) -> None:
         found: dict[str, list[str]] = {q: [] for q in batch}
         for row in rows:
@@ -118,6 +123,7 @@ def collect_multi(key: str):
 
 
 def load_overrides(path: Path) -> dict[str, dict]:
+    """Read the reviewed overrides CSV: clue_qid -> {"toponym": bool, "reason": str}."""
     if not path.exists():
         return {}
     with path.open(encoding="utf-8-sig", newline="") as handle:
@@ -135,32 +141,15 @@ def load_overrides(path: Path) -> dict[str, dict]:
     return out
 
 
-def load_cache(use_cache: bool) -> dict:
-    if not use_cache or not CACHE_PATH.exists():
-        return {}
-    try:
-        payload = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    if payload.get("version") != CACHE_VERSION:
-        return {}
-    return payload.get("entries", {})
-
-
-def save_cache(entries: dict) -> None:
-    CACHE_PATH.write_text(
-        json.dumps({"version": CACHE_VERSION, "entries": entries}, ensure_ascii=False),
-        encoding="utf-8",
-    )
-
-
-def fetch(qids, prefix, build, collect, label, cache, use_cache, failures) -> dict:
+def fetch(qids: list[str], prefix: str, build, collect, label: str,
+          cache: JsonCache, failures: list[tuple[str, str]]) -> dict:
+    """Look up `qids` through the cache, querying (in chunks) only the misses."""
     result = {}
     want = []
     for qid in qids:
-        key = f"{prefix}|{qid}"
-        if use_cache and key in cache:
-            result[qid] = cache[key]
+        key = cache_key(prefix, qid)
+        if key in cache:
+            result[qid] = cache.get(key)
         else:
             want.append(qid)
     print(f"  {label}: {len(qids)} entities, {len(want)} to query", flush=True)
@@ -168,29 +157,23 @@ def fetch(qids, prefix, build, collect, label, cache, use_cache, failures) -> di
         got = run_chunked(want, CHUNK, build, collect, label, failures)
         for qid, value in got.items():
             result[qid] = value
-            cache[f"{prefix}|{qid}"] = value
-        if use_cache:
-            save_cache(cache)
+            cache.set(cache_key(prefix, qid), value)
+        cache.save()
     return result
 
 
 def main(argv: list[str] | None = None) -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
-    except Exception:  # pragma: no cover
-        pass
+    utf8_stdout()
 
     parser = argparse.ArgumentParser(description="Classify clue entities as place names.")
     parser.add_argument("--clues", type=Path, default=CLUE_SETS)
     parser.add_argument("--out", type=Path, default=OUT_JSONL)
-    parser.add_argument("--no-cache", action="store_true")
+    parser.add_argument("--no-cache", action="store_true",
+                        help="ignore the cache and do not write it")
     args = parser.parse_args(argv)
 
     entities: dict[str, dict] = {}
-    for line in args.clues.open(encoding="utf-8"):
-        if not line.strip():
-            continue
-        record = json.loads(line)
+    for record in read_jsonl(args.clues):
         for entry in record.get("best_sets") or []:
             for clue in entry.get("clues") or []:
                 row = entities.setdefault(clue["clue_qid"], {
@@ -203,15 +186,14 @@ def main(argv: list[str] | None = None) -> int:
                 row["places"].add(record["place_qid"])
 
     qids = sorted(entities)
-    use_cache = not args.no_cache
-    cache = load_cache(use_cache)
+    cache = JsonCache(CACHE_PATH, CACHE_VERSION, enabled=not args.no_cache)
     failures: list[tuple[str, str]] = []
 
     print(f"clue entities      : {len(qids)}")
     categories = fetch(qids, "cat", category_query, collect_multi("cat"),
-                       "categories", cache, use_cache, failures)
+                       "categories", cache, failures)
     instances = fetch(qids, "p31", instance_query, collect_multi("typeLabel"),
-                      "instance-of labels", cache, use_cache, failures)
+                      "instance-of labels", cache, failures)
 
     overrides = load_overrides(OVERRIDES)
     stale = sorted(set(overrides) - set(qids))
@@ -236,11 +218,7 @@ def main(argv: list[str] | None = None) -> int:
         })
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    tmp = args.out.with_suffix(args.out.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8", newline="\n") as handle:
-        for row in out:
-            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-    tmp.replace(args.out)
+    write_jsonl_atomic(args.out, out)
 
     # ---- report ----
     toponyms = [r for r in out if r["toponym"]]
@@ -254,7 +232,7 @@ def main(argv: list[str] | None = None) -> int:
     if stale:
         print(f"!! {len(stale)} overrides name entities not in the clue sets: {stale[:5]}")
     print("\nby category, final toponyms (an entity can be in several)")
-    for cat, n in Counter(c for r in toponyms for c in r["categories"]).most_common():
+    for cat, n in Counter(c for r in toponyms for c in (r["categories"] or [])).most_common():
         print(f"  {cat:<15} {n:>5}")
     print("\nby property (toponym / all)")
     by_prop: dict[str, list[int]] = defaultdict(lambda: [0, 0])

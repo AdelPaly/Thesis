@@ -26,7 +26,11 @@ billion sets, so eligibility is applied to CLUES first and the survivors are
 capped into a pool:
 
   eligible clue  surface_ambiguity <= --max-surface (20, as specified), a
-                 resolvable non-empty place set, and a label.
+                 resolvable non-empty place set, and a label. One record per
+                 clue ENTITY: a clue reached by two properties (P131 and P276,
+                 say) is two records in 04's output, and only the better one
+                 (see clue_quality) is kept, because a set may not name the
+                 same entity twice. Counted as `duplicate_clue_entity`.
   the pool       --pool clues drawn round-robin across property families, best
                  first, so a place holding four families cannot produce a pool
                  of nothing but P19. This is where "prefer sets that mix
@@ -63,29 +67,27 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import statistics
 import sys
-from collections import Counter, defaultdict
+from collections import defaultdict
+from dataclasses import dataclass, field
+from importlib import import_module
 from itertools import combinations
 from math import comb
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from importlib import import_module
+from io_utils import read_jsonl, utf8_stdout, write_jsonl_atomic  # noqa: E402
+from jsoncache import JsonCache, cache_key  # noqa: E402
+from wdqs import qid_from_uri, value_of  # noqa: E402
 
-_clues = import_module("02_clues")
+# The inverted relations, the chunked query runner and the family mapping are
+# 04's, imported rather than restated. If 04's notion of "the places this clue
+# reaches" ever changes, the intersections here change with it instead of
+# drifting quietly out of step. The module name starts with a digit, so it cannot
+# be a plain `import`; this is the only place the numbered module is reached.
 _score = import_module("04_score_clues")
-
-QueryError = _clues.QueryError
-sparql = _clues.sparql
-value_of = _clues.value_of
-qid_from_uri = _clues.qid_from_uri
-
-# The inverted relations and the family mapping are 04's, imported rather than
-# restated. If 04's notion of "the places this clue reaches" ever changes, the
-# intersections here change with it instead of drifting quietly out of step.
 place_where = _score.place_where
 run_chunked = _score.run_chunked
 FAMILY_ORDER = _score.FAMILY_ORDER
@@ -96,8 +98,19 @@ OUT_JSONL = ROOT / "data" / "05_clue_sets.jsonl"
 CACHE_PATH = ROOT / "data" / "05_set_cache.json"
 
 CACHE_VERSION = 1
+CACHE_PREFIX = "ps"      # cache keys are "ps|<clue_qid>|<property>"
 
-QID_CHUNK = 120      # entities bound into one VALUES block per place-set query
+QID_CHUNK = 120          # entities bound into one VALUES block per place-set query
+
+DEFAULT_MAX_SURFACE = 20  # as specified: drop clues whose label denotes more than 20 things
+DEFAULT_POOL = 12         # eligible clues per place enumerated over
+DEFAULT_MIN_SIZE = 3
+DEFAULT_MAX_SIZE = 5
+DEFAULT_KEEP = 5          # best sets written out per place
+REPORT_WIDTH = 78         # rule width of the console report sections
+LIST_EXAMPLES = 8         # example rows shown in each warning list
+FAILURE_EXAMPLES = 10     # failed lookups shown at the end
+LABEL_CHARS = 40          # clue label characters shown in warnings
 
 # Set-level ambiguity: how many places satisfy the whole set at once.
 SET_BUCKETS = (
@@ -131,6 +144,7 @@ SELECT DISTINCT ?clue ?place WHERE {{
 
 
 def collect_place_sets(batch: list[str], rows: list[dict], out: dict) -> None:
+    """Fold ?clue/?place rows into out[clue_qid] = sorted place QIDs, for every clue in batch."""
     found: dict[str, list[str]] = {q: [] for q in batch}
     for row in rows:
         clue = value_of(row, "clue")
@@ -146,42 +160,22 @@ def collect_place_sets(batch: list[str], rows: list[dict], out: dict) -> None:
     out.update({q: sorted(v) for q, v in found.items()})
 
 
-def load_cache(use_cache: bool) -> dict:
-    if not use_cache or not CACHE_PATH.exists():
-        return {}
-    try:
-        payload = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    if payload.get("version") != CACHE_VERSION:
-        return {}
-    return payload.get("entries", {})
-
-
-def save_cache(entries: dict) -> None:
-    CACHE_PATH.write_text(
-        json.dumps({"version": CACHE_VERSION, "entries": entries}, ensure_ascii=False),
-        encoding="utf-8",
-    )
-
-
-def resolve_place_sets(records: list[dict], use_cache: bool,
+def resolve_place_sets(records: list[dict], cache: JsonCache,
                        failures: list[tuple[str, str]]) -> dict[tuple[str, str], list[str]]:
     """(clue_qid, property) -> the places that relation reaches."""
     by_prop: dict[str, set[str]] = defaultdict(set)
     for record in records:
         by_prop[record["property"]].add(record["clue_qid"])
 
-    cache = load_cache(use_cache)
     resolved: dict[tuple[str, str], list[str]] = {}
 
     for prop in sorted(by_prop, key=lambda p: -len(by_prop[p])):
         qids = sorted(by_prop[prop])
         want = []
         for qid in qids:
-            key = f"ps|{qid}|{prop}"
-            if use_cache and key in cache:
-                resolved[(qid, prop)] = cache[key]
+            key = cache_key(CACHE_PREFIX, qid, prop)
+            if key in cache:
+                resolved[(qid, prop)] = cache.get(key)
             else:
                 want.append(qid)
         print(f"  {prop:<8} {len(qids):>5} clues, {len(want):>5} to query", flush=True)
@@ -194,18 +188,27 @@ def resolve_place_sets(records: list[dict], use_cache: bool,
         )
         for qid, places in got.items():
             resolved[(qid, prop)] = places
-            cache[f"ps|{qid}|{prop}"] = places
-        if use_cache:
-            save_cache(cache)
+            cache.set(cache_key(CACHE_PREFIX, qid, prop), places)
+        cache.save()
 
-    if use_cache:
-        save_cache(cache)
+    cache.save()
     return resolved
 
 
 # --------------------------------------------------------------------------
-# Pool construction
+# Eligibility
 # --------------------------------------------------------------------------
+
+def over_surface(record: dict, max_surface: int) -> bool:
+    """True when the clue's label is too ambiguous (or has no surface count at all)."""
+    value = record.get("surface_ambiguity")
+    return value is None or value > max_surface
+
+
+def unscored(record: dict) -> bool:
+    """True when 04 left the clue without a place_ambiguity or a label."""
+    return record.get("place_ambiguity") is None or not record.get("clue_label")
+
 
 def clue_quality(record: dict) -> tuple:
     """Best clue first: fewest places, cleanest surface, most recognisable.
@@ -221,6 +224,74 @@ def clue_quality(record: dict) -> tuple:
         record["clue_qid"],
     )
 
+
+def dedupe_by_clue_qid(eligible: list[dict]) -> tuple[list[dict], int]:
+    """One record per clue entity, keeping the best by clue_quality (PLC-01).
+
+    Eligibility is per (clue, property) record, so an entity reached by two
+    properties appears twice. A set must not contain the same entity twice: it
+    inflates the set size and n_families and can turn a "3-clue" set into a
+    2-clue one. Order of first appearance is preserved. Returns (kept, n_dropped).
+    """
+    best: dict[str, dict] = {}
+    for record in eligible:
+        current = best.get(record["clue_qid"])
+        if current is None or clue_quality(record) < clue_quality(current):
+            best[record["clue_qid"]] = record
+    return list(best.values()), len(eligible) - len(best)
+
+
+@dataclass
+class Eligibility:
+    """What survived eligibility, and what was dropped along the way."""
+
+    by_place: dict[str, list[dict]] = field(default_factory=lambda: defaultdict(list))
+    duplicates_by_place: dict[str, int] = field(default_factory=dict)
+    place_sets: dict[tuple[str, str], frozenset] = field(default_factory=dict)
+    dropped_empty: int = 0
+    dropped_failed: int = 0
+    drift_size: int = 0
+    missing_self: list[dict] = field(default_factory=list)
+
+
+def classify_eligibility(prefiltered: list[dict],
+                         resolved: dict[tuple[str, str], list[str]],
+                         offline: bool, dedupe: bool = True) -> Eligibility:
+    """Pass B: what resolution disqualifies, then one record per clue entity per place.
+
+    `dedupe=False` reproduces the pre-PLC-01 behaviour (for before/after comparison).
+    """
+    result = Eligibility()
+    for record in prefiltered:
+        key = (record["clue_qid"], record["property"])
+        if offline:
+            result.by_place[record["place_qid"]].append(record)
+            continue
+        if key not in resolved:
+            result.dropped_failed += 1
+            continue
+        found = resolved[key]
+        if not found:
+            result.dropped_empty += 1
+            continue
+        result.place_sets[key] = frozenset(found)
+        if len(found) != record["place_ambiguity"]:
+            result.drift_size += 1
+        if record["place_qid"] not in found:
+            result.missing_self.append(record)
+        result.by_place[record["place_qid"]].append(record)
+
+    if dedupe:
+        for qid, group in list(result.by_place.items()):
+            kept, dropped = dedupe_by_clue_qid(group)
+            result.by_place[qid] = kept
+            result.duplicates_by_place[qid] = dropped
+    return result
+
+
+# --------------------------------------------------------------------------
+# Pool construction
+# --------------------------------------------------------------------------
 
 def build_pool(eligible: list[dict], size: int) -> list[dict]:
     """Round-robin across families, best first within each.
@@ -261,6 +332,7 @@ def build_pool(eligible: list[dict], size: int) -> list[dict]:
 
 def score_set(combo: tuple[dict, ...], place_sets: dict[tuple[str, str], frozenset],
               place_qid: str, bound_only: bool) -> dict:
+    """Score one set of clues: intersection size (or the bound), resolves, families."""
     surfaces = [r["surface_ambiguity"] for r in combo]
     pas = [r["place_ambiguity"] for r in combo]
     families = {r["property_family"] for r in combo}
@@ -316,67 +388,100 @@ def set_rank(scored: dict) -> tuple:
 
 
 def bucket_row(values: list[int], buckets=SET_BUCKETS) -> list[int]:
+    """Counts of `values` per SET_BUCKETS bucket."""
     return [sum(1 for v in values if test(v)) for _, test in buckets]
 
 
+@dataclass
+class ScoreStats:
+    """Totals gathered while scoring every place."""
+
+    all_intersections: list[int] = field(default_factory=list)
+    all_scored_sets: int = 0
+    beat_bound: int = 0
+    wrong_singleton: list[str] = field(default_factory=list)
+
+
+def score_place(qid: str, name: str, group: list[dict], eligible: list[dict],
+                duplicates: int, place_sets: dict, sizes: list[int], pool_size: int,
+                keep: int, min_size: int, max_surface: int, offline: bool,
+                stats: ScoreStats) -> dict:
+    """Build the output record for one place and update `stats`."""
+    pool = build_pool(eligible, pool_size) if eligible else []
+    families_available = sorted({r["property_family"] for r in eligible})
+
+    scored_sets = []
+    for k in sizes:
+        if len(pool) < k:
+            continue
+        for combo in combinations(pool, k):
+            scored_sets.append(score_set(combo, place_sets, qid, offline))
+
+    intersections = [s["intersection"] for s in scored_sets]
+    stats.all_intersections.extend(intersections)
+    stats.all_scored_sets += len(scored_sets)
+    stats.beat_bound += sum(1 for s in scored_sets if s["intersection"] < s["bound"])
+
+    unique = [s for s in scored_sets if s["intersection"] == 1]
+    resolving = [s for s in scored_sets if s["resolves"]]
+    if unique and not offline and not resolving:
+        stats.wrong_singleton.append(qid)
+
+    scored_sets.sort(key=set_rank)
+    buckets = dict(zip([bucket for bucket, _ in SET_BUCKETS], bucket_row(intersections)))
+
+    flags = []
+    if len(eligible) < min_size:
+        flags.append("too_few_eligible_clues")
+    if not scored_sets:
+        flags.append("no_sets")
+    elif not (resolving if not offline else unique):
+        flags.append("no_unique_set")
+    if len(families_available) < 2:
+        flags.append("single_family")
+    if offline:
+        flags.append("bound_only")
+
+    carried = sum(1 for r in group if not over_surface(r, max_surface) and not unscored(r))
+    return {
+        "place_qid": qid,
+        "place_name": name,
+        "intersection_method": "bound" if offline else "intersection",
+        "clues_total": len(group),
+        "clues_eligible": len(eligible),
+        "excluded": {
+            "surface_over_max": sum(1 for r in group if over_surface(r, max_surface)),
+            "unscored_or_unlabelled": sum(1 for r in group if unscored(r)),
+            # The same entity reached by more than one property: kept once.
+            "duplicate_clue_entity": duplicates,
+            # Whatever survived the file-level cuts but died at resolution.
+            "empty_or_unresolved_place_set": carried - len(eligible) - duplicates,
+        },
+        "families_available": families_available,
+        "pool_size": len(pool),
+        "sets_eligible": len(scored_sets),
+        "sets_by_size": {str(k): sum(1 for s in scored_sets if s["size"] == k)
+                         for k in sizes},
+        "sets_mixed_family": sum(1 for s in scored_sets if s["n_families"] >= 2),
+        "ambiguity_distribution": buckets,
+        "intersection_min": min(intersections) if intersections else None,
+        "intersection_median": (round(statistics.median(intersections), 1)
+                                if intersections else None),
+        "intersection_max": max(intersections) if intersections else None,
+        "sets_resolving_to_place": len(resolving) if not offline else None,
+        "flags": flags,
+        "best_sets": scored_sets[:keep],
+    }
+
+
 # --------------------------------------------------------------------------
-# Main
+# Reports
 # --------------------------------------------------------------------------
 
-def main(argv: list[str] | None = None) -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
-    except Exception:  # pragma: no cover
-        pass
-
-    parser = argparse.ArgumentParser(description="Score candidate clue sets by intersection.")
-    parser.add_argument("--clues", type=Path, default=CLUES)
-    parser.add_argument("--out", type=Path, default=OUT_JSONL)
-    parser.add_argument("--max-surface", type=int, default=20,
-                        help="drop clues whose surface_ambiguity exceeds this (default 20)")
-    parser.add_argument("--pool", type=int, default=12,
-                        help="eligible clues per place to enumerate over (default 12)")
-    parser.add_argument("--min-size", type=int, default=3)
-    parser.add_argument("--max-size", type=int, default=5)
-    parser.add_argument("--keep", type=int, default=5,
-                        help="best sets written out per place (default 5)")
-    parser.add_argument("--offline", action="store_true",
-                        help="do not query; score sets at the min(place_ambiguity) "
-                             "upper bound instead of the true intersection")
-    parser.add_argument("--limit", type=int,
-                        help="only process the first N places (partial output; for testing)")
-    parser.add_argument("--no-cache", action="store_true")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="report the plan and exit without querying or writing")
-    args = parser.parse_args(argv)
-
-    if args.min_size < 1 or args.max_size < args.min_size:
-        print("--min-size/--max-size must satisfy 1 <= min <= max", file=sys.stderr)
-        return 2
-    if not args.clues.exists():
-        print(f"scored clue file not found: {args.clues}", file=sys.stderr)
-        return 2
-
-    records = [json.loads(line) for line in args.clues.open(encoding="utf-8") if line.strip()]
-    if not records:
-        print("no clue records", file=sys.stderr)
-        return 2
-
-    places: list[str] = []
-    for record in records:
-        if record["place_qid"] not in places:
-            places.append(record["place_qid"])
-    if args.limit:
-        places = places[:args.limit]
-        keep = set(places)
-        records = [r for r in records if r["place_qid"] in keep]
-        print(f"!! --limit {args.limit}: {len(places)} places, {len(records)} clues. "
-              f"Output is PARTIAL.\n")
-    name_of = {r["place_qid"]: r["place_name"] for r in records}
-
-    sizes = list(range(args.min_size, args.max_size + 1))
+def report_header(records: list[dict], places: list[str], args: argparse.Namespace,
+                  sizes: list[int]) -> None:
+    """The plan: what will be scored and how."""
     per_pool = sum(comb(args.pool, k) for k in sizes if args.pool >= k)
-
     print(f"clues              : {len(records)}")
     print(f"places             : {len(places)}")
     print(f"eligibility        : surface_ambiguity <= {args.max_surface}, "
@@ -388,195 +493,56 @@ def main(argv: list[str] | None = None) -> int:
           + ("min(place_ambiguity) BOUND -- --offline" if args.offline
              else "resolved place sets, intersected"))
 
-    # ---- eligibility, pass A: what the file already disqualifies ----
-    def over_surface(record: dict) -> bool:
-        value = record.get("surface_ambiguity")
-        return value is None or value > args.max_surface
 
-    def unscored(record: dict) -> bool:
-        return record.get("place_ambiguity") is None or not record.get("clue_label")
+def report_resolution(eligibility: Eligibility) -> None:
+    """Resolution drops, drift and clues that no longer reach their own place."""
+    print(f"\ndropped: empty place set: {eligibility.dropped_empty}   "
+          f"unresolved after splitting: {eligibility.dropped_failed}")
+    print(f"resolved set size disagrees with stored place_ambiguity for "
+          f"{eligibility.drift_size}/{len(eligibility.place_sets)} clues "
+          f"(Wikidata moved since 04 ran)")
+    missing_self = eligibility.missing_self
+    if missing_self:
+        print(f"!! {len(missing_self)} clues no longer reach the place they were "
+              f"collected for.")
+        print(f"   Any set built on them can only intersect to somewhere else. "
+              f"Affects {len({r['place_qid'] for r in missing_self})} places.")
+        for record in missing_self[:LIST_EXAMPLES]:
+            print(f"     {record['place_name'][:20]:<20} {record['property']:<8} "
+                  f"{(record['clue_label'] or '')[:LABEL_CHARS]}")
 
-    n_surface = sum(1 for r in records if over_surface(r))
-    n_unscored = sum(1 for r in records if unscored(r))
-    prefiltered = [r for r in records if not over_surface(r) and not unscored(r)]
-    print(f"\ndropped: surface > {args.max_surface}: {n_surface}   "
-          f"unscored/unlabelled: {n_unscored}   "
-          f"carried forward: {len(prefiltered)}")
 
-    if args.dry_run:
-        print("\n--dry-run: nothing queried, nothing written")
-        return 0
-
-    # ---- resolve the compatible-place sets ----
-    failures: list[tuple[str, str]] = []
-    resolved: dict[tuple[str, str], list[str]] = {}
-    if not args.offline:
-        print("\nresolving compatible places", flush=True)
-        resolved = resolve_place_sets(prefiltered, not args.no_cache, failures)
-
-    # ---- eligibility, pass B: what resolution disqualifies ----
-    eligible_by_place: dict[str, list[dict]] = defaultdict(list)
-    dropped_empty = 0
-    dropped_failed = 0
-    place_sets: dict[tuple[str, str], frozenset] = {}
-    drift_size = 0
-    missing_self: list[dict] = []
-
-    for record in prefiltered:
-        key = (record["clue_qid"], record["property"])
-        if args.offline:
-            eligible_by_place[record["place_qid"]].append(record)
-            continue
-        if key not in resolved:
-            dropped_failed += 1
-            continue
-        found = resolved[key]
-        if not found:
-            dropped_empty += 1
-            continue
-        place_sets[key] = frozenset(found)
-        if len(found) != record["place_ambiguity"]:
-            drift_size += 1
-        if record["place_qid"] not in found:
-            missing_self.append(record)
-        eligible_by_place[record["place_qid"]].append(record)
-
-    if not args.offline:
-        print(f"\ndropped: empty place set: {dropped_empty}   "
-              f"unresolved after splitting: {dropped_failed}")
-        print(f"resolved set size disagrees with stored place_ambiguity for "
-              f"{drift_size}/{len(place_sets)} clues (Wikidata moved since 04 ran)")
-        if missing_self:
-            print(f"!! {len(missing_self)} clues no longer reach the place they were "
-                  f"collected for.")
-            print(f"   Any set built on them can only intersect to somewhere else. "
-                  f"Affects {len({r['place_qid'] for r in missing_self})} places.")
-            for record in missing_self[:8]:
-                print(f"     {record['place_name'][:20]:<20} {record['property']:<8} "
-                      f"{(record['clue_label'] or '')[:40]}")
-
-    # ================================================================
-    # Enumerate and score
-    # ================================================================
-    print("\n" + "=" * 78)
-    print("SETS", flush=True)
-
-    out_records = []
-    all_intersections: list[int] = []
-    all_scored_sets = 0
-    beat_bound = 0
-    wrong_singleton: list[str] = []
-
-    by_place: dict[str, list[dict]] = defaultdict(list)
-    for record in records:
-        by_place[record["place_qid"]].append(record)
-
-    for qid in places:
-        group = by_place[qid]
-        eligible = eligible_by_place.get(qid, [])
-        pool = build_pool(eligible, args.pool) if eligible else []
-        families_available = sorted({r["property_family"] for r in eligible})
-
-        scored_sets = []
-        for k in sizes:
-            if len(pool) < k:
-                continue
-            for combo in combinations(pool, k):
-                scored_sets.append(score_set(combo, place_sets, qid, args.offline))
-
-        intersections = [s["intersection"] for s in scored_sets]
-        all_intersections.extend(intersections)
-        all_scored_sets += len(scored_sets)
-        beat_bound += sum(1 for s in scored_sets if s["intersection"] < s["bound"])
-
-        unique = [s for s in scored_sets if s["intersection"] == 1]
-        resolving = [s for s in scored_sets if s["resolves"]]
-        if unique and not args.offline and not resolving:
-            wrong_singleton.append(qid)
-
-        scored_sets.sort(key=set_rank)
-        buckets = dict(zip([name for name, _ in SET_BUCKETS], bucket_row(intersections)))
-
-        flags = []
-        if len(eligible) < args.min_size:
-            flags.append("too_few_eligible_clues")
-        if not scored_sets:
-            flags.append("no_sets")
-        elif not (resolving if not args.offline else unique):
-            flags.append("no_unique_set")
-        if len(families_available) < 2:
-            flags.append("single_family")
-        if args.offline:
-            flags.append("bound_only")
-
-        out_records.append({
-            "place_qid": qid,
-            "place_name": name_of[qid],
-            "intersection_method": "bound" if args.offline else "intersection",
-            "clues_total": len(group),
-            "clues_eligible": len(eligible),
-            "excluded": {
-                "surface_over_max": sum(1 for r in group if over_surface(r)),
-                "unscored_or_unlabelled": sum(1 for r in group if unscored(r)),
-                # Whatever survived the file-level cuts but died at resolution.
-                "empty_or_unresolved_place_set": (
-                    sum(1 for r in group if not over_surface(r) and not unscored(r))
-                    - len(eligible)),
-            },
-            "families_available": families_available,
-            "pool_size": len(pool),
-            "sets_eligible": len(scored_sets),
-            "sets_by_size": {str(k): sum(1 for s in scored_sets if s["size"] == k)
-                             for k in sizes},
-            "sets_mixed_family": sum(1 for s in scored_sets if s["n_families"] >= 2),
-            "ambiguity_distribution": buckets,
-            "intersection_min": min(intersections) if intersections else None,
-            "intersection_median": (round(statistics.median(intersections), 1)
-                                    if intersections else None),
-            "intersection_max": max(intersections) if intersections else None,
-            "sets_resolving_to_place": (len(resolving) if not args.offline
-                                        else None),
-            "flags": flags,
-            "best_sets": scored_sets[:args.keep],
-        })
-
-    # ---- write ----
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    tmp = args.out.with_suffix(args.out.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8", newline="\n") as handle:
-        for record in out_records:
-            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-    tmp.replace(args.out)
-
-    # ================================================================
-    # Report
-    # ================================================================
+def report_totals(out_records: list[dict], places: list[str], stats: ScoreStats,
+                  offline: bool) -> None:
+    """Set counts, the set-level ambiguity table, and how often intersection beat the bound."""
     with_sets = [r for r in out_records if r["sets_eligible"]]
-    print(f"\n{all_scored_sets} sets scored across {len(with_sets)}/{len(places)} places")
+    print(f"\n{stats.all_scored_sets} sets scored across {len(with_sets)}/{len(places)} places")
 
-    if all_intersections:
+    if stats.all_intersections:
         heads = [name for name, _ in SET_BUCKETS]
-        row = bucket_row(all_intersections)
-        print(f"\nSET-LEVEL AMBIGUITY (all sets)")
+        row = bucket_row(stats.all_intersections)
+        print("\nSET-LEVEL AMBIGUITY (all sets)")
         print(f"{'places compatible':<20} " + " ".join(f"{h:>8}" for h in heads))
         print("-" * 56)
         print(f"{'sets':<20} " + " ".join(f"{c:>8}" for c in row))
         print(f"{'share':<20} "
-              + " ".join(f"{c/len(all_intersections):>7.1%}" for c in row))
-        print(f"\nmedian {statistics.median(all_intersections):.1f}   "
-              f"max {max(all_intersections)}")
+              + " ".join(f"{c/len(stats.all_intersections):>7.1%}" for c in row))
+        print(f"\nmedian {statistics.median(stats.all_intersections):.1f}   "
+              f"max {max(stats.all_intersections)}")
 
-    if not args.offline:
+    if not offline:
         print(f"\nintersection beat the min(place_ambiguity) bound for "
-              f"{beat_bound}/{all_scored_sets} sets "
-              f"({beat_bound/max(all_scored_sets,1):.1%})")
+              f"{stats.beat_bound}/{stats.all_scored_sets} sets "
+              f"({stats.beat_bound/max(stats.all_scored_sets,1):.1%})")
         print("  -- sets where the clues are ambiguous about DIFFERENT places, "
               "which is the")
         print("     whole reason to combine them. The rest were already pinned by "
               "one clue.")
 
-    # ---- family mix ----
-    print("\n" + "=" * 78)
+
+def report_family_mix(out_records: list[dict]) -> None:
+    """Does mixing property families tighten the intersection (best sets only)?"""
+    print("\n" + "=" * REPORT_WIDTH)
     print("FAMILY MIX  (does mixing families actually tighten the intersection?)")
     by_mix: dict[int, list[int]] = defaultdict(list)
     for record in out_records:
@@ -591,8 +557,10 @@ def main(argv: list[str] | None = None) -> int:
     print("\n(best sets only -- the ranking already prefers mixed sets, so this is "
           "a\n check on what got picked, not an unbiased comparison.)")
 
-    # ---- per place ----
-    print("\n" + "=" * 78)
+
+def report_per_place(out_records: list[dict]) -> None:
+    """One table row per place."""
+    print("\n" + "=" * REPORT_WIDTH)
     print("PER PLACE")
     heads = [name for name, _ in SET_BUCKETS]
     print(f"\n{'place':<22} {'qid':<11} {'clue':>5} {'elig':>5} {'pool':>5} {'sets':>6} "
@@ -608,55 +576,67 @@ def main(argv: list[str] | None = None) -> int:
               + (f" {median:>5.1f}" if median is not None else f" {'-':>5}")
               + ("  " + ",".join(record["flags"]) if record["flags"] else ""))
 
-    # ---- the flag that matters ----
+
+def report_unresolved(out_records: list[dict], places: list[str], min_size: int) -> None:
+    """The flag that matters: places with no set that intersects to a single place."""
     unresolved = [r for r in out_records if "no_unique_set" in r["flags"]
                   or "no_sets" in r["flags"]]
-    print("\n" + "=" * 78)
+    print("\n" + "=" * REPORT_WIDTH)
     print(f"PLACES WITH NO SET THAT INTERSECTS TO A SINGLE PLACE: "
           f"{len(unresolved)}/{len(places)}")
-    if unresolved:
-        print(f"\n{'place':<22} {'qid':<11} {'elig':>5} {'sets':>6} {'best':>5}  why")
-        print("-" * 78)
-        for record in unresolved:
-            best = record["best_sets"][0] if record["best_sets"] else None
-            if "no_sets" in record["flags"]:
-                why = (f"only {record['clues_eligible']} eligible clues, "
-                       f"need {args.min_size}")
-            else:
-                why = (f"tightest set still leaves {best['intersection']} places"
-                       if best else "")
-            print(f"{record['place_name'][:22]:<22} {record['place_qid']:<11} "
-                  f"{record['clues_eligible']:>5} {record['sets_eligible']:>6} "
-                  + (f"{best['intersection']:>5}" if best else f"{'-':>5}")
-                  + f"  {why}")
+    if not unresolved:
+        return
+    print(f"\n{'place':<22} {'qid':<11} {'elig':>5} {'sets':>6} {'best':>5}  why")
+    print("-" * REPORT_WIDTH)
+    for record in unresolved:
+        best = record["best_sets"][0] if record["best_sets"] else None
+        if "no_sets" in record["flags"]:
+            why = (f"only {record['clues_eligible']} eligible clues, "
+                   f"need {min_size}")
+        else:
+            why = (f"tightest set still leaves {best['intersection']} places"
+                   if best else "")
+        print(f"{record['place_name'][:22]:<22} {record['place_qid']:<11} "
+              f"{record['clues_eligible']:>5} {record['sets_eligible']:>6} "
+              + (f"{best['intersection']:>5}" if best else f"{'-':>5}")
+              + f"  {why}")
 
+
+def report_starved(out_records: list[dict], min_size: int, max_surface: int) -> None:
+    """Places short of eligible clues: starved of supply or cut by the surface filter."""
     starved = [r for r in out_records if "too_few_eligible_clues" in r["flags"]]
-    if starved:
-        # Two different problems wearing the same flag, and they have different
-        # fixes. Blaming the surface cut for a place that arrived from 04 with
-        # one clue would send someone to tune the wrong knob.
-        thin = [r for r in starved if r["clues_total"] < args.min_size]
-        cut = [r for r in starved if r["clues_total"] >= args.min_size]
-        print(f"\n{len(starved)} of those are starved of clues rather than of "
-              f"distinctness:")
-        if thin:
-            print(f"   {len(thin)} arrived from 04 with under {args.min_size} clues at "
-                  f"all. No filter here touched them;")
-            print(f"     more clues from 02/03 is the only fix.")
-        if cut:
-            print(f"   {len(cut)} had enough clues until the {args.max_surface}-surface "
-                  f"cut took them under {args.min_size}:")
-            for record in cut[:8]:
-                print(f"     {record['place_name'][:22]:<22} "
-                      f"{record['clues_total']} clues -> {record['clues_eligible']} "
-                      f"eligible")
-            print(f"     Loosening --max-surface would recover these, at the cost of "
-                  f"clues whose\n     labels denote more than one thing.")
+    if not starved:
+        return
+    # Two different problems wearing the same flag, and they have different
+    # fixes. Blaming the surface cut for a place that arrived from 04 with
+    # one clue would send someone to tune the wrong knob.
+    thin = [r for r in starved if r["clues_total"] < min_size]
+    cut = [r for r in starved if r["clues_total"] >= min_size]
+    print(f"\n{len(starved)} of those are starved of clues rather than of "
+          f"distinctness:")
+    if thin:
+        print(f"   {len(thin)} arrived from 04 with under {min_size} clues at "
+              f"all. No filter here touched them;")
+        print("     more clues from 02/03 is the only fix.")
+    if cut:
+        print(f"   {len(cut)} had enough clues until the {max_surface}-surface "
+              f"cut took them under {min_size}:")
+        for record in cut[:LIST_EXAMPLES]:
+            print(f"     {record['place_name'][:22]:<22} "
+                  f"{record['clues_total']} clues -> {record['clues_eligible']} "
+                  f"eligible")
+        print("     Loosening --max-surface would recover these, at the cost of "
+              "clues whose\n     labels denote more than one thing.")
 
-    if wrong_singleton:
-        print(f"\n!! {len(wrong_singleton)} places have a set intersecting to exactly "
-              f"one place that is NOT them:")
-        for qid in wrong_singleton[:8]:
+
+def report_tail(out_records: list[dict], places: list[str], stats: ScoreStats,
+                name_of: dict[str, str], failures: list[tuple[str, str]],
+                offline: bool) -> None:
+    """Wrong singletons, single-family places, failed lookups and the offline warning."""
+    if stats.wrong_singleton:
+        print(f"\n!! {len(stats.wrong_singleton)} places have a set intersecting to "
+              f"exactly one place that is NOT them:")
+        for qid in stats.wrong_singleton[:LIST_EXAMPLES]:
             print(f"     {name_of[qid]:<22} {qid}")
         print("   Those sets identify somewhere else. Not counted as resolving.")
 
@@ -670,14 +650,143 @@ def main(argv: list[str] | None = None) -> int:
     if failures:
         print(f"\n!! {len(failures)} place-set lookups failed after splitting; those "
               f"clues were dropped from eligibility. Re-run to retry just those.")
-        for item, err in failures[:10]:
+        for item, err in failures[:FAILURE_EXAMPLES]:
             print(f"   {item}: {err[:110]}")
 
-    if args.offline:
+    if offline:
         print("\n!! --offline: every 'intersection' above is min(place_ambiguity), an "
               "UPPER BOUND.")
         print("   Real intersections are smaller. Re-run without --offline before "
               "trusting any of it.")
+
+
+# --------------------------------------------------------------------------
+# Main
+# --------------------------------------------------------------------------
+
+def build_parser() -> argparse.ArgumentParser:
+    """The command-line interface."""
+    parser = argparse.ArgumentParser(description="Score candidate clue sets by intersection.")
+    parser.add_argument("--clues", type=Path, default=CLUES)
+    parser.add_argument("--out", type=Path, default=OUT_JSONL)
+    parser.add_argument("--max-surface", type=int, default=DEFAULT_MAX_SURFACE,
+                        help=f"drop clues whose surface_ambiguity exceeds this "
+                             f"(default {DEFAULT_MAX_SURFACE})")
+    parser.add_argument("--pool", type=int, default=DEFAULT_POOL,
+                        help=f"eligible clues per place to enumerate over "
+                             f"(default {DEFAULT_POOL})")
+    parser.add_argument("--min-size", type=int, default=DEFAULT_MIN_SIZE)
+    parser.add_argument("--max-size", type=int, default=DEFAULT_MAX_SIZE)
+    parser.add_argument("--keep", type=int, default=DEFAULT_KEEP,
+                        help=f"best sets written out per place (default {DEFAULT_KEEP})")
+    parser.add_argument("--offline", action="store_true",
+                        help="do not query; score sets at the min(place_ambiguity) "
+                             "upper bound instead of the true intersection")
+    parser.add_argument("--limit", type=int,
+                        help="only process the first N places (partial output; for testing)")
+    parser.add_argument("--no-cache", action="store_true",
+                        help="ignore the cache and do not write it")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="report the plan and exit without querying or writing")
+    return parser
+
+
+def load_records(args: argparse.Namespace) -> tuple[list[dict], list[str]] | None:
+    """The scored clue records and their places (in first-seen order), or None if unusable."""
+    if not args.clues.exists():
+        print(f"scored clue file not found: {args.clues}", file=sys.stderr)
+        return None
+    records = read_jsonl(args.clues)
+    if not records:
+        print("no clue records", file=sys.stderr)
+        return None
+
+    places = list(dict.fromkeys(r["place_qid"] for r in records))
+    if args.limit:
+        places = places[:args.limit]
+        keep = set(places)
+        records = [r for r in records if r["place_qid"] in keep]
+        print(f"!! --limit {args.limit}: {len(places)} places, {len(records)} clues. "
+              f"Output is PARTIAL.\n")
+    return records, places
+
+
+def prefilter(records: list[dict], max_surface: int) -> list[dict]:
+    """Pass A: print what the file already disqualifies; return what is carried forward."""
+    n_surface = sum(1 for r in records if over_surface(r, max_surface))
+    n_unscored = sum(1 for r in records if unscored(r))
+    carried = [r for r in records if not over_surface(r, max_surface) and not unscored(r)]
+    print(f"\ndropped: surface > {max_surface}: {n_surface}   "
+          f"unscored/unlabelled: {n_unscored}   "
+          f"carried forward: {len(carried)}")
+    return carried
+
+
+def score_all(places: list[str], records: list[dict], eligibility: Eligibility,
+              sizes: list[int], args: argparse.Namespace) -> tuple[list[dict], ScoreStats]:
+    """Enumerate and score the sets of every place."""
+    name_of = {r["place_qid"]: r["place_name"] for r in records}
+    by_place: dict[str, list[dict]] = defaultdict(list)
+    for record in records:
+        by_place[record["place_qid"]].append(record)
+
+    stats = ScoreStats()
+    out_records = [
+        score_place(qid, name_of[qid], by_place[qid], eligibility.by_place.get(qid, []),
+                    eligibility.duplicates_by_place.get(qid, 0), eligibility.place_sets,
+                    sizes, args.pool, args.keep, args.min_size, args.max_surface,
+                    args.offline, stats)
+        for qid in places
+    ]
+    return out_records, stats
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Resolve place sets, score every place's sets, write the JSONL and print the report."""
+    utf8_stdout()
+    args = build_parser().parse_args(argv)
+
+    if args.min_size < 1 or args.max_size < args.min_size:
+        print("--min-size/--max-size must satisfy 1 <= min <= max", file=sys.stderr)
+        return 2
+    loaded = load_records(args)
+    if loaded is None:
+        return 2
+    records, places = loaded
+    name_of = {r["place_qid"]: r["place_name"] for r in records}
+    sizes = list(range(args.min_size, args.max_size + 1))
+
+    report_header(records, places, args, sizes)
+    prefiltered = prefilter(records, args.max_surface)
+
+    if args.dry_run:
+        print("\n--dry-run: nothing queried, nothing written")
+        return 0
+
+    # ---- resolve the compatible-place sets ----
+    failures: list[tuple[str, str]] = []
+    resolved: dict[tuple[str, str], list[str]] = {}
+    if not args.offline:
+        print("\nresolving compatible places", flush=True)
+        cache = JsonCache(CACHE_PATH, CACHE_VERSION, enabled=not args.no_cache)
+        resolved = resolve_place_sets(prefiltered, cache, failures)
+
+    eligibility = classify_eligibility(prefiltered, resolved, args.offline)
+    if not args.offline:
+        report_resolution(eligibility)
+
+    print("\n" + "=" * REPORT_WIDTH)
+    print("SETS", flush=True)
+    out_records, stats = score_all(places, records, eligibility, sizes, args)
+
+    write_jsonl_atomic(args.out, out_records)
+
+    report_totals(out_records, places, stats, args.offline)
+    report_family_mix(out_records)
+    report_per_place(out_records)
+    report_unresolved(out_records, places, args.min_size)
+    report_starved(out_records, args.min_size, args.max_surface)
+    report_tail(out_records, places, stats, name_of, failures, args.offline)
 
     print(f"\nwrote {args.out}   {len(out_records)} places")
     return 1 if failures else 0

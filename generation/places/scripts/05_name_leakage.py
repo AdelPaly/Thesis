@@ -29,16 +29,21 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import re
 import sys
 import unicodedata
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from io_utils import leaks_strict, read_jsonl, utf8_stdout  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 CLUES = ROOT / "data" / "02_clues.jsonl"
 OUT_CSV = ROOT / "data" / "05_name_leakage.csv"
+
+HEAVY_P131_SHARE = 0.5   # a place is "P131 heavy" when P131 is at least this share of its clues
 
 
 def fold(text: str) -> str:
@@ -47,11 +52,6 @@ def fold(text: str) -> str:
     text = "".join(ch for ch in text if not unicodedata.combining(ch))
     text = re.sub(r"[^0-9a-z]+", " ", text.lower())
     return re.sub(r"\s+", " ", text).strip()
-
-
-def leaks_strict(place: str, label: str) -> bool:
-    """The specified test: case-insensitive substring, as written."""
-    return place.casefold() in label.casefold()
 
 
 def leaks_relaxed(place: str, label: str) -> bool:
@@ -63,10 +63,7 @@ def leaks_relaxed(place: str, label: str) -> bool:
 
 
 def main(argv: list[str] | None = None) -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
-    except Exception:  # pragma: no cover
-        pass
+    utf8_stdout()
 
     parser = argparse.ArgumentParser(description="Measure name leakage in the clue set.")
     parser.add_argument("--clues", type=Path, default=CLUES)
@@ -78,7 +75,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"clue file not found: {args.clues}", file=sys.stderr)
         return 2
 
-    records = [json.loads(line) for line in args.clues.open(encoding="utf-8") if line.strip()]
+    records = read_jsonl(args.clues)
     if not records:
         print("no clue records", file=sys.stderr)
         return 2
@@ -134,8 +131,10 @@ def main(argv: list[str] | None = None) -> int:
     total_s = sum(1 for r in records if r["_strict"])
     total_x = sum(1 for r in records if r["_relaxed"])
     print("-" * 62)
+    all_srate = f"{total_s/total_can:.1%}" if total_can else "-"
+    all_xrate = f"{total_x/total_can:.1%}" if total_can else "-"
     print(f"{'ALL':<9} {len(records):>8} {total_can:>9} {total_s:>7} "
-          f"{total_s/total_can:>6.1%} {total_x:>8} {total_x/total_can:>6.1%}")
+          f"{all_srate:>6} {total_x:>8} {all_xrate:>6}")
 
     # ---- place-level survival ----
     def survivors(drop) -> dict[str, int]:
@@ -180,17 +179,20 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"    {name_of[qid]} ({qid}) -- had {per_place[qid]}")
 
     # ---- how much of each place's set is P131, and how much of that leaks ----
+    p131_by_place: dict[str, list[dict]] = {}
+    for record in p131:
+        p131_by_place.setdefault(record["place_qid"], []).append(record)
     p131_share = []
     for qid in places:
         total = per_place[qid]
-        mine = sum(1 for r in records if r["place_qid"] == qid and r["property"] == "P131")
-        leak = sum(1 for r in records
-                   if r["place_qid"] == qid and r["property"] == "P131" and r["_strict"])
+        group = p131_by_place.get(qid, [])
+        mine = len(group)
+        leak = sum(1 for r in group if r["_strict"])
         if mine:
             p131_share.append((qid, total, mine, leak, mine / total))
-    heavy = [p for p in p131_share if p[4] >= 0.5]
+    heavy = [p for p in p131_share if p[4] >= HEAVY_P131_SHARE]
     print(f"\nplaces with any P131 clue          : {len(p131_share)} / {len(places)}")
-    print(f"places where P131 is >=50% of set  : {len(heavy)}")
+    print(f"places where P131 is >={HEAVY_P131_SHARE:.0%} of set  : {len(heavy)}")
     fully = [p for p in p131_share if p[2] and p[3] == p[2]]
     print(f"places where every P131 clue leaks : {len(fully)}")
 
