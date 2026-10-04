@@ -12,17 +12,25 @@ output of score.score_record) and returns numbers.
 """
 from __future__ import annotations
 
-import math
-import random
-import statistics
 from collections import defaultdict
+from typing import Callable
 
+import numpy as np
 from scipy import stats as sps
+
+DEFAULT_SEED = 20260917
+DEFAULT_N_BOOT = 10000
+DEFAULT_ALPHA = 0.05
 
 
 # --------------------------------------------------------------- pairing
 
-def pair_records(a_records, b_records, key=("item_id", "dataset")):
+def _place_of(r: dict):
+    return r.get("place_key") or r.get("place_qid") or f"item:{r.get('item_id')}"
+
+
+def pair_records(a_records: list[dict], b_records: list[dict],
+                 key: tuple[str, ...] = ("item_id", "dataset")) -> list[tuple]:
     """Align two configurations' records on the same items.
 
     Returns [(place_key, rec_a, rec_b), ...] for items present in both.
@@ -31,16 +39,10 @@ def pair_records(a_records, b_records, key=("item_id", "dataset")):
         return {tuple(r.get(k) for k in key): r for r in records}
 
     ia, ib = index(a_records), index(b_records)
-    shared = sorted(set(ia) & set(ib))
-    out = []
-    for k in shared:
-        ra, rb = ia[k], ib[k]
-        place = ra.get("place_key") or ra.get("place_qid") or f"item:{k[0]}"
-        out.append((place, ra, rb))
-    return out
+    return [(_place_of(ia[k]), ia[k], ib[k]) for k in sorted(set(ia) & set(ib))]
 
 
-def _by_place(pairs, value):
+def _by_place(pairs: list[tuple], value: Callable) -> dict:
     """{place: [(value_a, value_b), ...]}"""
     grouped = defaultdict(list)
     for place, ra, rb in pairs:
@@ -50,7 +52,7 @@ def _by_place(pairs, value):
 
 # --------------------------------------------------------------- McNemar
 
-def mcnemar(pairs, correct, unit="place"):
+def mcnemar(pairs: list[tuple], correct: Callable, unit: str = "place") -> dict:
     """Paired accuracy comparison.
 
     unit="place" (the default and what should be reported): each place
@@ -63,207 +65,189 @@ def mcnemar(pairs, correct, unit="place"):
     because its pairs are not independent when a place has several items, so
     its p-value is anti-conservative.
 
-    Returns a dict with the discordant counts b and c, the statistic, and an
-    exact two-sided binomial p-value (exact rather than chi-square, because b+c
-    is small at this sample size).
+    Returns a dict with the discordant counts b and c and an exact two-sided
+    binomial p-value (exact rather than chi-square, because b+c is small at
+    this sample size).
     """
+    if unit not in ("place", "item"):
+        raise ValueError(f"unit must be 'place' or 'item', got {unit!r}")
     if unit == "item":
         outcomes = [(bool(correct(ra)), bool(correct(rb))) for _, ra, rb in pairs]
-    elif unit == "place":
+    else:
         outcomes = []
-        for place, vals in _by_place(pairs, correct).items():
+        for vals in _by_place(pairs, correct).values():
             a_rate = sum(bool(v[0]) for v in vals) / len(vals)
             b_rate = sum(bool(v[1]) for v in vals) / len(vals)
             if a_rate == b_rate:
                 outcomes.append((True, True))       # concordant, drops out
             else:
                 outcomes.append((a_rate > b_rate, b_rate > a_rate))
-    else:
-        raise ValueError(f"unit must be 'place' or 'item', got {unit!r}")
 
     b = sum(1 for a, bb in outcomes if a and not bb)     # a right, b wrong
     c = sum(1 for a, bb in outcomes if bb and not a)     # b right, a wrong
-    n_disc = b + c
-    if n_disc == 0:
+    if b + c == 0:
         return {"unit": unit, "n": len(outcomes), "b": 0, "c": 0,
-                "p": 1.0, "statistic": None,
-                "note": "no discordant pairs"}
-    p = sps.binomtest(b, n_disc, 0.5, alternative="two-sided").pvalue
-    return {"unit": unit, "n": len(outcomes), "b": b, "c": c,
-            "p": float(p),
-            "statistic": (abs(b - c) - 1) ** 2 / n_disc if n_disc else None}
-
-
-# --------------------------------------------------------------- Wilcoxon
-
-def wilcoxon_distance(pairs, unit="place"):
-    """Paired distance comparison, Wilcoxon signed-rank.
-
-    Only items where BOTH systems produced a distance can be paired -- an
-    item with no predicted coordinate has no distance, and substituting a
-    number for it (0, or the antipode) is what the Null Island bug did.
-    The count of usable pairs is returned so that a comparison resting on few
-    pairs is visible rather than implied.
-
-    unit="place" reduces each place to the median distance of its items per
-    system before ranking, so the ranked values are independent.
-    """
-    def dist(r):
-        return r.get("distance_km")
-
-    if unit == "item":
-        a_vals, b_vals = [], []
-        for _, ra, rb in pairs:
-            da, db = dist(ra), dist(rb)
-            if da is not None and db is not None:
-                a_vals.append(da)
-                b_vals.append(db)
-    else:
-        a_vals, b_vals = [], []
-        for place, vals in _by_place(pairs, dist).items():
-            da = [v[0] for v in vals if v[0] is not None]
-            db = [v[1] for v in vals if v[1] is not None]
-            if da and db:
-                a_vals.append(statistics.median(da))
-                b_vals.append(statistics.median(db))
-
-    n = len(a_vals)
-    if n < 6:
-        return {"unit": unit, "n_pairs": n, "p": None, "statistic": None,
-                "median_diff": None,
-                "note": f"only {n} usable pair(s); signed-rank not reported"}
-    diffs = [a - b for a, b in zip(a_vals, b_vals)]
-    if all(d == 0 for d in diffs):
-        return {"unit": unit, "n_pairs": n, "p": 1.0, "statistic": 0.0,
-                "median_diff": 0.0, "note": "identical distances"}
-    res = sps.wilcoxon(a_vals, b_vals, zero_method="wilcox",
-                       alternative="two-sided")
-    return {"unit": unit, "n_pairs": n, "p": float(res.pvalue),
-            "statistic": float(res.statistic),
-            "median_diff": float(statistics.median(diffs))}
+                "p": 1.0, "note": "no discordant pairs"}
+    p = sps.binomtest(b, b + c, 0.5, alternative="two-sided").pvalue
+    return {"unit": unit, "n": len(outcomes), "b": b, "c": c, "p": float(p)}
 
 
 # ------------------------------------------------------------- bootstrap
 
-def cluster_bootstrap_ci(records, metric, n_boot=10000, alpha=0.05, seed=20260917):
+# A ratio metric is a function of a record list that ALSO carries a `terms`
+# attribute mapping one record to (numerator, denominator). The bootstrap then
+# precomputes per-place sums once and resamples with numpy index arrays.
+# Metrics without `terms` fall back to re-evaluating on resampled records.
+
+def _terms_of(metric: Callable):
+    return getattr(metric, "terms", None)
+
+
+def _place_sums(records: list[dict], terms: Callable) -> tuple[list, np.ndarray, np.ndarray]:
+    """Per-place (numerator, denominator) sums; places sorted for determinism."""
+    num, den = defaultdict(float), defaultdict(float)
+    for r in records:
+        n, d = terms(r)
+        p = _place_of(r)
+        num[p] += n
+        den[p] += d
+    places = sorted(num, key=str)
+    return (places, np.array([num[p] for p in places]),
+            np.array([den[p] for p in places]))
+
+
+def _interval(point, replicates: np.ndarray, n_places: int, n_boot: int,
+              alpha: float) -> dict:
+    out = {"point": point, "lo": None, "hi": None, "n_places": n_places,
+           "n_boot": int(len(replicates)),
+           "n_dropped": n_boot - int(len(replicates))}
+    if len(replicates):
+        lo, hi = np.percentile(replicates, [100 * alpha / 2, 100 * (1 - alpha / 2)])
+        out["lo"], out["hi"] = float(lo), float(hi)
+    return out
+
+
+def _generic_replicates(groups: list[list], idx: np.ndarray, value: Callable) -> np.ndarray:
+    vals = []
+    for row in idx:
+        v = value([x for i in row for x in groups[i]])
+        if v is not None and not np.isnan(v):
+            vals.append(v)
+    return np.array(vals)
+
+
+def cluster_bootstrap_ci(records: list[dict], metric: Callable,
+                         n_boot: int = DEFAULT_N_BOOT, alpha: float = DEFAULT_ALPHA,
+                         seed: int = DEFAULT_SEED) -> dict:
     """Percentile CI for a metric, resampling PLACES with replacement.
 
     `metric` takes a list of records and returns a float or None. Places, not
     items, are resampled: a place enters the replicate with all of its items,
     which is what preserves the within-place correlation instead of pretending
-    it away.
+    it away. Replicates where the metric is undefined are dropped and counted
+    in `n_dropped`.
     """
-    by_place = defaultdict(list)
-    for r in records:
-        by_place[r.get("place_key") or r.get("place_qid") or r.get("item_id")].append(r)
-    places = list(by_place)
+    terms = _terms_of(metric)
+    point = metric(records)
+    if terms:
+        places, num, den = _place_sums(records, terms)
+    else:
+        grouped = defaultdict(list)
+        for r in records:
+            grouped[_place_of(r)].append(r)
+        places = sorted(grouped, key=str)
     if len(places) < 2:
-        return {"point": metric(records), "lo": None, "hi": None,
+        return {"point": point, "lo": None, "hi": None,
                 "n_places": len(places), "note": "too few places to bootstrap"}
 
-    rng = random.Random(seed)
-    point = metric(records)
-    replicates = []
-    for _ in range(n_boot):
-        sample = []
-        for _ in range(len(places)):
-            sample.extend(by_place[places[rng.randrange(len(places))]])
-        value = metric(sample)
-        if value is not None and not (isinstance(value, float) and math.isnan(value)):
-            replicates.append(value)
-    if not replicates:
-        return {"point": point, "lo": None, "hi": None, "n_places": len(places)}
-    replicates.sort()
-    lo = replicates[int((alpha / 2) * len(replicates))]
-    hi = replicates[min(len(replicates) - 1, int((1 - alpha / 2) * len(replicates)))]
-    return {"point": point, "lo": lo, "hi": hi, "n_places": len(places),
-            "n_boot": len(replicates)}
+    idx = np.random.default_rng(seed).integers(0, len(places), size=(n_boot, len(places)))
+    if terms:
+        n, d = num[idx].sum(axis=1), den[idx].sum(axis=1)
+        reps = n[d > 0] / d[d > 0]
+    else:
+        reps = _generic_replicates([grouped[p] for p in places], idx, metric)
+    return _interval(point, reps, len(places), n_boot, alpha)
 
 
-def paired_effect_ci(pairs, metric, n_boot=10000, alpha=0.05, seed=20260917):
+def paired_effect_ci(pairs: list[tuple], metric: Callable,
+                     n_boot: int = DEFAULT_N_BOOT, alpha: float = DEFAULT_ALPHA,
+                     seed: int = DEFAULT_SEED) -> dict:
     """CI for the PAIRED difference metric(a) - metric(b), resampling places.
 
     The effect size with an interval, which is what should be reported --
     a significance test alone says whether a difference is distinguishable
     from zero, not whether it is large enough to matter.
+
+    Both systems share each replicate's place draw; that pairing is what makes
+    the interval a paired one. A replicate is dropped, and counted in
+    `n_dropped`, if the metric is undefined for either system.
     """
-    by_place = defaultdict(list)
+    grouped = defaultdict(list)
     for place, ra, rb in pairs:
-        by_place[place].append((ra, rb))
-    places = list(by_place)
+        grouped[place].append((ra, rb))
+    places = sorted(grouped, key=str)
     if len(places) < 2:
         return {"point": None, "lo": None, "hi": None, "n_places": len(places)}
 
     def diff(sample_pairs):
-        a = [ra for ra, _ in sample_pairs]
-        b = [rb for _, rb in sample_pairs]
-        ma, mb = metric(a), metric(b)
-        if ma is None or mb is None:
-            return None
-        return ma - mb
+        ma = metric([ra for ra, _ in sample_pairs])
+        mb = metric([rb for _, rb in sample_pairs])
+        return None if ma is None or mb is None else ma - mb
 
-    all_pairs = [p for place in places for p in by_place[place]]
-    point = diff(all_pairs)
+    point = diff([p for place in places for p in grouped[place]])
+    idx = np.random.default_rng(seed).integers(0, len(places), size=(n_boot, len(places)))
+    terms = _terms_of(metric)
+    if terms:
+        sums = np.zeros((4, len(places)))
+        for i, place in enumerate(places):
+            for ra, rb in grouped[place]:
+                sums[0, i], sums[1, i] = (sums[0, i] + terms(ra)[0],
+                                          sums[1, i] + terms(ra)[1])
+                sums[2, i], sums[3, i] = (sums[2, i] + terms(rb)[0],
+                                          sums[3, i] + terms(rb)[1])
+        na, da, nb, db = (sums[k][idx].sum(axis=1) for k in range(4))
+        ok = (da > 0) & (db > 0)
+        reps = na[ok] / da[ok] - nb[ok] / db[ok]
+    else:
+        reps = _generic_replicates([grouped[p] for p in places], idx, diff)
+    return _interval(point, reps, len(places), n_boot, alpha)
 
-    rng = random.Random(seed)
-    replicates = []
-    for _ in range(n_boot):
-        sample = []
-        for _ in range(len(places)):
-            sample.extend(by_place[places[rng.randrange(len(places))]])
-        value = diff(sample)
-        if value is not None:
-            replicates.append(value)
-    if not replicates:
-        return {"point": point, "lo": None, "hi": None, "n_places": len(places)}
-    replicates.sort()
-    lo = replicates[int((alpha / 2) * len(replicates))]
-    hi = replicates[min(len(replicates) - 1, int((1 - alpha / 2) * len(replicates)))]
-    return {"point": point, "lo": lo, "hi": hi, "n_places": len(places),
-            "n_boot": len(replicates)}
+
+# ------------------------------------------------------------- multiplicity
+
+def holm_adjust(pvalues: list[float]) -> list[float]:
+    """Holm-Bonferroni step-down adjusted p-values, in the input order."""
+    m = len(pvalues)
+    adjusted = [0.0] * m
+    running = 0.0
+    for rank, i in enumerate(sorted(range(m), key=lambda i: pvalues[i])):
+        running = max(running, (m - rank) * pvalues[i])
+        adjusted[i] = min(1.0, running)
+    return adjusted
 
 
 # ------------------------------------------------------------- metric fns
 
-def rate(field):
-    """Metric function: the share of records where `field` is true."""
-    def _metric(records):
-        if not records:
-            return None
-        return sum(1 for r in records if r.get(field)) / len(records)
-    return _metric
+def _exact_terms(r: dict) -> tuple[int, int]:
+    if not r.get("scorable_exact"):
+        return 0, 0
+    return int(bool(r.get("exact"))), 1
 
 
-def median_distance(records):
-    d = [r["distance_km"] for r in records if r.get("distance_km") is not None]
-    return statistics.median(d) if d else None
-
-
-def mean_distance(records):
-    d = [r["distance_km"] for r in records if r.get("distance_km") is not None]
-    return sum(d) / len(d) if d else None
-
-
-def acc_at(radius_km=161.0):
-    def _metric(records):
-        scorable = [r for r in records if r.get("scorable_distance")]
-        if not scorable:
-            return None
-        hit = sum(1 for r in scorable
-                  if r.get("distance_km") is not None and r["distance_km"] <= radius_km)
-        return hit / len(scorable)
-    return _metric
-
-
-def exact_rate(records):
+def exact_rate(records: list[dict]) -> float | None:
     """Exact match over the records that HAVE a gold QID."""
-    have = [r for r in records if r.get("scorable_exact")]
-    if not have:
-        return None
-    return sum(1 for r in have if r.get("exact")) / len(have)
+    num = den = 0
+    for r in records:
+        n, d = _exact_terms(r)
+        num += n
+        den += d
+    return num / den if den else None
 
 
-def fmt_ci(ci, pct=False, unit=""):
+exact_rate.terms = _exact_terms
+
+
+def fmt_ci(ci: dict | None, pct: bool = False, unit: str = "") -> str:
     if ci is None or ci.get("point") is None:
         return "-"
     scale = 100 if pct else 1
@@ -274,7 +258,7 @@ def fmt_ci(ci, pct=False, unit=""):
             f"{ci['hi'] * scale:.1f}]{unit}")
 
 
-def fmt_p(p):
+def fmt_p(p: float | None) -> str:
     if p is None:
         return "-"
     if p < 0.001:

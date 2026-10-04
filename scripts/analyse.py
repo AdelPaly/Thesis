@@ -5,26 +5,36 @@
     python scripts/analyse.py stats    --split test
     python scripts/analyse.py all      --split test --out results/summary
 
-Reads only results/predictions/*.jsonl and splits/item_split.csv. Loads no
-model, makes no network call, and imports nothing from src/ -- metrics come
-from score.py and statistics from stats.py, so there is one definition of each.
+Reads results/predictions/*.jsonl and splits/item_split.csv, plus configs/*.yaml
+for report row order (tier) and each architecture's stage set. Loads no model,
+makes no network call, and imports nothing from src/ -- metrics come from
+score.py and statistics from stats.py, so there is one definition of each.
 
 Failure attribution
 -------------------
-For every wrong prediction, where did it break? The six levels are attributed
+For every wrong prediction, where did it break? The ten levels are attributed
 from the stage fields the runner recorded, not inferred from the shape of the
 output:
 
+  error                     the runner recorded an exception (API failure,
+                            timeout): infrastructure, not a pipeline fault
   no_ner_span               no mention was detected at all
   span_not_linked           mentions detected, the linker resolved none
   wrong_entity              linked, but the gold place is nowhere in the
                             pipeline -- not among the linker's candidates and
                             not among the scored places
-  wrong_candidate_selected  the linker HAD the gold place among its candidates
-                            for some mention and chose another
+  gold_not_retrieved        retrieval (dense or grounded) never supplied the
+                            gold place
+  wrong_candidate_selected  the gold place was among the candidates (the
+                            linker's, or the grounded list) and another was
+                            chosen
   correct_candidate_not_first  the gold place was in the final scored list but
                             the reranker did not put it first
-  returned_nothing          stages completed, no prediction came out
+  abstained                 grounded model declined with the gold in front of it
+  selection_violation       grounded model named something outside the list
+  returned_nothing          stages completed (or the architecture has none to
+                            fail), no prediction came out
+  no_intermediate_stages    answered, but the architecture records no stages
 
 Two honest limits on this taxonomy:
 
@@ -36,6 +46,12 @@ Two honest limits on this taxonomy:
   so their failures are attributed to `no_intermediate_stages`. That is not a
   gap in the analysis -- it is the finding that a single-call LLM pipeline
   cannot be debugged stage by stage.
+
+Statistics
+----------
+Exact-match comparisons are McNemar by place. The p-values are Holm-adjusted
+over the family of comparisons run (printed as "p_holm" with the family size);
+the bootstrap intervals are not adjusted.
 """
 from __future__ import annotations
 
@@ -45,13 +61,19 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
+import yaml
+
+from score import (attach_split, find_prediction_files, group_by, load_predictions, print_table,
+                   score_record, summarise_metrics)
+import stats as st
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = REPO_ROOT / "configs"
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from score import (PREDICTIONS_DIR, aggregate, attach_split,      # noqa: E402
-                   find_prediction_files, load_predictions, score_record)
-import stats as st                                                # noqa: E402
+# Bootstrap replicates for this report. stats.DEFAULT_N_BOOT is larger than a
+# pure-Python report over every configuration needs.
+DEFAULT_BOOT = 2000
+RULE = "=" * 100
 
 # Report order. A configuration declares its tier in its config file; the tier
 # is presentation metadata excluded from config_hash, so it orders rows without
@@ -62,33 +84,52 @@ PARADIGM_RANK = {"baseline": 0, "ner_dependent": 3, "dense_retrieval": 4,
                  "ner_free": 5, "grounded_llm": 6}
 
 
-def load_tiers(config_dir=CONFIG_DIR):
-    """{config name: tier} read straight from the YAML.
+def _config_stages(raw: dict) -> set[str]:
+    """Stages an architecture has, read from its config."""
+    paradigm = raw.get("paradigm")
+    stages = set()
+    if (raw.get("ner") or {}).get("model"):
+        stages.add("ner")
+    # wikidata_search is retrieval, not a linker: the records never carry links.
+    if (raw.get("linking") or {}).get("backend") not in (None, "none", "wikidata_search"):
+        stages.add("linking")
+    if paradigm in ("ner_dependent", "dense_retrieval", "grounded_llm"):
+        stages.add("candidates")
+    if paradigm == "grounded_llm":
+        stages.add("selection")
+    return stages
 
-    Reading config files for row order is not the scorer loading a model: no
-    model, no network, no import from src/. score.py stays free of this
-    entirely; only the report ordering needs it.
+
+def load_config_meta(config_dir: Path = CONFIG_DIR) -> dict[str, dict]:
+    """{config name: {"tier", "stages"}} read straight from the YAML.
+
+    Reading config files for row order and stage sets is not the scorer loading
+    a model: no model, no network, no import from src/. score.py stays free of
+    this entirely. A malformed file is warned about and skipped; a missing
+    PyYAML is an error, not a silent fallback.
     """
-    tiers = {}
-    try:
-        import yaml
-    except ImportError:
-        return tiers
+    meta = {}
     for path in sorted(Path(config_dir).glob("*.yaml")):
         if path.name == "datasets.yaml":
             continue
         try:
             raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        except Exception:                                  # noqa: BLE001
+        except yaml.YAMLError as exc:
+            print(f"warning: skipping unreadable config {path.name}: {exc}", file=sys.stderr)
             continue
         if isinstance(raw, dict) and raw.get("name"):
-            tiers[raw["name"]] = str(raw.get("tier", "") or "")
-    return tiers
+            meta[raw["name"]] = {"tier": str(raw.get("tier", "") or ""),
+                                 "stages": _config_stages(raw)}
+    return meta
 
 
-def sort_key(name, records, tiers):
+def pct_str(a: int, b: int) -> str:
+    return f"{a / b * 100:.1f}%" if b else "-"
+
+
+def sort_key(name: str, records: list[dict], meta: dict) -> tuple:
     """Tier first, then paradigm, then name."""
-    tier = tiers.get(name, "")
+    tier = meta.get(name, {}).get("tier", "")
     if tier in TIER_RANK:
         return (TIER_RANK[tier], name)
     paradigms = {r.get("paradigm") for r in records}
@@ -96,16 +137,17 @@ def sort_key(name, records, tiers):
     return (PARADIGM_RANK.get(paradigm, 9), name)
 
 
-LEVELS = ["no_ner_span", "span_not_linked", "wrong_entity",
+LEVELS = ["error", "no_ner_span", "span_not_linked", "wrong_entity",
           "gold_not_retrieved", "wrong_candidate_selected",
           "correct_candidate_not_first", "abstained", "selection_violation",
           "returned_nothing", "no_intermediate_stages"]
 
 # Which pipeline stage a level presupposes. A level whose stage does not exist
-# in an architecture is STRUCTURALLY IMPOSSIBLE there, and the table prints a
-# dash rather than 0.0 -- "this cannot happen here" and "this never happened"
+# in an architecture is STRUCTURALLY IMPOSSIBLE there, and the table prints
+# `n/a` rather than 0.0 -- "this cannot happen here" and "this never happened"
 # are different statements and must not look alike.
 LEVEL_REQUIRES = {
+    "error": None,                       # any architecture can hit an API error
     "no_ner_span": "ner",
     "span_not_linked": "linking",
     "wrong_entity": "linking",
@@ -119,8 +161,10 @@ LEVEL_REQUIRES = {
 }
 
 
-def stages_present(records):
-    """Which stages an architecture actually has, read off its records."""
+def stages_present(records: list[dict]) -> set[str]:
+    """Which stages the records show an architecture has. Unioned with the
+    config's stage set, because records alone miss a stage whose every item
+    failed."""
     present = set()
     for rec in records:
         if rec.get("ner_spans"):
@@ -136,7 +180,7 @@ def stages_present(records):
 
 # ------------------------------------------------------- failure attribution
 
-def _linker_candidate_qids(rec):
+def _linker_candidate_qids(rec: dict) -> set[str]:
     """Every QID the linker had on the table, across all mentions."""
     out = set()
     for le in rec.get("linked_entities") or []:
@@ -148,10 +192,20 @@ def _linker_candidate_qids(rec):
     return out
 
 
-def attribute(rec):
-    """Where a wrong prediction broke. None for a correct prediction."""
+def _place_qids(rec: dict) -> list:
+    return [p.get("qid") for p in rec.get("candidate_places") or []]
+
+
+def attribute(rec: dict, has_ner_stage: bool = True) -> str | None:
+    """Where a wrong prediction broke. None for a correct prediction.
+
+    `has_ner_stage` is False for architectures with no mention detection, so an
+    empty result is `returned_nothing` there rather than `no_ner_span`.
+    """
     if rec.get("exact"):
         return None
+    if rec.get("error") is not None:
+        return "error"
 
     gold = rec.get("place_qid")
     spans = rec.get("ner_spans") or []
@@ -159,48 +213,37 @@ def attribute(rec):
     places = rec.get("candidate_places") or []
     has_pred = rec.get("has_prediction")
     selection = rec.get("selection")
-    paradigm = rec.get("paradigm")
+    gold_in_places = bool(gold and gold in _place_qids(rec))
 
     # --- retrieval-then-selection architectures (tier 5) -------------------
     # Attributed first, because for these the question is specifically whether
     # retrieval or selection failed, and that is the number the tier exists to
     # produce.
     if selection is not None:
-        place_qids = [p.get("qid") for p in places]
-        gold_present = bool(gold and gold in place_qids)
         if selection.get("violation"):
             return "selection_violation"
-        if not places:
-            return "gold_not_retrieved"      # nothing was retrieved at all
-        if not gold_present:
-            return "gold_not_retrieved"      # retrieval failure, not the model
+        if not gold_in_places:
+            return "gold_not_retrieved"      # nothing retrieved, or not the gold
         if selection.get("abstained"):
             return "abstained"               # declined with the gold in front of it
         return "wrong_candidate_selected"    # had it, chose another
 
     # --- dense retrieval (tier 3): no NER, no linking ----------------------
-    if paradigm == "dense_retrieval":
+    if rec.get("paradigm") == "dense_retrieval":
         if not places:
             return "returned_nothing"
-        place_qids = [p.get("qid") for p in places]
-        if gold and gold in place_qids:
-            return "correct_candidate_not_first"
-        return "gold_not_retrieved"
+        return "correct_candidate_not_first" if gold_in_places else "gold_not_retrieved"
 
     # No observable stage at all. Two different situations:
     #   * it still produced an answer -- a single-call LLM or the constant
-    #     majority baseline.
-    #     Nothing in the record can say where it went wrong, which is the
-    #     finding rather than a gap.
-    #   * it produced nothing either, so the configuration simply returned
-    #     nothing.
-    # Distinguishing them on `has_prediction` rather than on the paradigm keeps
-    # baseline_majority (no NER stage, always answers) from being blamed for
-    # "no NER span", which it cannot have.
+    #     majority baseline. Nothing in the record can say where it went wrong,
+    #     which is the finding rather than a gap.
+    #   * it produced nothing either: `no_ner_span` if the architecture has a
+    #     mention-detection stage, otherwise it simply returned nothing.
     if not spans and not places:
         if has_pred:
             return "no_intermediate_stages"
-        if rec.get("paradigm") in ("ner_dependent", "baseline"):
+        if has_ner_stage and rec.get("paradigm") in ("ner_dependent", "baseline"):
             return "no_ner_span"
         return "returned_nothing"
 
@@ -208,9 +251,9 @@ def attribute(rec):
         return "no_ner_span"
 
     linked_any = any(le.get("qid") for le in links)
-    # A configuration that does no linking (wikidata_search retrieval, the
-    # population baseline) reaches candidate places without ever linking, so
-    # an empty link list is only a failure if nothing else was produced.
+    # A configuration that does no linking (the population baseline) reaches
+    # candidate places without ever linking, so an empty link list is only a
+    # failure if nothing else was produced.
     if links and not linked_any and not places:
         return "span_not_linked"
 
@@ -218,8 +261,7 @@ def attribute(rec):
         return "returned_nothing"
 
     if gold:
-        place_qids = [p.get("qid") for p in places]
-        if gold in place_qids:
+        if gold_in_places:
             # It was retrieved and scored, and something else won.
             return "correct_candidate_not_first"
         if gold in _linker_candidate_qids(rec):
@@ -228,13 +270,15 @@ def attribute(rec):
     return "wrong_entity"
 
 
-def attribute_all(scored):
+def attribute_all(scored: list[dict], meta: dict) -> list[dict]:
     for rec in scored:
-        rec["failure_level"] = attribute(rec)
+        stages = meta.get(rec.get("config_name"), {}).get("stages")
+        rec["failure_level"] = attribute(rec, has_ner_stage=stages is None or "ner" in stages)
     return scored
 
 
-def crosstab(scored, row_key, only_failures=True, all_records=None):
+def crosstab(scored: list[dict], row_key: str, meta: dict, only_failures: bool = True,
+             all_records: list[dict] | None = None):
     """rows = row_key value, columns = failure level, cells = counts.
 
     Also returns, per row, the set of stages that row's architecture has, so
@@ -249,11 +293,14 @@ def crosstab(scored, row_key, only_failures=True, all_records=None):
         if only_failures and level is None:
             continue
         table[rec.get(row_key)][level or "correct"] += 1
-    stages = {key: stages_present(recs) for key, recs in rows_records.items()}
+    stages = {}
+    for key, recs in rows_records.items():
+        stages[key] = stages_present(recs).union(
+            *(meta.get(r.get("config_name"), {}).get("stages", set()) for r in recs))
     return table, stages
 
 
-def print_crosstab(result, row_label, percent=True):
+def print_crosstab(result, row_label: str, percent: bool = True) -> None:
     """Row percentages. A cell an architecture cannot produce prints as `n/a`,
     never as 0.0."""
     table, stages = result
@@ -281,46 +328,67 @@ def print_crosstab(result, row_label, percent=True):
     print()
 
 
-def cmd_failures(scored, args):
-    attribute_all(scored)
+def write_rows(path: Path, header: list[str], rows: list) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(header)
+        w.writerows(rows)
+    print(f"wrote {path}")
+
+
+def cmd_failures(scored: list[dict], args, meta: dict) -> None:
+    attribute_all(scored, meta)
     failures = [r for r in scored if r.get("failure_level") is not None]
-    print("=" * 100)
+    errors = Counter(r.get("config_name") for r in failures
+                     if r["failure_level"] == "error")
+    print(RULE)
     print(f"FAILURE ATTRIBUTION  (split={args.split})")
     print(f"{len(failures)} wrong prediction(s) of {len(scored)} scored item(s)")
-    print("=" * 100)
+    print(RULE)
+    if errors:
+        print("Runner errors (infrastructure, not pipeline failures): "
+              + ", ".join(f"{c} {n}" for c, n in sorted(errors.items())))
+    else:
+        print("Runner errors: none.")
     print("Row percentages across the levels; each row sums to 100.\n")
 
     print("-- by configuration --")
-    print_crosstab(crosstab(failures, "config_name", all_records=scored), "config")
+    print_crosstab(crosstab(failures, "config_name", meta, all_records=scored), "config")
     print("-- by paradigm --")
-    print_crosstab(crosstab(failures, "paradigm", all_records=scored), "paradigm")
+    print_crosstab(crosstab(failures, "paradigm", meta, all_records=scored), "paradigm")
     print("-- by condition --")
-    print_crosstab(crosstab(failures, "condition", all_records=scored), "condition")
+    print_crosstab(crosstab(failures, "condition", meta, all_records=scored), "condition")
     print("-- by paradigm x condition --")
     for rec in scored:
         rec["_pxc"] = f"{rec.get('paradigm')} / {rec.get('condition')}"
-    print_crosstab(crosstab(failures, "_pxc", all_records=scored),
+    print_crosstab(crosstab(failures, "_pxc", meta, all_records=scored),
                    "paradigm / condition")
 
     if args.out:
-        path = Path(args.out) / f"table_failure_attribution_{args.split}.csv"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", newline="", encoding="utf-8") as f:
-            w = csv.writer(f)
-            w.writerow(["config", "dataset", "paradigm", "condition",
-                        "failure_level", "n"])
-            counts = Counter((r.get("config_name"), r.get("dataset"),
-                              r.get("paradigm"), r.get("condition"),
-                              r.get("failure_level"))
-                             for r in failures)
-            for key, n in sorted(counts.items(), key=lambda kv: str(kv[0])):
-                w.writerow([*key, n])
-        print(f"wrote {path}")
+        counts = Counter((r.get("config_name"), r.get("dataset"),
+                          r.get("paradigm"), r.get("condition"),
+                          r.get("failure_level"))
+                         for r in failures)
+        rows = [[*key, n] for key, n in sorted(counts.items(), key=lambda kv: str(kv[0]))]
+        write_rows(Path(args.out) / f"table_failure_attribution_{args.split}.csv",
+                  ["config", "dataset", "paradigm", "condition", "failure_level", "n"], rows)
 
 
 # ------------------------------------------------------- grounding report
 
-def cmd_grounding(scored, args):
+def _gold_supplied(recs: list[dict]) -> list[dict]:
+    """Records whose candidate list contained the gold place."""
+    return [r for r in recs
+            if r.get("place_qid")
+            and r["place_qid"] in {c.get("qid") for c in r.get("candidate_places") or []}]
+
+
+def _selected_gold(supplied: list[dict]) -> int:
+    return sum(1 for r in supplied if (r.get("selection") or {}).get("qid") == r.get("place_qid"))
+
+
+def cmd_grounding(scored: list[dict], args) -> None:
     """Separate retrieval failure from selection failure for tier 5.
 
     This is the number that says whether grounding is working: of the items
@@ -331,14 +399,13 @@ def cmd_grounding(scored, args):
     grounded = [r for r in scored if r.get("selection") is not None]
     if not grounded:
         return
-    print("=" * 100)
+    print(RULE)
     print(f"GROUNDED SELECTION: retrieval failure vs selection failure "
           f"(split={args.split})")
-    print("=" * 100)
+    print(RULE)
 
-    by_config = defaultdict(list)
-    for rec in grounded:
-        by_config[rec.get("config_name")].append(rec)
+    by_config = group_by(grounded, "config_name")
+    csv_rows = []
 
     header = (f"{'configuration':26} {'n':>5} {'gold supplied':>14} "
               f"{'selected gold':>14} {'abstained':>10} {'abst. w/ gold':>14} "
@@ -347,24 +414,18 @@ def cmd_grounding(scored, args):
     print("-" * len(header))
     for name, recs in sorted(by_config.items()):
         n = len(recs)
-        supplied = [r for r in recs
-                    if r.get("place_qid")
-                    and r["place_qid"] in [c.get("qid") for c in (r.get("candidate_places") or [])]]
-        sel = r_sel = 0
-        for r in supplied:
-            chosen = (r.get("selection") or {}).get("qid")
-            if chosen and chosen == r.get("place_qid"):
-                sel += 1
+        supplied = _gold_supplied(recs)
+        sel = _selected_gold(supplied)
         abstained = sum(1 for r in recs if (r.get("selection") or {}).get("abstained"))
         abst_gold = sum(1 for r in supplied if (r.get("selection") or {}).get("abstained"))
         viol = sum(1 for r in recs if (r.get("selection") or {}).get("violation"))
-        pct = lambda a, b: f"{a / b * 100:.1f}%" if b else "-"          # noqa: E731
         print(f"{name:26} {n:>5} "
-              f"{f'{len(supplied)}/{n} ' + pct(len(supplied), n):>14} "
-              f"{f'{sel}/{len(supplied)} ' + pct(sel, len(supplied)):>14} "
-              f"{pct(abstained, n):>10} "
+              f"{f'{len(supplied)}/{n} ' + pct_str(len(supplied), n):>14} "
+              f"{f'{sel}/{len(supplied)} ' + pct_str(sel, len(supplied)):>14} "
+              f"{pct_str(abstained, n):>10} "
               f"{f'{abst_gold}/{len(supplied)}':>14} "
               f"{viol:>11}")
+        csv_rows.append([name, "", n, len(supplied), sel, abstained, abst_gold, viol])
     print()
     print("  gold supplied = the retriever put the gold place in the list at all")
     print("  selected gold = of those, the model chose it. This is the selection")
@@ -382,104 +443,92 @@ def cmd_grounding(scored, args):
         print(f"{'condition':12} {'n':>5} {'gold supplied':>14} {'selected gold':>14}")
         for cond in conds:
             sub = [r for r in recs if r.get("condition") == cond]
-            supplied = [r for r in sub
-                        if r.get("place_qid")
-                        and r["place_qid"] in [c.get("qid") for c in (r.get("candidate_places") or [])]]
-            sel = sum(1 for r in supplied
-                      if (r.get("selection") or {}).get("qid") == r.get("place_qid"))
-            pct = lambda a, b: f"{a / b * 100:.1f}%" if b else "-"      # noqa: E731
+            supplied = _gold_supplied(sub)
+            sel = _selected_gold(supplied)
             print(f"{str(cond):12} {len(sub):>5} "
-                  f"{f'{len(supplied)}/{len(sub)} ' + pct(len(supplied), len(sub)):>14} "
-                  f"{f'{sel}/{len(supplied)} ' + pct(sel, len(supplied)):>14}")
+                  f"{f'{len(supplied)}/{len(sub)} ' + pct_str(len(supplied), len(sub)):>14} "
+                  f"{f'{sel}/{len(supplied)} ' + pct_str(sel, len(supplied)):>14}")
+            csv_rows.append([name, cond, len(sub), len(supplied), sel, "", "", ""])
         print()
+
+    if args.out:
+        write_rows(Path(args.out) / f"table_grounding_{args.split}.csv",
+                  ["config", "condition", "n", "gold_supplied", "selected_gold",
+                   "abstained", "abstained_with_gold", "violations"], csv_rows)
 
 
 # ---------------------------------------------------------------- tables
 
 METRIC_COLS = ["n", "n_gold_qid", "exact", "country", "continent",
-               "acc@161km", "median_km", "mean_km", "no_result_rate"]
+               "no_result_rate", "error_rate"]
 
 
-def _row(label, records):
-    m = aggregate(records)
-    return label, m
-
-
-def _print_metric_table(rows, label="configuration", note=None):
-    header = (f"{label:36} {'n':>4} {'exact':>7} {'country':>8} {'cont':>7} "
-              f"{'a@161':>7} {'med km':>8} {'mean km':>9} {'no-res':>7}")
-    print(header)
-    print("-" * len(header))
-    for name, m in rows:
-        if not m or m.get("n", 0) == 0:
-            print(f"{name:36} {0:>4}")
-            continue
-
-        def f(key, pct=False, width=7):
-            v = m.get(key)
-            if v is None:
-                return f"{'-':>{width}}"
-            return f"{v * 100:>{width}.1f}" if pct else f"{v:>{width}.1f}"
-
-        print(f"{name:36} {m['n']:>4} {f('exact', True)} {f('country', True, 8)} "
-              f"{f('continent', True)} {f('acc@161km', True)} "
-              f"{f('median_km', width=8)} {f('mean_km', width=9)} "
-              f"{f('no_result_rate', True)}")
+def _print_metric_table(rows: list, label: str = "configuration", note: str | None = None) -> None:
+    print_table(rows, label)
     if note:
         print(f"\n  {note}")
     print()
 
 
-def _by_config(scored):
-    groups = defaultdict(list)
-    for r in scored:
-        groups[r.get("config_name")].append(r)
-    return groups
+def _config_dataset(rec: dict) -> tuple:
+    return rec.get("config_name"), rec.get("dataset")
 
 
-def cmd_tables(scored, args):
-    groups = _by_config(scored)
+def _span_signature(rec: dict) -> tuple:
+    return tuple((s.get("text"), s.get("start"), s.get("end"), s.get("type"))
+                 for s in rec.get("ner_spans") or [])
+
+
+def _ner_agreement_note(groups: dict, names: list[str]) -> str:
+    """Computed, not asserted: on the items two configurations share, how many
+    have identical NER spans."""
+    parts = []
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            pairs = st.pair_records(groups[a], groups[b])
+            same = sum(1 for _, ra, rb in pairs if _span_signature(ra) == _span_signature(rb))
+            parts.append(f"{a} vs {b}: NER spans identical on {same}/{len(pairs)} shared items.")
+    return " ".join(parts)
+
+
+def cmd_tables(scored: list[dict], args, meta: dict) -> None:
+    groups = group_by(scored, "config_name")
     present = set(groups)
 
-    def rows_for(names, suffix=""):
-        return [_row(n + suffix, groups[n]) for n in names if n in present]
+    def ordered(names) -> list[str]:
+        return sorted((n for n in names if n in present),
+                      key=lambda n: sort_key(n, groups[n], meta))
 
-    # Grouped by the paradigm ON THE RECORDS, not by a hardcoded list of
-    # configuration names. A list here would be a fifth copy of the mode
-    # registry, and it would go stale the moment a configuration is added or
-    # removed -- which is exactly what happened to the four copies that change
-    # 8 removed.
+    # Grouped by the paradigm ON THE RECORDS rather than by listing
+    # configuration names, so a configuration added or removed needs no edit here.
     by_paradigm = defaultdict(list)
     for name, recs in groups.items():
         paradigms = {r.get("paradigm") for r in recs}
         by_paradigm[sorted(paradigms)[0] if paradigms else "unknown"].append(name)
-    tiers_map = load_tiers()
-    for names_ in by_paradigm.values():
-        names_.sort(key=lambda n: sort_key(n, groups[n], tiers_map))
+    for key in by_paradigm:
+        by_paradigm[key] = ordered(by_paradigm[key])
 
-    baselines = by_paradigm.get("baseline", [])
     ner_dependent = by_paradigm.get("ner_dependent", [])
     dense = by_paradigm.get("dense_retrieval", [])
     ner_free = by_paradigm.get("ner_free", [])
     grounded = by_paradigm.get("grounded_llm", [])
 
-    print("=" * 100)
-    print(f"TABLE 1  Baselines vs everything  -- is the task non-trivial?")
+    print(RULE)
+    print("TABLE 1  Baselines vs everything  -- is the task non-trivial?")
     print(f"(split={args.split})")
-    print("=" * 100)
+    print(RULE)
     # Tier order: what kind of signal each can consume, cheapest first.
-    tiers = load_tiers()
-    order = sorted(present, key=lambda n: sort_key(n, groups[n], tiers))
-    _print_metric_table(rows_for(order),
-                        note="A place is either dev or test, so the most frequent DEV "
-                             "place cannot be a test gold place: baseline_majority is "
-                             "structurally 0% exact on test. That is the split working, "
-                             "not a defect.")
+    note = None
+    if args.split == "test" and "baseline_majority" in present:
+        note = ("A place is either dev or test, so the most frequent DEV place "
+                "cannot be a test gold place: baseline_majority is structurally "
+                "0% exact on test. That is the split working, not a defect.")
+    _print_metric_table([(n, summarise_metrics(groups[n])) for n in ordered(present)], note=note)
 
-    print("=" * 100)
+    print(RULE)
     print("TABLE 2  NER-dependent vs NER-free, by condition")
     print("          -- does having a mention-detection stage matter?")
-    print("=" * 100)
+    print(RULE)
     # "NER-free" and "LLM" are separate axes: dense retrieval has no mention
     # detection and no LLM, so it is the cell that lets the contrast separate
     # "no mention detection stage" from "parametric knowledge".
@@ -487,66 +536,53 @@ def cmd_tables(scored, args):
               + [(n, "[no-mention-detect]") for n in dense]
               + [(n, "[llm, no-mention-detect]") for n in ner_free]
               + [(n, "[llm, grounded]") for n in grounded])
-    conditions = sorted({r.get("condition") for r in scored if r.get("condition")})
-    for cond in conditions:
+    for cond in sorted({r.get("condition") for r in scored if r.get("condition")}):
         print(f"-- condition {cond} --")
-        rows = []
-        for name, tag in tagged:
-            if name not in present:
-                continue
-            sub = [r for r in groups[name] if r.get("condition") == cond]
-            rows.append(_row(f"{name}  {tag}", sub))
-        _print_metric_table(rows)
+        _print_metric_table([(f"{n}  {tag}",
+                              summarise_metrics([r for r in groups[n] if r.get("condition") == cond]))
+                             for n, tag in tagged])
     print("-- pooled over conditions --")
-    _print_metric_table([_row(f"{n}  {t}", groups[n]) for n, t in tagged
-                         if n in present])
+    _print_metric_table([(f"{n}  {t}", summarise_metrics(groups[n])) for n, t in tagged])
 
-    print("=" * 100)
-    print("TABLE 3  Linker comparison, NER held constant -- which linker?")
-    print("=" * 100)
-    _print_metric_table(
-        rows_for(ner_dependent),
-        note="Both use the same Flair ner-large over the same mentions (verified "
-             "identical on 144/144 items), so what varies is only how a mention "
-             "becomes a place: wbsearchentities retrieval + E5 rerank (two_stage) "
-             "versus ReFinED disambiguation (refined). ReFinED here is a TWO-STAGE "
-             "pipeline, not end-to-end: Flair detects, ReFinED disambiguates.")
+    print(RULE)
+    print("TABLE 3  Linker comparison -- which linker?")
+    print(RULE)
+    notes = []
+    if len(ner_dependent) > 1:
+        notes.append(_ner_agreement_note(groups, ner_dependent))
+    if {"two_stage", "refined"} <= set(ner_dependent):
+        notes.append("two_stage retrieves with wbsearchentities and reranks with E5; refined "
+                     "disambiguates with ReFinED. Both detect mentions with Flair; the "
+                     "difference is purely the linker only where the NER spans above agree.")
+    _print_metric_table([(n, summarise_metrics(groups[n])) for n in ner_dependent],
+                        note=" ".join(notes) or None)
 
-    print("=" * 100)
+    print(RULE)
     print("APPENDIX  All configurations")
-    print("=" * 100)
-    _print_metric_table([_row(n, groups[n]) for n in sorted(present)])
+    print(RULE)
+    _print_metric_table([(n, summarise_metrics(groups[n])) for n in sorted(present)])
 
     print("APPENDIX  All configurations x dataset")
-    print("=" * 100)
-    pairs = defaultdict(list)
-    for r in scored:
-        pairs[(r.get("config_name"), r.get("dataset"))].append(r)
-    _print_metric_table([_row(f"{c} / {d}", v)
-                         for (c, d), v in sorted(pairs.items())])
+    print(RULE)
+    pairs = group_by(scored, _config_dataset)
+    _print_metric_table([(f"{c} / {d}", summarise_metrics(v)) for (c, d), v in sorted(pairs.items())])
 
     if args.out:
-        out = Path(args.out)
-        out.mkdir(parents=True, exist_ok=True)
-        path = out / f"table_appendix_all_configs_{args.split}.csv"
-        with path.open("w", newline="", encoding="utf-8") as f:
-            w = csv.DictWriter(f, fieldnames=["config", "dataset"] + METRIC_COLS)
-            w.writeheader()
-            for (c, d), v in sorted(pairs.items()):
-                m = aggregate(v)
-                row = {"config": c, "dataset": d}
-                for k in METRIC_COLS:
-                    val = m.get(k)
-                    row[k] = round(val, 4) if isinstance(val, float) else val
-                w.writerow(row)
-        print(f"wrote {path}")
+        rows = []
+        for (c, d), v in sorted(pairs.items()):
+            m = summarise_metrics(v)
+            rows.append([c, d] + [round(m.get(k), 4) if isinstance(m.get(k), float) else m.get(k)
+                                  for k in METRIC_COLS])
+        write_rows(Path(args.out) / f"table_appendix_all_configs_{args.split}.csv",
+                  ["config", "dataset"] + METRIC_COLS, rows)
 
 
 # ---------------------------------------------------------------- statistics
 
 # Explicit pairs, because which comparisons are worth making is an analysis
 # decision, not something to enumerate automatically. Pairs naming a
-# configuration with no predictions on disk are skipped silently.
+# configuration with no predictions on disk are skipped silently. The Holm
+# family is the comparisons that actually run.
 COMPARISONS = [
     ("refined", "two_stage", "which linker: ReFinED vs search+rerank"),
     ("refined", "baseline_population", "does the linker beat the population floor"),
@@ -561,72 +597,96 @@ COMPARISONS = [
 ]
 
 
-def cmd_stats(scored, args):
-    groups = _by_config(scored)
-    print("=" * 100)
-    print(f"PAIRED STATISTICS  (split={args.split})")
-    print("=" * 100)
-    print("Everything below is clustered by PLACE. Items about the same place are")
-    print("not independent, so places are the unit paired by McNemar, the unit")
-    print("ranked by Wilcoxon, and the unit resampled by the bootstrap.")
-    print("Item-level McNemar is shown alongside for reference only; its pairs are")
-    print("not independent and its p-value is anti-conservative.\n")
+def _exact(rec: dict):
+    return rec.get("exact")
 
+
+def run_comparisons(groups: dict, n_boot: int, seed: int) -> list[dict]:
+    """Run every comparison that has data on both sides, then Holm-adjust the
+    by-place McNemar p-values over that family."""
+    results = []
     for a_name, b_name, question in COMPARISONS:
         if a_name not in groups or b_name not in groups:
             continue
         pairs = st.pair_records(groups[a_name], groups[b_name])
         if not pairs:
             continue
-        print(f"--- {a_name}  vs  {b_name} ---")
-        print(f"    {question}")
-        print(f"    {len(pairs)} paired item(s), "
-              f"{len({p[0] for p in pairs})} place(s)")
+        results.append({
+            "a": a_name, "b": b_name, "question": question,
+            "n_pairs": len(pairs), "n_places": len({p[0] for p in pairs}),
+            "mc_place": st.mcnemar(pairs, _exact, unit="place"),
+            "mc_item": st.mcnemar(pairs, _exact, unit="item"),
+            "effect": st.paired_effect_ci(pairs, st.exact_rate, n_boot=n_boot, seed=seed),
+        })
+    adjusted = st.holm_adjust([r["mc_place"]["p"] for r in results])
+    for r, p_holm in zip(results, adjusted):
+        r["p_holm"] = p_holm
+    return results
 
-        mc_place = st.mcnemar(pairs, lambda r: r.get("exact"), unit="place")
-        mc_item = st.mcnemar(pairs, lambda r: r.get("exact"), unit="item")
-        print(f"    exact match, McNemar by place : b={mc_place['b']} c={mc_place['c']} "
-              f"p={st.fmt_p(mc_place['p'])}")
-        print(f"    exact match, McNemar by item  : b={mc_item['b']} c={mc_item['c']} "
-              f"p={st.fmt_p(mc_item['p'])}  (reference only)")
 
-        eff = st.paired_effect_ci(pairs, st.exact_rate, n_boot=args.boot)
+def cmd_stats(scored: list[dict], args) -> None:
+    groups = group_by(scored, "config_name")
+    print(RULE)
+    print(f"PAIRED STATISTICS  (split={args.split}, n_boot={args.boot}, seed={args.seed})")
+    print(RULE)
+    print("Everything below is clustered by PLACE. Items about the same place are")
+    print("not independent, so places are the unit paired by McNemar and the unit")
+    print("resampled by the bootstrap.")
+    print("Item-level McNemar is shown alongside for reference only; its pairs are")
+    print("not independent and its p-value is anti-conservative.\n")
+
+    results = run_comparisons(groups, args.boot, args.seed)
+    family = len(results)
+    print(f"Family of {family} comparison(s). p_holm is the Holm-adjusted p of the")
+    print("McNemar-by-place test over that family; bootstrap intervals are not adjusted.\n")
+
+    for r in results:
+        mp, mi = r["mc_place"], r["mc_item"]
+        print(f"--- {r['a']}  vs  {r['b']} ---")
+        print(f"    {r['question']}")
+        print(f"    {r['n_pairs']} paired item(s), {r['n_places']} place(s)")
+        print(f"    exact match, McNemar by place : b={mp['b']} c={mp['c']} "
+              f"p={st.fmt_p(mp['p'])}  p_holm={st.fmt_p(r['p_holm'])} (family of {family})")
+        print(f"    exact match, McNemar by item  : b={mi['b']} c={mi['c']} "
+              f"p={st.fmt_p(mi['p'])}  (reference only)")
         print(f"    exact match difference        : "
-              f"{st.fmt_ci(eff, pct=True, unit=' pp')}")
-
-        eff161 = st.paired_effect_ci(pairs, st.acc_at(161.0), n_boot=args.boot)
-        print(f"    acc@161km difference          : "
-              f"{st.fmt_ci(eff161, pct=True, unit=' pp')}")
-
-        wil = st.wilcoxon_distance(pairs, unit="place")
-        if wil.get("p") is None:
-            print(f"    error distance, Wilcoxon      : {wil.get('note')}")
-        else:
-            print(f"    error distance, Wilcoxon      : n={wil['n_pairs']} places "
-                  f"p={st.fmt_p(wil['p'])} median diff={wil['median_diff']:.1f} km")
-        effmed = st.paired_effect_ci(pairs, st.median_distance, n_boot=args.boot)
-        print(f"    median distance difference    : {st.fmt_ci(effmed, unit=' km')}")
+              f"{st.fmt_ci(r['effect'], pct=True, unit=' pp')}")
         print()
 
-    print("=" * 100)
+    print(RULE)
     print("BOOTSTRAP INTERVALS, resampled by place")
-    print("=" * 100)
-    header = f"{'configuration':30} {'exact %':>22} {'acc@161 %':>22} {'median km':>20}"
+    print(RULE)
+    header = f"{'configuration':30} {'exact %':>22}"
     print(header)
     print("-" * len(header))
+    boot_rows = []
     for name in sorted(groups):
-        recs = groups[name]
-        ex = st.cluster_bootstrap_ci(recs, st.exact_rate, n_boot=args.boot)
-        a161 = st.cluster_bootstrap_ci(recs, st.acc_at(161.0), n_boot=args.boot)
-        med = st.cluster_bootstrap_ci(recs, st.median_distance, n_boot=args.boot)
-        print(f"{name:30} {st.fmt_ci(ex, pct=True):>22} "
-              f"{st.fmt_ci(a161, pct=True):>22} {st.fmt_ci(med):>20}")
+        ci = st.cluster_bootstrap_ci(groups[name], st.exact_rate, n_boot=args.boot, seed=args.seed)
+        print(f"{name:30} {st.fmt_ci(ci, pct=True):>22}")
+        boot_rows.append([name, ci.get("point"), ci.get("lo"), ci.get("hi"),
+                          ci.get("n_places"), ci.get("n_boot"), args.boot, args.seed])
     print()
+
+    if args.out:
+        out = Path(args.out)
+        write_rows(out / f"table_stats_{args.split}.csv",
+                  ["config_a", "config_b", "question", "n_pairs", "n_places",
+                   "mcnemar_place_b", "mcnemar_place_c", "p_place", "p_holm", "family_size",
+                   "mcnemar_item_b", "mcnemar_item_c", "p_item",
+                   "exact_diff", "exact_diff_lo", "exact_diff_hi", "n_boot", "seed"],
+                  [[r["a"], r["b"], r["question"], r["n_pairs"], r["n_places"],
+                    r["mc_place"]["b"], r["mc_place"]["c"], r["mc_place"]["p"], r["p_holm"], family,
+                    r["mc_item"]["b"], r["mc_item"]["c"], r["mc_item"]["p"],
+                    r["effect"].get("point"), r["effect"].get("lo"), r["effect"].get("hi"),
+                    args.boot, args.seed] for r in results])
+        write_rows(out / f"table_bootstrap_{args.split}.csv",
+                  ["config", "exact", "lo", "hi", "n_places", "n_boot_valid", "n_boot", "seed"],
+                  boot_rows)
 
 
 # ---------------------------------------------------------------- entry
 
-def _warn_uneven_coverage(scored):
+def _warn_uneven_coverage(scored: list[dict]) -> None:
     """Pooling a configuration over fewer datasets than its neighbours makes a
     table quietly incomparable, so say so loudly instead."""
     per_config = defaultdict(set)
@@ -642,7 +702,7 @@ def _warn_uneven_coverage(scored):
     # written appears complete by dataset while being short by items, and a
     # row pooled over fewer items is quietly incomparable in exactly the same
     # way as a row pooled over fewer datasets.
-    counts = defaultdict(lambda: defaultdict(int))
+    counts = defaultdict(Counter)
     for r in scored:
         counts[r.get("dataset")][r.get("config_name")] += 1
     partial = defaultdict(list)
@@ -668,7 +728,7 @@ def _warn_uneven_coverage(scored):
     print()
 
 
-def main():
+def main() -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command",
@@ -677,8 +737,10 @@ def main():
     p.add_argument("--configs", nargs="*", default=None)
     p.add_argument("--datasets", nargs="*", default=None)
     p.add_argument("--out", default=None, help="directory for CSV output")
-    p.add_argument("--boot", type=int, default=2000,
-                   help="bootstrap replicates (default 2000)")
+    p.add_argument("--boot", type=int, default=DEFAULT_BOOT,
+                   help=f"bootstrap replicates (default {DEFAULT_BOOT})")
+    p.add_argument("--seed", type=int, default=st.DEFAULT_SEED,
+                   help=f"bootstrap seed (default {st.DEFAULT_SEED})")
     args = p.parse_args()
 
     paths = find_prediction_files(None, None)
@@ -690,19 +752,28 @@ def main():
         raise SystemExit("no prediction files found")
 
     records = attach_split(load_predictions(paths))
+    unsplit = [r for r in records if r.get("split") is None]
+    if unsplit:
+        by_ds = Counter(r.get("dataset") for r in unsplit)
+        print(f"warning: {len(unsplit)} of {len(records)} record(s) are missing from the "
+              f"split index (splits/item_split.csv stale or absent): "
+              + ", ".join(f"{d} {n}" for d, n in sorted(by_ds.items())), file=sys.stderr)
     if args.split != "all":
         records = [r for r in records if r.get("split") == args.split]
+    if not records:
+        raise SystemExit(f"no records for split={args.split} in {len(paths)} file(s)")
     scored = [score_record(r) for r in records]
+    meta = load_config_meta()
     print(f"loaded {len(scored)} scored record(s) from {len(paths)} file(s), "
           f"split={args.split}\n")
     _warn_uneven_coverage(scored)
 
     if args.command in ("failures", "all"):
-        cmd_failures(scored, args)
+        cmd_failures(scored, args, meta)
     if args.command in ("grounding", "all"):
         cmd_grounding(scored, args)
     if args.command in ("tables", "all"):
-        cmd_tables(scored, args)
+        cmd_tables(scored, args, meta)
     if args.command in ("stats", "all"):
         cmd_stats(scored, args)
 

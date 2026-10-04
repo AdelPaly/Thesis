@@ -14,8 +14,7 @@ description: >
   reasons: no GEONAMES_USERNAME is configured in this repo, and GeoNames
   returns GeoNames ids rather than QIDs, which makes exact-QID match
   uncomputable for its predictions. The heuristic is identical either way --
-  most populous candidate for the surface form. Set gazetteer: geonames (and
-  GEONAMES_USERNAME) to switch transports.
+  most populous candidate for the surface form.
 
   linking.top_n is how many gazetteer hits per toponym are considered before
   taking the most populous one, and linking.backend records that retrieval is

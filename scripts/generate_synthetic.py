@@ -36,6 +36,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
@@ -139,7 +141,10 @@ def main():
                     help="don't send response_format=json_object (for models that reject it)")
     args = ap.parse_args()
 
-    spec = SPEC_PATH.read_text(encoding="utf-8")
+    load_dotenv(PROJECT_ROOT / "src" / ".env")
+    load_dotenv(PROJECT_ROOT / ".env")
+
+    spec =SPEC_PATH.read_text(encoding="utf-8")
     client = OpenRouterClient(model=args.model)
     out = args.out if args.out.is_absolute() else PROJECT_ROOT / args.out
     raw_path = out.with_suffix(".raw.jsonl")

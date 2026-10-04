@@ -68,7 +68,7 @@ python scripts/run_all.py
 
 | Script | Purpose |
 |--------|---------|
-| `score.py` | Reads the prediction files and computes every metric. Imports nothing from `../src/`, loads no model, makes no network call. Sole home of the haversine implementation. |
+| `score.py` | Reads the prediction files and computes every metric. Imports nothing from `../src/`, loads no model, makes no network call. |
 
 ```bash
 python scripts/score.py --split dev          # choose here
@@ -80,19 +80,25 @@ python scripts/score.py --by condition
 
 | Script | Purpose |
 |--------|---------|
-| `analyse.py` | Failure attribution, the grounded-selection report, paired statistics and the report tables. Subcommands `failures`, `grounding`, `tables`, `stats`, `all`. Groups configurations by the `paradigm` on their records rather than by any hardcoded list. |
-| `stats.py` | Statistical primitives, all clustered by place: McNemar, Wilcoxon signed-rank, cluster bootstrap, paired effect intervals. |
+| `analyse.py` | Failure attribution, the grounded-selection report, paired statistics and the report tables. Subcommands `failures`, `grounding`, `tables`, `stats`, `all`. Groups configurations by the `paradigm` on their records, orders rows by the `tier` in `configs/*.yaml`, and Holm-adjusts the by-place McNemar p-values over the `COMPARISONS` family. |
+| `stats.py` | Statistical primitives, all clustered by place: McNemar, Holm adjustment, cluster bootstrap, paired effect intervals. |
 
 ```bash
 python scripts/analyse.py all --split test --out results/summary
 ```
 
 Failure attribution classifies each wrong prediction by the stage where it
-broke, read from recorded fields rather than inferred: `no_ner_span`,
-`span_not_linked`, `wrong_entity`, `wrong_candidate_selected`,
-`correct_candidate_not_first`, `returned_nothing`, plus
-`no_intermediate_stages` for architectures with no stages to attribute to.
-Statistics pair and resample by **place**, never by item.
+broke, read from recorded fields rather than inferred. Ten levels: `error`
+(a runner exception, reported separately from pipeline failures), `no_ner_span`,
+`span_not_linked`, `wrong_entity`, `gold_not_retrieved`,
+`wrong_candidate_selected`, `correct_candidate_not_first`, `abstained`,
+`selection_violation`, `returned_nothing`, plus `no_intermediate_stages` for
+architectures with no stages to attribute to (a level an architecture cannot
+produce prints `n/a`, not 0.0).
+Statistics pair and resample by **place**, never by item. The `stats` output
+has a `p_holm` column: the Holm-adjusted by-place McNemar p over the family of
+comparisons that ran (family size printed). `--out` writes the failure, table,
+statistics, bootstrap and grounding tables as CSV, with `n_boot` and `seed`.
 
 ## API keys
 

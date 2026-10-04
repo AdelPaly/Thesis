@@ -27,4 +27,3 @@ llm:
 grounded:
   candidate_source: linking
   top_k: 10
-  allow_abstention: true

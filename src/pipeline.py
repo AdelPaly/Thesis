@@ -12,17 +12,53 @@ runner serialises those straight into the prediction record.
 """
 from __future__ import annotations
 
-import traceback
+import csv
+import importlib
+import logging
+from collections import Counter
 from dataclasses import dataclass, field
+from typing import Callable, TypedDict
 
-from config import PipelineConfig
+from config import ConfigError, PipelineConfig
+from keys import place_key
+
+logger = logging.getLogger(__name__)
+
+_UNSET = object()
+
+# Backend name -> module exposing `build(model, cache_name)`. Imported lazily so
+# a config that never calls an LLM does not pull in its client library.
+LLM_BACKEND_MODULES = {"gemma": "llm_gemma"}
+
+# Errors that mean the run is misconfigured, not that one item is bad. They
+# abort the run instead of being recorded as N identical per-item errors.
+_FATAL_ERRORS = (ConfigError, ImportError, KeyError)
+
+SPLIT_FILE = ("splits", "place_split.csv")
+
+
+class Candidate(TypedDict, total=False):
+    """Internal candidate place; the stored shape is `_candidate_record`."""
+    qid: str
+    lat: float
+    lon: float
+    country: str | None
+    continent: str | None
+    score: float
+    entity: str
+    entity_type: str
+    description: str | None
 
 
 @dataclass
 class PipelineOutput:
-    ner_spans: list = field(default_factory=list)
-    linked_entities: list = field(default_factory=list)
-    candidate_places: list = field(default_factory=list)
+    """Every intermediate stage of one item, serialised by the runner as-is.
+
+    `error` is set when a stage failed or a grounded selection broke its
+    contract; stages completed before the failure stay populated."""
+    ner_spans: list[dict] = field(default_factory=list)
+    linked_entities: list[dict] = field(default_factory=list)
+    candidate_places: list[dict] = field(default_factory=list)
     prediction: dict | None = None
     llm_raw_response: str | None = None
     # Grounded LLM only: which candidate was selected, whether it abstained,
@@ -32,7 +68,7 @@ class PipelineOutput:
     error: str | None = None
 
 
-def _candidate_record(cand):
+def _candidate_record(cand: Candidate) -> dict:
     """Normalise an internal candidate dict into the stored shape."""
     return {
         "qid": cand.get("qid"),
@@ -52,7 +88,15 @@ def _candidate_record(cand):
 class Pipeline:
     """Built once per run from a config; `run(text)` is called per item."""
 
-    def __init__(self, cfg: PipelineConfig, dataset: str | None = None):
+    def __init__(self, cfg: PipelineConfig, dataset: str | None = None, *,
+                 ner_fn: Callable | None = None,
+                 link_fn: Callable | None = None,
+                 rank_fn: Callable | None = None,
+                 resolve_fn: Callable | None = None):
+        """The `*_fn` arguments replace the real stage callables
+        (extract_entities, link_mentions, rank_candidates,
+        resolve_qid_to_candidate). Left as None they are imported lazily, so
+        the pipeline can be exercised without Flair, ReFinED or the network."""
         self.cfg = cfg
         # Some configurations are constants fitted on the dev split of a
         # particular dataset (baseline_majority), so the pipeline needs to know
@@ -61,63 +105,84 @@ class Pipeline:
         self._llm = None
         self._grounded = None
         self._majority = _UNSET
+        self._dense_index = None
+        self._ner_fn = ner_fn
+        self._link_fn = link_fn
+        self._rank_fn = rank_fn
+        self._resolve_fn = resolve_fn
+        self._paradigms = {
+            "ner_dependent": self._run_linking_path,
+            "ner_free": self._run_llm_path,
+            "dense_retrieval": self._run_dense_path,
+            "grounded_llm": self._run_grounded_path,
+            "baseline": self._run_baseline,
+        }
 
     # ---------------------------------------------------------------- stages
 
-    def _ner(self, text):
-        from ner import extract_entities
-        return extract_entities(text,
-                                model=self.cfg.ner.model,
-                                entity_types=self.cfg.ner.entity_types)
+    def _ner(self, text: str) -> list[dict]:
+        """Extract mention spans with the configured NER model."""
+        fn = self._ner_fn
+        if fn is None:
+            from ner import extract_entities as fn
+        return fn(text, model=self.cfg.ner.model,
+                  entity_types=self.cfg.ner.entity_types)
 
-    def _link(self, text, spans):
+    def _link(self, text: str, spans: list[dict]) -> list[dict]:
         """Link mentions to QIDs. Returns the stored `linked_entities` shape."""
         li = self.cfg.linking
         if li.backend != "refined" or not spans:
             return [{"mention": e["text"], "mention_type": e["type"],
                      "qid": None, "confidence": None, "candidates": []}
                     for e in spans]
-        from refined_linker import link_mentions
-        linked = link_mentions(text, spans,
-                               model_name=li.refined_model,
-                               entity_set=li.refined_entity_set,
-                               top_n=li.top_n)
+        fn = self._link_fn
+        if fn is None:
+            from refined_linker import link_mentions as fn
+        linked = fn(text, spans,
+                    model_name=li.refined_model,
+                    entity_set=li.refined_entity_set,
+                    top_n=li.top_n)
         return [{"mention": ent["text"], "mention_type": ent["type"],
                  "qid": link["qid"], "confidence": link["confidence"],
                  "candidates": link["candidates"]}
                 for ent, link in linked]
 
-    def _places_from_links(self, spans, linked_entities):
-        """Turn linked QIDs into geographic candidates via the property chain."""
-        from wikidata import resolve_qid_to_candidate
-        out = []
+    def _resolved_links(self, spans, linked_entities):
+        """Yield (link, candidate) for each linked QID that resolves."""
+        resolve = self._resolve_fn
+        if resolve is None:
+            from wikidata import resolve_qid_to_candidate as resolve
         for ent, link in zip(spans, linked_entities):
             if not link["qid"]:
                 continue
-            cand = resolve_qid_to_candidate(link["qid"], ent["text"], ent["type"])
+            cand = resolve(link["qid"], ent["text"], ent["type"])
             if cand:
-                out.append(cand)
-        return out
+                yield link, cand
 
-    def _places_from_search(self, spans):
+    def _places_from_links(self, spans, linked_entities) -> list[Candidate]:
+        """Turn linked QIDs into geographic candidates via the property chain."""
+        return [cand for _, cand in self._resolved_links(spans, linked_entities)]
+
+    def _places_from_search(self, spans) -> list[Candidate]:
         from wikidata import get_all_coords
         return get_all_coords(spans, top_n=self.cfg.linking.top_n)
 
-    def _rank(self, text, candidates):
-        if not candidates:
+    def _rank(self, text: str, candidates: list[Candidate]) -> list[Candidate]:
+        """Rerank by text/description similarity; a no-op when disabled."""
+        if not candidates or not self.cfg.rerank.enabled:
             return candidates
-        if not self.cfg.rerank.enabled:
-            return candidates
-        from ranking import rank_candidates
-        return rank_candidates(text, candidates, model=self.cfg.rerank.model)
+        fn = self._rank_fn
+        if fn is None:
+            from ranking import rank_candidates as fn
+        return fn(text, candidates, model=self.cfg.rerank.model)
 
     def _llm_pipeline(self):
         if self._llm is None:
             backend = self.cfg.llm.backend
-            if backend == "gemma":
-                from llm_gemma import build
-            else:
-                raise ValueError(f"unknown llm.backend {backend!r}")
+            module = LLM_BACKEND_MODULES.get(backend)
+            if module is None:
+                raise ConfigError(f"unknown llm.backend {backend!r}")
+            build = importlib.import_module(module).build
             self._llm = build(self.cfg.llm.model, self.cfg.llm.cache_name)
         return self._llm
 
@@ -159,63 +224,74 @@ class Pipeline:
         out.candidate_places = [_candidate_record(c) for c in candidates]
         out.prediction = candidates[0] if candidates else None
 
-    def _majority_place(self):
+    def _dev_place_counts(self) -> Counter:
+        """Gold QID counts over the dev side of this dataset's split."""
+        import pandas as pd
+
+        from config import load_datasets, REPO_ROOT
+
+        if not self.dataset:
+            raise ConfigError("baseline 'majority_dev_place' needs to know which "
+                              "dataset it is running over")
+        with open(REPO_ROOT.joinpath(*SPLIT_FILE), encoding="utf-8") as f:
+            side = {r["place_key"]: r["split"] for r in csv.DictReader(f)}
+
+        df = pd.read_csv(load_datasets()[self.dataset].resolved_path())
+        counts = Counter()
+        if "qid" not in df:
+            return counts
+        names = df["location_name"] if "location_name" in df else [None] * len(df)
+        for qid, name in zip(df["qid"], names):
+            if isinstance(qid, str) and qid.strip() \
+                    and side.get(place_key(qid, name)) == "dev":
+                counts[qid.strip()] += 1
+        return counts
+
+    def _majority_place(self) -> Candidate | None:
         """The most frequent gold place in the DEV split of this dataset.
 
         Computed from the committed split file, dev side only -- a majority
         baseline fitted on test would be reading the answer sheet."""
         if self._majority is not _UNSET:
             return self._majority
-        import csv as _csv
-        from collections import Counter
-
-        import pandas as pd
-
-        from config import load_datasets, REPO_ROOT
-        from wikidata import resolve_qid_to_candidate
-
-        if not self.dataset:
-            raise ValueError("baseline 'majority_dev_place' needs to know which "
-                             "dataset it is running over")
-        split_path = REPO_ROOT / "splits" / "place_split.csv"
-        with open(split_path, encoding="utf-8") as f:
-            side = {r["place_key"]: r["split"] for r in _csv.DictReader(f)}
-
-        spec = load_datasets()[self.dataset]
-        df = pd.read_csv(spec.resolved_path())
-        counts = Counter()
-        for _, row in df.iterrows():
-            qid = row.get("qid")
-            key = qid.strip() if isinstance(qid, str) and qid.strip() else None
-            if key is None:
-                name = str(row.get("location_name") or "").strip().casefold()
-                key = f"name:{name}" if name else None
-            if key and side.get(key) == "dev" and isinstance(qid, str):
-                counts[qid.strip()] += 1
-        if not counts:
-            self._majority = None
-            return None
-        qid, n = counts.most_common(1)[0]
-        cand = resolve_qid_to_candidate(qid, qid, "LOC")
-        if cand is not None:
-            cand = {**cand, "score": float(n)}
+        counts = self._dev_place_counts()
+        cand = None
+        if counts:
+            qid, n = counts.most_common(1)[0]
+            resolve = self._resolve_fn
+            if resolve is None:
+                from wikidata import resolve_qid_to_candidate as resolve
+            cand = resolve(qid, qid, "LOC")
+            if cand is not None:
+                cand = {**cand, "score": float(n)}
         self._majority = cand
         return cand
 
     def _run_majority_baseline(self, text, out):
         """Predict the same place for every item. Measures how much of a
-        headline number is carried by the label distribution alone."""
+        headline number is carried by the label distribution alone. `text` is
+        unused (uniform stage signature) and `candidate_places` stays empty."""
         cand = self._majority_place()
         out.prediction = dict(cand) if cand else None
 
+    def _run_baseline(self, text, out):
+        strategy = self.cfg.baseline.strategy
+        if strategy == "most_populous":
+            self._run_population_baseline(text, out)
+        elif strategy == "majority_dev_place":
+            self._run_majority_baseline(text, out)
+        else:
+            raise ConfigError(f"unhandled baseline strategy {strategy!r}")
+
     # ------------------------------------------------- tier 3: dense retrieval
 
-    def _dense_candidates(self, text):
-        """Top-k nearest places by cosine similarity. No mention detection, no
-        linking, no LLM."""
-        from dense_index import get_index
-        index = get_index(self.cfg)
-        return index.search(text, top_k=self.cfg.dense.top_k)
+    def _dense_candidates(self, text: str, top_k: int | None = None) -> list[Candidate]:
+        """Top-k nearest places by cosine similarity (`dense.top_k` unless
+        given). No mention detection, no linking, no LLM."""
+        if self._dense_index is None:
+            from dense_index import get_index
+            self._dense_index = get_index(self.cfg)
+        return self._dense_index.search(text, top_k=top_k or self.cfg.dense.top_k)
 
     def _run_dense_path(self, text, out):
         candidates = self._dense_candidates(text)
@@ -234,21 +310,33 @@ class Pipeline:
         gr = self.cfg.grounded
         return f"{self.cfg.llm.cache_name}_grounded_{gr.candidate_source}"
 
+    def _top_linked(self, spans, linked_entities, top_k: int) -> list[Candidate]:
+        """Distinct QIDs, most confident linker output first, then truncated."""
+        best: dict[str, tuple[float, Candidate]] = {}
+        for link, cand in self._resolved_links(spans, linked_entities):
+            conf = link.get("confidence")
+            conf = float(conf) if conf is not None else float("-inf")
+            qid = cand.get("qid") or link["qid"]
+            if qid not in best or conf > best[qid][0]:
+                best[qid] = (conf, cand)
+        ranked = sorted(best.values(), key=lambda t: t[0], reverse=True)
+        return [cand for _, cand in ranked[:top_k]]
+
     def _run_grounded_path(self, text, out):
         """Retrieve candidates, hand the list to the LLM, let it select one or
         decline. The retriever is an existing tier, never a new one, so the
         comparison against that tier is not confounded."""
         gr = self.cfg.grounded
         if gr.candidate_source == "dense":
-            candidates = self._dense_candidates(text)[:gr.top_k]
+            candidates = self._dense_candidates(text, top_k=gr.top_k)
         elif gr.candidate_source == "linking":
             out.ner_spans = self._ner(text)
             out.linked_entities = self._link(text, out.ner_spans)
-            candidates = self._places_from_links(out.ner_spans,
-                                                 out.linked_entities)[:gr.top_k]
+            candidates = self._top_linked(out.ner_spans, out.linked_entities,
+                                          gr.top_k)
         else:
-            raise ValueError(f"unknown grounded.candidate_source "
-                             f"{gr.candidate_source!r}")
+            raise ConfigError(f"unknown grounded.candidate_source "
+                              f"{gr.candidate_source!r}")
 
         out.candidate_places = [_candidate_record(c) for c in candidates]
 
@@ -292,44 +380,28 @@ class Pipeline:
 
     # ---------------------------------------------------------------- entry
 
-    def run(self, text) -> PipelineOutput:
-        """Run one item. Never raises: a failure is attached to `out.error`
-        with whatever stages completed before it, so the item is still
-        recorded rather than dropped."""
+    def run(self, text: str) -> PipelineOutput:
+        """Run one item. A per-item failure (data, network) is attached to
+        `out.error` with whatever stages completed before it, so the item is
+        still recorded rather than dropped. Configuration and import errors
+        propagate: they would otherwise repeat on every item."""
         out = PipelineOutput()
         try:
-            paradigm = self.cfg.paradigm
-            if paradigm == "ner_dependent":
-                self._run_linking_path(text, out)
-            elif paradigm == "ner_free":
-                self._run_llm_path(text, out)
-            elif paradigm == "dense_retrieval":
-                self._run_dense_path(text, out)
-            elif paradigm == "grounded_llm":
-                self._run_grounded_path(text, out)
-            elif paradigm == "baseline":
-                strategy = self.cfg.baseline.strategy
-                if strategy == "most_populous":
-                    self._run_population_baseline(text, out)
-                elif strategy == "majority_dev_place":
-                    self._run_majority_baseline(text, out)
-                else:
-                    raise ValueError(f"unhandled baseline strategy {strategy!r}")
-            else:
-                raise ValueError(f"unhandled paradigm {paradigm!r}")
+            handler = self._paradigms.get(self.cfg.paradigm)
+            if handler is None:
+                raise ConfigError(f"unhandled paradigm {self.cfg.paradigm!r}")
+            handler(text, out)
+        except _FATAL_ERRORS:
+            raise
         except Exception as e:                      # noqa: BLE001 - recorded, not swallowed
+            logger.debug("item failed", exc_info=True)
             out.error = f"{type(e).__name__}: {e}"
             out.prediction = None
-            if _DEBUG:
-                traceback.print_exc()
         return out
 
 
-_UNSET = object()
-_DEBUG = False
-
-
-def set_debug(flag: bool):
-    """Print tracebacks for per-item failures instead of only recording them."""
-    global _DEBUG
-    _DEBUG = flag
+def set_debug(flag: bool) -> None:
+    """Compatibility shim for older callers: per-item tracebacks are logged at
+    DEBUG, so this just lowers this module's logger level."""
+    if flag:
+        logger.setLevel(logging.DEBUG)

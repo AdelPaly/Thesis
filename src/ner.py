@@ -5,33 +5,30 @@ confidence and the *character offsets* Flair already computed. The offsets are
 the contract that lets downstream linkers address a mention exactly instead of
 searching for its string again.
 """
+from __future__ import annotations
+
+from functools import lru_cache
+
 from flair.data import Sentence
 from flair.nn import Classifier
 
-_tagger = None
-_tagger_name = None
+_HUB_PREFIX = "flair/"
 
 
-def _load(model):
-    """Load (once per process) the Flair tagger named in the config.
-
-    Flair's own shorthand keys ("ner-large") and the HuggingFace-style names
-    people write in configs ("flair/ner-large") are both accepted; the second
-    is not a real ModelHub id, so fall back to the shorthand.
-    """
-    global _tagger, _tagger_name
-    if _tagger is None or _tagger_name != model:
-        try:
-            _tagger = Classifier.load(model)
-        except (ValueError, OSError):
-            if "/" not in model:
-                raise
-            _tagger = Classifier.load(model.split("/", 1)[1])
-        _tagger_name = model
-    return _tagger
+def _hub_key(model: str) -> str:
+    """Configs write `flair/ner-large`; Flair's ModelHub key is `ner-large`.
+    Normalise here so the config string (and its hash) stays untouched."""
+    return model[len(_HUB_PREFIX):] if model.startswith(_HUB_PREFIX) else model
 
 
-def extract_entities(text, model="flair/ner-large", entity_types=None):
+@lru_cache(maxsize=None)
+def load_tagger(model: str) -> Classifier:
+    """Load (once per process and model name) the Flair tagger."""
+    return Classifier.load(_hub_key(model))
+
+
+def extract_entities(text: str, model: str,
+                     entity_types: list[str] | None = None) -> list[dict]:
     """Run NER over `text`.
 
     Returns [{text, type, score, start, end}, ...] where start/end are
@@ -40,7 +37,7 @@ def extract_entities(text, model="flair/ner-large", entity_types=None):
     None keeps every tag.
     """
     sentence = Sentence(text)
-    _load(model).predict(sentence)
+    load_tagger(model).predict(sentence)
 
     entities = []
     for entity in sentence.get_labels('ner'):

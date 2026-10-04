@@ -4,12 +4,10 @@
     python scripts/score.py --config refined --dataset geocorpora
     python scripts/score.py --by condition
 
-This module deliberately imports nothing from src/. It touches no model, makes
-no network call, and needs no API key: it only reads
-results/predictions/*.jsonl. Changing a metric definition is a re-run of this
-file, not of the pipeline.
-
-It is also the single home of the haversine implementation.
+It touches no model, makes no network call, and needs no API key: it only reads
+results/predictions/*.jsonl and splits/item_split.csv (the one src/ import is
+the stdlib-only key helper in src/keys.py). Changing a metric definition is a
+re-run of this file, not of the pipeline.
 
 Metric definitions
 ------------------
@@ -25,80 +23,93 @@ exact          : predicted_qid == place_qid, over items that HAVE a gold QID.
                  "-" rather than zero.
 country        : exact, or predicted_country == gold_country. The hierarchy is
                  derived HERE, at report time, not baked into stored booleans.
+                 Denominator: items that have a gold country.
 continent      : country, or predicted_continent == gold_continent.
-distance_km    : haversine, only when both gold and predicted coordinates
-                 exist. A prediction with no coordinate has no distance -- it
-                 is never scored as a distance to 0,0.
-acc@161km      : share of items WITH GOLD COORDINATES whose distance exists and
-                 is <= 161 km. Items with a gold coordinate but no predicted
-                 one count as failures, which is the field convention.
-mean/median    : over items that have a distance, per the same convention.
+                 Denominator: items that have a gold continent.
+no_result_rate, error_rate : over all items.
 """
 from __future__ import annotations
 
 import argparse
-import glob
+import csv
 import json
-import math
-import statistics
+import sys
+from collections import Counter
 from pathlib import Path
+from typing import Callable, Iterable
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from keys import place_key  # noqa: E402
+
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
 ITEM_SPLIT_PATH = REPO_ROOT / "splits" / "item_split.csv"
 
-EARTH_RADIUS_KM = 6371.0
-# 161 km is the standard ~100 mile threshold used in the geoparsing literature
-# (Gritta et al.); we report this as acc@161km.
-ACC_RADIUS_KM = 161.0
+LABEL_WIDTH = 34
+CSV_FIELDS = ["group", "n", "n_gold_qid", "exact", "country", "continent",
+              "no_result_rate", "error_rate"]
 
 
-def haversine_km(a, b):
-    """Great-circle distance in km between two [lat, lon] pairs.
-    Returns None if either point is missing or incomplete -- a missing
-    coordinate is not a coordinate at 0,0."""
-    if not a or not b:
-        return None
-    lat1, lon1 = a
-    lat2, lon2 = b
-    for v in (lat1, lon1, lat2, lon2):
-        if v is None or (isinstance(v, float) and math.isnan(v)):
-            return None
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlam = math.radians(lon2 - lon1)
-    h = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
-    return EARTH_RADIUS_KM * 2 * math.asin(min(1.0, math.sqrt(h)))
+def pct(num: int, den: int) -> float | None:
+    """num / den, or None when the denominator is empty."""
+    return num / den if den else None
 
 
-def load_item_split(path=ITEM_SPLIT_PATH):
+def group_by(records: Iterable[dict], key: str | Callable[[dict], object]) -> dict:
+    """Group records by a field name or by a key function."""
+    def key_fn(r: dict):
+        return r.get(key) if isinstance(key, str) else key(r)
+
+    groups: dict = {}
+    for r in records:
+        groups.setdefault(key_fn(r), []).append(r)
+    return groups
+
+
+def group_by_pairs(scored: Iterable[dict]) -> dict:
+    return group_by(scored, lambda r: (r.get("config_name"), r.get("dataset")))
+
+
+def load_item_split(path: Path | str = ITEM_SPLIT_PATH) -> dict:
     """{(item_id, dataset): {"place_key", "split", "condition"}} from the
     committed split file. Derived from the place-level assignment, so items
     about the same place are always on the same side."""
-    import csv
-    if not Path(path).exists():
-        return {}
-    with open(path, encoding="utf-8") as f:
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} is missing -- run scripts/make_split.py first; without it "
+            "no record can be assigned to dev/test or to a place")
+    with path.open(encoding="utf-8") as f:
         return {(r["item_id"], r["dataset"]): r for r in csv.DictReader(f)}
 
 
-def attach_split(records, split_index=None):
+def attach_split(records: list[dict], split_index: dict | None = None) -> list[dict]:
     """Add `split` and `place_key` to each record. `place_key` is the pairing
-    unit for McNemar, Wilcoxon and the bootstrap: items within a place are not
-    independent, so nothing may resample or pair by item."""
+    unit for McNemar and the bootstrap: items within a place are not
+    independent, so nothing may resample or pair by item. Records absent from
+    the split index (stale split) get split=None and are counted in a warning."""
     split_index = load_item_split() if split_index is None else split_index
     out = []
+    missing = 0
     for rec in records:
-        info = split_index.get((rec.get("item_id"), rec.get("dataset")), {})
+        info = split_index.get((rec.get("item_id"), rec.get("dataset")))
+        if info is None:
+            missing += 1
+            info = {}
         out.append({
             **rec,
             "split": info.get("split"),
-            "place_key": info.get("place_key") or rec.get("place_qid"),
+            "place_key": info.get("place_key")
+                         or place_key(rec.get("place_qid"), rec.get("location_name")),
         })
+    if missing:
+        print(f"warning: {missing} of {len(out)} record(s) not found in the item "
+              "split (split=None); re-run scripts/make_split.py", file=sys.stderr)
     return out
 
 
-def _norm(value):
+def _norm(value) -> str | None:
     return value.strip().casefold() if isinstance(value, str) and value.strip() else None
 
 
@@ -107,10 +118,9 @@ def score_record(rec: dict) -> dict:
     record itself is never mutated with metric booleans."""
     gold_qid = rec.get("place_qid")
     pred_qid = rec.get("predicted_qid")
-    gold_latlon = rec.get("gold_latlon")
-    pred_latlon = rec.get("predicted_latlon")
 
-    has_prediction = bool(pred_qid or pred_latlon or rec.get("predicted_continent"))
+    has_prediction = bool(pred_qid or rec.get("predicted_latlon")
+                          or rec.get("predicted_continent"))
     exact = bool(gold_qid and pred_qid and gold_qid == pred_qid)
 
     gold_country, pred_country = _norm(rec.get("gold_country")), _norm(rec.get("predicted_country"))
@@ -118,8 +128,6 @@ def score_record(rec: dict) -> dict:
 
     gold_cont, pred_cont = _norm(rec.get("gold_continent")), _norm(rec.get("predicted_continent"))
     continent = country or bool(gold_cont and pred_cont and gold_cont == pred_cont)
-
-    distance = haversine_km(gold_latlon, pred_latlon)
 
     return {
         **rec,
@@ -129,38 +137,39 @@ def score_record(rec: dict) -> dict:
         "exact": exact,
         "country_correct": country,
         "continent_correct": continent,
-        "distance_km": distance,
-        "scorable_distance": gold_latlon is not None,
         "scorable_exact": gold_qid is not None,
-        "within_161km": distance is not None and distance <= ACC_RADIUS_KM,
+        "scorable_country": gold_country is not None,
+        "scorable_continent": gold_cont is not None,
     }
 
 
-def aggregate(scored: list[dict]) -> dict:
+def summarise_metrics(scored: list[dict]) -> dict:
     """Metric block for a set of scored items."""
     n = len(scored)
     if n == 0:
         return {"n": 0}
-    dists = [s["distance_km"] for s in scored if s["distance_km"] is not None]
-    n_scorable = sum(1 for s in scored if s["scorable_distance"])
-    n_gold_qid = sum(1 for s in scored if s["scorable_exact"])
-    within = sum(1 for s in scored if s["within_161km"])
+    n_gold_qid = sum(s["scorable_exact"] for s in scored)
+    n_gold_country = sum(s["scorable_country"] for s in scored)
+    n_gold_continent = sum(s["scorable_continent"] for s in scored)
     return {
         "n": n,
         "n_gold_qid": n_gold_qid,
-        "exact": (sum(s["exact"] for s in scored) / n_gold_qid) if n_gold_qid else None,
-        "country": sum(s["country_correct"] for s in scored) / n,
-        "continent": sum(s["continent_correct"] for s in scored) / n,
-        "acc@161km": (within / n_scorable) if n_scorable else None,
-        "n_with_distance": len(dists),
-        "median_km": statistics.median(dists) if dists else None,
-        "mean_km": (sum(dists) / len(dists)) if dists else None,
+        "n_gold_country": n_gold_country,
+        "n_gold_continent": n_gold_continent,
+        "exact": pct(sum(s["exact"] for s in scored), n_gold_qid),
+        "country": pct(sum(s["country_correct"] for s in scored if s["scorable_country"]),
+                       n_gold_country),
+        "continent": pct(sum(s["continent_correct"] for s in scored if s["scorable_continent"]),
+                         n_gold_continent),
         "no_result_rate": sum(s["no_result"] for s in scored) / n,
         "error_rate": sum(s["is_error"] for s in scored) / n,
     }
 
 
-def load_predictions(paths) -> list[dict]:
+aggregate = summarise_metrics  # name analyse.py still imports
+
+
+def load_predictions(paths: Iterable[Path | str]) -> list[dict]:
     records = []
     for path in paths:
         with open(path, encoding="utf-8") as f:
@@ -168,46 +177,63 @@ def load_predictions(paths) -> list[dict]:
                 line = line.strip()
                 if line:
                     records.append(json.loads(line))
+    keys = Counter((r.get("config_name"), r.get("dataset"), r.get("item_id")) for r in records)
+    dupes = [k for k, c in keys.items() if c > 1]
+    if dupes:
+        raise ValueError(f"{len(dupes)} duplicate (config_name, dataset, item_id), "
+                         f"e.g. {dupes[0]}")
+    hashes: dict = {}
+    for r in records:
+        hashes.setdefault(r.get("config_name"), set()).add(r.get("config_hash"))
+    for cfg, hs in sorted(hashes.items(), key=lambda kv: str(kv[0])):
+        if len(hs) > 1:
+            print(f"warning: config {cfg} has {len(hs)} different config_hash "
+                  "values across its predictions", file=sys.stderr)
     return records
 
 
-def find_prediction_files(config=None, dataset=None, directory=PREDICTIONS_DIR):
+def find_prediction_files(config: str | None = None, dataset: str | None = None,
+                          directory: Path | str = PREDICTIONS_DIR) -> list[Path]:
     pattern = f"{config or '*'}__{dataset or '*'}.jsonl"
-    return sorted(Path(p) for p in glob.glob(str(Path(directory) / pattern)))
+    return sorted(Path(directory).glob(pattern))
 
 
-def _fmt(value, pct=False, width=7):
+def _fmt(value: float | None, as_pct: bool = False, width: int = 7) -> str:
     if value is None:
         return "-".rjust(width)
-    if pct:
-        return f"{value * 100:{width}.1f}"
-    return f"{value:{width}.1f}"
+    return f"{value * 100 if as_pct else value:{width}.1f}"
 
 
-def print_table(rows, group_label="config"):
-    header = (f"{group_label:34} {'n':>4} {'nQID':>5} {'exact':>7} {'country':>7} "
-              f"{'cont':>7} {'a@161':>7} {'med km':>8} {'mean km':>8} {'no-res':>7} {'err':>6}")
+def print_table(rows: list[tuple[str, dict]], group_label: str = "config") -> None:
+    header = (f"{group_label:{LABEL_WIDTH}} {'n':>4} {'nQID':>5} {'exact':>7} "
+              f"{'country':>7} {'cont':>7} {'no-res':>7} {'err':>6}")
     print(header)
     print("-" * len(header))
     for label, m in rows:
         if m["n"] == 0:
-            print(f"{label:34} {0:>4}")
+            print(f"{label:{LABEL_WIDTH}} {0:>4}")
             continue
-        print(f"{label:34} {m['n']:>4} {m['n_gold_qid']:>5} "
+        print(f"{label:{LABEL_WIDTH}} {m['n']:>4} {m['n_gold_qid']:>5} "
               f"{_fmt(m['exact'], True)} {_fmt(m['country'], True)} "
-              f"{_fmt(m['continent'], True)} {_fmt(m['acc@161km'], True)} "
-              f"{_fmt(m['median_km'], width=8)} {_fmt(m['mean_km'], width=8)} "
+              f"{_fmt(m['continent'], True)} "
               f"{_fmt(m['no_result_rate'], True)} {_fmt(m['error_rate'], True, 6)}")
 
 
-def group_by(scored, key):
-    groups = {}
-    for s in scored:
-        groups.setdefault(s.get(key), []).append(s)
-    return groups
+def write_csv(rows: list[tuple[str, dict]], out: Path) -> None:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        w.writeheader()
+        for label, m in rows:
+            row = {"group": label.strip()}
+            for k in CSV_FIELDS[1:]:
+                v = m.get(k)
+                row[k] = round(v, 4) if isinstance(v, float) else v
+            w.writerow(row)
+    print(f"\nwrote {out}")
 
 
-def main():
+def main() -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--predictions", nargs="*", default=None,
@@ -237,39 +263,16 @@ def main():
     scored = [score_record(r) for r in records]
     print(f"split: {args.split}  records: {len(scored)}\n")
     rows = []
-    for (cfg_name, ds), items in sorted(
-            group_by_pairs(scored).items(), key=lambda kv: kv[0]):
-        rows.append((f"{cfg_name} / {ds}", aggregate(items)))
+    for (cfg_name, ds), items in sorted(group_by_pairs(scored).items(), key=lambda kv: kv[0]):
+        rows.append((f"{cfg_name} / {ds}", summarise_metrics(items)))
         if args.by:
             for sub, sub_items in sorted(group_by(items, args.by).items(),
                                          key=lambda kv: str(kv[0])):
-                rows.append((f"    {args.by}={sub}", aggregate(sub_items)))
+                rows.append((f"    {args.by}={sub}", summarise_metrics(sub_items)))
 
     print_table(rows)
-
     if args.out:
-        import csv
-        out = Path(args.out)
-        out.parent.mkdir(parents=True, exist_ok=True)
-        fields = ["group", "n", "n_gold_qid", "exact", "country", "continent", "acc@161km",
-                  "n_with_distance", "median_km", "mean_km", "no_result_rate", "error_rate"]
-        with out.open("w", newline="", encoding="utf-8") as f:
-            w = csv.DictWriter(f, fieldnames=fields)
-            w.writeheader()
-            for label, m in rows:
-                row = {"group": label.strip()}
-                for k in fields[1:]:
-                    v = m.get(k)
-                    row[k] = round(v, 4) if isinstance(v, float) else v
-                w.writerow(row)
-        print(f"\nwrote {out}")
-
-
-def group_by_pairs(scored):
-    groups = {}
-    for s in scored:
-        groups.setdefault((s.get("config_name"), s.get("dataset")), []).append(s)
-    return groups
+        write_csv(rows, Path(args.out))
 
 
 if __name__ == "__main__":

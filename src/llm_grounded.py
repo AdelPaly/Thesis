@@ -28,14 +28,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-import pickle
+import logging
 import re
 
-CACHE_DIR = os.path.join(os.path.dirname(__file__), ".llm_cache")
-os.makedirs(CACHE_DIR, exist_ok=True)
+from llm_common import (REFUSAL_SENTINEL, PickleCache, fingerprint,
+                        parse_json_object)
 
-_JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
+log = logging.getLogger(__name__)
 
 PROMPT = """You are a geolocation assistant. Identify the single real-world location the text refers to, choosing from the numbered candidate list.
 
@@ -54,7 +53,7 @@ Candidates:
 {candidates}"""
 
 
-def format_candidates(candidates):
+def format_candidates(candidates: list[dict]) -> str:
     """The numbered list the model sees: index, QID, label, country, description."""
     lines = []
     for i, cand in enumerate(candidates, start=1):
@@ -73,52 +72,42 @@ class GroundedSelector:
     """Wraps a provider pipeline (llm_gemma) for the raw call, with
     its own prompt and its own response cache."""
 
-    def __init__(self, provider, cache_name):
+    def __init__(self, provider, cache_name: str):
         self.provider = provider
         self.cache_name = cache_name
-        self._cache = self._load_cache()
+        params = getattr(provider, "generation_params", {})
+        self._cache = PickleCache(cache_name, fingerprint(PROMPT, params))
 
-    def _cache_path(self):
-        return os.path.join(CACHE_DIR, f"{self.cache_name}.pkl")
+    def save_cache(self) -> None:
+        self._cache.save()
 
-    def _load_cache(self):
-        path = self._cache_path()
-        if os.path.exists(path):
-            with open(path, "rb") as f:
-                return pickle.load(f)
-        return {}
-
-    def save_cache(self):
-        tmp = self._cache_path() + ".tmp"
-        with open(tmp, "wb") as f:
-            pickle.dump(self._cache, f)
-        os.replace(tmp, self._cache_path())
-
-    def _key(self, text, candidates):
+    def _key(self, text: str, candidates: list[dict]) -> str:
         payload = json.dumps({
             "text": text,
             "candidates": [c.get("qid") for c in candidates],
         }, sort_keys=True)
         return hashlib.sha256(payload.encode()).hexdigest()
 
-    def _get_response(self, text, candidates):
+    def _get_response(self, text: str, candidates: list[dict]) -> str:
         key = self._key(text, candidates)
-        if key not in self._cache:
-            prompt = PROMPT.format(text=text, candidates=format_candidates(candidates))
-            self._cache[key] = self.provider._call_llm(prompt)
-        return self._cache[key]
+        cached = self._cache.get(key)
+        if cached:
+            return cached
+        prompt = PROMPT.format(text=text, candidates=format_candidates(candidates))
+        try:
+            raw = self.provider.call_llm(prompt)
+        except BaseException:
+            self.save_cache()
+            raise
+        if raw != REFUSAL_SENTINEL:
+            self._cache.put(key, raw)
+        return raw
 
     @staticmethod
-    def _parse(raw):
-        for candidate in (raw.strip(),
-                          *(m.group(1) for m in _JSON_FENCE.finditer(raw))):
-            try:
-                return json.loads(candidate)
-            except json.JSONDecodeError:
-                continue
-        return None
+    def _parse(raw: str) -> dict | None:
+        return parse_json_object(raw)
 
-    def select(self, text, candidates):
+    def select(self, text: str, candidates: list[dict]) -> tuple[dict | None, dict, str]:
         """Return (chosen_candidate | None, selection_record, raw_response).
 
         selection_record is stored on the prediction record so that a wrong
@@ -151,7 +140,9 @@ class GroundedSelector:
                 digits = re.match(r"\s*(\d+)", stripped)
                 selection = int(digits.group(1)) if digits else None
 
-        if not isinstance(selection, int):
+        if isinstance(selection, float) and selection.is_integer():
+            selection = int(selection)
+        if isinstance(selection, bool) or not isinstance(selection, int):
             record["violation"] = f"selection is not an index: {parsed.get('selection')!r}"
             return None, record, raw
         if not (1 <= selection <= len(candidates)):
@@ -165,10 +156,16 @@ class GroundedSelector:
         return chosen, record, raw
 
 
-_selectors = {}
+_selectors: dict[tuple, GroundedSelector] = {}
 
 
-def build(provider, cache_name):
-    if cache_name not in _selectors:
-        _selectors[cache_name] = GroundedSelector(provider, cache_name)
-    return _selectors[cache_name]
+def build(provider, cache_name: str) -> GroundedSelector:
+    key = (type(provider).__qualname__, getattr(provider, "model_id", None), cache_name)
+    if key not in _selectors:
+        _selectors[key] = GroundedSelector(provider, cache_name)
+    return _selectors[key]
+
+
+def clear_selectors() -> None:
+    """Forget memoised selectors (tests, multi-config in-process runs)."""
+    _selectors.clear()

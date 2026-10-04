@@ -1,7 +1,7 @@
 """Build the dev/test split and write it to splits/place_split.csv.
 
-    python scripts/make_split.py            # rebuild (refuses to clobber silently)
-    python scripts/make_split.py --force
+    python scripts/make_split.py            # refuses to clobber an existing split
+    python scripts/make_split.py --force    # rebuild; existing places keep their side
 
 The split unit is a PLACE, not an item. Every item about the same place lands
 on the same side of the boundary, so a configuration cannot be tuned on one
@@ -12,13 +12,15 @@ The assignment is:
 * global -- a place keeps one side across every dataset it appears in, so a
   place seen in both the social-media and the GeoCorpora sets cannot be dev in
   one and test in the other;
-* stratified by (dataset, condition) of the place's first occurrence, so both
-  sides cover every signal condition and every corpus;
-* deterministic -- a place's rank inside its stratum is sha256(place_key +
-  SALT), so the assignment does not depend on row order, and row order in
-  these CSVs has been in doubt before;
-* committed -- the output file is the assignment. Rebuilding is only needed
-  when a dataset gains rows, and then only the new places move.
+* labelled with the (dataset, condition) of the place's first occurrence (the
+  `stratum` column), for reporting;
+* deterministic -- a place not yet in the committed split goes to dev when
+  sha256(SALT + place_key), read as a fraction of 2**256, is below
+  DEV_FRACTION. That depends on the place alone, never on how many other
+  places exist or on row order (which has been in doubt before);
+* committed -- the existing place_split.csv IS the assignment. On a rebuild
+  every place already in it keeps its side; only unseen places are assigned.
+  Nothing ever moves, so thresholds fitted on dev stay valid.
 
 Places with no gold QID are keyed by their normalised location name instead,
 so corpora with coordinates but no QIDs still split by place.
@@ -28,6 +30,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -35,82 +38,81 @@ import pandas as pd
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from keys import item_id, place_key   # noqa: E402  (shared with runner/pipeline)
+
 SPLIT_PATH = REPO_ROOT / "splits" / "place_split.csv"
 ITEM_SPLIT_PATH = REPO_ROOT / "splits" / "item_split.csv"
 DATASET_REGISTRY = REPO_ROOT / "configs" / "datasets.yaml"
 
-# Changing either of these changes the assignment, which invalidates every
-# threshold fitted on dev. They are constants on purpose.
+# Changing either of these changes the assignment of unseen places. They are
+# constants on purpose.
 SALT = "geo-dev-test-split-v1"
 DEV_FRACTION = 0.30
 
 
-def place_key(qid, location_name):
-    """The split unit. A gold QID when there is one, else the place's name."""
-    if isinstance(qid, str) and qid.strip():
-        return qid.strip()
-    name = str(location_name or "").strip().casefold()
-    return f"name:{name}" if name else ""
-
-
-def item_id(text):
-    """Must match runner.item_id -- it is the join key between the split and
-    the prediction records."""
-    return hashlib.sha256(str(text).encode("utf-8")).hexdigest()[:16]
-
-
-def _rank(key):
+def _rank(key: str) -> str:
     return hashlib.sha256((SALT + key).encode("utf-8")).hexdigest()
 
 
-def build():
+def hash_side(key: str) -> str:
+    """Side for an unseen place, from its hash alone (no rounding, no
+    dependence on stratum size)."""
+    return "dev" if int(_rank(key), 16) / 16 ** 64 < DEV_FRACTION else "test"
+
+
+def load_existing(path: Path = SPLIT_PATH) -> dict[str, str]:
+    """place_key -> side from a committed split, or {} when there is none."""
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path, keep_default_na=False)
+    return dict(zip(df["place_key"], df["split"]))
+
+
+def build(existing: dict[str, str] | None = None) -> tuple[list[dict], list[tuple]]:
+    """Return (rows, items). Places in `existing` keep their side; the rest are
+    assigned by hash_side. Pure: reads the datasets, writes nothing."""
+    existing = existing or {}
     registry = yaml.safe_load(DATASET_REGISTRY.read_text(encoding="utf-8"))
 
     places = {}          # key -> {qid, name, stratum, items, datasets, conditions}
     items = []           # (item_id, dataset, place_key, condition)
     for ds_name in registry:                      # registry order is the tie-break
         df = pd.read_csv(REPO_ROOT / registry[ds_name]["path"])
-        for _, row in df.iterrows():
-            key = place_key(row.get("qid"), row.get("location_name"))
+        dup = df["text"].duplicated()
+        assert not dup.any(), (f"{ds_name}: {int(dup.sum())} duplicate text(s); "
+                               f"item_id would collapse them")
+        for row in df.itertuples(index=False):
+            qid = row.qid if isinstance(row.qid, str) else ""
+            name = "" if pd.isna(row.location_name) else str(row.location_name)
+            key = place_key(qid, name)
             if not key:
                 continue
             # NaN is truthy, so `or "none"` would yield the string "nan".
-            raw_condition = row.get("signal_type")
-            condition = "none" if pd.isna(raw_condition) else str(raw_condition)
+            condition = "none" if pd.isna(row.signal_type) else str(row.signal_type)
             entry = places.get(key)
             if entry is None:
                 entry = places[key] = {
                     "place_key": key,
-                    "place_qid": row.get("qid") if isinstance(row.get("qid"), str) else "",
-                    "location_name": str(row.get("location_name") or ""),
+                    "place_qid": qid,
+                    "location_name": name,
                     "stratum": f"{ds_name}|{condition}",
                     "n_items": 0,
                     "datasets": set(),
                     "conditions": set(),
+                    "split": existing.get(key) or hash_side(key),
                 }
             entry["n_items"] += 1
             entry["datasets"].add(ds_name)
             entry["conditions"].add(condition)
-            items.append((item_id(row["text"]), ds_name, key, condition))
-
-    by_stratum = defaultdict(list)
-    for entry in places.values():
-        by_stratum[entry["stratum"]].append(entry)
-
-    for stratum, entries in by_stratum.items():
-        entries.sort(key=lambda e: _rank(e["place_key"]))
-        n_dev = round(len(entries) * DEV_FRACTION)
-        # Never let a stratum be all-dev or all-test when it has >1 place.
-        if len(entries) > 1:
-            n_dev = max(1, min(len(entries) - 1, n_dev))
-        for i, entry in enumerate(entries):
-            entry["split"] = "dev" if i < n_dev else "test"
+            items.append((item_id(row.text), ds_name, key, condition))
 
     rows = sorted(places.values(), key=lambda e: (e["stratum"], e["place_key"]))
     return rows, items
 
 
-def write_items(rows, items, path=ITEM_SPLIT_PATH):
+def write_items(rows: list[dict], items: list[tuple], path: Path = ITEM_SPLIT_PATH) -> Path:
     """The item-level view of the same assignment.
 
     Derived from the place assignment, never decided independently. It exists
@@ -121,19 +123,15 @@ def write_items(rows, items, path=ITEM_SPLIT_PATH):
     """
     side = {r["place_key"]: r["split"] for r in rows}
     path.parent.mkdir(parents=True, exist_ok=True)
-    seen = set()
     with path.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["item_id", "dataset", "place_key", "condition", "split"])
         for iid, ds, key, condition in items:
-            if (iid, ds) in seen:
-                continue
-            seen.add((iid, ds))
             w.writerow([iid, ds, key, condition, side[key]])
     return path
 
 
-def write(rows, path=SPLIT_PATH):
+def write(rows: list[dict], path: Path = SPLIT_PATH) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     fields = ["place_key", "place_qid", "location_name", "split", "stratum",
               "n_items", "datasets", "conditions"]
@@ -154,21 +152,22 @@ def write(rows, path=SPLIT_PATH):
     return path
 
 
-def summarise(rows):
+def summarise(rows: list[dict]) -> None:
+    if not rows:
+        print("no places found")
+        return
     print(f"places: {len(rows)}   items: {sum(r['n_items'] for r in rows)}")
-    print(f"dev fraction requested: {DEV_FRACTION}  salt: {SALT}\n")
+    print(f"dev fraction for unseen places: {DEV_FRACTION}  salt: {SALT}\n")
 
-    per_ds = defaultdict(lambda: defaultdict(lambda: [0, 0]))   # ds -> split -> [places, items]
+    per_ds = defaultdict(lambda: defaultdict(int))   # ds -> split -> places
     for r in rows:
         for ds in r["datasets"]:
-            cell = per_ds[ds][r["split"]]
-            cell[0] += 1
-            cell[1] += r["n_items"] if len(r["datasets"]) == 1 else 0
+            per_ds[ds][r["split"]] += 1
 
     print(f"{'dataset':22} {'dev places':>10} {'test places':>11}")
     print("-" * 46)
     for ds in sorted(per_ds):
-        print(f"{ds:22} {per_ds[ds]['dev'][0]:>10} {per_ds[ds]['test'][0]:>11}")
+        print(f"{ds:22} {per_ds[ds]['dev']:>10} {per_ds[ds]['test']:>11}")
 
     print(f"\n{'condition':22} {'dev places':>10} {'test places':>11}")
     print("-" * 46)
@@ -184,31 +183,45 @@ def summarise(rows):
     all_items = sum(r["n_items"] for r in rows)
     print(f"\ntotal: {n_dev} dev places / {len(rows) - n_dev} test places")
     print(f"       {dev_items} dev items / {all_items - dev_items} test items "
-          f"({dev_items / all_items:.1%} dev)")
+          f"({dev_items / max(all_items, 1):.1%} dev)")
     multi = sum(1 for r in rows if len(r["datasets"]) > 1)
     print(f"       {multi} place(s) appear in more than one dataset "
           f"(single global assignment each)")
 
 
-def main():
+def main() -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--force", action="store_true",
-                   help="overwrite an existing split file")
-    p.add_argument("--out", default=str(SPLIT_PATH))
+                   help="overwrite existing split files (existing places keep their side)")
+    p.add_argument("--out", default=str(SPLIT_PATH), help="place split output path")
+    p.add_argument("--items-out", default=None,
+                   help="item split output path (default: splits/item_split.csv "
+                        "when --out is the default, else item_split.csv beside --out)")
+    p.add_argument("--existing", default=str(SPLIT_PATH),
+                   help="committed place split whose assignments are kept")
     args = p.parse_args()
 
     out = Path(args.out)
-    if out.exists() and not args.force:
-        raise SystemExit(
-            f"{out} already exists. The split is meant to be stable across runs; "
-            f"pass --force only if you intend to move places between dev and test "
-            f"(which invalidates every threshold fitted on dev).")
+    if args.items_out:
+        items_out = Path(args.items_out)
+    elif out.resolve() == SPLIT_PATH.resolve():
+        items_out = ITEM_SPLIT_PATH
+    else:
+        items_out = out.with_name("item_split.csv")
 
-    rows, items = build()
+    # Both or neither: check every target before writing anything.
+    clash = [str(t) for t in (out, items_out) if t.exists()]
+    if clash and not args.force:
+        raise SystemExit(
+            f"{', '.join(clash)} already exists. The split is meant to be stable; "
+            f"--force rebuilds it, and every place already in {args.existing} "
+            f"keeps its side, so only unseen places are assigned.")
+
+    rows, items = build(load_existing(Path(args.existing)))
     summarise(rows)
     print(f"\nwrote {write(rows, out)}")
-    print(f"wrote {write_items(rows, items)}")
+    print(f"wrote {write_items(rows, items, items_out)}")
 
 
 if __name__ == "__main__":

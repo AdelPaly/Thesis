@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields, replace
 from pathlib import Path
 
 import yaml
@@ -95,7 +95,6 @@ class GroundedConfig:
     """Tier 5: retrieve candidates, then have the LLM select from them."""
     candidate_source: str | None = None      # dense | linking
     top_k: int = 10
-    allow_abstention: bool = True
 
 
 @dataclass(frozen=True)
@@ -119,14 +118,6 @@ class PipelineConfig:
     config_hash: str = ""
     source_path: str = ""
 
-    @property
-    def uses_ner(self) -> bool:
-        return self.ner.model is not None
-
-    @property
-    def uses_llm(self) -> bool:
-        return self.llm.backend is not None
-
     def behavioural_dict(self) -> dict:
         """The part of the config that changes what the pipeline does.
         `description` and `source_path` are excluded: documentation and file
@@ -134,10 +125,19 @@ class PipelineConfig:
         d = asdict(self)
         for presentation_only in ("tier", "description", "config_hash", "source_path"):
             d.pop(presentation_only, None)
+        # Hash-stability shim: GroundedConfig.allow_abstention was removed (it
+        # was never read) but every existing prediction file was hashed with it
+        # present and True. Re-adding it keeps those hashes, and so resume,
+        # valid. Delete this line only if you accept re-running everything.
+        d["grounded"]["allow_abstention"] = True
         return d
 
 
 def _canonical_hash(d: dict) -> str:
+    # HAZARD: the hash covers every section, including ones irrelevant to the
+    # paradigm. Adding any defaulted field to any config dataclass changes every
+    # config's hash and invalidates all existing prediction files on resume
+    # (they are reported as "different config_hash and will be replaced").
     return hashlib.sha256(
         json.dumps(d, sort_keys=True, separators=(",", ":"), default=str).encode()
     ).hexdigest()
@@ -172,8 +172,8 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
     if not isinstance(raw, dict):
         raise ConfigError("configuration must be a YAML mapping")
 
-    known_sections = {"name", "paradigm", "tier", "description", "ner", "linking",
-                      "rerank", "llm", "baseline", "dense", "grounded"}
+    known_sections = ({f.name for f in fields(PipelineConfig)}
+                      - {"config_hash", "source_path"})
     unknown = set(raw) - known_sections
     if unknown:
         raise ConfigError(f"unknown top-level key(s) {sorted(unknown)}; "
@@ -202,7 +202,7 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
 
     llm = built["llm"]
     if llm.backend is not None and llm.cache_name is None:
-        built["llm"] = LLMConfig(llm.backend, llm.model, _slug(llm.model))
+        built["llm"] = replace(llm, cache_name=_slug(llm.model))
 
     cfg = PipelineConfig(
         name=name,
@@ -213,109 +213,175 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
         **built,
     )
     _validate(cfg)
-    return PipelineConfig(**{**cfg.__dict__,
-                             "config_hash": _canonical_hash(cfg.behavioural_dict())})
+    return replace(cfg, config_hash=_canonical_hash(cfg.behavioural_dict()))
 
 
-def _validate(cfg: PipelineConfig) -> None:
-    n, li, rr, llm = cfg.ner, cfg.linking, cfg.rerank, cfg.llm
-    ba, de, gr = cfg.baseline, cfg.dense, cfg.grounded
+def _require_type(where: str, value, expected: type, *, allow_none: bool = False) -> None:
+    """Reject wrong-typed values (bool is not accepted as an int)."""
+    if value is None and allow_none:
+        return
+    if isinstance(value, bool) and expected is not bool:
+        ok = False
+    else:
+        ok = isinstance(value, expected)
+    if not ok:
+        raise ConfigError(f"{where} must be {expected.__name__}, "
+                          f"got {type(value).__name__} ({value!r})")
 
-    if li.backend not in LINKING_BACKENDS:
+
+def _require_str_list(where: str, value, *, allow_none: bool = False) -> None:
+    if value is None and allow_none:
+        return
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        raise ConfigError(f"{where} must be a list of strings, got {value!r}")
+
+
+def _validate_types(cfg: PipelineConfig) -> None:
+    _require_str_list("ner.entity_types", cfg.ner.entity_types, allow_none=True)
+    _require_str_list("dense.index_fields", cfg.dense.index_fields, allow_none=True)
+    _require_type("linking.top_n", cfg.linking.top_n, int)
+    _require_type("dense.top_k", cfg.dense.top_k, int)
+    _require_type("grounded.top_k", cfg.grounded.top_k, int)
+    _require_type("baseline.min_population", cfg.baseline.min_population, int)
+    _require_type("rerank.enabled", cfg.rerank.enabled, bool)
+    _require_type("dense.query_prefix", cfg.dense.query_prefix, str)
+    _require_type("dense.passage_prefix", cfg.dense.passage_prefix, str)
+    for where, value in (("ner.model", cfg.ner.model),
+                         ("linking.refined_model", cfg.linking.refined_model),
+                         ("linking.refined_entity_set", cfg.linking.refined_entity_set),
+                         ("rerank.model", cfg.rerank.model),
+                         ("llm.model", cfg.llm.model),
+                         ("llm.cache_name", cfg.llm.cache_name),
+                         ("dense.encoder", cfg.dense.encoder),
+                         ("baseline.strategy", cfg.baseline.strategy)):
+        _require_type(where, value, str, allow_none=True)
+
+
+def _validate_common(cfg: PipelineConfig) -> None:
+    linking, rerank, llm = cfg.linking, cfg.rerank, cfg.llm
+    if linking.backend not in LINKING_BACKENDS:
         raise ConfigError(f"linking.backend must be one of {sorted(LINKING_BACKENDS)}")
     if llm.backend not in LLM_BACKENDS:
         raise ConfigError("llm.backend must be one of "
                           f"{sorted(str(b) for b in LLM_BACKENDS)}")
-    if li.top_n < 1:
+    if linking.top_n < 1:
         raise ConfigError("linking.top_n must be >= 1")
-    if de.pool not in DENSE_POOLS:
+    if cfg.dense.pool not in DENSE_POOLS:
         raise ConfigError(f"dense.pool must be one of {sorted(DENSE_POOLS)}")
-    if de.top_k < 1:
+    if cfg.dense.top_k < 1:
         raise ConfigError("dense.top_k must be >= 1")
-    if gr.top_k < 1:
+    if cfg.grounded.top_k < 1:
         raise ConfigError("grounded.top_k must be >= 1")
-    if rr.enabled and not rr.model:
+    if rerank.enabled and not rerank.model:
         raise ConfigError("rerank.enabled is true but rerank.model is not set")
     if llm.backend and not llm.model:
         raise ConfigError(f"llm.backend is {llm.backend!r} but llm.model is not set")
-    if n.entity_types is not None and not n.entity_types:
+    if cfg.ner.entity_types is not None and not cfg.ner.entity_types:
         raise ConfigError("ner.entity_types is an empty list; use null to keep every tag")
-    if ba.gazetteer is not None and ba.gazetteer not in GAZETTEERS:
+    if cfg.baseline.gazetteer is not None and cfg.baseline.gazetteer not in GAZETTEERS:
         raise ConfigError(f"baseline.gazetteer must be one of {sorted(GAZETTEERS)}")
-    if li.backend == "refined" and not (li.refined_model and li.refined_entity_set):
+    if linking.backend == "refined" and not (linking.refined_model
+                                             and linking.refined_entity_set):
         raise ConfigError("linking.backend is 'refined' but refined_model / "
                           "refined_entity_set are not both set")
 
-    if cfg.paradigm == "ner_dependent":
-        if not n.model:
-            raise ConfigError("paradigm 'ner_dependent' requires ner.model")
-        if li.backend == "none":
-            raise ConfigError("paradigm 'ner_dependent' requires a linking backend")
 
-    elif cfg.paradigm == "ner_free":
-        if not llm.backend:
-            raise ConfigError("paradigm 'ner_free' requires an llm.backend")
-        if n.model:
-            raise ConfigError("paradigm 'ner_free' must not set ner.model -- that is "
-                              "what makes it NER-free")
+def _validate_ner_dependent(cfg: PipelineConfig) -> None:
+    if not cfg.ner.model:
+        raise ConfigError("paradigm 'ner_dependent' requires ner.model")
+    if cfg.linking.backend == "none":
+        raise ConfigError("paradigm 'ner_dependent' requires a linking backend")
 
-    elif cfg.paradigm == "baseline":
-        if ba.strategy not in BASELINE_STRATEGIES:
-            raise ConfigError(f"baseline.strategy must be one of {sorted(BASELINE_STRATEGIES)}")
-        if ba.strategy == "most_populous":
-            if not n.model:
-                raise ConfigError("baseline 'most_populous' requires ner.model")
-            if not ba.gazetteer:
-                raise ConfigError("baseline 'most_populous' requires baseline.gazetteer")
 
-    elif cfg.paradigm == "dense_retrieval":
-        if not de.encoder:
-            raise ConfigError("paradigm 'dense_retrieval' requires dense.encoder")
-        if not de.index_fields:
-            raise ConfigError("paradigm 'dense_retrieval' requires dense.index_fields "
-                              "-- what goes into the index defines what the tier can "
-                              "retrieve, so it must be stated")
-        if n.model:
-            raise ConfigError("paradigm 'dense_retrieval' must not set ner.model -- "
-                              "having no mention-detection stage is the point of the "
-                              "tier")
-        if llm.backend:
-            raise ConfigError("paradigm 'dense_retrieval' must not set llm.backend")
+def _validate_ner_free(cfg: PipelineConfig) -> None:
+    if not cfg.llm.backend:
+        raise ConfigError("paradigm 'ner_free' requires an llm.backend")
+    if cfg.ner.model:
+        raise ConfigError("paradigm 'ner_free' must not set ner.model -- that is "
+                          "what makes it NER-free")
 
-    elif cfg.paradigm == "grounded_llm":
-        if gr.candidate_source not in CANDIDATE_SOURCES:
-            raise ConfigError("grounded.candidate_source must be one of "
-                              f"{sorted(CANDIDATE_SOURCES)}")
-        if not llm.backend:
-            raise ConfigError("paradigm 'grounded_llm' requires an llm.backend")
-        if gr.candidate_source == "dense" and not de.encoder:
-            raise ConfigError("grounded.candidate_source is 'dense' but dense.encoder "
-                              "is not set")
-        if gr.candidate_source == "linking":
-            if not n.model:
-                raise ConfigError("grounded.candidate_source is 'linking' but "
-                                  "ner.model is not set")
-            if li.backend == "none":
-                raise ConfigError("grounded.candidate_source is 'linking' but "
-                                  "linking.backend is 'none'")
+
+def _validate_baseline(cfg: PipelineConfig) -> None:
+    baseline = cfg.baseline
+    if baseline.strategy not in BASELINE_STRATEGIES:
+        raise ConfigError(f"baseline.strategy must be one of {sorted(BASELINE_STRATEGIES)}")
+    if baseline.strategy == "most_populous":
+        if not cfg.ner.model:
+            raise ConfigError("baseline 'most_populous' requires ner.model")
+        if not baseline.gazetteer:
+            raise ConfigError("baseline 'most_populous' requires baseline.gazetteer")
+
+
+def _validate_dense_retrieval(cfg: PipelineConfig) -> None:
+    if not cfg.dense.encoder:
+        raise ConfigError("paradigm 'dense_retrieval' requires dense.encoder")
+    if not cfg.dense.index_fields:
+        raise ConfigError("paradigm 'dense_retrieval' requires dense.index_fields "
+                          "-- what goes into the index defines what the tier can "
+                          "retrieve, so it must be stated")
+    if cfg.ner.model:
+        raise ConfigError("paradigm 'dense_retrieval' must not set ner.model -- "
+                          "having no mention-detection stage is the point of the "
+                          "tier")
+    if cfg.llm.backend:
+        raise ConfigError("paradigm 'dense_retrieval' must not set llm.backend")
+
+
+def _validate_grounded_llm(cfg: PipelineConfig) -> None:
+    grounded = cfg.grounded
+    if grounded.candidate_source not in CANDIDATE_SOURCES:
+        raise ConfigError("grounded.candidate_source must be one of "
+                          f"{sorted(CANDIDATE_SOURCES)}")
+    if not cfg.llm.backend:
+        raise ConfigError("paradigm 'grounded_llm' requires an llm.backend")
+    if grounded.candidate_source == "dense" and not cfg.dense.encoder:
+        raise ConfigError("grounded.candidate_source is 'dense' but dense.encoder "
+                          "is not set")
+    if grounded.candidate_source == "linking":
+        if not cfg.ner.model:
+            raise ConfigError("grounded.candidate_source is 'linking' but "
+                              "ner.model is not set")
+        if cfg.linking.backend == "none":
+            raise ConfigError("grounded.candidate_source is 'linking' but "
+                              "linking.backend is 'none'")
+
+
+_PARADIGM_VALIDATORS = {
+    "ner_dependent": _validate_ner_dependent,
+    "ner_free": _validate_ner_free,
+    "baseline": _validate_baseline,
+    "dense_retrieval": _validate_dense_retrieval,
+    "grounded_llm": _validate_grounded_llm,
+}
+
+
+def _validate(cfg: PipelineConfig) -> None:
+    _validate_types(cfg)
+    _validate_common(cfg)
+    _PARADIGM_VALIDATORS[cfg.paradigm](cfg)
 
 
 def load_config(path: str | Path) -> PipelineConfig:
-    """Load one configuration file, by path or by bare name."""
+    """Load one configuration file, by path or by bare name ("refined")."""
     path = Path(path)
     if not path.exists():
-        for candidate in (CONFIG_DIR / path.name,
-                          CONFIG_DIR / f"{path.name}.yaml",
-                          CONFIG_DIR / f"{path.stem}.yaml"):
+        for candidate in (CONFIG_DIR / path.name, CONFIG_DIR / f"{path.name}.yaml"):
             if candidate.exists():
                 path = candidate
                 break
     if not path.exists():
         raise ConfigError(f"no such configuration file: {path}")
-    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    path = path.resolve()
     try:
-        return from_dict(raw, source_path=str(path.relative_to(REPO_ROOT)))
-    except ConfigError as e:
+        source_path = str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        source_path = str(path)
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if raw is None:
+            raise ConfigError("file is empty")
+        return from_dict(raw, source_path=source_path)
+    except (ConfigError, yaml.YAMLError) as e:
         raise ConfigError(f"{path.name}: {e}") from None
 
 
@@ -339,7 +405,6 @@ class DatasetSpec:
     name: str
     path: str
     description: str = ""
-    noisy: bool = False
 
     def resolved_path(self) -> Path:
         return REPO_ROOT / self.path

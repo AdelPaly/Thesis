@@ -36,4 +36,3 @@ dense:
 grounded:
   candidate_source: dense
   top_k: 10
-  allow_abstention: true

@@ -1,16 +1,16 @@
+from __future__ import annotations
+
 import hashlib
-import json
-import os
-import pickle
-import re
+import logging
 from abc import ABC, abstractmethod
-from wikidata import _search_entities, _fetch_entities, _get_coords, _resolve_country_continent
 
-_JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
-_JSON_OBJ = re.compile(r"\{[^{}]*\"refused\"[^{}]*\}", re.DOTALL)
+from llm_common import (CACHE_DIR, REFUSAL_SENTINEL, PickleCache,  # noqa: F401
+                        fingerprint, parse_json_object)
 
-CACHE_DIR = os.path.join(os.path.dirname(__file__), ".llm_cache")
-os.makedirs(CACHE_DIR, exist_ok=True)
+from wikidata import (search_entities, fetch_entities, get_coords_of,
+                      resolve_country_continent)
+
+log = logging.getLogger(__name__)
 
 PROMPT = """You are a geolocation assistant. Given a text, identify the single most \
 relevant real-world location the text refers to.
@@ -35,7 +35,7 @@ _PLACEHOLDER_NAMES = {"", "null", "none", "nil", "n/a", "na", "unknown",
                       "not specified", "unspecified", "no city", "no country"}
 
 
-def _clean_name(value):
+def _clean_name(value) -> str | None:
     """A place name, or None for anything that is not one."""
     if not isinstance(value, str):
         return None
@@ -44,66 +44,56 @@ def _clean_name(value):
 
 
 class LLMGeoPipeline(ABC):
-    """Base class — subclasses only implement _call_llm(prompt) -> str."""
+    """Base class — subclasses only implement call_llm(prompt) -> str and may
+    set `generation_params` (anything that changes the model's answers)."""
 
-    def __init__(self, model_name):
+    generation_params: dict = {}
+
+    def __init__(self, model_name: str):
         self.model_name = model_name
-        self._cache = self._load_cache()
+        self._cache = PickleCache(model_name, fingerprint(PROMPT, self.generation_params))
 
-    def _cache_path(self):
-        return os.path.join(CACHE_DIR, f"{self.model_name}.pkl")
-
-    def _load_cache(self):
-        path = self._cache_path()
-        if os.path.exists(path):
-            with open(path, "rb") as f:
-                return pickle.load(f)
-        return {}
-
-    def save_cache(self):
-        tmp = self._cache_path() + ".tmp"
-        with open(tmp, "wb") as f:
-            pickle.dump(self._cache, f)
-        os.replace(tmp, self._cache_path())
+    def save_cache(self) -> None:
+        self._cache.save()
 
     @abstractmethod
-    def _call_llm(self, prompt: str) -> str:
+    def call_llm(self, prompt: str) -> str:
         """Return raw text response from the LLM."""
 
-    def _get_response(self, text):
+    def _get_response(self, text: str) -> str:
         key = hashlib.sha256(text.encode()).hexdigest()
-        if key not in self._cache:
-            prompt = PROMPT.format(text=text)
-            self._cache[key] = self._call_llm(prompt)
-        return self._cache[key]
+        cached = self._cache.get(key)
+        if cached:
+            return cached
+        prompt = PROMPT.format(text=text)
+        try:
+            raw = self.call_llm(prompt)
+        except BaseException:
+            # Keep what this run already paid for before the error propagates.
+            self.save_cache()
+            raise
+        if raw != REFUSAL_SENTINEL:
+            self._cache.put(key, raw)
+        return raw
 
-    def _parse_json(self, raw):
-        for candidate in (
-            raw.strip(),
-            *(m.group(1) for m in _JSON_FENCE.finditer(raw)),
-            *(m.group(0) for m in _JSON_OBJ.finditer(raw)),
-        ):
-            try:
-                return json.loads(candidate)
-            except json.JSONDecodeError:
-                continue
-        return None
+    def _parse_json(self, raw: str) -> dict | None:
+        return parse_json_object(raw)
 
-    def _resolve_to_candidate(self, parsed):
+    def _resolve_to_candidate(self, parsed: dict) -> dict | None:
         """Cascading QID resolution: city -> country -> continent string."""
         for level in ("city", "country"):
             name = _clean_name(parsed.get(level))
             if not name:
                 continue
-            qids = _search_entities(name, limit=1)
+            qids = search_entities(name, limit=1)
             if not qids:
                 continue
-            ents = _fetch_entities(qids)
+            ents = fetch_entities(qids)
             ent = ents.get(qids[0], {})
-            coords = _get_coords(ent)
+            coords = get_coords_of(ent)
             if not coords:
                 continue
-            geo = _resolve_country_continent({qids[0]: ent})
+            geo = resolve_country_continent({qids[0]: ent})
             country, continent = geo.get(qids[0], ("", ""))
             return {
                 "entity": name,
@@ -132,7 +122,7 @@ class LLMGeoPipeline(ABC):
 
         return None
 
-    def geolocate_verbose(self, text):
+    def geolocate_verbose(self, text: str) -> tuple[dict | None, str]:
         """Return (candidate_or_None, raw_response_text).
 
         The raw response is what the model actually said, before parsing --

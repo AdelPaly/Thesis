@@ -15,18 +15,18 @@ GeoNames population data is wanted later, write it then and test it.
 Candidates come back highest population first:
 
     {"qid", "name", "lat", "lon", "population", "country",
-     "continent", "description"}
+     "continent", "description", "sitelinks"}
 """
 from __future__ import annotations
 
 import wikidata as wd
 
 
-class GazetteerError(RuntimeError):
+class GazetteerError(ValueError):
     pass
 
 
-def _population(entity):
+def _population(entity: dict) -> int | None:
     """P1082 (population) as an int, or None. Prefers the highest-ranked
     non-deprecated claim; several claims means several census years."""
     best = None
@@ -49,18 +49,18 @@ def _population(entity):
     return best
 
 
-def _wikidata_candidates(name, top_n):
-    qids = wd._search_entities(name, limit=top_n)
+def _wikidata_candidates(name: str, top_n: int) -> list[dict]:
+    qids = wd.search_entities(name, limit=top_n)
     if not qids:
         return []
-    entities = wd._fetch_entities(qids[:top_n])
-    placed = {q: e for q, e in entities.items() if wd._get_coords(e)}
+    entities = wd.fetch_entities(qids)
+    placed = {q: e for q, e in entities.items() if wd.get_coords_of(e)}
     if not placed:
         return []
-    geo = wd._resolve_country_continent(placed)
+    geo = wd.resolve_country_continent(placed)
     out = []
     for qid, ent in placed.items():
-        lat, lon = wd._get_coords(ent)
+        lat, lon = wd.get_coords_of(ent)
         country, continent = geo.get(qid, ("", ""))
         out.append({
             "qid": qid,
@@ -74,7 +74,8 @@ def _wikidata_candidates(name, top_n):
     return out
 
 
-def lookup(name, backend="wikidata", top_n=10, min_population=0):
+def lookup(name: str, backend: str = "wikidata", top_n: int = 10,
+           min_population: int = 0) -> list[dict]:
     """Candidate places for a surface form, most populous first.
 
     Candidates with no population at all sort last; a gazetteer entry with no
@@ -82,10 +83,9 @@ def lookup(name, backend="wikidata", top_n=10, min_population=0):
     all-unpopulated case) break on sitelink count, which is the only
     prominence signal available for those rows.
     """
-    if backend == "wikidata":
-        cands = _wikidata_candidates(name, top_n)
-    else:
+    if backend != "wikidata":
         raise GazetteerError(f"unknown gazetteer backend {backend!r}")
+    cands = _wikidata_candidates(name, top_n)
 
     if min_population:
         cands = [c for c in cands

@@ -40,6 +40,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import logging
 import os
 import pickle
 from pathlib import Path
@@ -48,12 +49,14 @@ import numpy as np
 
 import wikidata as wd
 
+log = logging.getLogger(__name__)
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = Path(__file__).resolve().parent / ".dense_index"
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
 
 
-def _dataset_gold_qids():
+def _dataset_gold_qids() -> set[str]:
     from config import load_datasets
     out = set()
     for spec in load_datasets().values():
@@ -68,18 +71,22 @@ def _dataset_gold_qids():
     return out
 
 
-def _predicted_qids():
+def _predicted_qids() -> set[str]:
     """Every place any configuration has proposed."""
     out = set()
     if not PREDICTIONS_DIR.exists():
         return out
     for path in PREDICTIONS_DIR.glob("*.jsonl"):
         with path.open(encoding="utf-8") as f:
-            for line in f:
+            for lineno, line in enumerate(f, 1):
                 line = line.strip()
                 if not line:
                     continue
-                rec = json.loads(line)
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    log.warning("skipping corrupt JSON line %d in %s", lineno, path.name)
+                    continue
                 for cand in rec.get("candidate_places") or []:
                     if cand.get("qid"):
                         out.add(cand["qid"])
@@ -92,7 +99,7 @@ def _predicted_qids():
     return out
 
 
-def build_pool(pool_spec):
+def build_pool(pool_spec: str) -> list[str]:
     """QIDs in the candidate pool, before the coordinate filter."""
     if pool_spec == "gold_only":
         return sorted(_dataset_gold_qids())
@@ -101,7 +108,8 @@ def build_pool(pool_spec):
     raise ValueError(f"unknown dense.pool {pool_spec!r}")
 
 
-def index_text(qid, entity, fields, geo, aliases, passage_prefix=""):
+def index_text(qid: str, entity: dict, fields, geo: dict, aliases: dict,
+               passage_prefix: str = "") -> str:
     """The text that represents a place in the index."""
     label = entity.get("labels", {}).get("en", {}).get("value", "") or qid
     description = entity.get("descriptions", {}).get("en", {}).get("value", "")
@@ -123,10 +131,14 @@ def index_text(qid, entity, fields, geo, aliases, passage_prefix=""):
     return passage_prefix + ". ".join(p for p in parts if p)
 
 
-def _signature(cfg):
-    """Cache key: anything that changes what the index contains or means."""
+def _signature(cfg, pool=None) -> str:
+    """Cache key: anything that changes what the index contains or means,
+    including the pool contents (they depend on prediction files on disk)."""
     d = cfg.dense
+    if pool is None:
+        pool = build_pool(d.pool)
     payload = {
+        "pool_hash": hashlib.sha256(",".join(pool).encode()).hexdigest(),
         "encoder": d.encoder,
         "pool": d.pool,
         "index_fields": list(d.index_fields or []),
@@ -148,12 +160,14 @@ class DenseIndex:
 
     def _encoder(self):
         if self._model is None:
-            from ranking import _load
-            self._model = _load(self.encoder_name)
+            from ranking import load_encoder
+            self._model = load_encoder(self.encoder_name)
         return self._model
 
-    def search(self, text, top_k=10):
+    def search(self, text: str, top_k: int = 10) -> list[dict]:
         """Top-k nearest places by cosine similarity."""
+        if len(self.qids) == 0 or top_k <= 0:
+            return []
         vec = self._encoder().encode(self.query_prefix + text,
                                      normalize_embeddings=True)
         vec = np.asarray(vec, dtype="float32")
@@ -172,53 +186,65 @@ class DenseIndex:
         return out
 
 
-def _cache_path(cfg):
-    return CACHE_DIR / f"index_{_signature(cfg)}.pkl"
+def _cache_path(signature: str) -> Path:
+    return CACHE_DIR / f"index_{signature}.pkl"
 
 
-def load_or_build(cfg, verbose=True):
+def _check_gold(qids, gold):
+    """The gold places must all be in the index. If one is missing, every item
+    about that place is unretrievable and the tier's numbers are wrong in a
+    way nothing downstream would reveal -- so this fails loudly rather than
+    producing a quietly degraded index."""
+    missing_gold = sorted(gold - set(qids))
+    if missing_gold:
+        raise RuntimeError(
+            f"{len(missing_gold)} gold place(s) missing from the dense index, "
+            f"e.g. {missing_gold[:5]}. Items about them could never be "
+            f"retrieved. Check for fetch failures and rebuild.")
+
+
+def load_or_build(cfg) -> DenseIndex:
     """Load the cached index, or build it once and cache it."""
-    path = _cache_path(cfg)
+    d = cfg.dense
+    pool = build_pool(d.pool)
+    signature = _signature(cfg, pool)
+    path = _cache_path(signature)
+    gold = _dataset_gold_qids()
     if path.exists():
         with path.open("rb") as f:
             payload = pickle.load(f)
-        if verbose:
-            m = payload["meta"]
-            print(f"  dense index loaded: {m['n_places']} places, "
-                  f"encoder={m['encoder']}, pool={m['pool']}")
+        _check_gold(payload["qids"], gold)
+        m = payload["meta"]
+        log.info("dense index loaded: %d places, encoder=%s, pool=%s",
+                 m["n_places"], m["encoder"], m["pool"])
         return DenseIndex(payload["qids"], payload["matrix"], payload["places"],
-                          payload["meta"], cfg.dense.encoder, cfg.dense.query_prefix)
+                          payload["meta"], d.encoder, d.query_prefix)
 
-    d = cfg.dense
-    if verbose:
-        print(f"  building dense index (pool={d.pool}, encoder={d.encoder})...")
-    pool = build_pool(d.pool)
-    if verbose:
-        print(f"    pool before coordinate filter: {len(pool)} QIDs")
+    log.info("building dense index (pool=%s, encoder=%s)...", d.pool, d.encoder)
+    log.info("pool before coordinate filter: %d QIDs", len(pool))
 
-    entities = wd._fetch_entities(pool)
+    entities = wd.fetch_entities(pool)
     unfetched = [q for q in pool if not entities.get(q)]
-    placed = {q: e for q, e in entities.items() if e and wd._get_coords(e)}
-    if verbose:
-        print(f"    with coordinates: {len(placed)}")
+    placed = {q: e for q, e in entities.items() if e and wd.get_coords_of(e)}
+    log.info("with coordinates: %d", len(placed))
     if unfetched:
         # A transient 429 makes an entity look exactly like an entity with no
         # coordinates, which is how the retired results lost data quietly.
         # Retry once before accepting the loss, and count what is still missing.
-        if verbose:
-            print(f"    {len(unfetched)} QID(s) returned nothing; retrying once")
-        entities.update(wd._fetch_entities(unfetched))
+        log.info("%d QID(s) returned nothing; retrying once", len(unfetched))
+        entities.update(wd.fetch_entities(unfetched))
         unfetched = [q for q in pool if not entities.get(q)]
-        placed = {q: e for q, e in entities.items() if e and wd._get_coords(e)}
-        if verbose:
-            print(f"    after retry: {len(placed)} placed, {len(unfetched)} unfetched")
+        placed = {q: e for q, e in entities.items() if e and wd.get_coords_of(e)}
+        log.info("after retry: %d placed, %d unfetched", len(placed), len(unfetched))
 
-    geo = wd._resolve_country_continent(placed)
+    _check_gold(placed, gold)
+
+    geo = wd.resolve_country_continent(placed)
     aliases = wd.fetch_aliases(list(placed)) if "aliases" in (d.index_fields or []) else {}
 
     qids, texts, places = [], [], {}
     for qid, ent in placed.items():
-        lat, lon = wd._get_coords(ent)
+        lat, lon = wd.get_coords_of(ent)
         country, continent = geo.get(qid, ("", ""))
         label = ent.get("labels", {}).get("en", {}).get("value", "") or qid
         places[qid] = {
@@ -233,25 +259,12 @@ def load_or_build(cfg, verbose=True):
         texts.append(index_text(qid, ent, d.index_fields or [], geo, aliases,
                                 d.passage_prefix))
 
-    from ranking import _load
-    model = _load(d.encoder)
-    if verbose:
-        print(f"    embedding {len(texts)} passages...")
+    from ranking import load_encoder
+    model = load_encoder(d.encoder)
+    log.info("embedding %d passages...", len(texts))
     matrix = model.encode(texts, batch_size=64, normalize_embeddings=True,
                           show_progress_bar=False)
     matrix = np.asarray(matrix, dtype="float32")
-
-    # The gold places must all be in the index. If one is missing, every item
-    # about that place is unretrievable and the tier's numbers are wrong in a
-    # way nothing downstream would reveal -- so this fails loudly rather than
-    # producing a quietly degraded index.
-    gold = _dataset_gold_qids()
-    missing_gold = sorted(gold - set(qids))
-    if missing_gold:
-        raise RuntimeError(
-            f"{len(missing_gold)} gold place(s) missing from the dense index, "
-            f"e.g. {missing_gold[:5]}. Items about them could never be "
-            f"retrieved. Check for fetch failures and rebuild.")
 
     meta = {
         "encoder": d.encoder,
@@ -265,7 +278,7 @@ def load_or_build(cfg, verbose=True):
         "passage_prefix": d.passage_prefix,
         "query_prefix": d.query_prefix,
         "example_passage": texts[0] if texts else "",
-        "signature": _signature(cfg),
+        "signature": signature,
     }
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -275,15 +288,19 @@ def load_or_build(cfg, verbose=True):
                      "meta": meta}, f)
     os.replace(tmp, path)
     wd.save_caches()
-    if verbose:
-        print(f"    wrote {path.name} ({len(qids)} places)")
+    log.info("wrote %s (%d places)", path.name, len(qids))
     return DenseIndex(qids, matrix, places, meta, d.encoder, d.query_prefix)
 
 
 _indexes = {}
 
 
-def get_index(cfg):
+def clear_indexes() -> None:
+    """Drop in-process cached indexes (test / multi-config reset hook)."""
+    _indexes.clear()
+
+
+def get_index(cfg) -> DenseIndex:
     key = _signature(cfg)
     if key not in _indexes:
         _indexes[key] = load_or_build(cfg)
