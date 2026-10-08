@@ -331,6 +331,16 @@ prompt:
     post in English, whatever language the names you are given are in; keep
     those names exactly as written.
 
+    Write the way people really post, not the way a writer would polish it.
+    Plain words, no neat closing line or moral. Never use an em dash or an en
+    dash; use a comma, a full stop or a line break. No hashtags. Do not add an
+    emoji unless the tone references below use them, and then at most one.
+
+    Mention each entity in passing, the way a local who already knows it would,
+    and as what it is: a person is a person, not a place or a shop. You never
+    need to say how an entity connects to the place; a plain mention is enough,
+    and it is usually better to leave the connection out than to hint at it.
+
   # How each clue's entity type is written in the prompt. The plan keeps
   # the places pipeline's property family codes; these are only the words the model sees.
   # A family not listed here gets no type note: named_after (the relation
@@ -342,9 +352,9 @@ prompt:
 
   # Length bands, referenced by the plan.
   length_bands:
-    very_short: one line, under 15 words
-    short: one or two sentences, 15 to 35 words
-    medium: three to five sentences, 35 to 80 words
+    very_short: one line, under 12 words
+    short: one sentence, 8 to 25 words
+    medium: two or three sentences, 25 to 45 words
 
   # Constraint templates. One is inserted per item depending on the condition.
   # Keep these blunt and specific: a hedged constraint is one the model
@@ -414,7 +424,9 @@ prompt:
 
   slots_footer: >-
     Use every value above. They are the specifics of this post and they are
-    not suggestions.
+    not suggestions. Show them through detail in your own words rather than
+    stating them, and do not name the time of day or the activity as such
+    unless that is how you would really say it.
 
   # The output-shape block. The field list and its order come from
   # RESPONSE_SCHEMA in generate.py; this is the wording for each. A schema

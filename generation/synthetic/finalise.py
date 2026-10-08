@@ -346,7 +346,7 @@ def print_summary(items: list[dict[str, Any]], report: list[dict[str, Any]],
     print(f"planned items : {len(items)}")
     for status, n in Counter(r["status"] for r in report).most_common():
         print(f"  {status:<14} {n:>5}")
-    generated = [r for r in report if r["status"] not in ("not_generated", "error")]
+    generated = [r for r in report if r["text"] or r["status"] == "empty"]
     if generated:
         print(f"\nof {len(generated)} generated posts, {len(dataset)} kept "
               f"({len(dataset) / len(generated):.0%})")
