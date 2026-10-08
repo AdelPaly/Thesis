@@ -26,7 +26,7 @@ CONFIG_DIR = REPO_ROOT / "configs"
 DATASET_REGISTRY = CONFIG_DIR / "datasets.yaml"
 
 PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
-             "grounded_llm", "geoparser"}
+             "grounded_llm", "geoparser", "grid_lm"}
 LINKING_BACKENDS = {"refined", "wikidata_search", "none"}
 LLM_PROVIDERS = {None, "google", "openrouter"}
 PROMPT_TEMPLATES = {"v1"}
@@ -128,6 +128,12 @@ class GeoparserConfig:
 
 
 @dataclass(frozen=True)
+class GridConfig:
+    """Tier 3: a language model per cell of a latitude/longitude grid."""
+    cell_degrees: float | None = None
+
+
+@dataclass(frozen=True)
 class PipelineConfig:
     name: str
     paradigm: str
@@ -139,6 +145,7 @@ class PipelineConfig:
     dense: DenseConfig = field(default_factory=DenseConfig)
     grounded: GroundedConfig = field(default_factory=GroundedConfig)
     geoparser: GeoparserConfig = field(default_factory=GeoparserConfig)
+    grid: GridConfig = field(default_factory=GridConfig)
     # Presentation metadata: which tier of the evaluation this configuration
     # belongs to (0-5, by what kind of signal it can consume), and a variant
     # letter for configurations that share a tier. Excluded from config_hash
@@ -188,6 +195,7 @@ _LATE_FIELDS = {
 # every field holds its default, for the same reason.
 _LATE_SECTIONS = {
     "geoparser": GeoparserConfig,
+    "grid": GridConfig,
 }
 
 
@@ -264,6 +272,7 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
         "dense": (DenseConfig, _section(raw, "dense")),
         "grounded": (GroundedConfig, _section(raw, "grounded")),
         "geoparser": (GeoparserConfig, _section(raw, "geoparser")),
+        "grid": (GridConfig, _section(raw, "grid")),
     }
     built = {}
     for key, (cls, sub) in sections.items():
@@ -459,6 +468,15 @@ def _validate_geoparser(cfg: PipelineConfig) -> None:
                           "not set ner.model, llm.provider or linking.backend")
 
 
+def _validate_grid_lm(cfg: PipelineConfig) -> None:
+    degrees = cfg.grid.cell_degrees
+    if isinstance(degrees, bool) or not isinstance(degrees, (int, float)) or degrees <= 0:
+        raise ConfigError("paradigm 'grid_lm' requires grid.cell_degrees > 0")
+    if cfg.ner.model or cfg.llm.provider or cfg.linking.backend != "none":
+        raise ConfigError("paradigm 'grid_lm' must not set ner.model, llm.provider "
+                          "or linking.backend -- words in, cell out is the point")
+
+
 _PARADIGM_VALIDATORS = {
     "ner_dependent": _validate_ner_dependent,
     "ner_free": _validate_ner_free,
@@ -466,6 +484,7 @@ _PARADIGM_VALIDATORS = {
     "dense_retrieval": _validate_dense_retrieval,
     "grounded_llm": _validate_grounded_llm,
     "geoparser": _validate_geoparser,
+    "grid_lm": _validate_grid_lm,
 }
 
 

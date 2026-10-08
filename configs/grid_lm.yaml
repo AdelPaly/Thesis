@@ -1,0 +1,37 @@
+name: grid_lm
+tier: 3
+paradigm: grid_lm
+description: >
+  Tier 3, retrieval without mention detection, done the way it was first done
+  for documents: a unigram language model per cell of a 1-degree latitude /
+  longitude grid, built from the training texts whose gold place falls in the
+  cell. A post goes to the cell with the smallest KL divergence from its word
+  distribution. No gazetteer, no mention detection, no LLM: words in, cell
+  out. It is dense_retrieval's mechanism with grid cells in place of place
+  descriptions, and word counts in place of an encoder.
+
+  Cells are smoothed towards the global word distribution by a Good-Turing
+  estimate of their unseen mass, so there is no tuned parameter. The
+  evaluation is by place, so a cell is reported as its most frequent training
+  place -- a lookup, not a centroid. cell_degrees is fixed, not tuned.
+
+  Fitted on the dev split of whichever dataset is being run. A place is
+  either dev or test, so on test this configuration cannot be exactly right
+  by construction and measures country and continent only. A dev item is
+  scored with its own words removed from its cell.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  provider: null
+  model: null
+grid:
+  cell_degrees: 1.0

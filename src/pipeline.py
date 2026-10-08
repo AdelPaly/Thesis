@@ -139,6 +139,7 @@ class Pipeline:
         self._majority = _UNSET
         self._char_ngram = None
         self._geoparser = None
+        self._grid_lm = None
         self._dense_index = None
         self._ner_fn = ner_fn
         self._link_fn = link_fn
@@ -151,6 +152,7 @@ class Pipeline:
             "grounded_llm": self._run_grounded_path,
             "baseline": self._run_baseline,
             "geoparser": self._run_geoparser_path,
+            "grid_lm": self._run_grid_lm_path,
         }
 
     # ---------------------------------------------------------------- stages
@@ -266,8 +268,8 @@ class Pipeline:
         from config import load_datasets, REPO_ROOT
 
         if not self.dataset:
-            raise ConfigError(f"baseline {self.cfg.baseline.strategy!r} needs to "
-                              "know which dataset it is running over")
+            raise ConfigError(f"configuration {self.cfg.name!r} is fitted on dev and "
+                              "needs to know which dataset it is running over")
         with open(REPO_ROOT.joinpath(*SPLIT_FILE), encoding="utf-8") as f:
             side = {r["place_key"]: r["split"] for r in csv.DictReader(f)}
 
@@ -422,6 +424,27 @@ class Pipeline:
             # grounded system ignoring its grounding has to be visible.
             out.error = f"selection violation: {selection['violation']}"
         out.prediction = chosen
+
+    # ------------------------------------------------ tier 3: grid language model
+
+    def _run_grid_lm_path(self, text, out):
+        """Words in, cell out: the grid cell whose language model is closest to
+        the post, reported as the cell's most frequent training place. No
+        gazetteer, no mention detection, no LLM."""
+        if self._grid_lm is None:
+            from grid_lm import GridLM
+            self._grid_lm = GridLM(self._dev_rows(), self.cfg.grid.cell_degrees)
+        model = self._grid_lm
+        iid = item_id(text)
+        candidates = []
+        for cell, score in model.rank(text, item_id=iid):
+            qid = model.representative(cell, item_id=iid)
+            if qid is not None:
+                candidates.append(_place_candidate(model.places[qid], score))
+            if len(candidates) == TRAINED_TOP_K:
+                break
+        out.candidate_places = [_candidate_record(c) for c in candidates]
+        out.prediction = candidates[0] if candidates else None
 
     # ------------------------------------------------- tier 1: geoparsers
 

@@ -90,7 +90,7 @@ def _config_stages(raw: dict) -> set[str]:
     # wikidata_search is retrieval, not a linker: the records never carry links.
     if (raw.get("linking") or {}).get("backend") not in (None, "none", "wikidata_search"):
         stages.add("linking")
-    if paradigm in ("ner_dependent", "dense_retrieval", "grounded_llm"):
+    if paradigm in ("ner_dependent", "dense_retrieval", "grounded_llm", "grid_lm"):
         stages.add("candidates")
     # A fitted floor that scores every training place records them as candidates.
     if (raw.get("baseline") or {}).get("strategy") == "char_ngram":
@@ -230,7 +230,7 @@ def attribute(rec: dict, has_ner_stage: bool = True) -> str | None:
 
     # --- ranking with no mention detection: dense retrieval (tier 3), and
     # fitted floors that score every training place (char_ngram) ----------
-    if rec.get("paradigm") == "dense_retrieval" or (not has_ner_stage and places):
+    if rec.get("paradigm") in ("dense_retrieval", "grid_lm") or (not has_ner_stage and places):
         if not places:
             return "returned_nothing"
         return "correct_candidate_not_first" if gold_in_places else "gold_not_retrieved"
@@ -510,7 +510,7 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
         by_paradigm[key] = ordered(by_paradigm[key])
 
     ner_dependent = by_paradigm.get("ner_dependent", [])
-    dense = by_paradigm.get("dense_retrieval", [])
+    dense = by_paradigm.get("dense_retrieval", []) + by_paradigm.get("grid_lm", [])
     ner_free = by_paradigm.get("ner_free", [])
     grounded = by_paradigm.get("grounded_llm", [])
 
