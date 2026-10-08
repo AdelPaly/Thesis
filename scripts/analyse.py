@@ -63,8 +63,8 @@ from pathlib import Path
 
 import yaml
 
-from score import (attach_split, find_prediction_files, group_by, load_predictions, print_table,
-                   score_record, summarise_metrics)
+from score import (attach_split, find_prediction_files, group_by, load_predictions,
+                   prediction_file_key, print_table, score_record, summarise_metrics)
 import stats as st
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -519,9 +519,9 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
     print(RULE)
     # Tier order: what kind of signal each can consume, cheapest first.
     note = None
-    if args.split == "test" and "baseline_majority" in present:
+    if args.split == "test" and "majority_class" in present:
         note = ("A place is either dev or test, so the most frequent DEV place "
-                "cannot be a test gold place: baseline_majority is structurally "
+                "cannot be a test gold place: majority_class is structurally "
                 "0% exact on test. That is the split working, not a defect.")
     _print_metric_table([(n, summarise_metrics(groups[n])) for n in ordered(present)], note=note)
 
@@ -550,8 +550,8 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
     notes = []
     if len(ner_dependent) > 1:
         notes.append(_ner_agreement_note(groups, ner_dependent))
-    if {"two_stage", "refined"} <= set(ner_dependent):
-        notes.append("two_stage retrieves with wbsearchentities and reranks with E5; refined "
+    if {"retrieve_rerank", "refined"} <= set(ner_dependent):
+        notes.append("retrieve_rerank retrieves with wbsearchentities and reranks with E5; refined "
                      "disambiguates with ReFinED. Both detect mentions with Flair; the "
                      "difference is purely the linker only where the NER spans above agree.")
     _print_metric_table([(n, summarise_metrics(groups[n])) for n in ner_dependent],
@@ -584,9 +584,9 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
 # configuration with no predictions on disk are skipped silently. The Holm
 # family is the comparisons that actually run.
 COMPARISONS = [
-    ("refined", "two_stage", "which linker: ReFinED vs search+rerank"),
-    ("refined", "baseline_population", "does the linker beat the population floor"),
-    ("gemma4", "baseline_population", "does the LLM beat the population floor"),
+    ("refined", "retrieve_rerank", "which linker: ReFinED vs search+rerank"),
+    ("refined", "population_wikidata", "does the linker beat the population floor"),
+    ("gemma4", "population_wikidata", "does the LLM beat the population floor"),
     ("refined", "gemma4", "mention detection vs parametric knowledge"),
     ("dense_retrieval", "refined", "dense retrieval vs entity linking"),
     ("dense_retrieval", "gemma4", "no mention detection: retrieval vs parametric"),
@@ -745,9 +745,9 @@ def main() -> None:
 
     paths = find_prediction_files(None, None)
     if args.configs:
-        paths = [q for q in paths if q.stem.split("__", 1)[0] in args.configs]
+        paths = [q for q in paths if prediction_file_key(q)[0] in args.configs]
     if args.datasets:
-        paths = [q for q in paths if q.stem.split("__", 1)[1] in args.datasets]
+        paths = [q for q in paths if prediction_file_key(q)[1] in args.datasets]
     if not paths:
         raise SystemExit("no prediction files found")
 

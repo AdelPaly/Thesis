@@ -99,7 +99,7 @@ class Pipeline:
         the pipeline can be exercised without Flair, ReFinED or the network."""
         self.cfg = cfg
         # Some configurations are constants fitted on the dev split of a
-        # particular dataset (baseline_majority), so the pipeline needs to know
+        # particular dataset (majority_class), so the pipeline needs to know
         # which dataset it is running over.
         self.dataset = dataset
         self._llm = None

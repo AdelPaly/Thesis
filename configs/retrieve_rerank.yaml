@@ -1,4 +1,4 @@
-name: two_stage
+name: retrieve_rerank
 tier: "2a"
 paradigm: ner_dependent
 description: >

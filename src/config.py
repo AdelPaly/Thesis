@@ -18,6 +18,8 @@ from pathlib import Path
 
 import yaml
 
+from keys import legacy_config_name
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = REPO_ROOT / "configs"
 DATASET_REGISTRY = CONFIG_DIR / "datasets.yaml"
@@ -130,6 +132,9 @@ class PipelineConfig:
         # present and True. Re-adding it keeps those hashes, and so resume,
         # valid. Delete this line only if you accept re-running everything.
         d["grounded"]["allow_abstention"] = True
+        # Hash-stability shim: a renamed configuration hashes under its old
+        # name, so prediction files written before the rename stay valid.
+        d["name"] = legacy_config_name(self.name) or self.name
         return d
 
 

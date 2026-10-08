@@ -36,7 +36,7 @@ sys.path.insert(0, str(SRC))
 
 from config import (REPO_ROOT, PipelineConfig, load_all_configs,     # noqa: E402
                     load_config, load_datasets)
-from keys import item_id                                              # noqa: E402,F401
+from keys import item_id, legacy_config_name                          # noqa: E402,F401
 import pipeline                                                       # noqa: E402
 from pipeline import Pipeline                                         # noqa: E402
 from wikidata import save_caches                                      # noqa: E402
@@ -232,6 +232,14 @@ def run(config_name: str, dataset_name: str, limit: int | None = None,
     print(f"output   : {_display(out_path)}")
 
     existing = _load_existing(out_path, cfg.config_hash, overwrite)
+    legacy = legacy_config_name(cfg.name)
+    legacy_path = out_dir / f"{legacy}__{dataset_name}.jsonl" if legacy else None
+    if not out_path.exists() and legacy_path and legacy_path.exists():
+        # A renamed configuration resumes from its file under the old name. That
+        # file is read, never rewritten; the records move to the new name.
+        existing = {iid: {**rec, "config_name": cfg.name} for iid, rec in
+                    _load_existing(legacy_path, cfg.config_hash, overwrite).items()}
+        print(f"legacy   : resuming from {_display(legacy_path)}")
     if existing:
         print(f"resume   : {len(existing)} item(s) already done")
 

@@ -34,11 +34,11 @@ LOG_DIR = REPO_ROOT / "results" / "logs"
 # first look at the numbers. Names absent from configs/ are skipped, and
 # configurations present in configs/ but missing here still run (appended), so
 # this is an ordering preference, not a registry.
-ORDER = ["baseline_majority", "baseline_population",
+ORDER = ["majority_class", "population_wikidata",
          "gemma4",
          "dense_retrieval",
          "grounded_gemma", "grounded_gemma_linking",
-         "two_stage", "refined"]
+         "retrieve_rerank", "refined"]
 
 
 def config_names() -> list[str]:

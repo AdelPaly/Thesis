@@ -41,7 +41,7 @@ from typing import Callable, Iterable
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from keys import place_key  # noqa: E402
+from keys import current_config_name, place_key  # noqa: E402
 
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
 ITEM_SPLIT_PATH = REPO_ROOT / "splits" / "item_split.csv"
@@ -176,7 +176,9 @@ def load_predictions(paths: Iterable[Path | str]) -> list[dict]:
             for line in f:
                 line = line.strip()
                 if line:
-                    records.append(json.loads(line))
+                    rec = json.loads(line)
+                    rec["config_name"] = current_config_name(rec.get("config_name"))
+                    records.append(rec)
     keys = Counter((r.get("config_name"), r.get("dataset"), r.get("item_id")) for r in records)
     dupes = [k for k, c in keys.items() if c > 1]
     if dupes:
@@ -192,10 +194,27 @@ def load_predictions(paths: Iterable[Path | str]) -> list[dict]:
     return records
 
 
+def prediction_file_key(path: Path) -> tuple[str, str]:
+    """(current config name, dataset) for a predictions file name."""
+    cfg, dataset = Path(path).stem.split("__", 1)
+    return current_config_name(cfg), dataset
+
+
 def find_prediction_files(config: str | None = None, dataset: str | None = None,
                           directory: Path | str = PREDICTIONS_DIR) -> list[Path]:
-    pattern = f"{config or '*'}__{dataset or '*'}.jsonl"
-    return sorted(Path(directory).glob(pattern))
+    """One file per (config, dataset). A file under a renamed configuration's
+    old name is used only when no file under the current name exists."""
+    config = current_config_name(config)
+    chosen: dict[tuple[str, str], Path] = {}
+    for path in sorted(Path(directory).glob("*__*.jsonl")):
+        key = prediction_file_key(path)
+        if (config and key[0] != config) or (dataset and key[1] != dataset):
+            continue
+        is_legacy = path.stem.split("__", 1)[0] != key[0]
+        if key in chosen and is_legacy:
+            continue
+        chosen[key] = path
+    return sorted(chosen.values())
 
 
 def _fmt(value: float | None, as_pct: bool = False, width: int = 7) -> str:
