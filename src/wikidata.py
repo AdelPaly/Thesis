@@ -13,6 +13,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
+ENWIKI_API = "https://en.wikipedia.org/w/api.php"
 # Wikimedia's User-Agent policy asks for a real contact. Set WDQS_CONTACT (an
 # email or URL) in your environment; the default is the project's public
 # repository, so no personal address is committed.
@@ -147,8 +148,9 @@ _coords_cache = Cache("coords", "coords.pkl")   # (text, type, top_n) -> candida
 _search_cache = Cache("search", "search.pkl")   # (text, limit) -> [qid]
 _alias_cache = Cache("alias", "alias.pkl")      # QID -> [alias]
 _geonames_cache = Cache("geonames", "geonames.pkl")  # GeoNames id -> QID or None
+_enwiki_cache = Cache("enwiki", "enwiki.pkl")        # enwiki title -> QID or None
 _CACHES = (_entity_cache, _label_cache, _coords_cache, _search_cache, _alias_cache,
-           _geonames_cache)
+           _geonames_cache, _enwiki_cache)
 
 
 def save_caches() -> None:
@@ -193,7 +195,7 @@ def _retry_wait(resp: requests.Response | None, attempt: int) -> float:
     return wait
 
 
-def _api_get(params: dict, timeout: float = REQUEST_TIMEOUT) -> dict:
+def _api_get(params: dict, timeout: float = REQUEST_TIMEOUT, url: str = WIKIDATA_API) -> dict:
     """Single entry point for all Wikidata API calls.
 
     Rate limited; retries on 429, 5xx, connection errors, timeouts and
@@ -205,7 +207,7 @@ def _api_get(params: dict, timeout: float = REQUEST_TIMEOUT) -> dict:
         _rate_limiter.wait()
         resp = None
         try:
-            resp = requests.get(WIKIDATA_API, params=params, headers=HEADERS, timeout=timeout)
+            resp = requests.get(url, params=params, headers=HEADERS, timeout=timeout)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             last_error = str(e)
         else:
@@ -275,6 +277,40 @@ def qid_for_geonames_id(geonames_id) -> str | None:
     qid = hits[0] if hits else None
     _geonames_cache[key] = qid
     return qid
+
+
+def qids_for_enwiki_titles(titles: list[str]) -> dict[str, str | None]:
+    """{English Wikipedia title: QID or None}, read from the page's
+    wikibase_item. Redirects are followed, so a title that has since been
+    renamed still resolves. Disk-cached, including a title with no item; a
+    failed request raises WikidataError and is not cached."""
+    out = {t: _enwiki_cache[t] for t in titles if t in _enwiki_cache}
+    todo = sorted({t for t in titles if t not in out})
+    for i in range(0, len(todo), BATCH_SIZE):
+        batch = todo[i:i + BATCH_SIZE]
+        data = _api_get({
+            "action": "query",
+            "titles": "|".join(batch),
+            "prop": "pageprops",
+            "ppprop": "wikibase_item",
+            "redirects": 1,
+            "format": "json",
+            "formatversion": 2,
+        }, url=ENWIKI_API).get("query", {})
+        step = {m["from"]: m["to"] for key in ("normalized", "redirects")
+                for m in data.get(key) or []}
+        item = {page["title"]: (page.get("pageprops") or {}).get("wikibase_item")
+                for page in data.get("pages") or []}
+        for title in batch:
+            target = title
+            for _ in range(3):              # normalised, then redirected
+                if target in item or target not in step:
+                    break
+                target = step[target]
+            qid = item.get(target)
+            _enwiki_cache[title] = qid
+            out[title] = qid
+    return out
 
 
 def search_entities(text: str, limit: int = SEARCH_LIMIT) -> list[str]:

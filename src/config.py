@@ -27,7 +27,7 @@ DATASET_REGISTRY = CONFIG_DIR / "datasets.yaml"
 
 PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
              "grounded_llm", "geoparser", "grid_lm"}
-LINKING_BACKENDS = {"refined", "wikidata_search", "none"}
+LINKING_BACKENDS = {"refined", "blink", "wikidata_search", "none"}
 LLM_PROVIDERS = {None, "google", "openrouter"}
 PROMPT_TEMPLATES = {"v1"}
 TIERS = range(0, 6)

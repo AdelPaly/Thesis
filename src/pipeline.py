@@ -140,6 +140,7 @@ class Pipeline:
         self._char_ngram = None
         self._geoparser = None
         self._grid_lm = None
+        self._ner_memo: dict[str, list[dict]] = {}
         self._dense_index = None
         self._ner_fn = ner_fn
         self._link_fn = link_fn
@@ -158,16 +159,23 @@ class Pipeline:
     # ---------------------------------------------------------------- stages
 
     def _ner(self, text: str) -> list[dict]:
-        """Extract mention spans with the configured NER model."""
+        """Extract mention spans with the configured NER model. Memoised per
+        run, because `prepare` and `run` both need the spans."""
+        if text in self._ner_memo:
+            return [dict(e) for e in self._ner_memo[text]]
         fn = self._ner_fn
         if fn is None:
             from ner import extract_entities as fn
-        return fn(text, model=self.cfg.ner.model,
-                  entity_types=self.cfg.ner.entity_types)
+        spans = fn(text, model=self.cfg.ner.model,
+                   entity_types=self.cfg.ner.entity_types)
+        self._ner_memo[text] = [dict(e) for e in spans]
+        return spans
 
     def _link(self, text: str, spans: list[dict]) -> list[dict]:
         """Link mentions to QIDs. Returns the stored `linked_entities` shape."""
         li = self.cfg.linking
+        if li.backend == "blink" and spans:
+            return self._link_blink(text, spans)
         if li.backend != "refined" or not spans:
             return [{"mention": e["text"], "mention_type": e["type"],
                      "qid": None, "confidence": None, "candidates": []}
@@ -183,6 +191,39 @@ class Pipeline:
                  "qid": link["qid"], "confidence": link["confidence"],
                  "candidates": link["candidates"]}
                 for ent, link in linked]
+
+    def _link_blink(self, text: str, spans: list[dict]) -> list[dict]:
+        """BLINK per mention: the cross-encoder's top entity, mapped to a QID
+        by its Wikipedia title. The whole top-k ranking is kept as the
+        linker's candidate set."""
+        from blink_linker import get_linker, make_sample
+        from wikidata import qids_for_enwiki_titles
+
+        linker = get_linker(self.cfg.linking.top_n)
+        ranked = [linker.link(make_sample(text, e["start"], e["end"])) for e in spans]
+        qids = qids_for_enwiki_titles([c["title"] for r in ranked for c in r])
+        out = []
+        for ent, ranking in zip(spans, ranked):
+            cands = [{"qid": qids.get(c["title"]), "title": c["title"],
+                      "score": c["crossencoder_score"],
+                      "biencoder_score": c["biencoder_score"]} for c in ranking]
+            top = cands[0] if cands else {}
+            out.append({"mention": ent["text"], "mention_type": ent["type"],
+                        "qid": top.get("qid"), "confidence": top.get("score"),
+                        "candidates": cands})
+        return out
+
+    def prepare(self, texts: list[str]) -> None:
+        """Work a run can do once for all its items before the per-item loop.
+        For BLINK that is the bi-encoder pass over the entity matrix: one pass
+        for every mention of the run instead of one per item."""
+        if self.cfg.linking.backend != "blink" or not texts:
+            return
+        from blink_linker import get_linker, make_sample
+
+        samples = [make_sample(t, e["start"], e["end"])
+                   for t in texts for e in self._ner(t)]
+        get_linker(self.cfg.linking.top_n).link_all(samples)
 
     def _resolved_links(self, spans, linked_entities):
         """Yield (link, candidate) for each linked QID that resolves."""

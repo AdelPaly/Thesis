@@ -1,0 +1,33 @@
+name: blink
+tier: 2
+variant: c
+paradigm: ner_dependent
+description: >
+  BLINK, the published form of the pattern retrieve_rerank builds by hand: a
+  bi-encoder retrieves the top-10 of BLINK's 5.9M Wikipedia entities for each
+  mention, and a cross-encoder rescores those 10 against the mention context
+  and picks one. BLINK's own models, entity catalogue and entity encodings.
+
+  Everything else is held equal to retrieve_rerank: the same Flair NER over
+  every tag supplies the mentions, the chosen entity goes through the same
+  geographic property chain, and the same E5 step ranks the resulting places
+  across mentions. So retrieve_rerank against blink is hand-built retrieval
+  and reranking against the published reference, on the same mentions.
+
+  The chosen Wikipedia title is mapped to Wikidata by its enwiki sitelink. The
+  entity matrix is 24 GB, so it is memory-mapped and searched exactly in one
+  pass per run rather than held in memory; see src/blink_linker.py.
+ner:
+  model: flair/ner-large
+  entity_types: null
+linking:
+  backend: blink
+  refined_model: null
+  refined_entity_set: null
+  top_n: 10
+rerank:
+  model: intfloat/multilingual-e5-base
+  enabled: true
+llm:
+  provider: null
+  model: null

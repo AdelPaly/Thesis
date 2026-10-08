@@ -244,6 +244,8 @@ def run(config_name: str, dataset_name: str, limit: int | None = None,
         print(f"resume   : {len(existing)} item(s) already done")
 
     pipe = Pipeline(cfg, dataset=dataset_name)
+    pipe.prepare([row["text"] for _, row in df.iterrows()
+                  if item_id(row["text"]) not in existing])
     records = []
 
     def flush():
