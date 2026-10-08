@@ -26,7 +26,7 @@ CONFIG_DIR = REPO_ROOT / "configs"
 DATASET_REGISTRY = CONFIG_DIR / "datasets.yaml"
 
 PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
-             "grounded_llm"}
+             "grounded_llm", "geoparser"}
 LINKING_BACKENDS = {"refined", "wikidata_search", "none"}
 LLM_PROVIDERS = {None, "google", "openrouter"}
 PROMPT_TEMPLATES = {"v1"}
@@ -117,6 +117,17 @@ class GroundedConfig:
 
 
 @dataclass(frozen=True)
+class GeoparserConfig:
+    """Tier 1: an established geoparser, run as published."""
+    system: str | None = None          # irchel
+    version: str | None = None         # the installed version must match
+    recognizer: str | None = None      # spaCy model
+    entity_types: list[str] | None = None
+    resolver: str | None = None        # sentence-transformers model
+    gazetteer: str | None = None
+
+
+@dataclass(frozen=True)
 class PipelineConfig:
     name: str
     paradigm: str
@@ -127,6 +138,7 @@ class PipelineConfig:
     baseline: BaselineConfig = field(default_factory=BaselineConfig)
     dense: DenseConfig = field(default_factory=DenseConfig)
     grounded: GroundedConfig = field(default_factory=GroundedConfig)
+    geoparser: GeoparserConfig = field(default_factory=GeoparserConfig)
     # Presentation metadata: which tier of the evaluation this configuration
     # belongs to (0-5, by what kind of signal it can consume), and a variant
     # letter for configurations that share a tier. Excluded from config_hash
@@ -172,7 +184,17 @@ _LATE_FIELDS = {
 }
 
 
+# Sections added after prediction files existed, left out of the hash while
+# every field holds its default, for the same reason.
+_LATE_SECTIONS = {
+    "geoparser": GeoparserConfig,
+}
+
+
 def _drop_late_defaults(d: dict) -> dict:
+    for section, cls in _LATE_SECTIONS.items():
+        if d.get(section) == asdict(cls()):
+            del d[section]
     for section, defaults in _LATE_FIELDS.items():
         for key, default in defaults.items():
             if d[section].get(key) == default:
@@ -241,6 +263,7 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
         "baseline": (BaselineConfig, _section(raw, "baseline")),
         "dense": (DenseConfig, _section(raw, "dense")),
         "grounded": (GroundedConfig, _section(raw, "grounded")),
+        "geoparser": (GeoparserConfig, _section(raw, "geoparser")),
     }
     built = {}
     for key, (cls, sub) in sections.items():
@@ -420,12 +443,29 @@ def _validate_grounded_llm(cfg: PipelineConfig) -> None:
                               "linking.backend is 'none'")
 
 
+GEOPARSER_SYSTEMS = {"irchel"}
+
+
+def _validate_geoparser(cfg: PipelineConfig) -> None:
+    gp = cfg.geoparser
+    if gp.system not in GEOPARSER_SYSTEMS:
+        raise ConfigError(f"geoparser.system must be one of {sorted(GEOPARSER_SYSTEMS)}")
+    for key in ("version", "recognizer", "resolver", "gazetteer"):
+        if not isinstance(getattr(gp, key), str) or not getattr(gp, key):
+            raise ConfigError(f"paradigm 'geoparser' requires geoparser.{key}")
+    _require_str_list("geoparser.entity_types", gp.entity_types)
+    if cfg.ner.model or cfg.llm.provider or cfg.linking.backend != "none":
+        raise ConfigError("paradigm 'geoparser' runs the system as published: it must "
+                          "not set ner.model, llm.provider or linking.backend")
+
+
 _PARADIGM_VALIDATORS = {
     "ner_dependent": _validate_ner_dependent,
     "ner_free": _validate_ner_free,
     "baseline": _validate_baseline,
     "dense_retrieval": _validate_dense_retrieval,
     "grounded_llm": _validate_grounded_llm,
+    "geoparser": _validate_geoparser,
 }
 
 

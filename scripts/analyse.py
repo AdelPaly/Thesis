@@ -97,6 +97,9 @@ def _config_stages(raw: dict) -> set[str]:
         stages.add("candidates")
     if paradigm == "grounded_llm":
         stages.add("selection")
+    # A geoparser recognises and resolves with its own modules.
+    if paradigm == "geoparser":
+        stages |= {"ner", "linking", "candidates"}
     return stages
 
 
@@ -241,7 +244,7 @@ def attribute(rec: dict, has_ner_stage: bool = True) -> str | None:
     if not spans and not places:
         if has_pred:
             return "no_intermediate_stages"
-        if has_ner_stage and rec.get("paradigm") in ("ner_dependent", "baseline"):
+        if has_ner_stage and rec.get("paradigm") in ("ner_dependent", "baseline", "geoparser"):
             return "no_ner_span"
         return "returned_nothing"
 

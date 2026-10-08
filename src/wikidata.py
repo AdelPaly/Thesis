@@ -146,7 +146,9 @@ _label_cache = Cache("label", "label.pkl")      # QID -> English label
 _coords_cache = Cache("coords", "coords.pkl")   # (text, type, top_n) -> candidates
 _search_cache = Cache("search", "search.pkl")   # (text, limit) -> [qid]
 _alias_cache = Cache("alias", "alias.pkl")      # QID -> [alias]
-_CACHES = (_entity_cache, _label_cache, _coords_cache, _search_cache, _alias_cache)
+_geonames_cache = Cache("geonames", "geonames.pkl")  # GeoNames id -> QID or None
+_CACHES = (_entity_cache, _label_cache, _coords_cache, _search_cache, _alias_cache,
+           _geonames_cache)
 
 
 def save_caches() -> None:
@@ -249,6 +251,30 @@ def _search_checked(text: str, limit: int = SEARCH_LIMIT) -> list[str]:
     hits = [item["id"] for item in data.get("search", [])]
     _search_cache[key] = hits
     return hits
+
+
+def qid_for_geonames_id(geonames_id) -> str | None:
+    """The Wikidata item whose GeoNames ID (P1566) is `geonames_id`, or None.
+
+    Disk-cached, including a successful empty answer; a failed request raises
+    WikidataError and is not cached. If several items carry the same GeoNames
+    ID, the first search hit is taken."""
+    key = str(geonames_id)
+    if key in _geonames_cache:
+        return _geonames_cache[key]
+    data = _api_get({
+        "action": "query",
+        "list": "search",
+        "srsearch": f"haswbstatement:P1566={key}",
+        "srnamespace": 0,
+        "srlimit": 5,
+        "format": "json",
+    })
+    hits = [h["title"] for h in data.get("query", {}).get("search", [])
+            if h.get("title", "").startswith("Q")]
+    qid = hits[0] if hits else None
+    _geonames_cache[key] = qid
+    return qid
 
 
 def search_entities(text: str, limit: int = SEARCH_LIMIT) -> list[str]:

@@ -86,6 +86,20 @@ def _place_candidate(row: dict, score: float) -> Candidate:
             "entity_type": "PLACE", "description": None}
 
 
+def _geonames_candidate(toponym: dict) -> Candidate:
+    """A candidate straight from the GeoNames entry, for an entry with no
+    Wikidata item: no QID and no continent (the entry carries neither), so it
+    can be right at country level only."""
+    data = toponym.get("data") or {}
+    return {"qid": None,
+            "lat": _float_or_none(data.get("latitude")),
+            "lon": _float_or_none(data.get("longitude")),
+            "country": _str_or_none(data.get("country_name")),
+            "continent": None,
+            "entity": toponym["text"], "entity_type": "LOC",
+            "description": _str_or_none(data.get("name"))}
+
+
 def _candidate_record(cand: Candidate) -> dict:
     """Normalise an internal candidate dict into the stored shape."""
     return {
@@ -124,6 +138,7 @@ class Pipeline:
         self._grounded = None
         self._majority = _UNSET
         self._char_ngram = None
+        self._geoparser = None
         self._dense_index = None
         self._ner_fn = ner_fn
         self._link_fn = link_fn
@@ -135,6 +150,7 @@ class Pipeline:
             "dense_retrieval": self._run_dense_path,
             "grounded_llm": self._run_grounded_path,
             "baseline": self._run_baseline,
+            "geoparser": self._run_geoparser_path,
         }
 
     # ---------------------------------------------------------------- stages
@@ -406,6 +422,36 @@ class Pipeline:
             # grounded system ignoring its grounding has to be visible.
             out.error = f"selection violation: {selection['violation']}"
         out.prediction = chosen
+
+    # ------------------------------------------------- tier 1: geoparsers
+
+    def _run_geoparser_path(self, text, out):
+        """An established geoparser run as published: its own recogniser finds
+        the toponyms, its own resolver picks a GeoNames entry for each. Each
+        entry is mapped to Wikidata through P1566 so exact match is
+        computable. The prediction is the first resolved toponym in reading
+        order; the geoparser itself ranks nothing across toponyms."""
+        if self._geoparser is None:
+            from geoparser_irchel import GeoparserWorker
+            self._geoparser = GeoparserWorker(self.cfg.geoparser)
+        from wikidata import qid_for_geonames_id, resolve_qid_to_candidate
+
+        toponyms = self._geoparser.parse(text)
+        out.ner_spans = [{"text": t["text"], "start": t["start"], "end": t["end"],
+                          "type": "TOPONYM"} for t in toponyms]
+        candidates = []
+        for t in toponyms:
+            gid = t.get("identifier")
+            qid = qid_for_geonames_id(gid) if gid else None
+            out.linked_entities.append({"mention": t["text"], "mention_type": "TOPONYM",
+                                        "qid": qid, "confidence": None,
+                                        "candidates": [], "geonames_id": gid})
+            if not gid:
+                continue
+            cand = resolve_qid_to_candidate(qid, t["text"], "LOC") if qid else None
+            candidates.append(cand or _geonames_candidate(t))
+        out.candidate_places = [_candidate_record(c) for c in candidates]
+        out.prediction = candidates[0] if candidates else None
 
     # ---------------------------------------------------------------- paths
 
