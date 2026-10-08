@@ -4,21 +4,23 @@ paradigm: grid_lm
 description: >
   Tier 3, retrieval without mention detection, done the way it was first done
   for documents: a unigram language model per cell of a 1-degree latitude /
-  longitude grid, built from the training texts whose gold place falls in the
-  cell. A post goes to the cell with the smallest KL divergence from its word
-  distribution. No gazetteer, no mention detection, no LLM: words in, cell
-  out. It is dense_retrieval's mechanism with grid cells in place of place
-  descriptions, and word counts in place of an encoder.
+  longitude grid, and a post goes to the cells with the smallest KL
+  divergence from its word distribution. No gazetteer at query time, no
+  mention detection, no LLM: words in, cell out.
 
-  Cells are smoothed towards the global word distribution by a Good-Turing
-  estimate of their unseen mass, so there is no tuned parameter. The
-  evaluation is by place, so a cell is reported as its most frequent training
-  place -- a lookup, not a centroid. cell_degrees is fixed, not tuned.
+  A cell's model is built from the dev texts whose gold place falls in it and
+  from the indexed text of every candidate place in it. The candidate places
+  and their texts are dense_retrieval's own (same pool, same index fields).
+  With dev texts alone almost no test place would sit in a cell that has a
+  model (at 1 degree, 1 of 94 test places in social_media_clean), so the place
+  texts are what make every candidate place reachable; the dev texts are what
+  the method learns from.
 
-  Fitted on the dev split of whichever dataset is being run. A place is
-  either dev or test, so on test this configuration cannot be exactly right
-  by construction and measures country and continent only. A dev item is
-  scored with its own words removed from its cell.
+  A winning cell is resolved to its candidate places, each ranked by the KL
+  divergence from the post to that place's own text -- a lookup within the
+  cell, not a centroid. Smoothing is a Good-Turing estimate of unseen mass, so
+  there is no tuned parameter, and cell_degrees is fixed, not tuned. A dev
+  item is scored with its own words removed from its cell.
 ner:
   model: null
   entity_types: null
@@ -33,5 +35,10 @@ rerank:
 llm:
   provider: null
   model: null
+dense:
+  encoder: null
+  pool: gold_plus_predicted
+  top_k: 10
+  index_fields: [label, description, aliases, country, continent]
 grid:
   cell_degrees: 1.0

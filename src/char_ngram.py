@@ -1,17 +1,22 @@
-"""Character n-gram floor (tier 0).
+"""Character n-gram ranking (tier 3, the lexical floor).
 
-Every training place gets a profile: the counts of the character n-grams
-(lengths `ngram_min`..`ngram_max`) over all of its training texts. A post is
-scored against every profile by cosine overlap of the n-gram counts, and the
-best-matching place is the prediction.
+The candidate places and the text that represents each one are dense
+retrieval's own: the same pool and the same indexed fields (src/dense_index.py,
+build_catalogue). A post and every place text are turned into counts of
+character n-grams (lengths `ngram_min`..`ngram_max`, lower-cased), each count
+is weighted by the n-gram's inverse document frequency over the place texts,
+and places are ranked by the cosine of those weighted vectors.
 
-No toponym input and no gazetteer: the model sees only surface form. It is the
-floor that says whether surface statistics alone carry the signal, rather than
-the entity clue.
+The weighting is what makes this lexical overlap rather than a measure of
+how English a text is: with raw counts, the short n-grams of ordinary English
+("the ", "e ") dominate every vector, long generic descriptions win for every
+post, and a post opening with "Tripoli" ranks Tripoli 3324th. An n-gram that
+occurs in no place text cannot match and is left out of the query.
 
-Training texts are the dev items of the dataset being run. An item that is
-itself a training item is scored with its own text removed from its place's
-profile, so a dev item never matches against itself.
+Nothing is learned: no training texts, no encoder, no toponym input, no
+gazetteer lookup at query time. Against dense retrieval it separates what
+surface overlap between a post and a place description carries from what a
+learned encoder adds.
 
 Pure Python; no dependency beyond the standard library.
 """
@@ -31,50 +36,38 @@ def ngrams(text: str, n_min: int, n_max: int) -> Counter:
     return counts
 
 
-def _dot(a: Counter, b: Counter) -> float:
-    if len(a) > len(b):
-        a, b = b, a
-    return float(sum(v * b[k] for k, v in a.items() if k in b))
+class CharNgramIndex:
+    """An inverted index of idf-weighted n-gram counts over a list of texts."""
 
-
-def _norm(c: Counter) -> float:
-    return math.sqrt(sum(v * v for v in c.values()))
-
-
-class CharNgramModel:
-    """Place profiles built from training rows.
-
-    `rows` are dicts with `item_id`, `text`, `qid` and the place fields that go
-    into a prediction (`country`, `continent`, `lat`, `lon`, `location_name`).
-    """
-
-    def __init__(self, rows: list[dict], n_min: int, n_max: int):
+    def __init__(self, texts: list[str], n_min: int, n_max: int):
         self.n_min, self.n_max = n_min, n_max
-        self.profiles: dict[str, Counter] = defaultdict(Counter)
-        self.places: dict[str, dict] = {}
-        self.items: dict[str, tuple[str, Counter]] = {}
-        for row in rows:
-            grams = ngrams(row["text"], n_min, n_max)
-            self.profiles[row["qid"]].update(grams)
-            self.places.setdefault(row["qid"], row)
-            self.items[row["item_id"]] = (row["qid"], grams)
-        self.norms = {q: _norm(p) for q, p in self.profiles.items()}
+        counted = [ngrams(text, n_min, n_max) for text in texts]
+        df = Counter()
+        for grams in counted:
+            df.update(grams.keys())
+        n = len(texts)
+        self.idf = {gram: math.log(n / d) for gram, d in df.items()}
+        self.postings: dict[str, list[tuple[int, float]]] = defaultdict(list)
+        self.norms = []
+        for i, grams in enumerate(counted):
+            weights = {g: c * self.idf[g] for g, c in grams.items()}
+            for gram, w in weights.items():
+                if w:
+                    self.postings[gram].append((i, w))
+            self.norms.append(math.sqrt(sum(w * w for w in weights.values())))
 
-    def rank(self, text: str, item_id: str | None = None) -> list[tuple[str, float]]:
-        """[(qid, score), ...] best first. `item_id` names the item being
-        scored, so its own text is left out of its place's profile."""
-        query = ngrams(text, self.n_min, self.n_max)
-        q_norm = _norm(query)
-        own_place, own = self.items.get(item_id, (None, None))
-        scored = []
-        for qid, profile in self.profiles.items():
-            if qid == own_place:
-                profile = profile - own
-                p_norm = _norm(profile)
-            else:
-                p_norm = self.norms[qid]
-            if not p_norm or not q_norm:
-                continue
-            scored.append((qid, _dot(query, profile) / (q_norm * p_norm)))
+    def rank(self, text: str, top_k: int) -> list[tuple[int, float]]:
+        """[(text index, cosine), ...], best first, at most `top_k`."""
+        query = {g: c * self.idf[g] for g, c in ngrams(text, self.n_min, self.n_max).items()
+                 if g in self.idf}
+        q_norm = math.sqrt(sum(w * w for w in query.values()))
+        if not q_norm:
+            return []
+        dots: dict[int, float] = defaultdict(float)
+        for gram, q_weight in query.items():
+            for i, weight in self.postings.get(gram, ()):
+                dots[i] += q_weight * weight
+        scored = [(i, dot / (q_norm * self.norms[i]))
+                  for i, dot in dots.items() if self.norms[i]]
         scored.sort(key=lambda t: (-t[1], t[0]))
-        return scored
+        return scored[:top_k]

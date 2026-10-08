@@ -31,9 +31,6 @@ _FATAL_ERRORS = (ConfigError, ImportError, KeyError)
 
 SPLIT_FILE = ("splits", "place_split.csv")
 
-# How many scored places a fitted configuration records in candidate_places.
-TRAINED_TOP_K = 10
-
 
 class Candidate(TypedDict, total=False):
     """Internal candidate place; the stored shape is `_candidate_record`."""
@@ -76,14 +73,6 @@ def _float_or_none(value) -> float | None:
     except (TypeError, ValueError):
         return None
     return None if f != f else f
-
-
-def _place_candidate(row: dict, score: float) -> Candidate:
-    """A candidate for a training place, from its training row's gold fields."""
-    return {"qid": row["qid"], "lat": row["lat"], "lon": row["lon"],
-            "country": row["country"], "continent": row["continent"],
-            "score": score, "entity": row.get("location_name") or row["qid"],
-            "entity_type": "PLACE", "description": None}
 
 
 def _geonames_candidate(toponym: dict) -> Candidate:
@@ -137,7 +126,7 @@ class Pipeline:
         self._llm = None
         self._grounded = None
         self._majority = _UNSET
-        self._char_ngram = None
+        self._lexical = None
         self._geoparser = None
         self._grid_lm = None
         self._ner_memo: dict[str, list[dict]] = {}
@@ -154,6 +143,7 @@ class Pipeline:
             "baseline": self._run_baseline,
             "geoparser": self._run_geoparser_path,
             "grid_lm": self._run_grid_lm_path,
+            "lexical_retrieval": self._run_lexical_path,
         }
 
     # ---------------------------------------------------------------- stages
@@ -367,29 +357,12 @@ class Pipeline:
         cand = self._majority_place()
         out.prediction = dict(cand) if cand else None
 
-    def _run_char_ngram(self, text, out):
-        """Surface form only: the training place whose character n-gram
-        profile best overlaps the post. No toponym, no gazetteer. The place
-        fields of the prediction are the training rows' own gold fields."""
-        if self._char_ngram is None:
-            from char_ngram import CharNgramModel
-            ba = self.cfg.baseline
-            self._char_ngram = CharNgramModel(self._dev_rows(), ba.ngram_min, ba.ngram_max)
-        model = self._char_ngram
-        ranked = model.rank(text, item_id=item_id(text))
-        candidates = [_place_candidate(model.places[qid], score)
-                      for qid, score in ranked[:TRAINED_TOP_K]]
-        out.candidate_places = [_candidate_record(c) for c in candidates]
-        out.prediction = candidates[0] if candidates else None
-
     def _run_baseline(self, text, out):
         strategy = self.cfg.baseline.strategy
         if strategy == "most_populous":
             self._run_population_baseline(text, out)
         elif strategy == "majority_dev_place":
             self._run_majority_baseline(text, out)
-        elif strategy == "char_ngram":
-            self._run_char_ngram(text, out)
         else:
             raise ConfigError(f"unhandled baseline strategy {strategy!r}")
 
@@ -466,24 +439,43 @@ class Pipeline:
             out.error = f"selection violation: {selection['violation']}"
         out.prediction = chosen
 
-    # ------------------------------------------------ tier 3: grid language model
+    # ----------------------------------- tier 3: lexical and grid language model
+    #
+    # Both rank dense retrieval's own candidate places, described by the same
+    # indexed text (dense_index.build_catalogue), so the three tier-3
+    # mechanisms differ in the mechanism only.
+
+    def _catalogue(self):
+        from dense_index import get_catalogue
+        return get_catalogue(self.cfg.dense)
+
+    def _run_lexical_path(self, text, out):
+        """Character n-gram overlap between the post and each place's indexed
+        text. Nothing learned: no training texts, no encoder."""
+        cat = self._catalogue()
+        if self._lexical is None:
+            from char_ngram import CharNgramIndex
+            lx = self.cfg.lexical
+            self._lexical = CharNgramIndex(cat.texts, lx.ngram_min, lx.ngram_max)
+        candidates = [{**cat.places[cat.qids[i]], "score": score}
+                      for i, score in self._lexical.rank(text, self.cfg.dense.top_k)]
+        out.candidate_places = [_candidate_record(c) for c in candidates]
+        out.prediction = candidates[0] if candidates else None
 
     def _run_grid_lm_path(self, text, out):
-        """Words in, cell out: the grid cell whose language model is closest to
-        the post, reported as the cell's most frequent training place. No
-        gazetteer, no mention detection, no LLM."""
+        """Words in, cell out: the grid cells whose language models are closest
+        to the post, each resolved to its candidate places. Cell models are
+        learned from dev texts and the places' indexed texts; no gazetteer at
+        query time, no mention detection, no LLM."""
+        cat = self._catalogue()
         if self._grid_lm is None:
             from grid_lm import GridLM
-            self._grid_lm = GridLM(self._dev_rows(), self.cfg.grid.cell_degrees)
-        model = self._grid_lm
-        iid = item_id(text)
-        candidates = []
-        for cell, score in model.rank(text, item_id=iid):
-            qid = model.representative(cell, item_id=iid)
-            if qid is not None:
-                candidates.append(_place_candidate(model.places[qid], score))
-            if len(candidates) == TRAINED_TOP_K:
-                break
+            self._grid_lm = GridLM(self._dev_rows(), cat.places,
+                                   dict(zip(cat.qids, cat.texts)),
+                                   self.cfg.grid.cell_degrees)
+        ranked = self._grid_lm.rank(text, item_id=item_id(text),
+                                    top_k=self.cfg.dense.top_k)
+        candidates = [{**cat.places[qid], "score": score} for qid, score in ranked]
         out.candidate_places = [_candidate_record(c) for c in candidates]
         out.prediction = candidates[0] if candidates else None
 

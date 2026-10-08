@@ -26,12 +26,12 @@ CONFIG_DIR = REPO_ROOT / "configs"
 DATASET_REGISTRY = CONFIG_DIR / "datasets.yaml"
 
 PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
-             "grounded_llm", "geoparser", "grid_lm"}
+             "grounded_llm", "geoparser", "grid_lm", "lexical_retrieval"}
 LINKING_BACKENDS = {"refined", "blink", "wikidata_search", "none"}
 LLM_PROVIDERS = {None, "google", "openrouter"}
 PROMPT_TEMPLATES = {"v1"}
 TIERS = range(0, 6)
-BASELINE_STRATEGIES = {"most_populous", "majority_dev_place", "char_ngram"}
+BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
 GAZETTEERS = {"wikidata"}
 DENSE_POOLS = {"gold_only", "gold_plus_predicted"}
 CANDIDATE_SOURCES = {"dense", "linking"}
@@ -84,12 +84,9 @@ class LLMConfig:
 
 @dataclass(frozen=True)
 class BaselineConfig:
-    strategy: str | None = None        # most_populous | majority_dev_place | char_ngram
+    strategy: str | None = None        # most_populous | majority_dev_place
     gazetteer: str | None = None       # wikidata
     min_population: int = 0
-    # char_ngram: n-gram lengths, inclusive.
-    ngram_min: int = 2
-    ngram_max: int = 5
 
 
 @dataclass(frozen=True)
@@ -128,6 +125,13 @@ class GeoparserConfig:
 
 
 @dataclass(frozen=True)
+class LexicalConfig:
+    """Tier 3 lexical floor: character n-grams, lengths inclusive."""
+    ngram_min: int | None = None
+    ngram_max: int | None = None
+
+
+@dataclass(frozen=True)
 class GridConfig:
     """Tier 3: a language model per cell of a latitude/longitude grid."""
     cell_degrees: float | None = None
@@ -146,6 +150,7 @@ class PipelineConfig:
     grounded: GroundedConfig = field(default_factory=GroundedConfig)
     geoparser: GeoparserConfig = field(default_factory=GeoparserConfig)
     grid: GridConfig = field(default_factory=GridConfig)
+    lexical: LexicalConfig = field(default_factory=LexicalConfig)
     # Presentation metadata: which tier of the evaluation this configuration
     # belongs to (0-5, by what kind of signal it can consume), and a variant
     # letter for configurations that share a tier. Excluded from config_hash
@@ -183,19 +188,13 @@ class PipelineConfig:
         return _drop_late_defaults(d)
 
 
-# Fields added after prediction files existed. While a field holds its default
-# it is left out of the hash, so adding it changed no existing configuration's
-# hash; a configuration that sets it to anything else hashes it.
-_LATE_FIELDS = {
-    "baseline": {"ngram_min": 2, "ngram_max": 5},
-}
-
-
-# Sections added after prediction files existed, left out of the hash while
-# every field holds its default, for the same reason.
+# Sections added after prediction files existed. While every field of one
+# holds its default it is left out of the hash, so adding it changed no
+# existing configuration's hash.
 _LATE_SECTIONS = {
     "geoparser": GeoparserConfig,
     "grid": GridConfig,
+    "lexical": LexicalConfig,
 }
 
 
@@ -203,10 +202,6 @@ def _drop_late_defaults(d: dict) -> dict:
     for section, cls in _LATE_SECTIONS.items():
         if d.get(section) == asdict(cls()):
             del d[section]
-    for section, defaults in _LATE_FIELDS.items():
-        for key, default in defaults.items():
-            if d[section].get(key) == default:
-                del d[section][key]
     return d
 
 
@@ -273,6 +268,7 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
         "grounded": (GroundedConfig, _section(raw, "grounded")),
         "geoparser": (GeoparserConfig, _section(raw, "geoparser")),
         "grid": (GridConfig, _section(raw, "grid")),
+        "lexical": (LexicalConfig, _section(raw, "lexical")),
     }
     built = {}
     for key, (cls, sub) in sections.items():
@@ -333,8 +329,6 @@ def _validate_types(cfg: PipelineConfig) -> None:
     _require_type("dense.top_k", cfg.dense.top_k, int)
     _require_type("grounded.top_k", cfg.grounded.top_k, int)
     _require_type("baseline.min_population", cfg.baseline.min_population, int)
-    _require_type("baseline.ngram_min", cfg.baseline.ngram_min, int)
-    _require_type("baseline.ngram_max", cfg.baseline.ngram_max, int)
     _require_type("rerank.enabled", cfg.rerank.enabled, bool)
     _require_type("dense.query_prefix", cfg.dense.query_prefix, str)
     _require_type("dense.passage_prefix", cfg.dense.passage_prefix, str)
@@ -409,13 +403,6 @@ def _validate_baseline(cfg: PipelineConfig) -> None:
             raise ConfigError("baseline 'most_populous' requires ner.model")
         if not baseline.gazetteer:
             raise ConfigError("baseline 'most_populous' requires baseline.gazetteer")
-    if baseline.strategy == "char_ngram":
-        if cfg.ner.model or baseline.gazetteer:
-            raise ConfigError("baseline 'char_ngram' must not set ner.model or "
-                              "baseline.gazetteer -- surface form only is the point")
-        if not 1 <= baseline.ngram_min <= baseline.ngram_max:
-            raise ConfigError("baseline.ngram_min / ngram_max must satisfy "
-                              "1 <= ngram_min <= ngram_max")
 
 
 def _validate_dense_retrieval(cfg: PipelineConfig) -> None:
@@ -468,13 +455,34 @@ def _validate_geoparser(cfg: PipelineConfig) -> None:
                           "not set ner.model, llm.provider or linking.backend")
 
 
+def _require_place_index(cfg: PipelineConfig, paradigm: str) -> None:
+    """Configurations that rank dense retrieval's candidate places by their
+    indexed text, without an encoder and without a mention-detection stage."""
+    if not cfg.dense.index_fields:
+        raise ConfigError(f"paradigm '{paradigm}' requires dense.index_fields -- it "
+                          "ranks the same place texts dense retrieval indexes")
+    if cfg.dense.encoder:
+        raise ConfigError(f"paradigm '{paradigm}' must not set dense.encoder")
+    if cfg.ner.model or cfg.llm.provider or cfg.linking.backend != "none":
+        raise ConfigError(f"paradigm '{paradigm}' must not set ner.model, "
+                          "llm.provider or linking.backend")
+
+
 def _validate_grid_lm(cfg: PipelineConfig) -> None:
     degrees = cfg.grid.cell_degrees
     if isinstance(degrees, bool) or not isinstance(degrees, (int, float)) or degrees <= 0:
         raise ConfigError("paradigm 'grid_lm' requires grid.cell_degrees > 0")
-    if cfg.ner.model or cfg.llm.provider or cfg.linking.backend != "none":
-        raise ConfigError("paradigm 'grid_lm' must not set ner.model, llm.provider "
-                          "or linking.backend -- words in, cell out is the point")
+    _require_place_index(cfg, "grid_lm")
+
+
+def _validate_lexical_retrieval(cfg: PipelineConfig) -> None:
+    lx = cfg.lexical
+    for key in ("ngram_min", "ngram_max"):
+        _require_type(f"lexical.{key}", getattr(lx, key), int)
+    if not 1 <= lx.ngram_min <= lx.ngram_max:
+        raise ConfigError("lexical.ngram_min / ngram_max must satisfy "
+                          "1 <= ngram_min <= ngram_max")
+    _require_place_index(cfg, "lexical_retrieval")
 
 
 _PARADIGM_VALIDATORS = {
@@ -485,6 +493,7 @@ _PARADIGM_VALIDATORS = {
     "grounded_llm": _validate_grounded_llm,
     "geoparser": _validate_geoparser,
     "grid_lm": _validate_grid_lm,
+    "lexical_retrieval": _validate_lexical_retrieval,
 }
 
 

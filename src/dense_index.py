@@ -203,24 +203,28 @@ def _check_gold(qids, gold):
             f"retrieved. Check for fetch failures and rebuild.")
 
 
-def load_or_build(cfg) -> DenseIndex:
-    """Load the cached index, or build it once and cache it."""
-    d = cfg.dense
-    pool = build_pool(d.pool)
-    signature = _signature(cfg, pool)
-    path = _cache_path(signature)
-    gold = _dataset_gold_qids()
-    if path.exists():
-        with path.open("rb") as f:
-            payload = pickle.load(f)
-        _check_gold(payload["qids"], gold)
-        m = payload["meta"]
-        log.info("dense index loaded: %d places, encoder=%s, pool=%s",
-                 m["n_places"], m["encoder"], m["pool"])
-        return DenseIndex(payload["qids"], payload["matrix"], payload["places"],
-                          payload["meta"], d.encoder, d.query_prefix)
+class Catalogue:
+    """The candidate places of a pool: their QIDs in index order, their place
+    records, and the text that represents each one (no encoder prefix)."""
 
-    log.info("building dense index (pool=%s, encoder=%s)...", d.pool, d.encoder)
+    def __init__(self, qids, places, texts, pool_size, unfetched):
+        self.qids = qids
+        self.places = places
+        self.texts = texts
+        self.pool_size = pool_size
+        self.unfetched = unfetched
+
+
+def build_catalogue(d, pool=None, gold=None) -> Catalogue:
+    """Fetch the pool's places and build their index texts.
+
+    Shared by every configuration that ranks the same candidate places from
+    the same descriptions -- dense retrieval, the character n-gram floor and
+    the grid language model -- so that none of them sees a different pool."""
+    if pool is None:
+        pool = build_pool(d.pool)
+    if gold is None:
+        gold = _dataset_gold_qids()
     log.info("pool before coordinate filter: %d QIDs", len(pool))
 
     entities = wd.fetch_entities(pool)
@@ -256,8 +260,45 @@ def load_or_build(cfg) -> DenseIndex:
             "description": ent.get("descriptions", {}).get("en", {}).get("value", label),
         }
         qids.append(qid)
-        texts.append(index_text(qid, ent, d.index_fields or [], geo, aliases,
-                                d.passage_prefix))
+        texts.append(index_text(qid, ent, d.index_fields or [], geo, aliases))
+    wd.save_caches()
+    return Catalogue(qids, places, texts, len(pool), unfetched)
+
+
+_catalogues: dict = {}
+
+
+def get_catalogue(d) -> Catalogue:
+    """The catalogue for a dense section, built once per process and pool."""
+    pool = build_pool(d.pool)
+    key = (hashlib.sha256(",".join(pool).encode()).hexdigest(),
+           d.pool, tuple(d.index_fields or []))
+    if key not in _catalogues:
+        _catalogues[key] = build_catalogue(d, pool)
+    return _catalogues[key]
+
+
+def load_or_build(cfg) -> DenseIndex:
+    """Load the cached index, or build it once and cache it."""
+    d = cfg.dense
+    pool = build_pool(d.pool)
+    signature = _signature(cfg, pool)
+    path = _cache_path(signature)
+    gold = _dataset_gold_qids()
+    if path.exists():
+        with path.open("rb") as f:
+            payload = pickle.load(f)
+        _check_gold(payload["qids"], gold)
+        m = payload["meta"]
+        log.info("dense index loaded: %d places, encoder=%s, pool=%s",
+                 m["n_places"], m["encoder"], m["pool"])
+        return DenseIndex(payload["qids"], payload["matrix"], payload["places"],
+                          payload["meta"], d.encoder, d.query_prefix)
+
+    log.info("building dense index (pool=%s, encoder=%s)...", d.pool, d.encoder)
+    cat = build_catalogue(d, pool, gold)
+    qids, places, unfetched = cat.qids, cat.places, cat.unfetched
+    texts = [d.passage_prefix + t for t in cat.texts]
 
     from ranking import load_encoder
     model = load_encoder(d.encoder)
