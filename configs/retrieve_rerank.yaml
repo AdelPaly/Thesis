@@ -1,5 +1,6 @@
 name: retrieve_rerank
-tier: "2a"
+tier: 2
+variant: a
 paradigm: ner_dependent
 description: >
   Flair NER over every tag, Wikidata wbsearchentities top-10 retrieval per
@@ -18,5 +19,5 @@ rerank:
   model: intfloat/multilingual-e5-base
   enabled: true
 llm:
-  backend: null
+  provider: null
   model: null

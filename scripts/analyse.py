@@ -64,7 +64,8 @@ from pathlib import Path
 import yaml
 
 from score import (attach_split, find_prediction_files, group_by, load_predictions,
-                   prediction_file_key, print_table, score_record, summarise_metrics)
+                   prediction_file_key, print_table, row_order, score_record,
+                   summarise_metrics)
 import stats as st
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -75,13 +76,9 @@ CONFIG_DIR = REPO_ROOT / "configs"
 DEFAULT_BOOT = 2000
 RULE = "=" * 100
 
-# Report order. A configuration declares its tier in its config file; the tier
-# is presentation metadata excluded from config_hash, so it orders rows without
-# being able to change a prediction. Rank falls back to the paradigm on the
-# records for anything with no config file left.
-TIER_RANK = {"0": 0, "2a": 2, "2b": 3, "3": 4, "4": 5, "5": 6}
-PARADIGM_RANK = {"baseline": 0, "ner_dependent": 3, "dense_retrieval": 4,
-                 "ner_free": 5, "grounded_llm": 6}
+# Report order. A configuration declares its tier and variant in its config
+# file; both are presentation metadata excluded from config_hash, so they order
+# rows without being able to change a prediction.
 
 
 def _config_stages(raw: dict) -> set[str]:
@@ -118,7 +115,8 @@ def load_config_meta(config_dir: Path = CONFIG_DIR) -> dict[str, dict]:
             print(f"warning: skipping unreadable config {path.name}: {exc}", file=sys.stderr)
             continue
         if isinstance(raw, dict) and raw.get("name"):
-            meta[raw["name"]] = {"tier": str(raw.get("tier", "") or ""),
+            meta[raw["name"]] = {"tier": raw.get("tier"),
+                                 "variant": raw.get("variant") or "",
                                  "stages": _config_stages(raw)}
     return meta
 
@@ -127,14 +125,10 @@ def pct_str(a: int, b: int) -> str:
     return f"{a / b * 100:.1f}%" if b else "-"
 
 
-def sort_key(name: str, records: list[dict], meta: dict) -> tuple:
-    """Tier first, then paradigm, then name."""
-    tier = meta.get(name, {}).get("tier", "")
-    if tier in TIER_RANK:
-        return (TIER_RANK[tier], name)
-    paradigms = {r.get("paradigm") for r in records}
-    paradigm = sorted(paradigms)[0] if paradigms else ""
-    return (PARADIGM_RANK.get(paradigm, 9), name)
+def sort_key(name: str, meta: dict) -> tuple:
+    """Tier first, then variant, then name."""
+    m = meta.get(name, {})
+    return row_order(name, {name: (m.get("tier"), m.get("variant", ""))} if m else {})
 
 
 LEVELS = ["error", "no_ner_span", "span_not_linked", "wrong_entity",
@@ -497,7 +491,7 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
 
     def ordered(names) -> list[str]:
         return sorted((n for n in names if n in present),
-                      key=lambda n: sort_key(n, groups[n], meta))
+                      key=lambda n: sort_key(n, meta))
 
     # Grouped by the paradigm ON THE RECORDS rather than by listing
     # configuration names, so a configuration added or removed needs no edit here.
@@ -560,17 +554,18 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
     print(RULE)
     print("APPENDIX  All configurations")
     print(RULE)
-    _print_metric_table([(n, summarise_metrics(groups[n])) for n in sorted(present)])
+    _print_metric_table([(n, summarise_metrics(groups[n])) for n in ordered(present)])
 
     print("APPENDIX  All configurations x dataset")
     print(RULE)
     pairs = group_by(scored, _config_dataset)
-    _print_metric_table([(f"{c} / {d}", summarise_metrics(v)) for (c, d), v in sorted(pairs.items())])
+    pair_order = sorted(pairs, key=lambda cd: (sort_key(cd[0], meta), cd[1]))
+    _print_metric_table([(f"{c} / {d}", summarise_metrics(pairs[(c, d)])) for c, d in pair_order])
 
     if args.out:
         rows = []
-        for (c, d), v in sorted(pairs.items()):
-            m = summarise_metrics(v)
+        for c, d in pair_order:
+            m = summarise_metrics(pairs[(c, d)])
             rows.append([c, d] + [round(m.get(k), 4) if isinstance(m.get(k), float) else m.get(k)
                                   for k in METRIC_COLS])
         write_rows(Path(args.out) / f"table_appendix_all_configs_{args.split}.csv",
@@ -624,7 +619,7 @@ def run_comparisons(groups: dict, n_boot: int, seed: int) -> list[dict]:
     return results
 
 
-def cmd_stats(scored: list[dict], args) -> None:
+def cmd_stats(scored: list[dict], args, meta: dict) -> None:
     groups = group_by(scored, "config_name")
     print(RULE)
     print(f"PAIRED STATISTICS  (split={args.split}, n_boot={args.boot}, seed={args.seed})")
@@ -660,7 +655,7 @@ def cmd_stats(scored: list[dict], args) -> None:
     print(header)
     print("-" * len(header))
     boot_rows = []
-    for name in sorted(groups):
+    for name in sorted(groups, key=lambda n: sort_key(n, meta)):
         ci = st.cluster_bootstrap_ci(groups[name], st.exact_rate, n_boot=args.boot, seed=args.seed)
         print(f"{name:30} {st.fmt_ci(ci, pct=True):>22}")
         boot_rows.append([name, ci.get("point"), ci.get("lo"), ci.get("hi"),
@@ -775,7 +770,7 @@ def main() -> None:
     if args.command in ("tables", "all"):
         cmd_tables(scored, args, meta)
     if args.command in ("stats", "all"):
-        cmd_stats(scored, args)
+        cmd_stats(scored, args, meta)
 
 
 if __name__ == "__main__":

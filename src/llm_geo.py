@@ -1,11 +1,17 @@
+"""Whole-text LLM geolocation (tier 4): one prompt, one answer, resolved
+against Wikidata.
+
+The provider, model, sampling parameters and prompt template all come from the
+configuration (`llm.*`); `build()` is the factory the pipeline calls, and
+instances are memoised per configuration so a run loads one client.
+"""
 from __future__ import annotations
 
 import hashlib
 import logging
-from abc import ABC, abstractmethod
 
 from llm_common import (CACHE_DIR, REFUSAL_SENTINEL, PickleCache,  # noqa: F401
-                        fingerprint, parse_json_object)
+                        fingerprint, make_client, parse_json_object)
 
 from wikidata import (search_entities, fetch_entities, get_coords_of,
                       resolve_country_continent)
@@ -22,6 +28,8 @@ Set "refused" to true ONLY if the text contains no geographic signal at all.
 Do not guess if you have no confidence — refuse instead.
 
 Text: {text}"""
+
+PROMPTS = {"v1": PROMPT}
 
 
 # Models are asked for JSON null when a field is unknown, and mostly comply --
@@ -43,29 +51,35 @@ def _clean_name(value) -> str | None:
     return None if name.lower() in _PLACEHOLDER_NAMES else name
 
 
-class LLMGeoPipeline(ABC):
-    """Base class — subclasses only implement call_llm(prompt) -> str and may
-    set `generation_params` (anything that changes the model's answers)."""
+class LLMGeoPipeline:
+    """One provider client, one prompt template, one response cache.
 
-    generation_params: dict = {}
+    `client` is a provider client from llm_common.make_client: it supplies
+    `call(prompt)`, `model_id` and `generation_params` (anything that changes
+    the model's answers, which goes into the cache fingerprint)."""
 
-    def __init__(self, model_name: str):
-        self.model_name = model_name
-        self._cache = PickleCache(model_name, fingerprint(PROMPT, self.generation_params))
+    def __init__(self, client, cache_name: str, prompt_template: str = "v1"):
+        self.client = client
+        self.model_id = client.model_id
+        self.generation_params = client.generation_params
+        self.model_name = cache_name
+        self.prompt_template = prompt_template
+        self.prompt = PROMPTS[prompt_template]
+        self._cache = PickleCache(cache_name, fingerprint(self.prompt, self.generation_params))
 
     def save_cache(self) -> None:
         self._cache.save()
 
-    @abstractmethod
     def call_llm(self, prompt: str) -> str:
         """Return raw text response from the LLM."""
+        return self.client.call(prompt)
 
     def _get_response(self, text: str) -> str:
         key = hashlib.sha256(text.encode()).hexdigest()
         cached = self._cache.get(key)
         if cached:
             return cached
-        prompt = PROMPT.format(text=text)
+        prompt = self.prompt.format(text=text)
         try:
             raw = self.call_llm(prompt)
         except BaseException:
@@ -133,3 +147,21 @@ class LLMGeoPipeline(ABC):
         if parsed is None or parsed.get("refused"):
             return None, raw
         return self._resolve_to_candidate(parsed), raw
+
+
+_instances: dict[tuple, LLMGeoPipeline] = {}
+
+
+def build(llm) -> LLMGeoPipeline:
+    """The pipeline for an LLMConfig, memoised on everything that defines it."""
+    key = (llm.provider, llm.model, llm.revision, llm.temperature, llm.top_p,
+           llm.prompt_template, llm.cache_name)
+    if key not in _instances:
+        _instances[key] = LLMGeoPipeline(make_client(llm), llm.cache_name,
+                                         llm.prompt_template)
+    return _instances[key]
+
+
+def clear_instances() -> None:
+    """Forget memoised pipelines (tests, multi-config in-process runs)."""
+    _instances.clear()

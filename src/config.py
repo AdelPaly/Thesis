@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field, asdict, fields, replace
+from datetime import date
 from pathlib import Path
 
 import yaml
@@ -27,7 +28,9 @@ DATASET_REGISTRY = CONFIG_DIR / "datasets.yaml"
 PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
              "grounded_llm"}
 LINKING_BACKENDS = {"refined", "wikidata_search", "none"}
-LLM_BACKENDS = {None, "gemma"}
+LLM_PROVIDERS = {None, "google", "openrouter"}
+PROMPT_TEMPLATES = {"v1"}
+TIERS = range(0, 6)
 BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
 GAZETTEERS = {"wikidata"}
 DENSE_POOLS = {"gold_only", "gold_plus_predicted"}
@@ -60,8 +63,19 @@ class RerankConfig:
 
 @dataclass(frozen=True)
 class LLMConfig:
-    backend: str | None = None
+    # Who serves the model, kept apart from the model itself: the same weights
+    # on another provider are the same model.
+    provider: str | None = None        # google | openrouter
     model: str | None = None
+    revision: str | None = None        # pinned where the provider offers one
+    # None means "not sent": the provider's own default applies.
+    temperature: float | None = None
+    top_p: float | None = None
+    prompt_template: str = "v1"
+    # Date of the run that produced the predictions. Provenance only: a hosted
+    # model can change behind an unchanged id, so the id alone does not say
+    # what was evaluated. Excluded from config_hash.
+    run_date: str | None = None
     # cache_name addresses the on-disk response cache (src/.llm_cache/<name>.pkl).
     # Kept separate from `model` so existing caches stay addressable after a
     # model slug is rewritten; defaults to a slugified model id.
@@ -111,11 +125,12 @@ class PipelineConfig:
     dense: DenseConfig = field(default_factory=DenseConfig)
     grounded: GroundedConfig = field(default_factory=GroundedConfig)
     # Presentation metadata: which tier of the evaluation this configuration
-    # belongs to, by what kind of signal it can consume. Excluded from
-    # config_hash with `description`, because it orders report rows and does
-    # not change a single prediction -- forcing a re-run over row ordering
-    # would be absurd.
-    tier: str = ""
+    # belongs to (0-5, by what kind of signal it can consume), and a variant
+    # letter for configurations that share a tier. Excluded from config_hash
+    # with `description`, because they order report rows and do not change a
+    # single prediction -- forcing a re-run over row ordering would be absurd.
+    tier: int | None = None
+    variant: str | None = None
     description: str = ""
     config_hash: str = ""
     source_path: str = ""
@@ -125,8 +140,10 @@ class PipelineConfig:
         `description` and `source_path` are excluded: documentation and file
         location must not move the hash."""
         d = asdict(self)
-        for presentation_only in ("tier", "description", "config_hash", "source_path"):
+        for presentation_only in ("tier", "variant", "description", "config_hash",
+                                  "source_path"):
             d.pop(presentation_only, None)
+        d["llm"].pop("run_date")
         # Hash-stability shim: GroundedConfig.allow_abstention was removed (it
         # was never read) but every existing prediction file was hashed with it
         # present and True. Re-adding it keeps those hashes, and so resume,
@@ -135,6 +152,12 @@ class PipelineConfig:
         # Hash-stability shim: a renamed configuration hashes under its old
         # name, so prediction files written before the rename stay valid.
         d["name"] = legacy_config_name(self.name) or self.name
+        # Hash-stability shim: a configuration with no LLM hashes its llm
+        # section in the shape it had before `backend` was split into
+        # `provider` and the sampling fields, so its existing prediction files
+        # stay valid.
+        if d["llm"]["provider"] is None:
+            d["llm"] = {"backend": None, "model": None, "cache_name": None}
         return d
 
 
@@ -203,16 +226,20 @@ def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
     built = {}
     for key, (cls, sub) in sections.items():
         _check_keys(key, sub, cls)
+        if isinstance(sub.get("run_date"), date):
+            # YAML reads an unquoted 2026-08-14 as a date.
+            sub = {**sub, "run_date": sub["run_date"].isoformat()}
         built[key] = cls(**sub)
 
     llm = built["llm"]
-    if llm.backend is not None and llm.cache_name is None:
+    if llm.provider is not None and llm.cache_name is None:
         built["llm"] = replace(llm, cache_name=_slug(llm.model))
 
     cfg = PipelineConfig(
         name=name,
         paradigm=paradigm,
-        tier=str(raw.get("tier", "") or ""),
+        tier=raw.get("tier"),
+        variant=raw.get("variant"),
         description=raw.get("description", "") or "",
         source_path=source_path,
         **built,
@@ -242,6 +269,13 @@ def _require_str_list(where: str, value, *, allow_none: bool = False) -> None:
 
 
 def _validate_types(cfg: PipelineConfig) -> None:
+    _require_type("tier", cfg.tier, int)
+    _require_type("variant", cfg.variant, str, allow_none=True)
+    for where, value in (("llm.temperature", cfg.llm.temperature),
+                         ("llm.top_p", cfg.llm.top_p)):
+        if value is not None and (isinstance(value, bool)
+                                  or not isinstance(value, (int, float))):
+            raise ConfigError(f"{where} must be a number, got {value!r}")
     _require_str_list("ner.entity_types", cfg.ner.entity_types, allow_none=True)
     _require_str_list("dense.index_fields", cfg.dense.index_fields, allow_none=True)
     _require_type("linking.top_n", cfg.linking.top_n, int)
@@ -257,6 +291,9 @@ def _validate_types(cfg: PipelineConfig) -> None:
                          ("rerank.model", cfg.rerank.model),
                          ("llm.model", cfg.llm.model),
                          ("llm.cache_name", cfg.llm.cache_name),
+                         ("llm.revision", cfg.llm.revision),
+                         ("llm.run_date", cfg.llm.run_date),
+                         ("llm.prompt_template", cfg.llm.prompt_template),
                          ("dense.encoder", cfg.dense.encoder),
                          ("baseline.strategy", cfg.baseline.strategy)):
         _require_type(where, value, str, allow_none=True)
@@ -266,9 +303,13 @@ def _validate_common(cfg: PipelineConfig) -> None:
     linking, rerank, llm = cfg.linking, cfg.rerank, cfg.llm
     if linking.backend not in LINKING_BACKENDS:
         raise ConfigError(f"linking.backend must be one of {sorted(LINKING_BACKENDS)}")
-    if llm.backend not in LLM_BACKENDS:
-        raise ConfigError("llm.backend must be one of "
-                          f"{sorted(str(b) for b in LLM_BACKENDS)}")
+    if cfg.tier not in TIERS:
+        raise ConfigError(f"tier must be an integer from 0 to 5, got {cfg.tier!r}")
+    if llm.provider not in LLM_PROVIDERS:
+        raise ConfigError("llm.provider must be one of "
+                          f"{sorted(str(b) for b in LLM_PROVIDERS)}")
+    if llm.prompt_template not in PROMPT_TEMPLATES:
+        raise ConfigError(f"llm.prompt_template must be one of {sorted(PROMPT_TEMPLATES)}")
     if linking.top_n < 1:
         raise ConfigError("linking.top_n must be >= 1")
     if cfg.dense.pool not in DENSE_POOLS:
@@ -279,8 +320,8 @@ def _validate_common(cfg: PipelineConfig) -> None:
         raise ConfigError("grounded.top_k must be >= 1")
     if rerank.enabled and not rerank.model:
         raise ConfigError("rerank.enabled is true but rerank.model is not set")
-    if llm.backend and not llm.model:
-        raise ConfigError(f"llm.backend is {llm.backend!r} but llm.model is not set")
+    if llm.provider and not llm.model:
+        raise ConfigError(f"llm.provider is {llm.provider!r} but llm.model is not set")
     if cfg.ner.entity_types is not None and not cfg.ner.entity_types:
         raise ConfigError("ner.entity_types is an empty list; use null to keep every tag")
     if cfg.baseline.gazetteer is not None and cfg.baseline.gazetteer not in GAZETTEERS:
@@ -299,8 +340,8 @@ def _validate_ner_dependent(cfg: PipelineConfig) -> None:
 
 
 def _validate_ner_free(cfg: PipelineConfig) -> None:
-    if not cfg.llm.backend:
-        raise ConfigError("paradigm 'ner_free' requires an llm.backend")
+    if not cfg.llm.provider:
+        raise ConfigError("paradigm 'ner_free' requires an llm.provider")
     if cfg.ner.model:
         raise ConfigError("paradigm 'ner_free' must not set ner.model -- that is "
                           "what makes it NER-free")
@@ -328,8 +369,8 @@ def _validate_dense_retrieval(cfg: PipelineConfig) -> None:
         raise ConfigError("paradigm 'dense_retrieval' must not set ner.model -- "
                           "having no mention-detection stage is the point of the "
                           "tier")
-    if cfg.llm.backend:
-        raise ConfigError("paradigm 'dense_retrieval' must not set llm.backend")
+    if cfg.llm.provider:
+        raise ConfigError("paradigm 'dense_retrieval' must not set llm.provider")
 
 
 def _validate_grounded_llm(cfg: PipelineConfig) -> None:
@@ -337,8 +378,8 @@ def _validate_grounded_llm(cfg: PipelineConfig) -> None:
     if grounded.candidate_source not in CANDIDATE_SOURCES:
         raise ConfigError("grounded.candidate_source must be one of "
                           f"{sorted(CANDIDATE_SOURCES)}")
-    if not cfg.llm.backend:
-        raise ConfigError("paradigm 'grounded_llm' requires an llm.backend")
+    if not cfg.llm.provider:
+        raise ConfigError("paradigm 'grounded_llm' requires an llm.provider")
     if grounded.candidate_source == "dense" and not cfg.dense.encoder:
         raise ConfigError("grounded.candidate_source is 'dense' but dense.encoder "
                           "is not set")

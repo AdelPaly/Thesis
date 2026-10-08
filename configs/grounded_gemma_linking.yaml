@@ -1,5 +1,5 @@
 name: grounded_gemma_linking
-tier: "5"
+tier: 5
 paradigm: grounded_llm
 description: >
   Tier 5, second variant. Identical to grounded_gemma except that the
@@ -21,8 +21,13 @@ rerank:
   model: null
   enabled: false
 llm:
-  backend: gemma
+  provider: google
   model: gemma-4-31b-it
+  revision: null
+  temperature: 0.0
+  top_p: null
+  prompt_template: v1
+  run_date: null
   cache_name: gemma4_31b
 grounded:
   candidate_source: linking

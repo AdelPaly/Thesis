@@ -13,7 +13,6 @@ runner serialises those straight into the prediction record.
 from __future__ import annotations
 
 import csv
-import importlib
 import logging
 from collections import Counter
 from dataclasses import dataclass, field
@@ -25,10 +24,6 @@ from keys import place_key
 logger = logging.getLogger(__name__)
 
 _UNSET = object()
-
-# Backend name -> module exposing `build(model, cache_name)`. Imported lazily so
-# a config that never calls an LLM does not pull in its client library.
-LLM_BACKEND_MODULES = {"gemma": "llm_gemma"}
 
 # Errors that mean the run is misconfigured, not that one item is bad. They
 # abort the run instead of being recorded as N identical per-item errors.
@@ -178,12 +173,10 @@ class Pipeline:
 
     def _llm_pipeline(self):
         if self._llm is None:
-            backend = self.cfg.llm.backend
-            module = LLM_BACKEND_MODULES.get(backend)
-            if module is None:
-                raise ConfigError(f"unknown llm.backend {backend!r}")
-            build = importlib.import_module(module).build
-            self._llm = build(self.cfg.llm.model, self.cfg.llm.cache_name)
+            # Imported lazily so a config that never calls an LLM does not pull
+            # in a provider's client library.
+            from llm_geo import build
+            self._llm = build(self.cfg.llm)
         return self._llm
 
     def save_llm_cache(self):

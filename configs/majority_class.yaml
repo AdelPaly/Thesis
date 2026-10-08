@@ -1,5 +1,5 @@
 name: majority_class
-tier: "0"
+tier: 0
 paradigm: baseline
 description: >
   Majority baseline. Always predicts the most frequent gold place in the DEV
@@ -19,7 +19,7 @@ rerank:
   model: null
   enabled: false
 llm:
-  backend: null
+  provider: null
   model: null
 baseline:
   strategy: majority_dev_place

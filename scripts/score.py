@@ -44,11 +44,38 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from keys import current_config_name, place_key  # noqa: E402
 
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
+CONFIG_DIR = REPO_ROOT / "configs"
 ITEM_SPLIT_PATH = REPO_ROOT / "splits" / "item_split.csv"
 
 LABEL_WIDTH = 34
 CSV_FIELDS = ["group", "n", "n_gold_qid", "exact", "country", "continent",
               "no_result_rate", "error_rate"]
+
+
+def config_order(config_dir: Path | str = CONFIG_DIR) -> dict[str, tuple]:
+    """{config name: (tier, variant)} read from configs/*.yaml. Reading YAML is
+    not loading a model: it only orders the rows."""
+    import yaml
+
+    out = {}
+    for path in sorted(Path(config_dir).glob("*.yaml")):
+        if path.name == "datasets.yaml":
+            continue
+        try:
+            raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except yaml.YAMLError as exc:
+            print(f"warning: skipping unreadable config {path.name}: {exc}", file=sys.stderr)
+            continue
+        if isinstance(raw, dict) and raw.get("name"):
+            out[raw["name"]] = (raw.get("tier"), raw.get("variant") or "")
+    return out
+
+
+def row_order(name: str, order: dict) -> tuple:
+    """Sort key for a report row: tier, then variant, then name. A name with no
+    config file left sorts after every tier."""
+    tier, variant = order.get(name, (None, ""))
+    return (tier if isinstance(tier, int) else 99, variant, str(name))
 
 
 def pct(num: int, den: int) -> float | None:
@@ -282,7 +309,9 @@ def main() -> None:
     scored = [score_record(r) for r in records]
     print(f"split: {args.split}  records: {len(scored)}\n")
     rows = []
-    for (cfg_name, ds), items in sorted(group_by_pairs(scored).items(), key=lambda kv: kv[0]):
+    order = config_order()
+    for (cfg_name, ds), items in sorted(group_by_pairs(scored).items(),
+                                        key=lambda kv: (row_order(kv[0][0], order), kv[0][1])):
         rows.append((f"{cfg_name} / {ds}", summarise_metrics(items)))
         if args.by:
             for sub, sub_items in sorted(group_by(items, args.by).items(),

@@ -1,5 +1,5 @@
 name: dense_retrieval
-tier: "3"
+tier: 3
 paradigm: dense_retrieval
 description: >
   Tier 3. No mention detection, no entity linking, no LLM: embed the post,
@@ -30,7 +30,7 @@ rerank:
   model: null
   enabled: false
 llm:
-  backend: null
+  provider: null
   model: null
 dense:
   encoder: intfloat/multilingual-e5-base

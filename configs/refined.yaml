@@ -1,5 +1,6 @@
 name: refined
-tier: "2b"
+tier: 2
+variant: b
 paradigm: ner_dependent
 description: >
   Flair NER (LOC/PER/ORG) supplies the mentions; ReFinED in constrained-span
@@ -18,5 +19,5 @@ rerank:
   model: intfloat/multilingual-e5-base
   enabled: true
 llm:
-  backend: null
+  provider: null
   model: null

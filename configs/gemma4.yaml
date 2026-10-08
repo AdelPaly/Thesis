@@ -1,5 +1,5 @@
 name: gemma4
-tier: "4"
+tier: 4
 paradigm: ner_free
 description: >
   Tier 4, LLM only, and the matched ungrounded control for tier 5: same model
@@ -22,6 +22,11 @@ rerank:
   model: null
   enabled: false
 llm:
-  backend: gemma
+  provider: google
   model: gemma-4-31b-it
+  revision: null
+  temperature: 0.0
+  top_p: null
+  prompt_template: v1
+  run_date: null
   cache_name: gemma4

@@ -41,7 +41,7 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from llm_openrouter import OpenRouterClient, OpenRouterError, parse_json_reply  # noqa: E402
+from llm_common import OpenRouterClient, OpenRouterError, parse_json_reply  # noqa: E402
 
 SPEC_PATH = PROJECT_ROOT / "prompt"
 

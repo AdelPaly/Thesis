@@ -1,5 +1,5 @@
 name: grounded_gemma
-tier: "5"
+tier: 5
 paradigm: grounded_llm
 description: >
   Tier 5. Retrieval-augmented, not routed: dense retrieval supplies candidates,
@@ -23,8 +23,13 @@ rerank:
   model: null
   enabled: false
 llm:
-  backend: gemma
+  provider: google
   model: gemma-4-31b-it
+  revision: null
+  temperature: 0.0
+  top_p: null
+  prompt_template: v1
+  run_date: null
   cache_name: gemma4_31b
 dense:
   encoder: intfloat/multilingual-e5-base
