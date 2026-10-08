@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from typing import Callable, TypedDict
 
 from config import ConfigError, PipelineConfig
-from keys import place_key
+from keys import item_id, place_key
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,9 @@ _UNSET = object()
 _FATAL_ERRORS = (ConfigError, ImportError, KeyError)
 
 SPLIT_FILE = ("splits", "place_split.csv")
+
+# How many scored places a fitted configuration records in candidate_places.
+TRAINED_TOP_K = 10
 
 
 class Candidate(TypedDict, total=False):
@@ -61,6 +64,26 @@ class PipelineOutput:
     # be attributed to bad retrieval versus bad selection.
     selection: dict | None = None
     error: str | None = None
+
+
+def _str_or_none(value) -> str | None:
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def _float_or_none(value) -> float | None:
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return None
+    return None if f != f else f
+
+
+def _place_candidate(row: dict, score: float) -> Candidate:
+    """A candidate for a training place, from its training row's gold fields."""
+    return {"qid": row["qid"], "lat": row["lat"], "lon": row["lon"],
+            "country": row["country"], "continent": row["continent"],
+            "score": score, "entity": row.get("location_name") or row["qid"],
+            "entity_type": "PLACE", "description": None}
 
 
 def _candidate_record(cand: Candidate) -> dict:
@@ -100,6 +123,7 @@ class Pipeline:
         self._llm = None
         self._grounded = None
         self._majority = _UNSET
+        self._char_ngram = None
         self._dense_index = None
         self._ner_fn = ner_fn
         self._link_fn = link_fn
@@ -217,28 +241,45 @@ class Pipeline:
         out.candidate_places = [_candidate_record(c) for c in candidates]
         out.prediction = candidates[0] if candidates else None
 
-    def _dev_place_counts(self) -> Counter:
-        """Gold QID counts over the dev side of this dataset's split."""
+    def _dev_rows(self) -> list[dict]:
+        """The dev side of this dataset's split, one dict per item with a gold
+        QID. This is the training data of every fitted configuration: a place
+        is either dev or test, so nothing fitted here has seen a test place."""
         import pandas as pd
 
         from config import load_datasets, REPO_ROOT
 
         if not self.dataset:
-            raise ConfigError("baseline 'majority_dev_place' needs to know which "
-                              "dataset it is running over")
+            raise ConfigError(f"baseline {self.cfg.baseline.strategy!r} needs to "
+                              "know which dataset it is running over")
         with open(REPO_ROOT.joinpath(*SPLIT_FILE), encoding="utf-8") as f:
             side = {r["place_key"]: r["split"] for r in csv.DictReader(f)}
 
         df = pd.read_csv(load_datasets()[self.dataset].resolved_path())
-        counts = Counter()
         if "qid" not in df:
-            return counts
-        names = df["location_name"] if "location_name" in df else [None] * len(df)
-        for qid, name in zip(df["qid"], names):
-            if isinstance(qid, str) and qid.strip() \
-                    and side.get(place_key(qid, name)) == "dev":
-                counts[qid.strip()] += 1
-        return counts
+            return []
+        rows = []
+        for row in df.to_dict("records"):
+            qid = row.get("qid")
+            if not (isinstance(qid, str) and qid.strip()):
+                continue
+            if side.get(place_key(qid, row.get("location_name"))) != "dev":
+                continue
+            rows.append({
+                "item_id": item_id(row["text"]),
+                "text": row["text"],
+                "qid": qid.strip(),
+                "location_name": _str_or_none(row.get("location_name")),
+                "country": _str_or_none(row.get("country")),
+                "continent": _str_or_none(row.get("continent")),
+                "lat": _float_or_none(row.get("latitude")),
+                "lon": _float_or_none(row.get("longitude")),
+            })
+        return rows
+
+    def _dev_place_counts(self) -> Counter:
+        """Gold QID counts over the dev side of this dataset's split."""
+        return Counter(r["qid"] for r in self._dev_rows())
 
     def _majority_place(self) -> Candidate | None:
         """The most frequent gold place in the DEV split of this dataset.
@@ -267,12 +308,29 @@ class Pipeline:
         cand = self._majority_place()
         out.prediction = dict(cand) if cand else None
 
+    def _run_char_ngram(self, text, out):
+        """Surface form only: the training place whose character n-gram
+        profile best overlaps the post. No toponym, no gazetteer. The place
+        fields of the prediction are the training rows' own gold fields."""
+        if self._char_ngram is None:
+            from char_ngram import CharNgramModel
+            ba = self.cfg.baseline
+            self._char_ngram = CharNgramModel(self._dev_rows(), ba.ngram_min, ba.ngram_max)
+        model = self._char_ngram
+        ranked = model.rank(text, item_id=item_id(text))
+        candidates = [_place_candidate(model.places[qid], score)
+                      for qid, score in ranked[:TRAINED_TOP_K]]
+        out.candidate_places = [_candidate_record(c) for c in candidates]
+        out.prediction = candidates[0] if candidates else None
+
     def _run_baseline(self, text, out):
         strategy = self.cfg.baseline.strategy
         if strategy == "most_populous":
             self._run_population_baseline(text, out)
         elif strategy == "majority_dev_place":
             self._run_majority_baseline(text, out)
+        elif strategy == "char_ngram":
+            self._run_char_ngram(text, out)
         else:
             raise ConfigError(f"unhandled baseline strategy {strategy!r}")
 

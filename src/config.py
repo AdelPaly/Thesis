@@ -31,7 +31,7 @@ LINKING_BACKENDS = {"refined", "wikidata_search", "none"}
 LLM_PROVIDERS = {None, "google", "openrouter"}
 PROMPT_TEMPLATES = {"v1"}
 TIERS = range(0, 6)
-BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
+BASELINE_STRATEGIES = {"most_populous", "majority_dev_place", "char_ngram"}
 GAZETTEERS = {"wikidata"}
 DENSE_POOLS = {"gold_only", "gold_plus_predicted"}
 CANDIDATE_SOURCES = {"dense", "linking"}
@@ -84,9 +84,12 @@ class LLMConfig:
 
 @dataclass(frozen=True)
 class BaselineConfig:
-    strategy: str | None = None        # most_populous | majority_dev_place
+    strategy: str | None = None        # most_populous | majority_dev_place | char_ngram
     gazetteer: str | None = None       # wikidata
     min_population: int = 0
+    # char_ngram: n-gram lengths, inclusive.
+    ngram_min: int = 2
+    ngram_max: int = 5
 
 
 @dataclass(frozen=True)
@@ -158,7 +161,23 @@ class PipelineConfig:
         # stay valid.
         if d["llm"]["provider"] is None:
             d["llm"] = {"backend": None, "model": None, "cache_name": None}
-        return d
+        return _drop_late_defaults(d)
+
+
+# Fields added after prediction files existed. While a field holds its default
+# it is left out of the hash, so adding it changed no existing configuration's
+# hash; a configuration that sets it to anything else hashes it.
+_LATE_FIELDS = {
+    "baseline": {"ngram_min": 2, "ngram_max": 5},
+}
+
+
+def _drop_late_defaults(d: dict) -> dict:
+    for section, defaults in _LATE_FIELDS.items():
+        for key, default in defaults.items():
+            if d[section].get(key) == default:
+                del d[section][key]
+    return d
 
 
 def _canonical_hash(d: dict) -> str:
@@ -282,6 +301,8 @@ def _validate_types(cfg: PipelineConfig) -> None:
     _require_type("dense.top_k", cfg.dense.top_k, int)
     _require_type("grounded.top_k", cfg.grounded.top_k, int)
     _require_type("baseline.min_population", cfg.baseline.min_population, int)
+    _require_type("baseline.ngram_min", cfg.baseline.ngram_min, int)
+    _require_type("baseline.ngram_max", cfg.baseline.ngram_max, int)
     _require_type("rerank.enabled", cfg.rerank.enabled, bool)
     _require_type("dense.query_prefix", cfg.dense.query_prefix, str)
     _require_type("dense.passage_prefix", cfg.dense.passage_prefix, str)
@@ -356,6 +377,13 @@ def _validate_baseline(cfg: PipelineConfig) -> None:
             raise ConfigError("baseline 'most_populous' requires ner.model")
         if not baseline.gazetteer:
             raise ConfigError("baseline 'most_populous' requires baseline.gazetteer")
+    if baseline.strategy == "char_ngram":
+        if cfg.ner.model or baseline.gazetteer:
+            raise ConfigError("baseline 'char_ngram' must not set ner.model or "
+                              "baseline.gazetteer -- surface form only is the point")
+        if not 1 <= baseline.ngram_min <= baseline.ngram_max:
+            raise ConfigError("baseline.ngram_min / ngram_max must satisfy "
+                              "1 <= ngram_min <= ngram_max")
 
 
 def _validate_dense_retrieval(cfg: PipelineConfig) -> None:

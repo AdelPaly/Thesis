@@ -92,6 +92,9 @@ def _config_stages(raw: dict) -> set[str]:
         stages.add("linking")
     if paradigm in ("ner_dependent", "dense_retrieval", "grounded_llm"):
         stages.add("candidates")
+    # A fitted floor that scores every training place records them as candidates.
+    if (raw.get("baseline") or {}).get("strategy") == "char_ngram":
+        stages.add("candidates")
     if paradigm == "grounded_llm":
         stages.add("selection")
     return stages
@@ -222,8 +225,9 @@ def attribute(rec: dict, has_ner_stage: bool = True) -> str | None:
             return "abstained"               # declined with the gold in front of it
         return "wrong_candidate_selected"    # had it, chose another
 
-    # --- dense retrieval (tier 3): no NER, no linking ----------------------
-    if rec.get("paradigm") == "dense_retrieval":
+    # --- ranking with no mention detection: dense retrieval (tier 3), and
+    # fitted floors that score every training place (char_ngram) ----------
+    if rec.get("paradigm") == "dense_retrieval" or (not has_ner_stage and places):
         if not places:
             return "returned_nothing"
         return "correct_candidate_not_first" if gold_in_places else "gold_not_retrieved"

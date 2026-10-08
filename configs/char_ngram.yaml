@@ -1,0 +1,36 @@
+name: char_ngram
+tier: 0
+paradigm: baseline
+description: >
+  Character n-gram floor. Every dev place gets a profile of the character
+  n-grams (lengths 2 to 5) over its dev texts; a post is scored against every
+  profile by cosine overlap and the best-matching place is predicted. No
+  toponym input, no gazetteer, no network: surface form only. It answers
+  whether a result comes from the entity clue or from surface statistics that
+  correlate with region.
+
+  Fitted on the dev split of whichever dataset is being run, like
+  majority_class. A place is either dev or test, so on test this configuration
+  cannot be exactly right by construction; its exact-match floor is a dev
+  number, and on test it measures country and continent only. A dev item is
+  scored with its own text removed from its place's profile.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  provider: null
+  model: null
+baseline:
+  strategy: char_ngram
+  gazetteer: null
+  min_population: 0
+  ngram_min: 2
+  ngram_max: 5
