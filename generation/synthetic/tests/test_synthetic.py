@@ -11,6 +11,7 @@ files: the random stream tests use temporary files.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -434,6 +435,38 @@ class BuildExemplarsLogic(unittest.TestCase):
 
     def test_exemplar_lines_empty_chosen_is_empty(self):
         self.assertEqual(bex.exemplar_lines({}), "")
+
+    def test_topical_labels(self):
+        batch = [{"uri": "u1"}, {"uri": "u2"}]
+        raw = json.dumps({"labels": [
+            {"n": 1, "register": "a", "names_anything": False, "subtopic": "debunking"},
+            {"n": 2, "register": "a", "names_anything": False}]})
+        labels = bex.parse_labels(raw, batch, topical=True)
+        self.assertEqual(labels["u1"]["subtopic"], "debunking")
+        self.assertEqual(labels["u2"]["subtopic"], "none")
+
+        cand = {"uri": "u1", "text": "t", "is_reply": False, "has_images": False,
+                "created_at": None}
+        names = {"a"}
+        self.assertEqual(bex.acceptable(cand, labels["u1"], names), "a")
+        self.assertIsNone(bex.acceptable(cand, labels["u2"], names))   # off topic
+
+        pool = bex.ExemplarPool(names, per_register=2, batch_size=5)
+        pool.take(cand, labels["u1"])
+        row = json.loads(bex.exemplar_lines(pool.chosen, "misinformation"))
+        self.assertEqual((row["topic"], row["subtopic"]), ("misinformation", "debunking"))
+
+    def test_topic_prompt_and_keywords(self):
+        topic = bex.TOPICS["climate"]
+        prompt = bex.label_prompt([{"name": "a", "description": "d"}],
+                                  [{"text": "hot again"}], topic)
+        self.assertIn('"subtopic"', prompt)
+        self.assertIn("extreme_weather", prompt)
+        self.assertNotIn('"subtopic"', bex.label_prompt([{"name": "a", "description": "d"}],
+                                                        [{"text": "x"}]))
+        rx = re.compile(topic["keywords"], re.I)
+        self.assertTrue(rx.search("the heatwave is back"))
+        self.assertFalse(rx.search("lovely sunny day"))
 
 
 if __name__ == "__main__":

@@ -25,6 +25,13 @@ post whose prompt forbids place names. So a post has to pass two filters:
 Two registers are also checked against the post's metadata: reply_in_thread
 must be a real reply, photo_caption must have had an image.
 
+--topic climate or --topic misinformation builds a topical variant instead:
+only posts matching that topic's keywords (TOPICS below) are candidates, the
+labeller also gives each post a subtopic or "none" (off topic, which is
+rejected), and the result goes to data/style_exemplars_<topic>.jsonl with its
+own label cache, data/exemplar_labels_<topic>.jsonl. The plain exemplar file
+is not touched.
+
 Labels are cached in data/exemplar_labels.jsonl, so an interrupted run
 resumes and a re-run with a larger --per-register only labels what it needs.
 The exemplar file is only rewritten when at least one exemplar was chosen, so
@@ -39,7 +46,7 @@ import json
 import random
 import re
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -113,7 +120,52 @@ def passes_text_filter(text: str) -> bool:
     return True
 
 
-def load_candidates(dump: Path) -> list[dict[str, Any]]:
+# Topical variants. "keywords" only decides which posts are labelled at all
+# (it is deliberately looser than the topic: "climate" also matches "the
+# political climate"); the labeller's subtopic decides what is on topic. Terms
+# that were mostly off topic in the 2024-11-27 dump are left out: "bots" and
+# "lies"/"lying" (spam accounts, interpersonal rows), "gaslighting", and "ev".
+TOPICS = {
+    "climate": {
+        "keywords": r"\bclimate\b|global warming|greenhouse|fossil fuels?\b|"
+                    r"carbon (emissions?|footprint|tax|capture|dioxide|neutral)|\bco2\b|"
+                    r"net[- ]zero|renewables?\b|solar (panels?|power|energy|farms?)|"
+                    r"wind (turbines?|farms?|power|energy)|sea[- ]levels?|\bcop ?29\b|"
+                    r"\bemissions\b|decarboni[sz]|heat ?waves?|wildfires?|\bdroughts?\b|"
+                    r"\bflood(s|ing|ed)?\b|glaciers?|extreme weather|\bipcc\b|"
+                    r"green energy|electric (vehicles?|cars?)|heat pumps?|"
+                    r"environmental|deforestation|biodiversity|\bpollution\b",
+        "description": "climate change, its causes and effects, energy and the "
+                       "transition away from fossil fuels, climate policy or "
+                       "activism, or extreme weather and environmental hazards",
+        "subtopics": {
+            "climate_change": "climate change itself: warming, its causes, science, denial, anxiety about it",
+            "energy_transition": "emissions, fossil fuels, renewables, electric vehicles, heat pumps, climate policy or activism",
+            "extreme_weather": "a heatwave, drought, flood, wildfire, storm or other weather or environmental hazard, experienced or discussed",
+        },
+    },
+    "misinformation": {
+        "keywords": r"misinformation|disinformation|malinformation|fake news|"
+                    r"conspirac(y|ies)|propaganda|\bhoax(es)?\b|debunk|fact[- ]?check|"
+                    r"false (claims?|information|narratives?|stories)|deep ?fakes?|"
+                    r"misleading|\bpsyops?\b|troll farms?|\banti-?vax|flat earth|"
+                    r"chemtrails?|post-truth|media literacy|propagandists?|"
+                    r"\brumou?rs?\b|doctored|out of context|"
+                    r"\bdo your (own )?research\b|\bsheeple\b",
+        "description": "misinformation, disinformation, propaganda, conspiracy "
+                       "theories, hoaxes, rumours, fake or misleading content, or "
+                       "fact-checking and correcting false claims",
+        "subtopics": {
+            "spreading": "the post itself asserts or passes on a false, conspiratorial or unverified claim",
+            "debunking": "the post corrects, fact-checks or pushes back on a specific false or misleading claim",
+            "discussing": "the post talks about misinformation, propaganda, conspiracy theories or media literacy in general",
+        },
+    },
+}
+
+
+def load_candidates(dump: Path, keywords: re.Pattern | None = None) -> list[dict[str, Any]]:
+    """Posts that pass the text filter and, when given, match the keywords."""
     out = []
     with dump.open(encoding="utf-8") as handle:
         for line in handle:
@@ -122,6 +174,8 @@ def load_candidates(dump: Path) -> list[dict[str, Any]]:
             except json.JSONDecodeError:
                 continue
             text = (record.get("text") or "").strip()
+            if keywords is not None and not keywords.search(text):
+                continue
             if text and passes_text_filter(text):
                 out.append({"uri": record.get("uri"),
                             "text": text,
@@ -136,17 +190,23 @@ LABEL_PROMPT = """You are labelling real social media posts. For each numbered p
 - "register": which ONE of these styles it is written in, or "none" if it fits none well:
 {registers}
 - "names_anything": true if the post mentions ANY of: a place (city, region, country, street, landmark, venue), a nationality or language, a person's name, an organisation, company, brand, sports team, event, or the title of a work. false only if it mentions none of these.
-
+{topic_field}
 Answer with JSON only, in this shape, one entry per post in order:
-{{"labels": [{{"n": 1, "register": "<name or none>", "names_anything": true}}]}}
+{{"labels": [{{"n": 1, "register": "<name or none>", "names_anything": true{topic_shape}}}]}}
 
 Posts:
 {posts}"""
 
+TOPIC_FIELD = """- "subtopic": whether the post is about {description}. Give the ONE that fits best, or "none" if the topic words are used in another sense or the post is not really about this topic:
+{subtopics}
+"""
 
-def parse_labels(raw: str, batch: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+
+def parse_labels(raw: str, batch: list[dict[str, Any]],
+                 topical: bool = False) -> dict[str, dict[str, Any]]:
     """
-    The labels in a model answer, keyed by post uri. Raises JSONDecodeError,
+    The labels in a model answer, keyed by post uri. With topical, each label
+    also carries the subtopic ("none" when missing). Raises JSONDecodeError,
     TypeError or ValueError when the answer is not the expected shape; the
     caller decides what to do about that.
     """
@@ -154,28 +214,43 @@ def parse_labels(raw: str, batch: list[dict[str, Any]]) -> dict[str, dict[str, A
     for entry in json.loads(raw).get("labels", []):
         n = int(entry.get("n", 0))
         if 1 <= n <= len(batch):
-            labels[batch[n - 1]["uri"]] = {
+            label = {
                 "register": str(entry.get("register") or "none").strip(),
                 "names_anything": bool(entry.get("names_anything", True)),
             }
+            if topical:
+                label["subtopic"] = str(entry.get("subtopic") or "none").strip()
+            labels[batch[n - 1]["uri"]] = label
     return labels
 
 
 _parse_failure_logged = False   # log the first unusable answer only, not every one
 
 
-def label_batch(client, config, registers, batch) -> dict[str, dict[str, Any]]:
-    global _parse_failure_logged
+def label_prompt(registers, batch, topic: dict[str, Any] | None = None) -> str:
     register_lines = "\n".join(f'    {r["name"]}: {" ".join(r["description"].split())}'
                                for r in registers)
     post_lines = "\n".join(f"{i}. {c['text'].replace(chr(10), ' / ')}"
                            for i, c in enumerate(batch, start=1))
-    messages = [{"role": "user",
-                 "content": LABEL_PROMPT.format(registers=register_lines, posts=post_lines)}]
+    topic_field = topic_shape = ""
+    if topic is not None:
+        subtopic_lines = "\n".join(f"    {name}: {desc}"
+                                   for name, desc in topic["subtopics"].items())
+        topic_field = TOPIC_FIELD.format(description=topic["description"],
+                                         subtopics=subtopic_lines)
+        topic_shape = ', "subtopic": "<name or none>"'
+    return LABEL_PROMPT.format(registers=register_lines, posts=post_lines,
+                               topic_field=topic_field, topic_shape=topic_shape)
+
+
+def label_batch(client, config, registers, batch,
+                topic: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+    global _parse_failure_logged
+    messages = [{"role": "user", "content": label_prompt(registers, batch, topic)}]
     content, _meta, _log = gen.call_with_backoff(client, messages, config)
     raw = gen.extract_json_object(content or "") or "{}"
     try:
-        labels = parse_labels(raw, batch)
+        labels = parse_labels(raw, batch, topical=topic is not None)
     except (json.JSONDecodeError, TypeError, ValueError) as exc:
         labels = {}
         if not _parse_failure_logged:
@@ -188,8 +263,14 @@ def label_batch(client, config, registers, batch) -> dict[str, dict[str, Any]]:
         return {}
     # A post the model skipped inside an otherwise good answer is recorded as
     # unusable rather than retried forever.
+    skipped = {"register": "none", "names_anything": True}
+    if topic is not None:
+        skipped["subtopic"] = "none"
+        for label in labels.values():          # an invented subtopic is off topic
+            if label["subtopic"] not in topic["subtopics"]:
+                label["subtopic"] = "none"
     for cand in batch:
-        labels.setdefault(cand["uri"], {"register": "none", "names_anything": True})
+        labels.setdefault(cand["uri"], dict(skipped))
     return labels
 
 
@@ -221,9 +302,12 @@ def bucket_of(cand: dict[str, Any]) -> list[str]:
 
 
 def acceptable(cand: dict[str, Any], label: dict[str, Any], names: set[str]) -> str | None:
-    """The register this post is an exemplar for, or None."""
+    """The register this post is an exemplar for, or None. A topical label
+    (one with a subtopic) must also be on topic."""
     register = label["register"]
     if label["names_anything"] or register not in names:
+        return None
+    if label.get("subtopic", "") == "none":
         return None
     if register == "reply_in_thread" and not cand["is_reply"]:
         return None
@@ -250,6 +334,8 @@ class ExemplarPool:
         """Keep the candidate if its label makes it an exemplar and there is room."""
         register = acceptable(cand, label, self.names)
         if register and len(self.chosen[register]) < self.per_register:
+            if "subtopic" in label:
+                cand = {**cand, "subtopic": label["subtopic"]}
             self.chosen[register].append(cand)
 
     def full(self) -> bool:
@@ -301,7 +387,8 @@ def make_label_client(config: dict[str, Any]):
 
 
 def label_candidates(pool: ExemplarPool, client, config, registers,
-                     cache_path: Path, max_calls: int) -> int:
+                     cache_path: Path, max_calls: int,
+                     topic: dict[str, Any] | None = None) -> int:
     """Label batches until every register is full or max_calls is reached.
     Appends every label to the cache. Returns the number of calls made."""
     calls = 0
@@ -312,7 +399,7 @@ def label_candidates(pool: ExemplarPool, client, config, registers,
             if not batch:
                 break
             try:
-                labels = label_batch(client, config, registers, batch)
+                labels = label_batch(client, config, registers, batch, topic)
             except gen.ApiError as exc:
                 print(f"  call failed ({exc}); stopping - re-run to resume", file=sys.stderr)
                 break
@@ -329,15 +416,19 @@ def label_candidates(pool: ExemplarPool, client, config, registers,
     return calls
 
 
-def exemplar_lines(chosen: dict[str, list[dict[str, Any]]]) -> str:
-    """The style_exemplars.jsonl content for the chosen posts."""
+def exemplar_lines(chosen: dict[str, list[dict[str, Any]]],
+                   topic: str | None = None) -> str:
+    """The style_exemplars.jsonl content for the chosen posts. A topical run
+    adds the topic and each post's subtopic."""
     lines = []
     for register in sorted(chosen):
         for cand in chosen[register]:
-            lines.append(json.dumps({"register": register, "text": cand["text"],
-                                     "source": cand["uri"],
-                                     "created_at": cand["created_at"]},
-                                    ensure_ascii=False) + "\n")
+            row = {"register": register, "text": cand["text"],
+                   "source": cand["uri"], "created_at": cand["created_at"]}
+            if topic is not None:
+                row["topic"] = topic
+                row["subtopic"] = cand.get("subtopic")
+            lines.append(json.dumps(row, ensure_ascii=False) + "\n")
     return "".join(lines)
 
 
@@ -348,8 +439,11 @@ def main(argv: list[str] | None = None) -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", type=Path, default=HERE / "config.yaml")
     parser.add_argument("--env-file", type=Path, default=HERE / ".env")
-    parser.add_argument("--label-cache", type=Path, default=LABEL_CACHE,
-                        help="where labels are cached (default data/exemplar_labels.jsonl)")
+    parser.add_argument("--topic", choices=sorted(TOPICS),
+                        help="build a topical variant (see TOPICS) instead of the plain set")
+    parser.add_argument("--label-cache", type=Path,
+                        help="where labels are cached (default data/exemplar_labels.jsonl, "
+                             "or data/exemplar_labels_<topic>.jsonl)")
     parser.add_argument("--per-register", type=int, default=DEFAULT_PER_REGISTER,
                         help="exemplars to collect per register (default 30)")
     parser.add_argument("--batch", type=int, default=DEFAULT_BATCH,
@@ -369,11 +463,17 @@ def main(argv: list[str] | None = None) -> int:
     out_path = Path(paths["style_exemplars"])
     registers = config["registers"]
     names = {r["name"] for r in registers}
+    topic = TOPICS[args.topic] if args.topic else None
+    label_cache = args.label_cache or LABEL_CACHE
+    if args.topic:
+        out_path = out_path.with_name(f"{out_path.stem}_{args.topic}{out_path.suffix}")
+        if args.label_cache is None:
+            label_cache = LABEL_CACHE.with_name(f"{LABEL_CACHE.stem}_{args.topic}.jsonl")
 
     if not dump.exists():
         raise SystemExit(f"Bluesky dump not found: {dump}")
     print(f"reading {dump} ...", flush=True)
-    candidates = load_candidates(dump)
+    candidates = load_candidates(dump, re.compile(topic["keywords"], re.I) if topic else None)
     random.Random(args.seed).shuffle(candidates)
     print(f"{len(candidates)} posts pass the text filter "
           f"({sum(c['is_reply'] for c in candidates)} replies, "
@@ -386,26 +486,29 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     cached: dict[str, dict[str, Any]] = {}
-    for row in gen.read_jsonl(args.label_cache):   # [] when the cache does not exist
+    for row in gen.read_jsonl(label_cache):   # [] when the cache does not exist
         cached[row["uri"]] = row["label"]
 
     pool = ExemplarPool(names, args.per_register, args.batch)
     pool.add_candidates(candidates, cached)
 
     client, label_config = make_label_client(config)
-    label_candidates(pool, client, label_config, registers, args.label_cache,
-                     args.max_calls)
+    label_candidates(pool, client, label_config, registers, label_cache,
+                     args.max_calls, topic)
 
     total = sum(len(v) for v in pool.chosen.values())
     if total == 0:
         print(f"\nnothing chosen, so {out_path} was left untouched", file=sys.stderr)
         return 1
-    plan.atomic_write_text(out_path, exemplar_lines(pool.chosen))
+    plan.atomic_write_text(out_path, exemplar_lines(pool.chosen, args.topic))
 
     print(f"\nwrote {total} exemplars to {out_path}")
     for name in sorted(names):
         flag = "" if len(pool.chosen[name]) >= args.per_register else "   (short)"
         print(f"  {name:<16} {len(pool.chosen[name]):>3}{flag}")
+    if topic is not None:
+        subtopics = Counter(c["subtopic"] for chosen in pool.chosen.values() for c in chosen)
+        print("  by subtopic: " + ", ".join(f"{k}={v}" for k, v in sorted(subtopics.items())))
     if not pool.full():
         print("\nsome registers are short; re-run (cached labels are reused) or "
               "raise --max-calls")
