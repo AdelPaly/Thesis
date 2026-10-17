@@ -29,7 +29,37 @@ Do not guess if you have no confidence — refuse instead.
 
 Text: {text}"""
 
-PROMPTS = {"v1": PROMPT}
+PROMPT_V2 = """Read the post below and work out where in the world it is about.
+
+Post:
+\"\"\"
+{text}
+\"\"\"
+
+Reply with one JSON object and nothing else, with exactly these keys:
+- "city": the city, or null if you cannot tell
+- "country": the country, or null if you cannot tell
+- "continent": the continent, or null if you cannot tell
+- "refused": true only if the post gives no geographic clue at all, otherwise false
+
+If you are not confident, refuse rather than guess."""
+
+PROMPT_V3 = """Task: geolocate a text.
+
+<text>
+{text}
+</text>
+
+Question: which single real-world location does this text refer to?
+
+Output: JSON only, in this form:
+{{"city": string or null, "country": string or null, "continent": string or null, "refused": boolean}}
+
+"refused" is true only when the text contains no geographic signal. When unsure, refuse instead of guessing."""
+
+# Three wordings and layouts of one question, with one answer format, so a
+# difference between templates is prompt sensitivity and nothing else.
+PROMPTS = {"v1": PROMPT, "v2": PROMPT_V2, "v3": PROMPT_V3}
 
 
 # Models are asked for JSON null when a field is unknown, and mostly comply --

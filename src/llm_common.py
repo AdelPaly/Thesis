@@ -376,7 +376,56 @@ class OpenRouterProvider:
         return text if text.strip() else REFUSAL_SENTINEL
 
 
-PROVIDERS = {"google": GoogleClient, "openrouter": OpenRouterProvider}
+class LocalHFClient:
+    """A Hugging Face causal LM run on this machine with transformers.
+
+    The weights are pinned: `llm.revision` must be a commit hash of the model
+    repository, so the row stays reproducible however the hosted model moves.
+    Decoding is greedy (temperature 0, no top_p), the only setting that is
+    deterministic here. Inference runs on the CPU in float32, because this
+    machine has no GPU and torch's CPU bfloat16 matmul is slower than float32
+    on it; dtype and the new-token cap change the answers, so both are part of
+    the cache fingerprint."""
+
+    DTYPE = "float32"
+    MAX_NEW_TOKENS = 128
+
+    def __init__(self, llm):
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        from config import ConfigError
+
+        if not llm.revision:
+            raise ConfigError("provider 'local_hf' requires llm.revision (a commit hash)")
+        if llm.temperature not in (0, 0.0) or llm.top_p not in (None, 1, 1.0):
+            raise ConfigError("provider 'local_hf' decodes greedily: set temperature 0 "
+                              "and top_p null or 1.0")
+        self._torch = torch
+        self.model_id = llm.model
+        self.generation_params = {**generation_params(llm), "dtype": self.DTYPE,
+                                  "max_new_tokens": self.MAX_NEW_TOKENS}
+        self.tokenizer = AutoTokenizer.from_pretrained(llm.model, revision=llm.revision)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            llm.model, revision=llm.revision, dtype=getattr(torch, self.DTYPE))
+        self.model.eval()
+
+    def call(self, prompt: str) -> str:
+        """Raw text for `prompt`; a refusal sentinel for an empty answer."""
+        ids = self.tokenizer.apply_chat_template(
+            [{"role": "user", "content": prompt}], add_generation_prompt=True,
+            return_tensors="pt")
+        with self._torch.no_grad():
+            out = self.model.generate(ids, max_new_tokens=self.MAX_NEW_TOKENS,
+                                      do_sample=False, temperature=None, top_p=None,
+                                      top_k=None,
+                                      pad_token_id=self.tokenizer.eos_token_id)
+        text = self.tokenizer.decode(out[0, ids.shape[1]:], skip_special_tokens=True)
+        return text if text.strip() else REFUSAL_SENTINEL
+
+
+PROVIDERS = {"google": GoogleClient, "openrouter": OpenRouterProvider,
+             "local_hf": LocalHFClient}
 
 
 def make_client(llm):
