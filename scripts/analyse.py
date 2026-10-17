@@ -49,9 +49,14 @@ Two honest limits on this taxonomy:
 
 Statistics
 ----------
-Exact-match comparisons are McNemar by place. The p-values are Holm-adjusted
-over the family of comparisons run (printed as "p_holm" with the family size);
-the bootstrap intervals are not adjusted.
+Only the pairs listed in configs/comparisons.yaml are tested; they were chosen
+before the results they test. Exact-match comparisons are McNemar by place.
+The p-values are Holm-adjusted over the family of comparisons run (printed as
+"p_holm" with the family size); the bootstrap intervals are not adjusted.
+Every interval is printed with the number of place clusters it resampled, and
+every p-value with the minimum detectable effect of its comparison (two-sided
+alpha 0.05, power 0.8, from the place-resampled standard error of the paired
+difference).
 """
 from __future__ import annotations
 
@@ -111,7 +116,7 @@ def load_config_meta(config_dir: Path = CONFIG_DIR) -> dict[str, dict]:
     """
     meta = {}
     for path in sorted(Path(config_dir).glob("*.yaml")):
-        if path.name == "datasets.yaml":
+        if path.name in ("datasets.yaml", "shared.yaml", "comparisons.yaml"):
             continue
         try:
             raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -579,22 +584,24 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
 
 # ---------------------------------------------------------------- statistics
 
-# Explicit pairs, because which comparisons are worth making is an analysis
-# decision, not something to enumerate automatically. Pairs naming a
-# configuration with no predictions on disk are skipped silently. The Holm
-# family is the comparisons that actually run.
-COMPARISONS = [
-    ("refined", "retrieve_rerank", "which linker: ReFinED vs search+rerank"),
-    ("refined", "population_wikidata", "does the linker beat the population floor"),
-    ("gemma4", "population_wikidata", "does the LLM beat the population floor"),
-    ("refined", "gemma4", "mention detection vs parametric knowledge"),
-    ("dense_retrieval", "refined", "dense retrieval vs entity linking"),
-    ("dense_retrieval", "gemma4", "no mention detection: retrieval vs parametric"),
-    ("grounded_gemma", "gemma4", "does grounding help (same model, matched control)"),
-    ("grounded_gemma", "dense_retrieval", "grounded LLM vs its retriever alone"),
-    ("grounded_gemma_linking", "grounded_gemma", "grounding from linking vs from dense"),
-    ("grounded_gemma_linking", "refined", "grounded LLM vs its retriever alone"),
-]
+COMPARISONS_PATH = CONFIG_DIR / "comparisons.yaml"
+
+
+def load_comparisons(path: Path = COMPARISONS_PATH) -> list[tuple[str, str, str]]:
+    """The pre-selected pairs, [(a, b, question), ...]. Which comparisons are
+    worth making is an analysis decision taken in advance, so it lives in a
+    file, not in code, and nothing else is tested. Pairs naming a
+    configuration with no predictions on disk are skipped; the Holm family is
+    the comparisons that actually run."""
+    raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    out = []
+    for entry in raw.get("comparisons") or []:
+        if not (isinstance(entry, list) and len(entry) == 3
+                and all(isinstance(x, str) for x in entry)):
+            raise SystemExit(f"{Path(path).name}: each comparison must be "
+                             f"[a, b, question], got {entry!r}")
+        out.append(tuple(entry))
+    return out
 
 
 def _exact(rec: dict):
@@ -605,7 +612,7 @@ def run_comparisons(groups: dict, n_boot: int, seed: int) -> list[dict]:
     """Run every comparison that has data on both sides, then Holm-adjust the
     by-place McNemar p-values over that family."""
     results = []
-    for a_name, b_name, question in COMPARISONS:
+    for a_name, b_name, question in load_comparisons():
         if a_name not in groups or b_name not in groups:
             continue
         pairs = st.pair_records(groups[a_name], groups[b_name])
@@ -618,6 +625,7 @@ def run_comparisons(groups: dict, n_boot: int, seed: int) -> list[dict]:
             "mc_item": st.mcnemar(pairs, _exact, unit="item"),
             "effect": st.paired_effect_ci(pairs, st.exact_rate, n_boot=n_boot, seed=seed),
         })
+        results[-1]["mde"] = st.min_detectable_effect(results[-1]["effect"].get("se"))
     adjusted = st.holm_adjust([r["mc_place"]["p"] for r in results])
     for r, p_holm in zip(results, adjusted):
         r["p_holm"] = p_holm
@@ -642,27 +650,33 @@ def cmd_stats(scored: list[dict], args, meta: dict) -> None:
 
     for r in results:
         mp, mi = r["mc_place"], r["mc_item"]
+        mde = "-" if r["mde"] is None else f"{r['mde'] * 100:.1f} pp"
         print(f"--- {r['a']}  vs  {r['b']} ---")
         print(f"    {r['question']}")
-        print(f"    {r['n_pairs']} paired item(s), {r['n_places']} place(s)")
+        print(f"    {r['n_pairs']} paired item(s), {r['n_places']} place clusters")
         print(f"    exact match, McNemar by place : b={mp['b']} c={mp['c']} "
-              f"p={st.fmt_p(mp['p'])}  p_holm={st.fmt_p(r['p_holm'])} (family of {family})")
+              f"p={st.fmt_p(mp['p'])}  p_holm={st.fmt_p(r['p_holm'])} (family of {family})"
+              f"  MDE={mde}")
         print(f"    exact match, McNemar by item  : b={mi['b']} c={mi['c']} "
-              f"p={st.fmt_p(mi['p'])}  (reference only)")
+              f"p={st.fmt_p(mi['p'])}  MDE={mde}  (reference only)")
         print(f"    exact match difference        : "
               f"{st.fmt_ci(r['effect'], pct=True, unit=' pp')}")
         print()
+    print("  MDE = smallest true exact-match difference this comparison would detect")
+    print("  (two-sided alpha 0.05, power 0.8), from the place-resampled standard")
+    print("  error. A difference smaller than its MDE is not a finding either way.")
+    print()
 
     print(RULE)
     print("BOOTSTRAP INTERVALS, resampled by place")
     print(RULE)
-    header = f"{'configuration':30} {'exact %':>22}"
+    header = f"{'configuration':30} {'exact % [95% CI] (clusters)':>36}"
     print(header)
     print("-" * len(header))
     boot_rows = []
     for name in sorted(groups, key=lambda n: sort_key(n, meta)):
         ci = st.cluster_bootstrap_ci(groups[name], st.exact_rate, n_boot=args.boot, seed=args.seed)
-        print(f"{name:30} {st.fmt_ci(ci, pct=True):>22}")
+        print(f"{name:30} {st.fmt_ci(ci, pct=True):>36}")
         boot_rows.append([name, ci.get("point"), ci.get("lo"), ci.get("hi"),
                           ci.get("n_places"), ci.get("n_boot"), args.boot, args.seed])
     print()
@@ -673,11 +687,13 @@ def cmd_stats(scored: list[dict], args, meta: dict) -> None:
                   ["config_a", "config_b", "question", "n_pairs", "n_places",
                    "mcnemar_place_b", "mcnemar_place_c", "p_place", "p_holm", "family_size",
                    "mcnemar_item_b", "mcnemar_item_c", "p_item",
-                   "exact_diff", "exact_diff_lo", "exact_diff_hi", "n_boot", "seed"],
+                   "exact_diff", "exact_diff_lo", "exact_diff_hi", "exact_diff_se", "mde",
+                   "n_boot", "seed"],
                   [[r["a"], r["b"], r["question"], r["n_pairs"], r["n_places"],
                     r["mc_place"]["b"], r["mc_place"]["c"], r["mc_place"]["p"], r["p_holm"], family,
                     r["mc_item"]["b"], r["mc_item"]["c"], r["mc_item"]["p"],
                     r["effect"].get("point"), r["effect"].get("lo"), r["effect"].get("hi"),
+                    r["effect"].get("se"), r["mde"],
                     args.boot, args.seed] for r in results])
         write_rows(out / f"table_bootstrap_{args.split}.csv",
                   ["config", "exact", "lo", "hi", "n_places", "n_boot_valid", "n_boot", "seed"],

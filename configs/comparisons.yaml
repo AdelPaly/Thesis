@@ -1,0 +1,34 @@
+# The pairwise comparisons the analysis tests. Not a configuration.
+#
+# Chosen in advance, before the results they test were seen, and only these
+# are tested: every pair of ~15 configurations would be over 100 tests on
+# about 100 place clusters, most of them underpowered, and a family that size
+# makes any single p-value meaningless. A pair naming a configuration with no
+# predictions is skipped, and the Holm family is the pairs that run.
+#
+# Each entry: [a, b, question]. Exact-match McNemar by place, paired effect
+# with a place-resampled interval, and the minimum detectable effect.
+comparisons:
+  # floors: does a system earn its complexity?
+  - [geoparser_irchel, population_wikidata, "does an established geoparser beat the population floor"]
+  - [refined, population_wikidata, "does the linker beat the population floor"]
+  - [gemma4, population_wikidata, "does the LLM beat the population floor"]
+  # tier 2: which linker
+  - [refined, retrieve_rerank, "which linker: ReFinED vs search+rerank"]
+  - [blink, retrieve_rerank, "published retrieve-then-rerank vs the hand-built one"]
+  # tier 1 against tier 2: what the geoparser lacks
+  - [refined, geoparser_irchel, "entity linking vs toponym-only geoparsing"]
+  # tier 3: mechanism
+  - [dense_retrieval, char_ngram, "learned encoder vs surface n-gram overlap"]
+  - [dense_retrieval, grid_lm, "dense retrieval vs grid language model"]
+  # mention detection vs not, and parametric knowledge
+  - [dense_retrieval, refined, "dense retrieval vs entity linking"]
+  - [refined, gemma4, "mention detection vs parametric knowledge"]
+  - [dense_retrieval, gemma4, "no mention detection: retrieval vs parametric"]
+  # tier 4: between models (reportable only beyond the within-model template spread)
+  - [qwen3_4b, gemma4, "second model vs first"]
+  # tier 5: grounding
+  - [grounded_gemma, gemma4, "does grounding help (same model, matched control)"]
+  - [grounded_gemma, dense_retrieval, "grounded LLM vs its retriever alone"]
+  - [grounded_gemma_linking, grounded_gemma, "grounding from linking vs from dense"]
+  - [grounded_gemma_linking, refined, "grounded LLM vs its retriever alone"]

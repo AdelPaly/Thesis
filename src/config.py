@@ -24,6 +24,21 @@ from keys import legacy_config_name
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = REPO_ROOT / "configs"
 DATASET_REGISTRY = CONFIG_DIR / "datasets.yaml"
+SHARED_VALUES = CONFIG_DIR / "shared.yaml"
+COMPARISONS = CONFIG_DIR / "comparisons.yaml"
+# Files in configs/ that are not configurations.
+NOT_CONFIGS = {DATASET_REGISTRY.name, SHARED_VALUES.name, COMPARISONS.name}
+
+# A field whose value is the word `shared` takes its value from shared.yaml.
+# Field -> key under `encoder:` there. Substitution happens before hashing, so
+# config_hash covers the encoder actually used.
+SHARED = "shared"
+SHARED_ENCODER_FIELDS = {
+    ("rerank", "model"): "model",
+    ("dense", "encoder"): "model",
+    ("dense", "query_prefix"): "query_prefix",
+    ("dense", "passage_prefix"): "passage_prefix",
+}
 
 PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
              "grounded_llm", "geoparser", "grid_lm", "lexical_retrieval"}
@@ -239,10 +254,40 @@ def _slug(model_id: str | None) -> str | None:
     return model_id.replace("/", "_").replace("-", "_").replace(".", "_")
 
 
-def from_dict(raw: dict, source_path: str = "") -> PipelineConfig:
-    """Build and validate a PipelineConfig from an already-parsed mapping."""
+def load_shared(path: str | Path = SHARED_VALUES) -> dict:
+    """The shared values: {"encoder": {"model", "query_prefix", "passage_prefix"}}."""
+    path = Path(path)
+    if not path.exists():
+        raise ConfigError(f"no shared values file at {path}")
+    shared = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    encoder = shared.get("encoder")
+    if not isinstance(encoder, dict) or set(encoder) != {"model", "query_prefix",
+                                                          "passage_prefix"}:
+        raise ConfigError(f"{path.name}: `encoder` must have exactly model, "
+                          "query_prefix and passage_prefix")
+    return shared
+
+
+def _resolve_shared(raw: dict, shared_path: str | Path | None) -> dict:
+    """`raw` with every `shared` field replaced by its shared value."""
+    shared = None
+    out = dict(raw)
+    for (section, key), shared_key in SHARED_ENCODER_FIELDS.items():
+        sub = out.get(section)
+        if isinstance(sub, dict) and sub.get(key) == SHARED:
+            if shared is None:
+                shared = load_shared(shared_path or SHARED_VALUES)
+            out[section] = {**sub, key: shared["encoder"][shared_key]}
+    return out
+
+
+def from_dict(raw: dict, source_path: str = "",
+              shared_path: str | Path | None = None) -> PipelineConfig:
+    """Build and validate a PipelineConfig from an already-parsed mapping.
+    `shared_path` replaces configs/shared.yaml as the source of shared values."""
     if not isinstance(raw, dict):
         raise ConfigError("configuration must be a YAML mapping")
+    raw = _resolve_shared(raw, shared_path)
 
     known_sections = ({f.name for f in fields(PipelineConfig)}
                       - {"config_hash", "source_path"})
@@ -503,8 +548,10 @@ def _validate(cfg: PipelineConfig) -> None:
     _PARADIGM_VALIDATORS[cfg.paradigm](cfg)
 
 
-def load_config(path: str | Path) -> PipelineConfig:
-    """Load one configuration file, by path or by bare name ("refined")."""
+def load_config(path: str | Path,
+                shared_path: str | Path | None = None) -> PipelineConfig:
+    """Load one configuration file, by path or by bare name ("refined").
+    `shared_path` replaces configs/shared.yaml as the source of shared values."""
     path = Path(path)
     if not path.exists():
         for candidate in (CONFIG_DIR / path.name, CONFIG_DIR / f"{path.name}.yaml"):
@@ -522,7 +569,7 @@ def load_config(path: str | Path) -> PipelineConfig:
         raw = yaml.safe_load(path.read_text(encoding="utf-8"))
         if raw is None:
             raise ConfigError("file is empty")
-        return from_dict(raw, source_path=source_path)
+        return from_dict(raw, source_path=source_path, shared_path=shared_path)
     except (ConfigError, yaml.YAMLError) as e:
         raise ConfigError(f"{path.name}: {e}") from None
 
@@ -532,7 +579,7 @@ def load_all_configs(config_dir: str | Path = CONFIG_DIR) -> dict[str, PipelineC
     the registry -- there is no list of modes anywhere in code."""
     out = {}
     for p in sorted(Path(config_dir).glob("*.yaml")):
-        if p.name == DATASET_REGISTRY.name:
+        if p.name in NOT_CONFIGS:
             continue
         cfg = load_config(p)
         if cfg.name in out:

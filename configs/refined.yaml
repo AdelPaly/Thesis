@@ -16,7 +16,7 @@ linking:
   refined_entity_set: wikipedia
   top_n: 10
 rerank:
-  model: intfloat/multilingual-e5-base
+  model: shared            # configs/shared.yaml
   enabled: true
 llm:
   provider: null

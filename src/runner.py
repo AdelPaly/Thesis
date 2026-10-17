@@ -208,8 +208,9 @@ def _split_filter(df: pd.DataFrame, dataset_name: str, split: str) -> pd.DataFra
 
 def run(config_name: str, dataset_name: str, limit: int | None = None,
         overwrite: bool = False, out_dir: Path = PREDICTIONS_DIR,
-        checkpoint_every: int = CHECKPOINT_EVERY, split: str | None = None) -> Path:
-    cfg = load_config(config_name)
+        checkpoint_every: int = CHECKPOINT_EVERY, split: str | None = None,
+        shared: str | None = None) -> Path:
+    cfg = load_config(config_name, shared_path=shared)
     datasets = load_datasets()
     if dataset_name not in datasets:
         raise SystemExit(f"unknown dataset {dataset_name!r}; "
@@ -328,6 +329,9 @@ def main() -> None:
     p.add_argument("--split", default=None, choices=["dev", "test"],
                    help="run only one side of the place-level split")
     p.add_argument("--out-dir", default=str(PREDICTIONS_DIR))
+    p.add_argument("--shared", default=None,
+                   help="shared values file instead of configs/shared.yaml (for "
+                        "running an alternative shared encoder side by side)")
     p.add_argument("--debug", action="store_true", help="print tracebacks for item failures")
     p.add_argument("--list", action="store_true", help="list configurations and datasets, then exit")
     args = p.parse_args()
@@ -351,7 +355,7 @@ def main() -> None:
     if hasattr(pipeline, "set_debug"):
         pipeline.set_debug(args.debug)
     run(args.config, args.dataset, limit=args.limit, overwrite=args.overwrite,
-        out_dir=Path(args.out_dir), split=args.split)
+        out_dir=Path(args.out_dir), split=args.split, shared=args.shared)
 
 
 if __name__ == "__main__":

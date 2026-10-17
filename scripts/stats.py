@@ -21,6 +21,7 @@ from scipy import stats as sps
 DEFAULT_SEED = 20260917
 DEFAULT_N_BOOT = 10000
 DEFAULT_ALPHA = 0.05
+DEFAULT_POWER = 0.8
 
 
 # --------------------------------------------------------------- pairing
@@ -118,12 +119,13 @@ def _place_sums(records: list[dict], terms: Callable) -> tuple[list, np.ndarray,
 
 def _interval(point, replicates: np.ndarray, n_places: int, n_boot: int,
               alpha: float) -> dict:
-    out = {"point": point, "lo": None, "hi": None, "n_places": n_places,
+    out = {"point": point, "lo": None, "hi": None, "se": None, "n_places": n_places,
            "n_boot": int(len(replicates)),
            "n_dropped": n_boot - int(len(replicates))}
     if len(replicates):
         lo, hi = np.percentile(replicates, [100 * alpha / 2, 100 * (1 - alpha / 2)])
         out["lo"], out["hi"] = float(lo), float(hi)
+        out["se"] = float(np.std(replicates, ddof=1)) if len(replicates) > 1 else None
     return out
 
 
@@ -213,6 +215,23 @@ def paired_effect_ci(pairs: list[tuple], metric: Callable,
     return _interval(point, reps, len(places), n_boot, alpha)
 
 
+# ------------------------------------------------------------------ power
+
+def min_detectable_effect(se: float | None, alpha: float = DEFAULT_ALPHA,
+                          power: float = DEFAULT_POWER) -> float | None:
+    """The smallest true difference a two-sided test at `alpha` would detect
+    with probability `power`, given the standard error of the estimate:
+    (z_{1-alpha/2} + z_{power}) * se.
+
+    `se` is the place-resampled bootstrap standard error of the paired
+    difference, so the effect is in the same units as that difference and
+    carries the same clustering. A p-value above alpha next to an effect
+    smaller than this says the comparison could not have detected it."""
+    if se is None:
+        return None
+    return float((sps.norm.ppf(1 - alpha / 2) + sps.norm.ppf(power)) * se)
+
+
 # ------------------------------------------------------------- multiplicity
 
 def holm_adjust(pvalues: list[float]) -> list[float]:
@@ -248,14 +267,18 @@ exact_rate.terms = _exact_terms
 
 
 def fmt_ci(ci: dict | None, pct: bool = False, unit: str = "") -> str:
+    """point [lo, hi] with the number of place clusters the interval was
+    resampled over: a cluster bootstrap over few clusters under-covers, so the
+    count belongs next to every interval."""
     if ci is None or ci.get("point") is None:
         return "-"
     scale = 100 if pct else 1
     point = ci["point"] * scale
+    clusters = f" ({ci['n_places']} places)" if ci.get("n_places") is not None else ""
     if ci.get("lo") is None:
-        return f"{point:.1f}{unit}"
+        return f"{point:.1f}{unit}{clusters}"
     return (f"{point:.1f} [{ci['lo'] * scale:.1f}, "
-            f"{ci['hi'] * scale:.1f}]{unit}")
+            f"{ci['hi'] * scale:.1f}]{unit}{clusters}")
 
 
 def fmt_p(p: float | None) -> str:

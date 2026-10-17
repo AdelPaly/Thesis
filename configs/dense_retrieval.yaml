@@ -33,12 +33,12 @@ llm:
   provider: null
   model: null
 dense:
-  encoder: intfloat/multilingual-e5-base
+  encoder: shared          # configs/shared.yaml
   pool: gold_plus_predicted
   top_k: 10
   index_fields: [label, description, aliases, country, continent]
-  query_prefix: "query: "
-  passage_prefix: "passage: "
+  query_prefix: shared
+  passage_prefix: shared
 # NOTE: the tier-2 reranker (src/ranking.py) encodes the raw text and raw
 # descriptions with NO query:/passage: prefixes, whereas this tier applies them.
 # Same encoder, different input formatting, so the two tiers are not strictly

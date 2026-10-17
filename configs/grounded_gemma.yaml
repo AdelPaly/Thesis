@@ -32,12 +32,12 @@ llm:
   run_date: null
   cache_name: gemma4_31b
 dense:
-  encoder: intfloat/multilingual-e5-base
+  encoder: shared          # configs/shared.yaml
   pool: gold_plus_predicted
   top_k: 10
   index_fields: [label, description, aliases, country, continent]
-  query_prefix: "query: "
-  passage_prefix: "passage: "
+  query_prefix: shared
+  passage_prefix: shared
 grounded:
   candidate_source: dense
   top_k: 10

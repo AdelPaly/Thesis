@@ -8,8 +8,9 @@ the results, because every system lacking a mention-detection stage happens to
 be an LLM. This is the missing cell -- it separates "no mention detection" from
 "parametric knowledge".
 
-The encoder is the one already used by the reranker (`rerank.model`), so a
-comparison against tier 2 is not confounded by a different encoder.
+The encoder is the shared one (configs/shared.yaml) that the tier-2 reranker
+also uses, so a comparison against tier 2 is not confounded by a different
+encoder.
 
 WHAT GOES INTO THE INDEX is a configuration parameter (`dense.index_fields`)
 and is recorded in the index metadata, because it defines what this tier can

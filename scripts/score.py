@@ -59,7 +59,7 @@ def config_order(config_dir: Path | str = CONFIG_DIR) -> dict[str, tuple]:
 
     out = {}
     for path in sorted(Path(config_dir).glob("*.yaml")):
-        if path.name == "datasets.yaml":
+        if path.name in ("datasets.yaml", "shared.yaml", "comparisons.yaml"):
             continue
         try:
             raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}

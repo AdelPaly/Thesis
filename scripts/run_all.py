@@ -28,6 +28,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = REPO_ROOT / "configs"
 DATASET_REGISTRY = CONFIG_DIR / "datasets.yaml"
+NOT_CONFIGS = {"datasets.yaml", "shared.yaml", "comparisons.yaml"}
 LOG_DIR = REPO_ROOT / "results" / "logs"
 
 # Cheap first, so the expensive runs are never what stands between you and a
@@ -46,7 +47,7 @@ def config_names() -> list[str]:
     stem), read with yaml so run_all need not import src/."""
     names = []
     for p in sorted(CONFIG_DIR.glob("*.yaml")):
-        if p == DATASET_REGISTRY:
+        if p.name in NOT_CONFIGS:
             continue
         raw = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
         names.append(raw.get("name", p.stem) if isinstance(raw, dict) else p.stem)
@@ -70,6 +71,11 @@ def main() -> int:
                    help="forwarded to runner.py: only items on this side of the split")
     p.add_argument("--overwrite", action="store_true",
                    help="forwarded to runner.py: redo pairs already complete")
+    p.add_argument("--shared", default=None,
+                   help="forwarded to runner.py: shared values file instead of "
+                        "configs/shared.yaml")
+    p.add_argument("--out-dir", default=None,
+                   help="forwarded to runner.py: predictions directory")
     args = p.parse_args()
 
     all_configs = config_names()
@@ -109,6 +115,10 @@ def main() -> int:
                 cmd += ["--split", args.split]
             if args.overwrite:
                 cmd += ["--overwrite"]
+            if args.shared:
+                cmd += ["--shared", args.shared]
+            if args.out_dir:
+                cmd += ["--out-dir", args.out_dir]
             t0 = time.perf_counter()
             with log.open("a", encoding="utf-8") as f:
                 f.write(f"\n===== {datetime.now().isoformat(timespec='seconds')} "

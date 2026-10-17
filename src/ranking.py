@@ -1,14 +1,14 @@
 """Semantic reranker: cosine similarity between the source text and each
 candidate's Wikidata description.
 
-The model identity comes from the configuration (`rerank.model`), not from a
-module constant. Loaded encoders are cached per (name, device) so a run that
+The model identity comes from the configuration (`rerank.model`, normally the
+shared encoder in configs/shared.yaml), not from a module constant. Loaded encoders are cached per (name, device) so a run that
 sticks to one configuration pays the load cost once.
 
 Input formatting: this reranker encodes the RAW source text and the RAW
 description, with no prefixes. The dense-retrieval tier (src/dense_index.py)
-uses the same E5 encoder but wraps inputs in the asymmetric `query: ` /
-`passage: ` prefixes E5 was trained with. The two tiers therefore see the
+uses the same encoder but wraps inputs in the encoder's query / passage
+prefixes from configs/shared.yaml, when it has any. The two tiers therefore see the
 same model with different input formatting and are not strictly like-for-like.
 This is deliberate: adding prefixes here would change reranker results.
 """

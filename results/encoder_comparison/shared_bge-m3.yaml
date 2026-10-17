@@ -1,0 +1,7 @@
+# configs/shared.yaml with the shared encoder replaced by BGE-M3, for the
+# Task 7 encoder comparison (runner.py --shared). BGE-M3's dense retrieval
+# mode takes no instruction prefix on either side.
+encoder:
+  model: BAAI/bge-m3
+  query_prefix: ""
+  passage_prefix: ""
