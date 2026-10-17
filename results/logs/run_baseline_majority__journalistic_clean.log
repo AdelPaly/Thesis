@@ -1,0 +1,83 @@
+config   : baseline_majority (baseline) hash=b126fcbd421b
+dataset  : journalistic_clean -> src/journalistic_dataset.csv (72 items)
+output   : results\predictions\baseline_majority__journalistic_clean.jsonl
+  72 record(s) in baseline_majority__journalistic_clean.jsonl were written by a different config_hash and will be replaced
+  Wikidata cache loaded: 11129 entities, 11001 labels, 1178 coord lookups, 898 searches
+[1/72] b03e1d1019708ccc -> Q1348
+[2/72] 22236d5ae27d10e7 -> Q1348
+[3/72] 3c1957ca9b07610b -> Q1348
+[4/72] d69845d576572b45 -> Q1348
+[5/72] 818fb9be4c4300af -> Q1348
+[6/72] 2449ac6439379d19 -> Q1348
+[7/72] b82188cf34f25f48 -> Q1348
+[8/72] 732a96bd5812848a -> Q1348
+[9/72] 0de892ebdecc5f99 -> Q1348
+[10/72] a2a9593672fa5554 -> Q1348
+[11/72] aeac854d4020ec65 -> Q1348
+[12/72] 32b38d185cafd93e -> Q1348
+[13/72] b34fab6bb58d9644 -> Q1348
+[14/72] bbc260f7c553e986 -> Q1348
+[15/72] 05dd42008d66901a -> Q1348
+[16/72] 8dfda158fd49b773 -> Q1348
+[17/72] e87e6da16af79286 -> Q1348
+[18/72] 153e9d23ea2094bd -> Q1348
+[19/72] 4614908dc625623e -> Q1348
+[20/72] ddcb7fdb788637c6 -> Q1348
+[21/72] 7226c107db9a71a0 -> Q1348
+[22/72] 16c6fee05afb50f5 -> Q1348
+[23/72] 736b5c60b608dd33 -> Q1348
+[24/72] 7a8861aa69e2a51c -> Q1348
+[25/72] 703b9b72d1d945d7 -> Q1348
+[26/72] 76af20a4b5c0a469 -> Q1348
+[27/72] 93001f22f2bcdaaf -> Q1348
+[28/72] 46275675ee733a02 -> Q1348
+[29/72] 631636566d137a4c -> Q1348
+[30/72] 8ade6b213aa26792 -> Q1348
+[31/72] b81806a83b6a5148 -> Q1348
+[32/72] 95f4b339ff389e1c -> Q1348
+[33/72] 2aea0164708e4d10 -> Q1348
+[34/72] 48cb702319f8c88e -> Q1348
+[35/72] f21192ef94260d40 -> Q1348
+[36/72] 66ad01e966a0d801 -> Q1348
+[37/72] 350d21276d56b5b4 -> Q1348
+[38/72] 6e5e7f66b22b2a08 -> Q1348
+[39/72] 79731763c25de6ed -> Q1348
+[40/72] 56a095ce7748475d -> Q1348
+[41/72] 1d383333f371564d -> Q1348
+[42/72] 956effbde6082d13 -> Q1348
+[43/72] e3f173e6f68c60f8 -> Q1348
+[44/72] 3060187b48116cbe -> Q1348
+[45/72] b0d6902636efc2f9 -> Q1348
+[46/72] 70f714f15532d89c -> Q1348
+[47/72] 515fbe901c8a9dd9 -> Q1348
+[48/72] cb4b900aca19fe9c -> Q1348
+[49/72] cab16d507776675c -> Q1348
+[50/72] e32e8eb42a16bff9 -> Q1348
+[51/72] 549496c1f32ab7d2 -> Q1348
+[52/72] 23b46506445a21f5 -> Q1348
+[53/72] c52e10b3654190b0 -> Q1348
+[54/72] 05fea0b8a62d0547 -> Q1348
+[55/72] 92f68481181b94e6 -> Q1348
+[56/72] 95a74680da3386d2 -> Q1348
+[57/72] 6213a112ba516ce2 -> Q1348
+[58/72] 0b43808f68f9d920 -> Q1348
+[59/72] 2931b8f2802e32be -> Q1348
+[60/72] edb965f3574da6a7 -> Q1348
+[61/72] 2a6d5ccc07d5b20c -> Q1348
+[62/72] f49df61606e529b9 -> Q1348
+[63/72] 86bc5c76c346dc4f -> Q1348
+[64/72] 31c6e44273672dc7 -> Q1348
+[65/72] 5b95e52d70ea0f4c -> Q1348
+[66/72] a78cb010db3eba1e -> Q1348
+[67/72] e2e350e2c48b2868 -> Q1348
+[68/72] 71799e64479c81a2 -> Q1348
+[69/72] 99118255c24c29f3 -> Q1348
+[70/72] a00bbfc846c4666a -> Q1348
+[71/72] 917c51d599f845fc -> Q1348
+[72/72] 4aa78498b5768e2f -> Q1348
+
+wrote 72 record(s) to results\predictions\baseline_majority__journalistic_clean.jsonl
+  with a prediction : 72
+  no result         : 0
+  errors            : 0
+no metrics computed here -- run scripts/score.py

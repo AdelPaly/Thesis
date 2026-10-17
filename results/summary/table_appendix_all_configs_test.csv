@@ -1,0 +1,17 @@
+config,dataset,n,n_gold_qid,exact,country,continent,acc@161km,median_km,mean_km,no_result_rate
+baseline_majority,geocorpora,99,99,0.0,0.0,0.2424,0.0,10096.2988,8124.7313,0.0
+baseline_majority,journalistic_clean,52,52,0.0,0.0,0.1538,0.0,8847.2121,9707.9799,0.0
+baseline_majority,social_media_clean,102,102,0.0,0.0,0.1373,0.0,8876.6036,9893.0038,0.0
+baseline_majority,social_media_noisy,102,102,0.0,0.0,0.1373,0.0,8876.6036,9893.0038,0.0
+baseline_population,geocorpora,99,99,0.4646,0.7172,0.7475,0.5657,0.0,1368.9913,0.1515
+baseline_population,journalistic_clean,52,52,0.0769,0.2115,0.2692,0.2308,487.4225,4320.879,0.4808
+baseline_population,social_media_clean,102,102,0.1078,0.1961,0.2353,0.1961,10.6117,3382.5753,0.6569
+baseline_population,social_media_noisy,102,102,0.0784,0.1373,0.2255,0.1373,6312.5065,5868.5744,0.3725
+refined,geocorpora,99,99,0.5657,0.798,0.8283,0.6667,0.0,599.2793,0.1212
+refined,journalistic_clean,52,52,0.5,0.6154,0.6346,0.6346,0.0,2552.9292,0.1346
+refined,social_media_clean,102,102,0.4314,0.5098,0.5294,0.5098,0.0,1027.7009,0.402
+refined,social_media_noisy,102,102,0.3529,0.3922,0.451,0.3922,19.5463,3909.9584,0.2353
+two_stage,geocorpora,99,99,0.2222,0.697,0.7677,0.5152,69.2625,1543.9028,0.0808
+two_stage,journalistic_clean,52,52,0.3846,0.5,0.5769,0.5,37.1997,4243.2829,0.0192
+two_stage,social_media_clean,102,102,0.3333,0.4902,0.5196,0.4804,0.0846,2671.0639,0.3039
+two_stage,social_media_noisy,102,102,0.2255,0.3431,0.402,0.3431,2796.9731,4630.8458,0.1765

@@ -1,0 +1,654 @@
+﻿place_qid,place_name,property,clue_qid,clue_label,leak_strict,leak_relaxed
+Q8673,Lagos,P131,Q125400521,"New Realm Baptist Church, Lagos",true,true
+Q8673,Lagos,P276,Q110639848,Nearly All the Men in Lagos are Mad,true,true
+Q8673,Lagos,EVENTS,Q65966147,2019 Lagos International Badminton Championships,true,true
+Q8673,Lagos,P276,Q65966147,2019 Lagos International Badminton Championships,true,true
+Q8673,Lagos,SPORTS,Q65966147,2019 Lagos International Badminton Championships,true,true
+Q8673,Lagos,EVENTS,Q111198009,2019 Lagos International Badminton Championships – Mixed doubles,true,true
+Q8673,Lagos,P276,Q111198009,2019 Lagos International Badminton Championships – Mixed doubles,true,true
+Q8673,Lagos,SPORTS,Q111198009,2019 Lagos International Badminton Championships – Mixed doubles,true,true
+Q8673,Lagos,P138,Q4689502,Africa/Lagos,true,true
+Q8673,Lagos,P1435,Q111408940,Lagos Continental Hotel,true,true
+Q8673,Lagos,P276,Q111408940,Lagos Continental Hotel,true,true
+Q8673,Lagos,P159,Q1311732,"Nigerian National Museum, Lagos",true,true
+Q8673,Lagos,P276,Q101965371,National Orthopaedic Hospital Igbobi (Lagos),true,true
+Q8673,Lagos,EVENTS,Q27799161,2015 Lagos International Badminton Championships – men's doubles,true,true
+Q8673,Lagos,P276,Q27799161,2015 Lagos International Badminton Championships – men's doubles,true,true
+Q8673,Lagos,P276,Q140196687,Emergency Ambulance Systems in Lagos,true,true
+Q8673,Lagos,SPORTS,Q30595952,Lagos Lawn Tennis Club,true,true
+Q8673,Lagos,P276,Q17109134,Lagos University Teaching Hospital,true,true
+Q8673,Lagos,EVENTS,Q111197995,2017 Lagos International Badminton Championships – Men's doubles,true,true
+Q8673,Lagos,EVENTS,Q27799762,2015 Lagos International Badminton Championships – mixed doubles,true,true
+Q8673,Lagos,EVENTS,Q111198005,2018 Lagos International Badminton Championships – Women's singles,true,true
+Q8673,Lagos,EVENTS,Q111198007,2017 Lagos International Badminton Championships – Mixed doubles,true,true
+Q8673,Lagos,EVENTS,Q136028901,2025  Lagos International Badminton Championships,true,true
+Q8673,Lagos,SPORTS,Q136028901,2025  Lagos International Badminton Championships,true,true
+Q8673,Lagos,EVENTS,Q27799160,2014 Lagos International Badminton Championships – men's doubles,true,true
+Q8673,Lagos,SPORTS,Q27799160,2014 Lagos International Badminton Championships – men's doubles,true,true
+Q8673,Lagos,EVENTS,Q3826102,1980 Lagos Classic,true,true
+Q8673,Lagos,SPORTS,Q111197997,2019 Lagos International Badminton Championships – Men's doubles,true,true
+Q8673,Lagos,P138,Q133224004,Lagosians,true,false
+Q8673,Lagos,SPORTS,Q137591221,Lagos Legends,true,true
+Q8673,Lagos,SPORTS,Q7885391,Union Bank Lagos B.C.,true,true
+Q8673,Lagos,SPORTS,Q4650519,ACB Lagos,true,true
+Q8673,Lagos,SPORTS,Q17166702,2014 Lagos International Badminton Championships,true,true
+Q8673,Lagos,P138,Q815913,Lagos State,true,true
+Q1515,Abidjan,P159,Q679442,Abidjan Basket Club,true,true
+Q1515,Abidjan,SPORTS,Q679442,Abidjan Basket Club,true,true
+Q1515,Abidjan,P131,Q140902914,HEC Abidjan,true,true
+Q1515,Abidjan,P159,Q60788154,Racing Club Abidjan,true,true
+Q1515,Abidjan,SPORTS,Q60788154,Racing Club Abidjan,true,true
+Q1515,Abidjan,P131,Q3496147,Stade Municipal d'Abidjan,true,true
+Q1515,Abidjan,SPORTS,Q117488027,Athlético FC d'Abidjan,true,true
+Q1515,Abidjan,SPORTS,Q125951361,FC Inter d'Abidjan,true,true
+Q1515,Abidjan,P138,Q4689469,Africa/Abidjan,true,true
+Q1515,Abidjan,P138,Q84255359,Abidjan Express,true,true
+Q1515,Abidjan,SPORTS,Q1653415,Stade d'Abidjan,true,true
+Q1515,Abidjan,P138,Q116558485,Abidjanweg,true,false
+Q1515,Abidjan,P138,Q242718,L'Abidjanaise,true,false
+Q1515,Abidjan,P138,Q83646018,Grande Abidjan,true,true
+Q3866,Dodoma,P131,Q136298905,Dodoma Wine Festival,true,true
+Q3866,Dodoma,P131,Q136298783,Dodoma Lutheran Cathedral,true,true
+Q3866,Dodoma,P159,Q100947983,University of Dodoma College of Informatics and Virtual Education,true,true
+Q3866,Dodoma,P159,Q100947970,University of Dodoma College of Natural Sciences and Mathematics,true,true
+Q3866,Dodoma,P131,Q131242015,Dodoma Central Bus Terminal,true,true
+Q3866,Dodoma,P131,Q134531048,Dodoma Stadium,true,true
+Q3866,Dodoma,P131,Q101582242,Institute of Rural Development Planning - Dodoma,true,true
+Q3866,Dodoma,P131,Q33878973,Dodoma Station,true,true
+Q3866,Dodoma,P138,Q213268,Dodoma Region,true,true
+Q3866,Dodoma,P159,Q100947981,University of Dodoma College of Health and Allied Sciences,true,true
+Q3866,Dodoma,P159,Q137896,Roman Catholic Archdiocese of Dodoma,true,true
+Q3866,Dodoma,P131,Q693769,University of Dodoma,true,true
+Q3866,Dodoma,P131,Q130305696,Dodoma Deaf School,true,true
+Q3866,Dodoma,P159,Q100947980,University of Dodoma College of Education,true,true
+Q3866,Dodoma,P159,Q100947982,University of Dodoma College of Humanities and Social Sciences,true,true
+Q3866,Dodoma,P159,Q100947889,University of Dodoma College of Earth Sciences,true,true
+Q3866,Dodoma,P276,Q4870886,Battle of Dodoma,true,true
+Q3866,Dodoma,P159,Q3357710,Polisi Dodoma,true,true
+Q3866,Dodoma,SPORTS,Q3357710,Polisi Dodoma,true,true
+Q159325,Lüderitz,P138,Q1431966,Lüderitz Airport,true,true
+Q159325,Lüderitz,P131,Q801143,Lüderitz Railway Station,true,true
+Q159325,Lüderitz,P131,Q130357089,Lüderitz Old Power Station,true,true
+Q159325,Lüderitz,P131,Q1567802,Port of Lüderitz,true,true
+Q159325,Lüderitz,P276,Q68652054,Luderitz Public Library,false,true
+Q191504,Leptis Magna,P276,Q3621792,Arch of Septimius Severus (Leptis Magna),true,true
+Q191504,Leptis Magna,P276,Q68083385,Leptis Magna: Nymphaeum,true,true
+Q191504,Leptis Magna,P276,Q68122019,Schola and Thermae in Leptis Magna,true,true
+Q191504,Leptis Magna,P276,Q55984349,Leptis Magna: Roman theatre,true,true
+Q191504,Leptis Magna,P276,Q70772483,Circus of Leptis Magna,true,true
+Q667828,Bafang,P159,Q1912323,Unisport Bafang,true,true
+Q667828,Bafang,SPORTS,Q1912323,Unisport Bafang,true,true
+Q667828,Bafang,P131,Q63729732,Bafang District Hospital,true,true
+Q667828,Bafang,P131,Q107316479,Cathedral of the Immaculate Heart of Mary of Bafang,true,true
+Q864999,Birao,P138,Q597460,Birao Airport,true,true
+Q757041,Tidjikja,P138,Q6588191,Tidjikja Airport,true,true
+Q618063,Hopetown,P159,Q19563093,Hopetown Commando,true,true
+Q618063,Hopetown,P276,Q19563093,Hopetown Commando,true,true
+Q618063,Hopetown,P131,Q61962812,Hopetown Combined School,true,true
+Q3191660,Kabinda,P131,Q117821976,climate of Kabinda,true,true
+Q3191660,Kabinda,P131,Q100989279,Université de Kabinda,true,true
+Q2841553,Ambam,P131,Q30651069,Station Ambam,true,true
+Q1404518,Oranjemund,P138,Q1432245,Oranjemund Airport,true,true
+Q1200140,Mounana,P159,Q2931394,CF Mounana,true,true
+Q1200140,Mounana,SPORTS,Q2931394,CF Mounana,true,true
+Q2909258,Bokoro,P138,Q3886971,Bokoro Airport,true,true
+Q1048377,Cassinga,P276,Q543072,Battle of Cassinga,true,true
+Q1048377,Cassinga,P138,Q586908,Cassinga Day,true,true
+Q1015069,Dilolo,P138,Q16961846,Dilolo Airport,true,true
+Q5838,Kabul,P131,Q1354097,Kabul University,true,true
+Q5838,Kabul,P159,Q1354097,Kabul University,true,true
+Q5838,Kabul,P159,Q61999046,"Embassy of Spain, Kabul",true,true
+Q5838,Kabul,P276,Q115688471,2022 Kabul hotel attack,true,true
+Q5838,Kabul,P159,Q10686007,"Embassy of Sweden, Kabul",true,true
+Q5838,Kabul,P159,Q1387338,Maiwand Kabul F.C.,true,true
+Q5838,Kabul,SPORTS,Q1387338,Maiwand Kabul F.C.,true,true
+Q5838,Kabul,SPORTS,Q7557727,Solh Kabul F.C.,true,true
+Q5838,Kabul,P276,Q52108280,April 2018 Kabul suicide bombing,true,true
+Q5838,Kabul,SPORTS,Q7424301,Sarmi Yashy Kabul F.C.,true,true
+Q5838,Kabul,P131,Q6052976,International School of Kabul,true,true
+Q5838,Kabul,P131,Q6344444,Kabul National Cricket Stadium,true,true
+Q5838,Kabul,P131,Q108285843,2021 Kabul airport attack,true,true
+Q5838,Kabul,P276,Q86752319,2020 Kabul bombing,true,true
+Q5838,Kabul,P276,Q47501091,2018 Kabul ambulance bombing,true,true
+Q5838,Kabul,P276,Q108102583,Fall of Kabul,true,true
+Q5838,Kabul,P159,Q23891470,"Embassy of Australia, Kabul",true,true
+Q5838,Kabul,P131,Q60744032,Kabul Tower,true,true
+Q5838,Kabul,P159,Q1387229,Kabul Bank F.C.,true,true
+Q5838,Kabul,SPORTS,Q1387229,Kabul Bank F.C.,true,true
+Q5838,Kabul,P159,Q5369597,"Embassy of Canada, Kabul",true,true
+Q5838,Kabul,P276,Q52385653,30 April 2018 Kabul suicide bombings,true,true
+Q5838,Kabul,SPORTS,Q6165157,Javan Azadi Kabul F.C.,true,true
+Q5838,Kabul,SPORTS,Q7499239,Shiva Kabul F.C.,true,true
+Q5838,Kabul,P276,Q27629574,August 2016 Kabul attack,true,true
+Q5838,Kabul,P159,Q58205703,"Embassy of Germany, Kabul",true,true
+Q5838,Kabul,P159,Q59289930,British Embassy Kabul,true,true
+Q5838,Kabul,P276,Q24752718,"June 20, 2016 attacks in Kabul",true,true
+Q5838,Kabul,P276,Q15972178,2014 Kabul Serena Hotel attack,true,true
+Q5838,Kabul,P276,Q5439815,February 2010 Kabul attack,true,true
+Q5838,Kabul,P276,Q15040945,2003 attack on Pakistan Embassy in Kabul,true,true
+Q5838,Kabul,P276,Q18702280,December 2014 Kabul bombings,true,true
+Q5838,Kabul,P276,Q20771103,August 2015 Kabul Bombing,true,true
+Q5838,Kabul,P276,Q7510123,Siege of Kabul,true,true
+Q5838,Kabul,P138,Q6344469,Kabul–Darulaman Tramway,true,true
+Q5838,Kabul,EVENTS,Q108685410,1980 student protests in Kabul,true,true
+Q5838,Kabul,SPORTS,Q16846144,Nijat Kabul F.C.,true,true
+Q5838,Kabul,EVENTS,Q124816851,May 2016 Kabul protest,true,true
+Q5838,Kabul,EVENTS,Q137591216,1803 anti-Shia riots in Kabul,true,true
+Q5838,Kabul,SPORTS,Q655027,Ariana Kabul F.C.,true,true
+Q5838,Kabul,WORKS,Q44869082,Moon Hotel Kabul,true,true
+Q5838,Kabul,P138,Q63285929,Asia/Kabul,true,true
+Q5838,Kabul,P138,Q131755779,Kabulis,true,false
+Q5838,Kabul,WORKS,Q3681233,Clownin' Kabul,true,true
+Q1850,Phnom Penh,P159,Q620390,Apostolic Vicariate of Phnom Penh,true,true
+Q1850,Phnom Penh,P131,Q96373994,British International School of Phnom Penh,true,true
+Q1850,Phnom Penh,P159,Q2841626,"Embassy of France, Phnom Penh",true,true
+Q1850,Phnom Penh,P159,Q56247145,"Embassy of the United States, Phnom Penh",true,true
+Q1850,Phnom Penh,P276,Q85760415,Fall of Phnom Penh,true,true
+Q1850,Phnom Penh,P159,Q136298972,"Embassy of Malaysia, Phnom Penh",true,true
+Q1850,Phnom Penh,P138,Q1054163,Phnom Penh International Airport,true,true
+Q1850,Phnom Penh,P276,Q1185980,Phnom Penh stampede,true,true
+Q1850,Phnom Penh,EVENTS,Q106337636,"12th International Conference on Software, Knowledge, Information Management & Applications, SKIMA 2018, Phnom Penh, Cambodia, December 3-5, 2018",true,true
+Q1850,Phnom Penh,SPORTS,Q1808462,Phnom Penh Crown F.C.,true,true
+Q1850,Phnom Penh,SPORTS,Q17062881,Albirex Niigata Phnom Penh FC,true,true
+Q1850,Phnom Penh,P138,Q109527628,Asia/Phnom_Penh,false,true
+Q35484,Medina,P138,Q336183,Medina County,true,true
+Q35484,Medina,P276,Q3656325,Battle of Medina,true,true
+Q35484,Medina,P159,Q86495513,Bir al-Medina,true,true
+Q35484,Medina,P138,Q158687,Constitution of Medina,true,true
+Q35484,Medina,P276,Q158687,Constitution of Medina,true,true
+Q35484,Medina,P276,Q127824536,763 Medina slave rebellion,true,true
+Q35484,Medina,P276,Q2089011,Siege of Medina,true,true
+Q35484,Medina,P276,Q125496959,Ramadan in Mecca and Medina,true,true
+Q35484,Medina,P138,Q106681388,Medina Spirit,true,true
+Q35484,Medina,SPORTS,Q7081168,Ohud Medina,true,true
+Q35484,Medina,P138,Q234300,Medinan surah,true,false
+Q52028,Chiang Mai,P131,Q1084012,Christian German School Chiang Mai,true,true
+Q52028,Chiang Mai,P276,Q5095195,Chiang Mai Flower Festival,true,true
+Q52028,Chiang Mai,P159,Q867854,Roman Catholic Diocese of Chiang Mai,true,true
+Q52028,Chiang Mai,P159,Q100979732,Chiang Mai University Faculty of Associated Medical Sciences,true,true
+Q52028,Chiang Mai,P159,Q100979737,Chiang Mai University Faculty of Engineering,true,true
+Q52028,Chiang Mai,P131,Q13013059,Chiang Mai city wall,true,true
+Q52028,Chiang Mai,EVENTS,Q125134851,"2nd Workshop South and Southeast Asian Natural Language Processing, Chiang Mai, Thailand (2011)",true,true
+Q52028,Chiang Mai,P276,Q125134851,"2nd Workshop South and Southeast Asian Natural Language Processing, Chiang Mai, Thailand (2011)",true,true
+Q52028,Chiang Mai,P131,Q6686727,North Chiang Mai University,true,true
+Q52028,Chiang Mai,P131,Q20725135,"Chinese temple, Loi Kroh Road, Chiang Mai",true,true
+Q52028,Chiang Mai,P159,Q100979734,Chiang Mai University Faculty of Dentistry,true,true
+Q52028,Chiang Mai,EVENTS,Q106335216,"2016 IEEE Conference on Computational Intelligence in Bioinformatics and Computational Biology, CIBCB 2016, Chiang Mai, Thailand, October 5-7, 2016",true,true
+Q52028,Chiang Mai,P276,Q106335216,"2016 IEEE Conference on Computational Intelligence in Bioinformatics and Computational Biology, CIBCB 2016, Chiang Mai, Thailand, October 5-7, 2016",true,true
+Q52028,Chiang Mai,P131,Q1884773,Chiang Mai Railway Station,true,true
+Q52028,Chiang Mai,P159,Q5095196,Chiang Mai Creative City,true,true
+Q52028,Chiang Mai,P159,Q100979736,Chiang Mai University Faculty of Education,true,true
+Q52028,Chiang Mai,EVENTS,Q106068719,"Semantic Technology - 4th Joint International Conference, JIST 2014, Chiang Mai, Thailand, November 9-11, 2014",true,true
+Q52028,Chiang Mai,P276,Q106068719,"Semantic Technology - 4th Joint International Conference, JIST 2014, Chiang Mai, Thailand, November 9-11, 2014",true,true
+Q52028,Chiang Mai,P159,Q100979738,Chiang Mai University Faculty of Humanities,true,true
+Q52028,Chiang Mai,P276,Q65074467,Muang Thai Chiang Mai Marathon,true,true
+Q52028,Chiang Mai,EVENTS,Q106336763,"iiWAS '20: The 22nd International Conference on Information Integration and Web-based Applications & Services, Virtual Event / Chiang Mai, Thailand, November 30 - December 2, 2020",true,true
+Q52028,Chiang Mai,P276,Q106336763,"iiWAS '20: The 22nd International Conference on Information Integration and Web-based Applications & Services, Virtual Event / Chiang Mai, Thailand, November 30 - December 2, 2020",true,true
+Q52028,Chiang Mai,P159,Q100979741,Chiang Mai University Faculty of Science,true,true
+Q52028,Chiang Mai,P159,Q100979731,Chiang Mai University Department of Geography,true,true
+Q52028,Chiang Mai,P159,Q100979729,Chiang Mai University Department of Chemistry,true,true
+Q3414795,Qurayyat,P131,Q26199619,Qurayyat,true,true
+Q3414795,Qurayyat,P276,Q136335493,Capture of Qurayyat,true,true
+Q366010,Amarah,P276,Q123819445,Sabian-Mandaean Mandi of Amarah,true,true
+Q366010,Amarah,P276,Q15197069,Battle of Amarah,true,true
+Q366010,Amarah,P276,Q4607859,2007 Al Amarah bombings,true,true
+Q201633,Iwo Jima,P276,Q102387683,"Minami, Iwo Jima",true,true
+Q201633,Iwo Jima,P276,Q6100958,Iwo Jima LORAN-C transmitter,true,true
+Q201633,Iwo Jima,P138,Q5061076,Iwo Jima Air Base,true,true
+Q201633,Iwo Jima,WORKS,Q2437586,To the Shores of Iwo Jima,true,true
+Q201633,Iwo Jima,WORKS,Q275187,Letters from Iwo Jima,true,true
+Q201633,Iwo Jima,P276,Q180182,Battle of Iwo Jima,true,true
+Q201633,Iwo Jima,P276,Q102387247,Quarry (Iwo Jima),true,true
+Q651286,Hat Yai,P276,Q16820808,2014 Hat Yai bombings,true,true
+Q651286,Hat Yai,P276,Q20452334,Peace Agreement of Hat Yai 1989,true,true
+Q651286,Hat Yai,P276,Q1911862,2006 Hat Yai bombings,true,true
+Q651286,Hat Yai,SPORTS,Q5680838,Hat Yai F.C.,true,true
+Q719781,Jask,P138,Q134613804,Jask Square,true,true
+Q719781,Jask,P276,Q137800226,Battle off Jask,true,true
+Q111351,Agutaya,P131,Q31462583,Agutaya Island,true,true
+Q111351,Agutaya,P138,Q31526792,Agutayanën people,true,false
+Q111351,Agutaya,P131,Q63225354,Agutaya Church,true,true
+Q1416753,Sitra,P159,Q3480681,Sitra Club,true,true
+Q1416753,Sitra,SPORTS,Q3480681,Sitra Club,true,true
+Q196669,Tommot,P138,Q2765305,Tommotian,true,false
+Q196669,Tommot,P131,Q79096368,Road bridge over Aldan River in Tommot,true,true
+Q196669,Tommot,P131,Q79440276,Railway bridge through Aldan river in Tommot,true,true
+Q196669,Tommot,P131,Q15912929,Tommot,true,true
+Q27447856,Lahugala,P131,Q28379814,Lahugala Kiri Vehera,true,true
+Q27447856,Lahugala,P131,Q28379706,Lahugala Kota Vehera,true,true
+Q3415001,Elamanchili,P131,Q30622773,Elamanchili railway station,true,true
+Q3529971,Tiwi,P131,Q3565018,Wadi Tiwi,true,true
+Q32074,Neustadt bei Coburg,P131,Q98221835,Cultural heritage D-4-5632-0022 in Neustadt bei Coburg,true,true
+Q32074,Neustadt bei Coburg,P131,Q98221834,Cultural heritage D-4-5732-0061 in Neustadt bei Coburg,true,true
+Q32074,Neustadt bei Coburg,P131,Q98586687,Friedhof EisfeLenr Straße 3; EisfeLenr Straße 3 a in Neustadt bei Coburg,true,true
+Q32074,Neustadt bei Coburg,P131,Q98584330,Leichenhalle EisfeLenr Straße 3 a in Neustadt bei Coburg,true,true
+Q32074,Neustadt bei Coburg,P131,Q41401779,Cultural heritage D-4-73-151-32 in Neustadt bei Coburg,true,true
+Q32074,Neustadt bei Coburg,P131,Q41401758,Cultural heritage D-4-73-151-75 in Neustadt bei Coburg,true,true
+Q32074,Neustadt bei Coburg,P131,Q98221831,Cultural heritage D-4-5732-0008 in Neustadt bei Coburg,true,true
+Q32074,Neustadt bei Coburg,P131,Q41401708,Cultural heritage D-4-73-151-78 in Neustadt bei Coburg,true,true
+Q32074,Neustadt bei Coburg,P131,Q41401736,Cultural heritage D-4-73-151-8 in Neustadt bei Coburg,true,true
+Q19689,Tirana,P159,Q5369797,"Embassy of Montenegro, Tirana",true,true
+Q19689,Tirana,P159,Q2841711,"Embassy of France, Tirana",true,true
+Q19689,Tirana,P159,Q210170,K.F. Tirana,true,true
+Q19689,Tirana,SPORTS,Q210170,K.F. Tirana,true,true
+Q19689,Tirana,P159,Q2088540,PBC Tirana,true,true
+Q19689,Tirana,SPORTS,Q2088540,PBC Tirana,true,true
+Q19689,Tirana,P159,Q18333543,"Embassy of Sweden, Tirana",true,true
+Q19689,Tirana,P131,Q4135100,Zemra e Krishtit Catholic Church of Tirana,true,true
+Q19689,Tirana,P159,Q16966497,Tirana logistic park,true,true
+Q19689,Tirana,P131,Q63750932,"Hungarian embassy, Tirana",true,true
+Q19689,Tirana,P131,Q5001217,Bus lines in Tirana,true,true
+Q19689,Tirana,P138,Q123949615,Tirana,true,true
+Q19689,Tirana,P131,Q4745319,American University of Tirana,true,true
+Q19689,Tirana,P131,Q1738772,Agricultural University of Tirana,true,true
+Q19689,Tirana,P138,Q217226,Tirana International Airport Nënë Tereza,true,true
+Q19689,Tirana,SPORTS,Q4161822,BC Dinamo Tirana,true,true
+Q19689,Tirana,EVENTS,Q106244417,"Advances in Internet, Data & Web Technologies, The 6th International Conference on Emerging Internet, Data & Web Technologies, EIDWT-2018, Tirana, Albania, March 15-17, 2018",true,true
+Q19689,Tirana,SPORTS,Q7118407,PBC Tirana,true,true
+Q19689,Tirana,SPORTS,Q34120,KS Dinamo Tirana,true,true
+Q19689,Tirana,SPORTS,Q106178235,KFF Tirana,true,true
+Q19689,Tirana,P138,Q19567153,Tiranaplantsoen,true,false
+Q19689,Tirana,P138,Q7809118,Tirana derby,true,true
+Q19689,Tirana,SPORTS,Q845772,Partizani Tirana,true,true
+Q19689,Tirana,SPORTS,Q24185064,Tirana Eagles Basket,true,true
+Q6616,Poitiers,P131,Q22956271,Église Saint-Paul de Poitiers,true,true
+Q6616,Poitiers,P159,Q3055001,E.S. Trois Cités Poitiers,true,true
+Q6616,Poitiers,SPORTS,Q3055001,E.S. Trois Cités Poitiers,true,true
+Q6616,Poitiers,P131,Q61937497,ordre des avocats de Poitiers,true,true
+Q6616,Poitiers,P131,Q136786329,grand'maison des Picpuciens à Poitiers,true,true
+Q6616,Poitiers,P276,Q16677037,Siege of Poitiers,true,true
+Q6616,Poitiers,P159,Q3000977,Court of Appeal of Poitiers,true,true
+Q6616,Poitiers,P138,Q2786522,Gare de Poitiers,true,true
+Q6616,Poitiers,EVENTS,Q19544200,Poitiers Congress,true,true
+Q6616,Poitiers,SPORTS,Q1440019,Stade Poitevin Poitiers,true,true
+Q6616,Poitiers,SPORTS,Q109507543,CEP Poitiers,true,true
+Q6616,Poitiers,SPORTS,Q955311,Poitiers Basket 86,true,true
+Q6616,Poitiers,EVENTS,Q106246279,"Advances in Databases and Information Systems - 19th East European Conference, ADBIS 2015, Poitiers, France, September 8-11, 2015",true,true
+Q6616,Poitiers,P276,Q106246279,"Advances in Databases and Information Systems - 19th East European Conference, ADBIS 2015, Poitiers, France, September 8-11, 2015",true,true
+Q6616,Poitiers,EVENTS,Q107125908,Poitiers Pride 2021,true,true
+Q6616,Poitiers,EVENTS,Q106335592,"29th Conference on l'Interaction Homme-Machine, IHM 2017, Poitiers, France, August 29 - September 01, 2017",true,true
+Q6616,Poitiers,P276,Q106335592,"29th Conference on l'Interaction Homme-Machine, IHM 2017, Poitiers, France, August 29 - September 01, 2017",true,true
+Q6616,Poitiers,EVENTS,Q119458110,Poitiers Pride 2022,true,true
+Q6616,Poitiers,SPORTS,Q3393891,Poitiers FC,true,true
+Q6616,Poitiers,P138,Q106378055,Rue de Poitiers,true,true
+Q6616,Poitiers,EVENTS,Q106244793,"Model and Data Engineering - 2nd International Conference, MEDI 2012, Poitiers, France, October 3-5, 2012",true,true
+Q6616,Poitiers,P138,Q1432405,Poitiers – Biard Airport,true,true
+Q6616,Poitiers,EVENTS,Q22110657,synod in Poitiers,true,true
+Q6616,Poitiers,P138,Q3450963,Rue de Poitiers,true,true
+Q157065,Kerch,P276,Q60755292,Treaty Between the Russian Federation and Ukraine on Cooperation in the Use of the Sea of Azov and the Kerch Strait,true,true
+Q157065,Kerch,P138,Q831784,Kerch style,true,true
+Q157065,Kerch,P131,Q122974939,Golden Mound (Kerch),true,true
+Q157065,Kerch,P131,Q4211845,Kerch Seaport Komysh-Burun,true,true
+Q157065,Kerch,P138,Q187890,Strait of Kerch,true,true
+Q157065,Kerch,P276,Q19671319,Church of the Assumption in Kerch,true,true
+Q157065,Kerch,P138,Q16701394,"Kerchenska Street, Kremenchuk",true,false
+Q157065,Kerch,P138,Q12109673,"Kerchenska Street, Kyiv",true,false
+Q157065,Kerch,P276,Q57420477,Kerch Polytechnic College,true,true
+Q157065,Kerch,P138,Q123951191,Kerch,true,true
+Q157065,Kerch,P159,Q2063902,FC Okean Kerch,true,true
+Q157065,Kerch,SPORTS,Q2063902,FC Okean Kerch,true,true
+Q157065,Kerch,P276,Q57417004,Kerch Polytechnic College massacre,true,true
+Q157065,Kerch,P138,Q4219709,Kerchenska Square,true,false
+Q157065,Kerch,P138,Q4219726,Kerch-Enikale Gradonachalstvo,true,true
+Q157065,Kerch,P138,Q16375069,Kerch Bay,true,true
+Q174684,Tuzla,P131,Q7443789,Secondary Music School in Tuzla,true,true
+Q174684,Tuzla,P131,Q18346157,Mješovita Mašinska-Saobraćajna Škola Tuzla,true,true
+Q174684,Tuzla,P159,Q771941,FK Sloboda Tuzla,true,true
+Q174684,Tuzla,SPORTS,Q771941,FK Sloboda Tuzla,true,true
+Q174684,Tuzla,P131,Q18346036,Građevinsko-Geodetska Škola Tuzla,true,true
+Q174684,Tuzla,P159,Q3594394,ŽKK Jedinstvo Tuzla,true,true
+Q174684,Tuzla,SPORTS,Q3594394,ŽKK Jedinstvo Tuzla,true,true
+Q174684,Tuzla,P131,Q18391882,Economic-Trade School Tuzla,true,true
+Q174684,Tuzla,P131,Q18210063,Behram-Begova Medresa Tuzla,true,true
+Q174684,Tuzla,P276,Q751452,1992 Yugoslav People's Army column incident in Tuzla,true,true
+Q174684,Tuzla,P131,Q18358723,Medicinska Škola Tuzla,true,true
+Q174684,Tuzla,P131,Q25555258,University Clinical Center Tuzla,true,true
+Q174684,Tuzla,P276,Q24904736,Tuzla Film Festival,true,true
+Q174684,Tuzla,P276,Q136720404,2025 Tuzla retirement home fire,true,true
+Q174684,Tuzla,P138,Q4000975,tuzlaite,true,false
+Q174684,Tuzla,P138,Q11824799,Tuzla Jegen Lug,true,true
+Q174684,Tuzla,P159,Q30128799,FK Tuzla City,true,true
+Q174684,Tuzla,SPORTS,Q30128799,FK Tuzla City,true,true
+Q174684,Tuzla,P276,Q2097350,Tuzla massacre,true,true
+Q174684,Tuzla,P159,Q108365273,OK Sloboda Tuzla,true,true
+Q174684,Tuzla,SPORTS,Q108365273,OK Sloboda Tuzla,true,true
+Q174684,Tuzla,P159,Q2605072,KK Sloboda Tuzla,true,true
+Q174684,Tuzla,SPORTS,Q2605072,KK Sloboda Tuzla,true,true
+Q216790,Hanko,P276,Q99279834,Hanko massacre,true,true
+Q216790,Hanko,P131,Q55594888,Hanko railway station building,true,true
+Q216790,Hanko,P131,Q11861303,Hanko Water Tower,true,true
+Q271925,Sozopol,P131,Q106347541,"""Sv. Sv. Kiril I Metodiy"" t. Sozopol",true,true
+Q271925,Sozopol,P159,Q5423724,F.C. Sozopol,true,true
+Q271925,Sozopol,SPORTS,Q5423724,F.C. Sozopol,true,true
+Q271925,Sozopol,P276,Q28056176,Port of Sozopol,true,true
+Q271925,Sozopol,P131,Q12293057,Church of the Theotokos in Sozopol,true,true
+Q271925,Sozopol,EVENTS,Q125155554,"8th IEEE International Conference on Advanced Optoelectronics and Lasers, Sozopol, Bulgaria (2019)",true,true
+Q271925,Sozopol,P276,Q125155554,"8th IEEE International Conference on Advanced Optoelectronics and Lasers, Sozopol, Bulgaria (2019)",true,true
+Q271925,Sozopol,P131,Q637064,Sozopol Archaeological Museum,true,true
+Q173148,Delos,P276,Q27663903,House of Hermes (Delos),true,true
+Q173148,Delos,P276,Q27663905,House of Inopos (Delos),true,true
+Q173148,Delos,P131,Q28721774,Buleuterion (Delos),true,true
+Q173148,Delos,P276,Q28721774,Buleuterion (Delos),true,true
+Q173148,Delos,P276,Q27664016,House of the Trident (Delos),true,true
+Q173148,Delos,P276,Q130857859,Battle of Delos,true,true
+Q173148,Delos,P276,Q27664008,House of Cleopatra (Delos),true,true
+Q173148,Delos,P131,Q27664014,House of the Masks (Delos),true,true
+Q173148,Delos,P276,Q27664014,House of the Masks (Delos),true,true
+Q173148,Delos,P276,Q27568253,"Agora of Theophrastos, Delos",true,true
+Q173148,Delos,P131,Q28721777,Ekklesiasterion of Delos,true,true
+Q173148,Delos,P276,Q28721777,Ekklesiasterion of Delos,true,true
+Q173148,Delos,P131,Q131169662,Stadium Quarter (Delos),true,true
+Q173148,Delos,P276,Q27664012,House of the Dolphins (Delos),true,true
+Q173148,Delos,P276,Q12902542,Sacred Way (Delos),true,true
+Q173148,Delos,P19,Q16190588,Dinarchus of Delos,true,true
+Q173148,Delos,P276,Q28721787,Temple of Serapis (Delos),true,true
+Q173148,Delos,P276,Q27663933,Stoa of Philip V in Delos,true,true
+Q173148,Delos,P276,Q3556988,Archaeological Museum of Delos,true,true
+Q173148,Delos,P131,Q28721195,Cave of Cynthus (Kynthos) on Delos,true,true
+Q3352868,Transtrand,P276,Q10701327,Transtrand Church,true,true
+Q1736833,Katthammarsvik,P276,Q110901227,Katthammarsvik upper light,true,true
+Q1736833,Katthammarsvik,P276,Q110901226,Katthammarsvik lower light,true,true
+Q1011028,Ushguli,P131,Q16376687,Ushguli church of the Mother of God,true,true
+Q7569511,Southend,P138,Q68816526,Southend,true,true
+Q1147050,Tory Island,P276,Q1134191,Battle of Tory Island,true,true
+Q1147050,Tory Island,P276,Q19563404,Siege of Tory Island,true,true
+Q2167192,Tamariu,P138,Q24021810,Platja de Tamariu,true,true
+Q819979,Mount Olympus,P276,Q117143868,Observation platform below mount Olympus in Troodos,true,true
+Q1555,Guatemala City,P131,Q138307313,Guatemala City historian collection,true,true
+Q1555,Guatemala City,P131,Q2942341,Cathedral of Guatemala City,true,true
+Q1555,Guatemala City,P131,Q16823018,2007 Guatemala City sinkhole,true,true
+Q34820,Santo Domingo,EVENTS,Q113176776,2011 Santo Domingo International Badminton Championships – Mixed doubles,true,true
+Q34820,Santo Domingo,P276,Q113176776,2011 Santo Domingo International Badminton Championships – Mixed doubles,true,true
+Q34820,Santo Domingo,P131,Q73005984,Ercilia Pepin (Santo Domingo Metro),true,true
+Q34820,Santo Domingo,EVENTS,Q106237870,2021 Santo Domingo International Badminton Championships,true,true
+Q34820,Santo Domingo,P276,Q106237870,2021 Santo Domingo International Badminton Championships,true,true
+Q34820,Santo Domingo,EVENTS,Q113176753,2025 Santo Domingo International Badminton Championships – Women's doubles,true,true
+Q34820,Santo Domingo,P276,Q113176753,2025 Santo Domingo International Badminton Championships – Women's doubles,true,true
+Q34820,Santo Domingo,EVENTS,Q113176697,2009 Santo Domingo International Badminton Championships – Men's doubles,true,true
+Q34820,Santo Domingo,P276,Q113176697,2009 Santo Domingo International Badminton Championships – Men's doubles,true,true
+Q34820,Santo Domingo,EVENTS,Q113176698,2010 Santo Domingo International Badminton Championships – Men's doubles,true,true
+Q34820,Santo Domingo,P276,Q113176698,2010 Santo Domingo International Badminton Championships – Men's doubles,true,true
+Q34820,Santo Domingo,EVENTS,Q113176707,2017 Santo Domingo International Badminton Championships – Men's doubles,true,true
+Q34820,Santo Domingo,P276,Q113176707,2017 Santo Domingo International Badminton Championships – Men's doubles,true,true
+Q34820,Santo Domingo,EVENTS,Q113176756,2009 Santo Domingo International Badminton Championships – Women's singles,true,true
+Q34820,Santo Domingo,P276,Q113176756,2009 Santo Domingo International Badminton Championships – Women's singles,true,true
+Q34820,Santo Domingo,EVENTS,Q113176742,2014 Santo Domingo International Badminton Championships – Women's doubles,true,true
+Q34820,Santo Domingo,SPORTS,Q113176742,2014 Santo Domingo International Badminton Championships – Women's doubles,true,true
+Q34820,Santo Domingo,P131,Q25421569,Los Taínos (Santo Domingo Metro),true,true
+Q34820,Santo Domingo,P131,Q111414837,Embassy Suites by Hilton Santo Domingo,true,true
+Q34820,Santo Domingo,P131,Q111414832,JW Marriott Hotel Santo Domingo,true,true
+Q34820,Santo Domingo,P159,Q38054931,"Embassy of the Netherlands, Santo Domingo",true,true
+Q34820,Santo Domingo,P131,Q7301193,Royal Shipyards of Santo Domingo,true,true
+Q34820,Santo Domingo,SPORTS,Q113176730,2019 Santo Domingo International Badminton Championships – Men's singles,true,true
+Q34820,Santo Domingo,P131,Q2470834,Colonial City of Santo Domingo,true,true
+Q34820,Santo Domingo,SPORTS,Q113176702,2014 Santo Domingo International Badminton Championships – Men's doubles,true,true
+Q34820,Santo Domingo,SPORTS,Q113176729,2018 Santo Domingo International Badminton Championships – Men's singles,true,true
+Q34820,Santo Domingo,SPORTS,Q113176765,2018 Santo Domingo International Badminton Championships – Women's singles,true,true
+Q34820,Santo Domingo,SPORTS,Q113176722,2013 Santo Domingo International Badminton Championships – Men's singles,true,true
+Q34820,Santo Domingo,SPORTS,Q15140834,2013 Santo Domingo International Badminton Championships,true,true
+Q34820,Santo Domingo,P138,Q63286061,America/Santo Domingo,true,true
+Q3306,Panama City,P138,Q852591,Panama City,true,true
+Q3306,Panama City,P159,Q111107366,"Embassy of the Sovereign Military Order of Malta, Panama City",true,true
+Q3306,Panama City,P131,Q111885762,AC Hotel by Marriott Panama City,true,true
+Q3306,Panama City,P159,Q107529369,"embassy of Indonesia, Panama City",true,true
+Q3306,Panama City,P159,Q65173966,Embassy of Spain in Panama City,true,true
+Q33264,Las Cruces,P276,Q95682238,"2020 COVID-19 pandemic in Las Cruces, New Mexico",true,true
+Q33264,Las Cruces,P131,Q43009498,Las Cruces Community Theatre,true,true
+Q33264,Las Cruces,P131,Q6492172,Las Cruces Sun-News,true,true
+Q33264,Las Cruces,P159,Q6492172,Las Cruces Sun-News,true,true
+Q33264,Las Cruces,P138,Q2561853,60186 Las Cruces,true,true
+Q33264,Las Cruces,P159,Q6492171,Las Cruces Police Department,true,true
+Q33264,Las Cruces,P131,Q133013096,The Loretto Academy of Las Cruces,true,true
+Q33264,Las Cruces,P159,Q871071,Diocese of Las Cruces,true,true
+Q33264,Las Cruces,EVENTS,Q106339252,"Computational Phonology, SIGPHON 1994, Las Cruces, New Mexico, USA, July 1, 1994",true,true
+Q33264,Las Cruces,P276,Q106339252,"Computational Phonology, SIGPHON 1994, Las Cruces, New Mexico, USA, July 1, 1994",true,true
+Q33264,Las Cruces,P276,Q6492157,Las Cruces Bowling Alley Massacre,true,true
+Q33264,Las Cruces,P138,Q125805328,Las Cruces urban area,true,true
+Q33264,Las Cruces,P276,Q125583196,Las Cruces International Film Festival,true,true
+Q33264,Las Cruces,P138,Q6492168,Las Cruces International Airport,true,true
+Q33264,Las Cruces,P159,Q6492158,Las Cruces Bulletin,true,true
+Q1026296,Jinotega,P131,Q870079,Roman Catholic Diocese of Jinotega,true,true
+Q1026296,Jinotega,P159,Q870079,Roman Catholic Diocese of Jinotega,true,true
+Q983026,Chilliwack,P131,Q130304040,Chilliwack Cemeteries,true,true
+Q983026,Chilliwack,P276,Q5099096,Chilliwack Chiefs,true,true
+Q983026,Chilliwack,SPORTS,Q5099096,Chilliwack Chiefs,true,true
+Q983026,Chilliwack,P276,Q5099097,Chilliwack Chiefs,true,true
+Q983026,Chilliwack,SPORTS,Q5099097,Chilliwack Chiefs,true,true
+Q983026,Chilliwack,P131,Q85703849,Chilliwack Library,true,true
+Q983026,Chilliwack,P131,Q110895125,Chilliwack Symphony Orchestra,true,true
+Q983026,Chilliwack,P131,Q139757298,Chilliwack Loyal Orange Lodge Silver Cornet Band,true,true
+Q983026,Chilliwack,P131,Q139757296,Chilliwack (Squiala) Brass Band,true,true
+Q983026,Chilliwack,P131,Q23768233,Chilliwack City Hall,true,true
+Q983026,Chilliwack,P131,Q38394784,Chilliwack Drive-In,true,true
+Q983026,Chilliwack,P276,Q5099100,Chilliwack Huskers,true,true
+Q983026,Chilliwack,SPORTS,Q5099100,Chilliwack Huskers,true,true
+Q983026,Chilliwack,P131,Q971748,Chilliwack railway station,true,true
+Q983026,Chilliwack,P131,Q38394814,Galaxy Cinemas Chilliwack,true,true
+Q983026,Chilliwack,P276,Q1072999,Chilliwack Bruins,true,true
+Q983026,Chilliwack,SPORTS,Q1072999,Chilliwack Bruins,true,true
+Q185156,Guantánamo,P159,Q869269,Roman Catholic Diocese of Guantánamo-Baracoa,true,true
+Q185156,Guantánamo,P131,Q23796121,Guantánamo,true,true
+Q185156,Guantánamo,P276,Q3150480,Guantánamo,true,true
+Q185156,Guantánamo,SPORTS,Q3150480,Guantánamo,true,true
+Q185156,Guantánamo,P131,Q30293854,Universidad de Guantánamo,true,true
+Q185156,Guantánamo,P159,Q3063095,FC Guantánamo,true,true
+Q185156,Guantánamo,SPORTS,Q3063095,FC Guantánamo,true,true
+Q185156,Guantánamo,P159,Q44011525,Universidad de Ciencias Médicas de Guantánamo,true,true
+Q185156,Guantánamo,P131,Q25933189,"St. Catherine of Ricci Cathedral, Guantánamo",true,true
+Q1050154,Cat Island,P131,Q114554928,Cat Island,true,true
+Q1025801,Juigalpa,P159,Q114377184,Territorial Prelature of Juigalpa,true,true
+Q1025801,Juigalpa,P131,Q523811,Roman Catholic Diocese of Juigalpa,true,true
+Q1025801,Juigalpa,P159,Q523811,Roman Catholic Diocese of Juigalpa,true,true
+Q1025801,Juigalpa,P131,Q11824450,Juigalpa Airport,true,true
+Q937292,Acajutla,P131,Q60534256,Acajutla Lighthouse,true,true
+Q937292,Acajutla,P131,Q24960677,Port of Acajutla,true,true
+Q937292,Acajutla,P131,Q42794902,"Roads, building facades and urban context of the historic center of Acajutla",true,true
+Q937292,Acajutla,P276,Q3636310,Battle of Acajutla,true,true
+Q937292,Acajutla,P131,Q42794871,Acajutla railway station warehouses,true,true
+Q937292,Acajutla,P131,Q42794937,"Roads, building facades and urban context of the historic center of the Port of Acajutla",true,true
+Q181172,Tikal,P276,Q2185890,Tikal Temple I,true,true
+Q181172,Tikal,P276,Q939961,Tikal Temple II,true,true
+Q181172,Tikal,P276,Q9085766,Tikal Temple III,true,true
+Q181172,Tikal,P138,Q1848729,Tikal,true,true
+Q181172,Tikal,P276,Q7801881,Tikal Temple IV,true,true
+Q3439667,Rogersville,P131,Q3097431,Rogersville railway station,true,true
+Q130018,Denali,P138,Q179950,Denali Borough,true,true
+Q130018,Denali,P138,Q217136,Denali National Park and Preserve,true,true
+Q3181503,Paradise Island,P131,Q2722966,Atlantis Paradise Island,true,true
+Q3181503,Paradise Island,P276,Q24297157,"French Cloisters, Paradise Island",true,true
+Q3925731,Punta Sur,P276,Q5267231,Devil's Throat at Punta Sur,true,true
+Q3141,Melbourne,EVENTS,Q3854134,Melbourne Indoor 1981,true,true
+Q3141,Melbourne,P131,Q3854134,Melbourne Indoor 1981,true,true
+Q3141,Melbourne,P131,Q19817555,Light House Melbourne,true,true
+Q3141,Melbourne,EVENTS,Q106242956,"Data Mining - 15th Australasian Conference, AusDM 2017, Melbourne, VIC, Australia, August 19-20, 2017",true,true
+Q3141,Melbourne,P276,Q106242956,"Data Mining - 15th Australasian Conference, AusDM 2017, Melbourne, VIC, Australia, August 19-20, 2017",true,true
+Q3141,Melbourne,P131,Q136305221,"Consulate General of Malaysia, Melbourne",true,true
+Q3141,Melbourne,P131,Q130349582,"Consulate General of the United States, Melbourne",true,true
+Q3141,Melbourne,P159,Q6811784,Melbourne Grammar School,true,true
+Q3141,Melbourne,P276,Q66767706,"First Church of Christ, Scientist, Melbourne",true,true
+Q3141,Melbourne,P276,Q4604552,2005 Melbourne thunderstorm,true,true
+Q3141,Melbourne,P159,Q5161793,Connex Melbourne,true,true
+Q3141,Melbourne,SPORTS,Q3344140,North Melbourne Giants,true,true
+Q3141,Melbourne,SPORTS,Q2756356,Melbourne United,true,true
+Q3141,Melbourne,SPORTS,Q140277750,Unnamed Melbourne BBL franchise,true,true
+Q3141,Melbourne,SPORTS,Q1510813,South Melbourne Football Club,true,true
+Q3141,Melbourne,SPORTS,Q1638649,Melbourne Knights Football Club,true,true
+Q3141,Melbourne,P138,Q5355645,Melbourne,true,true
+Q3141,Melbourne,SPORTS,Q15636168,Melbourne Victory FC (women),true,true
+Q3141,Melbourne,SPORTS,Q2736412,North Melbourne Football Club,true,true
+Q3141,Melbourne,SPORTS,Q60753752,South East Melbourne Phoenix,true,true
+Q3141,Melbourne,P138,Q19342800,Melbournestraat,true,false
+Q3141,Melbourne,P138,Q949779,Melbourne,true,true
+Q3141,Melbourne,P138,Q730320,HMAS Melbourne,true,true
+Q3141,Melbourne,P1071,Q20047305,Melbourne bounce,true,true
+Q3141,Melbourne,P138,Q733738,Melbourne Airport,true,true
+Q3141,Melbourne,P138,Q744351,HMAS Melbourne,true,true
+Q3141,Melbourne,P138,Q22696521,Melbourne Brindle,true,true
+Q3141,Melbourne,P138,Q911681,Melbourne Football Club,true,true
+Q3141,Melbourne,P138,Q1635847,Melbourne,true,true
+Q3141,Melbourne,P138,Q1564084,HMAS Melbourne,true,true
+Q3141,Melbourne,P138,Q4823534,Australia/Melbourne,true,true
+Q79990,Christchurch,P131,Q79477385,"Consular Office of Japan, Christchurch",true,true
+Q79990,Christchurch,P131,Q106695576,Christchurch Supreme Court,true,true
+Q79990,Christchurch,P276,Q6761863,"Marian College, Christchurch",true,true
+Q79990,Christchurch,P131,Q24998656,"German Church, Christchurch",true,true
+Q79990,Christchurch,EVENTS,Q106337419,"4th International Conference on Mobile and Ubiquitous Multimedia, MUM 2005, Christchurch, New Zealand, December 8-10, 2005",true,true
+Q79990,Christchurch,P131,Q123921640,"The Fabric of Christchurch, 1850-1880",true,true
+Q79990,Christchurch,WORKS,Q63100943,Vile memes paying homage to mass murderers and racist propaganda: A look inside the chilling last Facebook posts of Christchurch gunman,true,true
+Q79990,Christchurch,P138,Q104180249,Christchurch mutation,true,true
+Q79990,Christchurch,SPORTS,Q847352,Christchurch United,true,true
+Q79990,Christchurch,P131,Q5109093,Christchurch School of Music,true,true
+Q79990,Christchurch,P131,Q3534665,1978 WTA Christchurch,true,true
+Q79990,Christchurch,WORKS,Q63100924,Accused Christchurch mosque shooter claims he's being unfairly treated behind bars and makes a formal complaint demanding access to visitors and phone calls,true,true
+Q79990,Christchurch,WORKS,Q63100832,'I've got a bomb!': The four chilling words the accused Christchurch shooter shouted at police 'while firing his gun' as they ran him off the road following massacre at two mosques,true,true
+Q79990,Christchurch,P138,Q1061330,Christchurch International Airport,true,true
+Q79990,Christchurch,SPORTS,Q2964935,Christchurch Cougars,true,true
+Q36526,Port Moresby,P159,Q136618677,"Embassy of Turkey, Port Moresby",true,true
+Q36526,Port Moresby,P138,Q63285983,Pacific/Port_Moresby,false,true
+Q36526,Port Moresby,P131,Q76388670,"High Commission of New Zealand, Port Moresby",true,true
+Q36526,Port Moresby,P131,Q16249709,Port Moresby Airfield Complex,true,true
+Q36526,Port Moresby,P159,Q115965749,"Embassy of the People's Republic of China, Port Moresby",true,true
+Q36526,Port Moresby,P159,Q107549701,"embassy of Indonesia, Port Moresby",true,true
+Q36526,Port Moresby,P131,Q30280348,Port Moresby General Hospital,true,true
+Q36526,Port Moresby,P159,Q22261549,FC Port Moresby,true,true
+Q36526,Port Moresby,SPORTS,Q22261549,FC Port Moresby,true,true
+Q36526,Port Moresby,P159,Q1365321,Roman Catholic Archdiocese of Port Moresby,true,true
+Q36526,Port Moresby,P159,Q89894962,"Embassy of France, Port Moresby",true,true
+Q36526,Port Moresby,P159,Q99800861,"Embassy of Japan, Port Moresby",true,true
+Q36526,Port Moresby,P276,Q4872083,Battle of Port Moresby,true,true
+Q744239,Whangārei,P276,Q106248603,Te Horo School (Whangarei),false,true
+Q744239,Whangārei,P276,Q106149567,Whangarei Intermediate School,false,true
+Q744239,Whangārei,P276,Q64864568,Whangarei Boys' High School,false,true
+Q34126,Funafuti,P19,Q1931850,Jerome Funafuti,true,true
+Q34126,Funafuti,P138,Q63285989,Pacific/Funafuti,true,true
+Q34126,Funafuti,P276,Q63285989,Pacific/Funafuti,true,true
+Q34126,Funafuti,P131,Q130304928,Funafuti Pre School,true,true
+Q34126,Funafuti,P159,Q1752580,Roman Catholic Mission Sui Iuris of Funafuti,true,true
+Q34126,Funafuti,P159,Q97042562,"Embassy of the Republic of China (Taiwan), Funafuti",true,true
+Q34126,Funafuti,P131,Q1327938,Funafuti International Airport,true,true
+Q34126,Funafuti,P138,Q1327938,Funafuti International Airport,true,true
+Q416098,Akaroa,P131,Q67194671,Akaroa War Memorial,true,true
+Q416098,Akaroa,P131,Q37177828,Akaroa Cinema,true,true
+Q416098,Akaroa,P276,Q76858681,Akaroa Art Gallery (former Orion Powerhouse Gallery),true,true
+Q416098,Akaroa,P276,Q70765421,Akaroa Community and School Library,true,true
+Q416098,Akaroa,P276,Q140453831,Akaroa Main Wharf,true,true
+Q416098,Akaroa,P276,Q132689628,Akaroa Museum,true,true
+Q416098,Akaroa,P276,Q65059544,Akaroa Area School,true,true
+Q2486,Tarawa,P138,Q63285968,Pacific/Tarawa,true,true
+Q2486,Tarawa,P159,Q123903220,"Embassy of Japan, Tarawa",true,true
+Q2486,Tarawa,P276,Q484826,Treaty of Tarawa,true,true
+Q834869,Bulls,P276,Q106238612,Bulls School,true,true
+Q834869,Bulls,P276,Q106238617,Clifton School (Bulls),true,true
+Q274569,Upolu,P276,Q13519869,Bombardment of Upolu,true,true
+Q1427436,Chatham Island,P159,Q66789548,Chatham Island Taiko Trust,true,true
+Q1427436,Chatham Island,P138,Q107554988,Chatham Island marine ecoregion,true,true
+Q6944072,Muttaburra,P276,Q69377440,Muttaburra Mudskipper,true,true
+Q6944072,Muttaburra,P276,Q126105146,Muttaburra State School,true,true
+Q6944072,Muttaburra,P276,Q85463718,Muttaburra Library,true,true
+Q985928,Kiunga,P131,Q10930307,Kiunga Airport,true,true
+Q985928,Kiunga,P138,Q10930307,Kiunga Airport,true,true
+Q985928,Kiunga,P159,Q868282,Roman Catholic Diocese of Daru-Kiunga,true,true
+Q632489,Niulakita,P131,Q130304942,Niulakita Pre School,true,true
+Q1059287,Nikunau,P131,Q121776292,Nikunau,true,true
+Q1059287,Nikunau,P138,Q1107646,Nikunau Airport,true,true
+Q992136,Telefomin,P131,Q12695264,Telefomin Airport,true,true
+Q992136,Telefomin,P276,Q25043259,Telefomin Incident,true,true
+Q5559270,Gibson,P276,Q112810598,Gibson Tigers,true,true
+Q5559270,Gibson,SPORTS,Q112810598,Gibson Tigers,true,true
+Q657461,Cartagena,P131,Q138569036,Centro Cultural Cartagena,true,true
+Q657461,Cartagena,P131,Q5047033,"Cartagena Cathedral, Colombia",true,true
+Q657461,Cartagena,P131,Q123371463,Museo de Arte Moderno de Cartagena de Indias,true,true
+Q657461,Cartagena,P131,Q23696017,Cartagena,true,true
+Q657461,Cartagena,WORKS,Q1045757,Cartagena,true,true
+Q657461,Cartagena,P131,Q129662567,Cartagena Pride,true,true
+Q657461,Cartagena,P276,Q15145481,Battle of Cartagena de Indias,true,true
+Q657461,Cartagena,EVENTS,Q106304405,"IEEE/ACM 16th International Symposium on Cluster, Cloud and Grid Computing, CCGrid 2016, Cartagena, Colombia, May 16-19, 2016",true,true
+Q657461,Cartagena,P276,Q106304405,"IEEE/ACM 16th International Symposium on Cluster, Cloud and Grid Computing, CCGrid 2016, Cartagena, Colombia, May 16-19, 2016",true,true
+Q657461,Cartagena,P159,Q392284,Real Cartagena,true,true
+Q657461,Cartagena,SPORTS,Q392284,Real Cartagena,true,true
+Q657461,Cartagena,P159,Q666987,Roman Catholic Archdiocese of Cartagena,true,true
+Q657461,Cartagena,P276,Q2366970,Battle of Cartagena de Indias,true,true
+Q657461,Cartagena,P276,Q7162128,Spanish Siege of Cartagena de Indias,true,true
+Q657461,Cartagena,P276,Q21480515,Siege of Cartagena,true,true
+Q657461,Cartagena,P159,Q7895227,Universidad de Cartagena,true,true
+Q657461,Cartagena,P159,Q3417387,Cartagena Refinery,true,true
+Q657461,Cartagena,P159,Q104726615,Roman Catholic Diocese of Cartagena de Indias,true,true
+Q657461,Cartagena,P159,Q29354551,Real Cartagena Femenino,true,true
+Q657461,Cartagena,SPORTS,Q29354551,Real Cartagena Femenino,true,true
+Q2841,Bogotá,P276,Q3954480,Seguros Bolívar Open Bogotá,true,true
+Q2841,Bogotá,P159,Q3421627,Real Audiencia of Santafé de Bogotá,true,true
+Q2841,Bogotá,P159,Q38053148,"Embassy of the Netherlands, Bogotá",true,true
+Q2841,Bogotá,P131,Q30641760,Knightsbridge Schools International Bogotá,true,true
+Q2841,Bogotá,P138,Q23307607,Bogotá Formation,true,true
+Q2841,Bogotá,EVENTS,Q125157806,"IEEE Colombian Conference on Applications of Computational Intelligence, Bogota, Colombia (2023)",false,true
+Q2841,Bogotá,P276,Q125157806,"IEEE Colombian Conference on Applications of Computational Intelligence, Bogota, Colombia (2023)",false,true
+Q2841,Bogotá,P276,Q890661,Bogotá Half Marathon,true,true
+Q2841,Bogotá,P276,Q60668574,2019 Bogotá car bombing,true,true
+Q2841,Bogotá,P276,Q24960430,cinema of Bogotá,true,true
+Q2841,Bogotá,P276,Q6077641,Planetarium of Bogotá,true,true
+Q2841,Bogotá,EVENTS,Q106335532,"XXI Iberoamerican Conference on Software Engineering, Bogota, Colombia, April 23-27, 2018",false,true
+Q2841,Bogotá,P276,Q106335532,"XXI Iberoamerican Conference on Software Engineering, Bogota, Colombia, April 23-27, 2018",false,true
+Q2841,Bogotá,SPORTS,Q8249127,Bogotá F.C.,true,true
+Q2841,Bogotá,EVENTS,Q3799737,1978 Colgate Grand Prix of Bogota,false,true
+Q2841,Bogotá,P138,Q3291586,Bogotá metropolitan area,true,true
+Q2841,Bogotá,SPORTS,Q5614989,Guerreros de Bogotá,true,true
+Q2841,Bogotá,P138,Q63286092,America/Bogota,false,true
+Q2841,Bogotá,P138,Q66564781,Bogota,false,true
+Q43509,Guayaquil,EVENTS,Q109568693,November 2021 Guayaquil prison riot,true,true
+Q43509,Guayaquil,P131,Q109568693,November 2021 Guayaquil prison riot,true,true
+Q43509,Guayaquil,P276,Q299274,Challenger Ciudad de Guayaquil,true,true
+Q43509,Guayaquil,P131,Q134470028,Forum (Guayaquil),true,true
+Q43509,Guayaquil,P159,Q5136217,Guayaquil City F.C.,true,true
+Q43509,Guayaquil,SPORTS,Q5136217,Guayaquil City F.C.,true,true
+Q43509,Guayaquil,P276,Q3460070,Independence of Guayaquil,true,true
+Q43509,Guayaquil,P138,Q1138929,Gulf of Guayaquil,true,true
+Q43509,Guayaquil,P138,Q107554962,Guayaquil marine ecoregion,true,true
+Q43509,Guayaquil,EVENTS,Q15143122,2013 Challenger Ciudad de Guayaquil,true,true
+Q43509,Guayaquil,P276,Q15143122,2013 Challenger Ciudad de Guayaquil,true,true
+Q43509,Guayaquil,SPORTS,Q5136138,Club Atlético Guayaquil,true,true
+Q43509,Guayaquil,P159,Q1364557,Roman Catholic Archdiocese of Guayaquil,true,true
+Q43509,Guayaquil,EVENTS,Q106243197,"Technologies and Innovation - 5th International Conference, CITI 2019, Guayaquil, Ecuador, December 2-5, 2019",true,true
+Q43509,Guayaquil,P276,Q106243197,"Technologies and Innovation - 5th International Conference, CITI 2019, Guayaquil, Ecuador, December 2-5, 2019",true,true
+Q43509,Guayaquil,EVENTS,Q106243199,"Technologies and Innovation - Second International Conference, CITI 2016, Guayaquil, Ecuador, November 23-25, 2016",true,true
+Q43509,Guayaquil,P138,Q63286093,America/Guayaquil,true,true
+Q44242,Río Gallegos,P131,Q84525419,MPM (Río Gallegos),true,true
+Q44242,Río Gallegos,P131,Q95729989,Río Gallegos Military Hospital,true,true
+Q44242,Río Gallegos,P276,Q94672769,Río Gallegos Air Garrison,true,true
+Q44242,Río Gallegos,P276,Q93174802,“Río Gallegos” Army Garrison,true,true
+Q44242,Río Gallegos,P138,Q4742631,America/Argentina/Rio_Gallegos,false,true
+Q44242,Río Gallegos,P159,Q875229,Roman Catholic Diocese of Río Gallegos,true,true
+Q171612,Rio Branco,P138,Q63286089,America/Rio_Branco,false,true
+Q171612,Rio Branco,P159,Q7076751,TV União Rio Branco,true,true
+Q171612,Rio Branco,P138,Q5110606,Rio Branco International Airport,true,true
+Q171612,Rio Branco,P159,Q874983,Roman Catholic Diocese of Rio Branco,true,true
+Q171612,Rio Branco,P276,Q123242403,2023 Rio Branco Cessna Grand Caravan crash,true,true
+Q171612,Rio Branco,P159,Q2587703,Rio Branco Football Club,true,true
+Q171612,Rio Branco,SPORTS,Q2587703,Rio Branco Football Club,true,true
+Q171612,Rio Branco,P159,Q10376837,Rede Amazônica Rio Branco,true,true
+Q377965,San Nicolás de los Arroyos,P276,Q93379074,San Nicolás de los Arroyos Army Barracks,true,true
+Q377965,San Nicolás de los Arroyos,P159,Q583173,Roman Catholic Diocese of San Nicolás de los Arroyos,true,true
+Q25304,Pichilemu,P159,Q19930108,Andrea Natalia Aranda Escudero Somos Pichilemu Producciones E.I.R.L.,true,true
+Q25304,Pichilemu,P131,Q42898220,Pichilemu Historical Area,true,true
+Q25304,Pichilemu,P131,Q6464491,"La Plaza, Pichilemu",true,true
+Q25304,Pichilemu,P159,Q7190653,Pichilemu,true,true
+Q25304,Pichilemu,P131,Q19969402,Pichilemu Cemetery,true,true
+Q25304,Pichilemu,P131,Q5244458,Pichilemu Aerodrome,true,true
+Q25304,Pichilemu,P159,Q5030971,Canal 3 Pichilemu,true,true
+Q25304,Pichilemu,P131,Q19599647,Radio Somos Pichilemu,true,true
+Q25304,Pichilemu,P159,Q19599647,Radio Somos Pichilemu,true,true
+Q25304,Pichilemu,P276,Q842621,2010 Pichilemu earthquakes,true,true
+Q1044689,Carora,P138,Q5659040,Carora Airport,true,true
+Q1044689,Carora,P276,Q5659040,Carora Airport,true,true
+Q1044689,Carora,P159,Q867654,Roman Catholic Diocese of Carora,true,true
+Q1044689,Carora,P138,Q783079,128166 Carora,true,true
+Q1044689,Carora,P138,Q5045529,Carora cattle,true,true
+Q188192,Tocopilla,P131,Q4609417,2007 Tocopilla earthquake,true,true
+Q188192,Tocopilla,P131,Q131426967,"Socio-environmental conflict due to sacrifice zone in Tocopilla, Región of Antofagasta",true,true
+Q188192,Tocopilla,P131,Q129668243,Tocopilla Pride,true,true
+Q1005607,Young,EVENTS,Q6151501,Tragedia de Young,true,true
+Q1005607,Young,P276,Q6151501,Tragedia de Young,true,true
+Q941357,Riberalta,P138,Q2875905,Riberalta Airport,true,true
+Q3471546,San Lorenzo de Tarapacá,P276,Q42897874,Church and bell tower of San Lorenzo de Tarapacá,true,true
+Q3471546,San Lorenzo de Tarapacá,P276,Q42897888,San Lorenzo de Tarapacá,true,true
+Q1315847,Pozo Colorado,P131,Q15936364,Pozo Colorado Airport,true,true
+Q2882630,Anzoategui,P276,Q5840873,Anzoategui train station,true,true

@@ -1,0 +1,585 @@
+config   : blink (ner_dependent) hash=1be149287378
+dataset  : geocorpora -> src/geocorpora_eval.csv (144 items)
+output   : results\predictions\blink__geocorpora.jsonl
+2026-10-08 23:13:09,130 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+23:13:35 INFO Better speed can be achieved with apex installed from https://www.github.com/nvidia/apex .
+23:13:35 INFO Better speed can be achieved with apex installed from https://www.github.com/nvidia/apex .
+23:13:35 INFO loading file https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-vocab.txt from cache at C:\Users\Adela\.cache\torch\pytorch_transformers\9b3c03a36e83b13d5ba95ac965c9f9074a99e14340c523ab405703179e79fc46.542ce4285a40d23a559526243235df47c5f75c197f04f37d1a0c124c32c9a084
+23:13:36 INFO loading configuration file https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-config.json from cache at C:\Users\Adela\.cache\torch\pytorch_transformers\6dfaed860471b03ab5b9acb6153bea82b6632fb9bbe514d3fff050fe1319ee6d.788fed32bb8481a9b15ce726d41c53d5d5066b04c667e34ce3a7a3826d1573d8
+23:13:36 INFO Model config {
+  "architectures": [
+    "BertForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "finetuning_task": null,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "layer_norm_eps": 1e-12,
+  "max_position_embeddings": 512,
+  "model_type": "bert",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "num_labels": 2,
+  "output_attentions": false,
+  "output_hidden_states": false,
+  "pad_token_id": 0,
+  "pruned_heads": {},
+  "torchscript": false,
+  "type_vocab_size": 2,
+  "vocab_size": 30522
+}
+
+23:13:36 INFO loading weights file https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-pytorch_model.bin from cache at C:\Users\Adela\.cache\torch\pytorch_transformers\54da47087cc86ce75324e4dc9bbb5f66c6e83a7c6bd23baea8b489acc8d09aa4.4d5343a4b979c4beeaadef17a0453d1bb183dd9b084f58b84c7cc781df343ae6
+23:13:42 INFO loading configuration file https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-config.json from cache at C:\Users\Adela\.cache\torch\pytorch_transformers\6dfaed860471b03ab5b9acb6153bea82b6632fb9bbe514d3fff050fe1319ee6d.788fed32bb8481a9b15ce726d41c53d5d5066b04c667e34ce3a7a3826d1573d8
+23:13:42 INFO Model config {
+  "architectures": [
+    "BertForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "finetuning_task": null,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "layer_norm_eps": 1e-12,
+  "max_position_embeddings": 512,
+  "model_type": "bert",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "num_labels": 2,
+  "output_attentions": false,
+  "output_hidden_states": false,
+  "pad_token_id": 0,
+  "pruned_heads": {},
+  "torchscript": false,
+  "type_vocab_size": 2,
+  "vocab_size": 30522
+}
+
+23:13:43 INFO loading weights file https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-pytorch_model.bin from cache at C:\Users\Adela\.cache\torch\pytorch_transformers\54da47087cc86ce75324e4dc9bbb5f66c6e83a7c6bd23baea8b489acc8d09aa4.4d5343a4b979c4beeaadef17a0453d1bb183dd9b084f58b84c7cc781df343ae6
+23:13:53 INFO loading file https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-vocab.txt from cache at C:\Users\Adela\.cache\torch\pytorch_transformers\9b3c03a36e83b13d5ba95ac965c9f9074a99e14340c523ab405703179e79fc46.542ce4285a40d23a559526243235df47c5f75c197f04f37d1a0c124c32c9a084
+23:13:53 INFO Assigning ['[unused0]', '[unused1]', '[unused2]'] to the additional_special_tokens key of the tokenizer
+23:13:54 INFO loading configuration file https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-config.json from cache at C:\Users\Adela\.cache\torch\pytorch_transformers\6dfaed860471b03ab5b9acb6153bea82b6632fb9bbe514d3fff050fe1319ee6d.788fed32bb8481a9b15ce726d41c53d5d5066b04c667e34ce3a7a3826d1573d8
+23:13:54 INFO Model config {
+  "architectures": [
+    "BertForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "finetuning_task": null,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "layer_norm_eps": 1e-12,
+  "max_position_embeddings": 512,
+  "model_type": "bert",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "num_labels": 2,
+  "output_attentions": false,
+  "output_hidden_states": false,
+  "pad_token_id": 0,
+  "pruned_heads": {},
+  "torchscript": false,
+  "type_vocab_size": 2,
+  "vocab_size": 30522
+}
+
+23:13:54 INFO loading weights file https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-pytorch_model.bin from cache at C:\Users\Adela\.cache\torch\pytorch_transformers\54da47087cc86ce75324e4dc9bbb5f66c6e83a7c6bd23baea8b489acc8d09aa4.4d5343a4b979c4beeaadef17a0453d1bb183dd9b084f58b84c7cc781df343ae6
+23:14:00 INFO BLINK: linking 433 mention(s)
+23:14:36 INFO BLINK bi-encoder pass: 200000 / 5903527 entities
+23:14:38 INFO BLINK bi-encoder pass: 400000 / 5903527 entities
+23:14:40 INFO BLINK bi-encoder pass: 600000 / 5903527 entities
+23:14:42 INFO BLINK bi-encoder pass: 800000 / 5903527 entities
+23:14:44 INFO BLINK bi-encoder pass: 1000000 / 5903527 entities
+23:14:46 INFO BLINK bi-encoder pass: 1200000 / 5903527 entities
+23:14:48 INFO BLINK bi-encoder pass: 1400000 / 5903527 entities
+23:14:50 INFO BLINK bi-encoder pass: 1600000 / 5903527 entities
+23:14:52 INFO BLINK bi-encoder pass: 1800000 / 5903527 entities
+23:14:54 INFO BLINK bi-encoder pass: 2000000 / 5903527 entities
+23:14:56 INFO BLINK bi-encoder pass: 2200000 / 5903527 entities
+23:14:58 INFO BLINK bi-encoder pass: 2400000 / 5903527 entities
+23:15:00 INFO BLINK bi-encoder pass: 2600000 / 5903527 entities
+23:15:02 INFO BLINK bi-encoder pass: 2800000 / 5903527 entities
+23:15:04 INFO BLINK bi-encoder pass: 3000000 / 5903527 entities
+23:15:07 INFO BLINK bi-encoder pass: 3200000 / 5903527 entities
+23:15:08 INFO BLINK bi-encoder pass: 3400000 / 5903527 entities
+23:15:11 INFO BLINK bi-encoder pass: 3600000 / 5903527 entities
+23:15:13 INFO BLINK bi-encoder pass: 3800000 / 5903527 entities
+23:15:15 INFO BLINK bi-encoder pass: 4000000 / 5903527 entities
+23:15:17 INFO BLINK bi-encoder pass: 4200000 / 5903527 entities
+23:15:19 INFO BLINK bi-encoder pass: 4400000 / 5903527 entities
+23:15:21 INFO BLINK bi-encoder pass: 4600000 / 5903527 entities
+23:15:23 INFO BLINK bi-encoder pass: 4800000 / 5903527 entities
+23:15:25 INFO BLINK bi-encoder pass: 5000000 / 5903527 entities
+23:15:27 INFO BLINK bi-encoder pass: 5200000 / 5903527 entities
+23:15:29 INFO BLINK bi-encoder pass: 5400000 / 5903527 entities
+23:15:32 INFO BLINK bi-encoder pass: 5600000 / 5903527 entities
+23:15:34 INFO BLINK bi-encoder pass: 5800000 / 5903527 entities
+23:15:35 INFO BLINK bi-encoder pass: 5903527 / 5903527 entities
+  0%|          | 0/433 [00:00<?, ?it/s] 86%|########5 | 372/433 [00:00<00:00, 3716.57it/s]100%|##########| 433/433 [00:00<00:00, 3718.18it/s]
+1/433 2/433 3/433 4/433 5/433 6/433 7/433 8/433 9/433 10/433 11/433 12/433 13/433 14/433 15/433 16/433 17/433 18/433 19/433 20/433 21/433 22/433 23/433 24/433 25/433 26/433 27/433 28/433 29/433 30/433 31/433 32/433 33/433 34/433 35/433 36/433 37/433 38/433 39/433 40/433 41/433 42/433 43/433 44/433 45/433 46/433 47/433 48/433 49/433 50/433 51/433 52/433 53/433 54/433 55/433 56/433 57/433 58/433 59/433 60/433 61/433 62/433 63/433 64/433 65/433 66/433 67/433 68/433 69/433 70/433 71/433 72/433 73/433 74/433 75/433 76/433 77/433 78/433 79/433 80/433 81/433 82/433 83/433 84/433 85/433 86/433 87/433 88/433 89/433 90/433 91/433 92/433 93/433 94/433 95/433 96/433 97/433 98/433 99/433 100/433 101/433 102/433 103/433 104/433 105/433 106/433 107/433 108/433 109/433 110/433 111/433 112/433 113/433 114/433 115/433 116/433 117/433 118/433 119/433 120/433 121/433 122/433 123/433 124/433 125/433 126/433 127/433 128/433 129/433 130/433 131/433 132/433 133/433 134/433 135/433 136/433 137/433 138/433 139/433 140/433 141/433 142/433 143/433 144/433 145/433 146/433 147/433 148/433 149/433 150/433 151/433 152/433 153/433 154/433 155/433 156/433 157/433 158/433 159/433 160/433 161/433 162/433 163/433 164/433 165/433 166/433 167/433 168/433 169/433 170/433 171/433 172/433 173/433 174/433 175/433 176/433 177/433 178/433 179/433 180/433 181/433 182/433 183/433 184/433 185/433 186/433 187/433 188/433 189/433 190/433 191/433 192/433 193/433 194/433 195/433 196/433 197/433 198/433 199/433 200/433 201/433 202/433 203/433 204/433 205/433 206/433 207/433 208/433 209/433 210/433 211/433 212/433 213/433 214/433 215/433 216/433 217/433 218/433 219/433 220/433 221/433 222/433 223/433 224/433 225/433 226/433 227/433 228/433 229/433 230/433 231/433 232/433 233/433 234/433 235/433 236/433 237/433 238/433 239/433 240/433 241/433 242/433 243/433 244/433 245/433 246/433 247/433 248/433 249/433 250/433 251/433 252/433 253/433 254/433 255/433 256/433 257/433 258/433 259/433 260/433 261/433 262/433 263/433 264/433 265/433 266/433 267/433 268/433 269/433 270/433 271/433 272/433 273/433 274/433 275/433 276/433 277/433 278/433 279/433 280/433 281/433 282/433 283/433 284/433 285/433 286/433 287/433 288/433 289/433 290/433 291/433 292/433 293/433 294/433 295/433 296/433 297/433 298/433 299/433 300/433 301/433 302/433 303/433 304/433 305/433 306/433 307/433 308/433 309/433 310/433 311/433 312/433 313/433 314/433 315/433 316/433 317/433 318/433 319/433 320/433 321/433 322/433 323/433 324/433 325/433 326/433 327/433 328/433 329/433 330/433 331/433 332/433 333/433 334/433 335/433 336/433 337/433 338/433 339/433 340/433 341/433 342/433 343/433 344/433 345/433 346/433 347/433 348/433 349/433 350/433 351/433 352/433 353/433 354/433 355/433 356/433 357/433 358/433 359/433 360/433 361/433 362/433 363/433 364/433 365/433 366/433 367/433 368/433 369/433 370/433 371/433 372/433 373/433 374/433 375/433 376/433 377/433 378/433 379/433 380/433 381/433 382/433 383/433 384/433 385/433 386/433 387/433 388/433 389/433 390/433 391/433 392/433 393/433 394/433 395/433 396/433 397/433 398/433 399/433 400/433 401/433 402/433 403/433 404/433 405/433 406/433 407/433 408/433 409/433 410/433 411/433 412/433 413/433 414/433 415/433 416/433 417/433 418/433 419/433 420/433 421/433 422/433 423/433 424/433 425/433 426/433 427/433 428/433 429/433 430/433 431/433 432/433 433/433 23:47:15 INFO Wikidata enwiki cache loaded: 4008 entries
+23:47:22 INFO Wikidata entity cache loaded: 11246 entries
+23:47:22 INFO Wikidata label cache loaded: 11117 entries
+23:47:22 INFO Use pytorch device_name: cpu
+23:47:22 INFO Load pretrained SentenceTransformer: intfloat/multilingual-e5-base
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:01<00:00,  1.32s/it]Batches: 100%|##########| 1/1 [00:01<00:00,  1.32s/it]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.04it/s]
+23:47:31 INFO [1/144] 2b33cec355c99f6f -> Q230
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 12.50it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.62it/s]
+23:47:32 INFO [2/144] e95a649c2391aea8 -> Q668
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 13.43it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  9.52it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  9.50it/s]
+23:47:33 INFO [3/144] 0d7563520db39f22 -> Q171714
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.66it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.09it/s]
+23:47:36 INFO [4/144] ff3b810214b79aa6 -> Q258
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 13.85it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.62it/s]
+23:47:36 INFO [5/144] e4d4baacca2e7aac -> Q1168
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.24it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 12.80it/s]
+23:47:44 INFO [6/144] 382c61c88b807cf6 -> Q638603
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.23it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.19it/s]
+23:47:47 INFO [7/144] fb6c94105ff80425 -> Q18349084
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.68it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.58it/s]
+23:47:47 INFO [8/144] 5ec4f834f3c0ddce -> Q64147
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.38it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.99it/s]
+23:47:48 INFO [9/144] cdd9d420314ca3aa -> Q837
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.86it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.93it/s]
+23:47:49 INFO [10/144] 8e4038922ecc5f76 -> Q11299
+23:47:59 INFO Wikidata coords cache loaded: 1178 entries
+23:47:59 INFO Wikidata search cache loaded: 898 entries
+23:47:59 INFO Wikidata alias cache loaded: 2747 entries
+23:47:59 INFO Wikidata geonames cache loaded: 167 entries
+23:47:59 INFO Wikidata cache saved: entity=11254, label=11125, coords=1178, search=898, alias=2747, geonames=167, enwiki=4285
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.18it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.67it/s]
+23:48:00 INFO [11/144] 9b3c66b4ce0d1a79 -> Q215
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.34it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  8.87it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  8.85it/s]
+23:48:01 INFO [12/144] fbcf3f3488f18487 -> Q974
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.17it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.11it/s]
+23:48:02 INFO [13/144] 0e3764fba52792a4 -> Q1931836
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.06it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 10.60it/s]
+23:48:03 INFO [14/144] 6a30a43a5d11abc8 -> Q23661
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 12.50it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.13it/s]
+23:48:04 INFO [15/144] 01782881b6869df6 -> Q1211
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.97it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.54it/s]
+23:48:05 INFO [16/144] adc176e49809471c -> Q1449
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.54it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.36it/s]
+23:48:05 INFO [17/144] bd7b204ad5f04e12 -> Q424
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.91it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.54it/s]
+23:48:06 INFO [18/144] dea632ad31caf317 -> Q18013
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.17it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 12.94it/s]
+23:48:07 INFO [19/144] 6a383511f559f780 -> Q691404
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.00it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.40it/s]
+23:48:09 INFO [20/144] 502ac6918ecb2eb7 -> Q84
+23:48:19 INFO Wikidata cache saved: entity=11259, label=11130, coords=1178, search=898, alias=2747, geonames=167, enwiki=4542
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.90it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.87it/s]
+23:48:20 INFO [21/144] 6c99bc599efae73a -> Q7589612
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.77it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 30.24it/s]
+23:48:21 INFO [22/144] 5f83eb1f66f67f69 -> Q1439
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.75it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.84it/s]
+23:48:23 INFO [23/144] 63eb9259d93c650a -> Q19792051
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.65it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 13.46it/s]
+23:48:25 INFO [24/144] 7b26961f288bd097 -> Q5656824
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.35it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.15it/s]
+23:48:26 INFO [25/144] afe6b3f121f8e258 -> Q656
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.38it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 32.14it/s]
+23:48:28 INFO [26/144] 63c872b35e871484 -> Q183314
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.86it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 32.64it/s]
+23:48:29 INFO [27/144] ad49ba90b245a1c3 -> Q127877
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.16it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.97it/s]
+23:48:30 INFO [28/144] e9049cef3df04da5 -> Q84
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.84it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 24.27it/s]
+23:48:32 INFO [29/144] 1ad2ac0696eaf031 -> Q85
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.28it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 10.90it/s]
+23:48:35 INFO [30/144] e5fcd61fb46375be -> Q4920436
+23:48:43 INFO Wikidata cache saved: entity=11275, label=11146, coords=1178, search=898, alias=2747, geonames=167, enwiki=4848
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.59it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.30it/s]
+23:48:44 INFO [31/144] 58fc220ffeae54ec -> Q43070
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.89it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 24.95it/s]
+23:48:46 INFO [32/144] 51a16207204f8803 -> Q6803448
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.81it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.71it/s]
+23:48:51 INFO [33/144] ab6b968e17e91a3b -> Q111291
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.71it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 38.44it/s]
+23:48:52 INFO [34/144] db2066856b82af16 -> Q912
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.02it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.63it/s]
+23:48:53 INFO [35/144] 44c7b0a770c77964 -> Q5687
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.61it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.47it/s]
+23:48:57 INFO [36/144] a1fd2c8ddd075d17 -> Q3881
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.22it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 28.72it/s]
+23:48:58 INFO [37/144] a70b1c81387a10bb -> Q83317
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.09it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 27.17it/s]
+23:48:59 INFO [38/144] a305985c542a0cbd -> Q242895
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.09it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 27.71it/s]
+23:48:59 INFO [39/144] e51b2960bd266c23 -> Q673662
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.25it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 33.35it/s]
+23:49:00 INFO [40/144] e262c215d2e72a56 -> Q23197
+23:49:08 INFO Wikidata cache saved: entity=11291, label=11162, coords=1178, search=898, alias=2747, geonames=167, enwiki=5113
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.00it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.31it/s]
+23:49:10 INFO [41/144] 339aff9028034d05 -> Q452447
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 11.30it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.74it/s]
+23:49:10 INFO [42/144] 3668069e796f7671 -> Q508209
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  9.68it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  9.66it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 33.70it/s]
+23:49:12 INFO [43/144] c70e4b811d85cc3f -> Q214700
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 11.70it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  7.35it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  7.34it/s]
+23:49:14 INFO [44/144] 896316786fd7d22a -> Q23482
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  9.77it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  9.76it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.43it/s]
+23:49:15 INFO [45/144] 9803a6cadde67dca -> Q1376790
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 13.07it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.74it/s]
+23:49:16 INFO [46/144] f2d4b6774ecd6fad -> Q1558
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 10.40it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.15it/s]
+23:49:17 INFO [47/144] d8537d967dfcfebd -> Q61
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 13.07it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 29.22it/s]
+23:49:18 INFO [48/144] b4332740054d609f -> Q1032
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 11.39it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 30.66it/s]
+23:49:18 INFO [49/144] 11cdb4301422013f -> Q494616
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 10.67it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.13it/s]
+23:49:19 INFO [50/144] 9dff291c9eff08c7 -> Q41819
+23:49:52 INFO Wikidata cache saved: entity=11297, label=11168, coords=1178, search=898, alias=2747, geonames=167, enwiki=5351
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.41it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.30it/s]
+23:49:55 INFO [51/144] 266903f67d3f3ae8 -> Q986174
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.89it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.37it/s]
+23:49:56 INFO [52/144] 4bdd4159a0c5f105 -> Q217039
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.95it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 28.13it/s]
+23:49:57 INFO [53/144] e484d168ab7efd8d -> Q1498
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.60it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 34.67it/s]
+23:49:58 INFO [54/144] db63f70955329692 -> Q26777
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.24it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.28it/s]
+23:49:59 INFO [55/144] 4152acb0c3a3e7d4 -> Q1339201
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.87it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.23it/s]
+23:50:01 INFO [56/144] 1b93a1e280a8a4d3 -> Q6386127
+23:50:02 INFO [57/144] e92a977768a1ab3f -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.84it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.27it/s]
+23:50:04 INFO [58/144] 26c973bc5b5ef96f -> Q1539696
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.04it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.86it/s]
+23:50:08 INFO [59/144] 7a21608a1e134e37 -> Q61
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.35it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.21it/s]
+23:50:09 INFO [60/144] 3c23eac2694a69b2 -> Q163820
+23:50:17 INFO Wikidata cache saved: entity=11311, label=11182, coords=1178, search=898, alias=2747, geonames=167, enwiki=5649
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.84it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.96it/s]
+23:50:18 INFO [61/144] 31d7386f3d55f3bb -> Q71699
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.38it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.77it/s]
+23:50:19 INFO [62/144] a3aa720a3036e848 -> Q7130
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.13it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.74it/s]
+23:50:20 INFO [63/144] 9f9e91e114736e6f -> Q980553
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.73it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 13.06it/s]
+23:50:22 INFO [64/144] d953254252433fec -> Q1879293
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.78it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.41it/s]
+23:50:24 INFO [65/144] e0948734f43a2bc0 -> Q243610
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.40it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 12.70it/s]
+23:50:30 INFO [66/144] a95394429b5c8d33 -> Q27394
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.75it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 32.12it/s]
+23:50:30 INFO [67/144] 96bb55372c608bb6 -> Q94403
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.69it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.07it/s]
+23:50:34 INFO [68/144] 30a0efa64755f309 -> Q1958052
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.04it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.55it/s]
+23:50:36 INFO [69/144] 9270280ec49e4f97 -> Q1415
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.60it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 33.91it/s]
+23:50:37 INFO [70/144] 20efd96eb3762b08 -> Q685
+23:50:45 INFO Wikidata cache saved: entity=11325, label=11197, coords=1178, search=898, alias=2747, geonames=167, enwiki=5948
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.98it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 32.28it/s]
+23:50:47 INFO [71/144] 015bb37a5707c534 -> Q23792
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.55it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.70it/s]
+23:50:48 INFO [72/144] 42fd3ebd23616f18 -> Q414
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.47it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.39it/s]
+23:50:49 INFO [73/144] 3478370688babeb1 -> Q923442
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.91it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 27.88it/s]
+23:50:49 INFO [74/144] 674ffb9b97c05ffb -> Q58705
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.41it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.70it/s]
+23:50:51 INFO [75/144] 85090d73f6d9ac7b -> Q503551
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.42it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.16it/s]
+23:50:52 INFO [76/144] 0711f1f111ff045d -> Q61
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.81it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 24.76it/s]
+23:50:53 INFO [77/144] db7fc3495df0a3ee -> Q755741
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.81it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.10it/s]
+23:50:53 INFO [78/144] 5afd3f5e0088a821 -> Q193755
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.05it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.90it/s]
+23:50:55 INFO [79/144] cc4d1af53efcc713 -> Q7239069
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.90it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.80it/s]
+23:50:56 INFO [80/144] 242ace6221fd75ee -> Q212372
+23:51:04 INFO Wikidata cache saved: entity=11333, label=11205, coords=1178, search=898, alias=2747, geonames=167, enwiki=6190
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.66it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.30it/s]
+23:51:05 INFO [81/144] 3399c4d596a35e06 -> Q2579702
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.38it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.41it/s]
+23:51:07 INFO [82/144] c80b1ad8fc52503e -> Q581920
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.33it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 35.96it/s]
+23:51:08 INFO [83/144] f7d8fbc3a02d8525 -> Q170462
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.08it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 36.47it/s]
+23:51:09 INFO [84/144] 36192c54ac183071 -> Q13752
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.17it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 30.42it/s]
+23:51:09 INFO [85/144] c01858a1aa29eccf -> Q41621
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.96it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.24it/s]
+23:51:11 INFO [86/144] 8937abcdfce5d2ec -> Q123766
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.34it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 24.63it/s]
+23:51:11 INFO [87/144] e5b83065b7dd0588 -> Q3145253
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.17it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.38it/s]
+23:51:12 INFO [88/144] f2a1d4e094aacbb0 -> Q3109025
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.06it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.46it/s]
+23:51:13 INFO [89/144] 0ef7fde75290b7bc -> Q3778560
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.21it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.73it/s]
+23:51:14 INFO [90/144] 100489ce2248b010 -> Q1204
+23:51:22 INFO Wikidata cache saved: entity=11339, label=11211, coords=1178, search=898, alias=2747, geonames=167, enwiki=6390
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.54it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 28.88it/s]
+23:51:22 INFO [91/144] e13eb8dbed5703a6 -> Q782494
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.66it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 27.13it/s]
+23:51:23 INFO [92/144] 367855568db65d2b -> Q1415
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.82it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 29.40it/s]
+23:51:26 INFO [93/144] 2d64c168284dd461 -> Q458
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.07it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 32.34it/s]
+23:51:26 INFO [94/144] 4ff427d8f7faabad -> Q189
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.03it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 24.60it/s]
+23:51:28 INFO [95/144] 15821c5e434d61fc -> Q33935
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.03it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 35.82it/s]
+23:51:28 INFO [96/144] 408f5f32b39308cd -> Q1348
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.57it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 35.11it/s]
+23:51:29 INFO [97/144] 6c73c944668a97dc -> Q1162
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.23it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.06it/s]
+23:51:31 INFO [98/144] 3a699de23a170316 -> Q215429
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.76it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 27.13it/s]
+23:51:32 INFO [99/144] ed822f4f615d8272 -> Q6106
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.72it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.46it/s]
+23:51:33 INFO [100/144] 1fe1a36799c4c3f4 -> Q786770
+23:51:41 INFO Wikidata cache saved: entity=11347, label=11219, coords=1178, search=898, alias=2747, geonames=167, enwiki=6598
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.03it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 28.14it/s]
+23:51:43 INFO [101/144] 2e3ceb23d1e758c9 -> Q36687
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.53it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.06it/s]
+23:51:44 INFO [102/144] 11a7acdf4a55927f -> Q18094
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.51it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.23it/s]
+23:51:46 INFO [103/144] a1dd3bd63b7ff5ed -> Q646225
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.26it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 35.91it/s]
+23:51:47 INFO [104/144] 3bda0f1fcb8fb137 -> Q28094
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.05it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.83it/s]
+23:51:49 INFO [105/144] a495d8506dfdd925 -> Q53448502
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.22it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 36.59it/s]
+23:51:50 INFO [106/144] 23c1a93e9dec4bee -> Q488659
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.25it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 32.43it/s]
+23:51:51 INFO [107/144] 60e06f7ed19dbef1 -> Q27026
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 27.13it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 31.23it/s]
+23:51:53 INFO [108/144] 02fcfbb1f088af60 -> Q467498
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 24.99it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 28.28it/s]
+23:51:54 INFO [109/144] 18295394d8f8c429 -> Q41506
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.19it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.96it/s]
+23:51:56 INFO [110/144] c47721438cc22ac7 -> Q148
+23:52:04 INFO Wikidata cache saved: entity=11360, label=11232, coords=1178, search=898, alias=2747, geonames=167, enwiki=6778
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.62it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.36it/s]
+23:52:07 INFO [111/144] b6db6f8a6d691bbd -> Q79
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.79it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 31.59it/s]
+23:52:08 INFO [112/144] aa54d221ba61a862 -> Q114862
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.51it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 28.83it/s]
+23:52:10 INFO [113/144] a69dcf3fac3630f2 -> Q124004
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.52it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.39it/s]
+23:52:11 INFO [114/144] fe12d4dd81dcd0b9 -> Q804
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.85it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 29.33it/s]
+23:52:12 INFO [115/144] af2238f73481822e -> Q134907
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.74it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.35it/s]
+23:52:13 INFO [116/144] e3b7d60f0b852edf -> Q79
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.24it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.62it/s]
+23:52:14 INFO [117/144] 185d77a2c5261153 -> Q1297
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.88it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 28.77it/s]
+23:52:16 INFO [118/144] d6d3509eb5dad90b -> Q6346
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.48it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 28.18it/s]
+23:52:16 INFO [119/144] 2646ed2cb41075fc -> Q94800
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.51it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.54it/s]
+23:52:18 INFO [120/144] e14bb9b6f45ef3f0 -> Q100
+23:52:27 INFO Wikidata cache saved: entity=11372, label=11244, coords=1178, search=898, alias=2747, geonames=167, enwiki=7003
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.41it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.98it/s]
+23:52:28 INFO [121/144] 1e14d9b853535bb5 -> Q5656138
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.51it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.90it/s]
+23:52:28 INFO [122/144] 2f98d32009f33e72 -> Q79867
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.78it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 26.39it/s]
+23:52:30 INFO [123/144] c02a99c4afafdbd7 -> Q1014
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.25it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.68it/s]
+23:52:33 INFO [124/144] 5ac90f6e27da4500 -> Q511461
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.71it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.41it/s]
+23:52:34 INFO [125/144] 9209cdf039ae46a1 -> Q298
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.41it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 24.04it/s]
+23:52:35 INFO [126/144] 9600c5e1495b49f1 -> Q3141
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.58it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.85it/s]
+23:52:36 INFO [127/144] d443c22e1fd046ce -> Q83210
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.19it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.61it/s]
+23:52:37 INFO [128/144] f94b256dfae6a167 -> Q42462
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.10it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 24.66it/s]
+23:52:38 INFO [129/144] e4fbcaf548efe652 -> Q24826
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.90it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 25.07it/s]
+23:52:41 INFO [130/144] ae8f307b73861d50 -> Q2321706
+23:52:49 INFO Wikidata cache saved: entity=11385, label=11257, coords=1178, search=898, alias=2747, geonames=167, enwiki=7324
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.40it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 28.95it/s]
+23:52:51 INFO [131/144] a9ad29296a12967c -> Q1408
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.32it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 26.40it/s]
+23:52:55 INFO [132/144] e5c522374ce41689 -> Q156459
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.71it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 24.21it/s]
+23:52:56 INFO [133/144] f05c13eabfa2705b -> Q842939
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.02it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 33.84it/s]
+23:53:04 INFO [134/144] 6a59e531c0a6a681 -> Q649
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.82it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 29.33it/s]
+23:53:06 INFO [135/144] 09a5e57646ed8cb1 -> Q1454
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.70it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.08it/s]
+23:53:07 INFO [136/144] e0fa55410b63c825 -> Q5011955
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.67it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 29.88it/s]
+23:53:08 INFO [137/144] 541d9e9dd6f3661e -> Q17252
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.89it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 24.79it/s]
+23:53:11 INFO [138/144] cf96b1ca84b24e41 -> Q246831
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.52it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.51it/s]
+23:53:11 INFO [139/144] eb8d67d0f0ecbacd -> Q486306
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.77it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.96it/s]
+23:53:15 INFO [140/144] d61e30225c4b1afd -> Q90
+23:53:23 INFO Wikidata cache saved: entity=11400, label=11272, coords=1178, search=898, alias=2747, geonames=167, enwiki=7600
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.67it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 28.75it/s]
+23:53:24 INFO [141/144] d7bc59e09b4451db -> Q812
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.78it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.41it/s]
+23:53:27 INFO [142/144] eb79b3c2c124b187 -> Q15205107
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.53it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 38.67it/s]
+23:53:28 INFO [143/144] 498c46aa522129e8 -> Q96
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.46it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 39.91it/s]
+23:53:29 INFO [144/144] c2ce144a21aaae34 -> Q47994
+23:53:38 INFO Wikidata cache saved: entity=11405, label=11277, coords=1178, search=898, alias=2747, geonames=167, enwiki=7699
+
+wrote 144 record(s) to results\predictions\blink__geocorpora.jsonl
+  with a prediction : 143
+  no result         : 1
+  errors            : 0
+no metrics computed here -- run scripts/score.py

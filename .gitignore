@@ -5,6 +5,7 @@ __pycache__/
 
 # Virtual env
 .venv/
+.venv-geoparser/
 venv/
 
 # IDE
@@ -17,9 +18,6 @@ venv/
 # On-disk caches (regenerated at runtime)
 src/.wikidata_cache/
 src/.llm_cache/
-src/.geonames_qid_cache.pkl
-src/.qid_alive_cache.pkl
-src/.qid_coords_cache.pkl
 
 # Eval run outputs (regenerated from code + datasets)
 src/log_*.txt
@@ -40,3 +38,27 @@ Thumbs.db
 # Local-only dataset
 src/geocorpora_144.csv
 
+
+# Bluesky English dump (~380 MB, regenerate with scripts/fetch_bluesky_en.py)
+generation/synthetic/data/bluesky_en.jsonl
+generation/synthetic/data/bluesky_en.parquet
+generation/synthetic/data/bluesky_en.jsonl.bak
+# old location, until the copy there is deleted
+src/bluesky_en.jsonl
+
+# Runner checkpoint temporaries
+results/predictions/*.tmp
+
+# Dense retrieval index cache (embedding matrix)
+src/.dense_index/
+
+# Backups and superseded snapshots: kept on disk, not in git (git history is the
+# backup). Scripts write these next to the data they rewrite.
+*.bak
+*.bak-*
+*.bak[0-9]*
+generation/places/data/*/
+generation/synthetic/output/archive/
+
+# BLINK link cache
+src/.blink_cache/

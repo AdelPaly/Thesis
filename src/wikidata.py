@@ -1,149 +1,418 @@
+from __future__ import annotations
+
 import atexit
+import logging
 import os
 import pickle
-import requests
+import threading
 import time
+from collections.abc import MutableMapping
+
+import requests
+
+logger = logging.getLogger(__name__)
 
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
-HEADERS = {"User-Agent": "GeoThesisBot/1.0 (student research; contact via GitHub)"}
+ENWIKI_API = "https://en.wikipedia.org/w/api.php"
+# Wikimedia's User-Agent policy asks for a real contact. Set WDQS_CONTACT (an
+# email or URL) in your environment; the default is the project's public
+# repository, so no personal address is committed.
+CONTACT = os.environ.get("WDQS_CONTACT") or "https://github.com/AdelPaly/Thesis"
+HEADERS = {"User-Agent": f"GeoThesisBot/1.0 (student research; {CONTACT})"}
+
+MIN_REQUEST_INTERVAL = 0.5     # seconds between API calls
+REQUEST_TIMEOUT = 15           # seconds
+MAX_ATTEMPTS = 6
+MAX_BACKOFF = 32               # cap on the exponential wait, seconds
+MAX_RETRY_AFTER = 120          # cap on a server-supplied Retry-After, seconds
+RETRYABLE_API_ERRORS = ("maxlag", "ratelimited")
+BATCH_SIZE = 50                # wbgetentities id limit
+
+SEARCH_LIMIT = 10              # default wbsearchentities limit
+MAX_SEARCH_LIMIT = 50
+LOC_CAP = 10                   # per-type candidate caps at the default top_n
+PER_CAP = 5
+ORG_CAP = 10
+ENTITY_TYPES = ("LOC", "PER", "ORG")
 
 _CACHE_DIR = os.path.join(os.path.dirname(__file__), ".wikidata_cache")
-_CACHE_FILES = {
-    "entity": os.path.join(_CACHE_DIR, "entity.pkl"),
-    "label": os.path.join(_CACHE_DIR, "label.pkl"),
-    "coords": os.path.join(_CACHE_DIR, "coords.pkl"),
-}
 
 
-def _load_pickle(path):
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path, "rb") as f:
-            return pickle.load(f)
-    except Exception as e:
-        print(f"  Cache load failed for {path}: {e}")
-        return {}
+class WikidataError(Exception):
+    """A Wikidata API call failed (network, HTTP or API-level error)."""
 
 
-os.makedirs(_CACHE_DIR, exist_ok=True)
-_entity_cache = _load_pickle(_CACHE_FILES["entity"])   # QID -> entity data
-_label_cache = _load_pickle(_CACHE_FILES["label"])     # QID -> English label
-_coords_cache = _load_pickle(_CACHE_FILES["coords"])   # (text, type) -> candidates
-_initial_sizes = (len(_entity_cache), len(_label_cache), len(_coords_cache))
-print(f"  Wikidata cache loaded: {_initial_sizes[0]} entities, "
-      f"{_initial_sizes[1]} labels, {_initial_sizes[2]} coord lookups")
+class Cache(MutableMapping):
+    """Lazily loaded dict backed by a pickle file.
+
+    Nothing is read at construction. Saving only rewrites the file if an entry
+    was added or changed, and merges in entries another process wrote since we
+    loaded, so concurrent runs do not discard each other's work.
+    """
+
+    def __init__(self, name: str, filename: str):
+        self.name = name
+        self.path = os.path.join(_CACHE_DIR, filename)
+        self._data: dict | None = None
+        self._dirty = False
+        self._load_failed = False
+        self._stamp: tuple | None = None
+        self._lock = threading.RLock()
+
+    def _stat(self) -> tuple | None:
+        try:
+            st = os.stat(self.path)
+        except OSError:
+            return None
+        return (st.st_size, st.st_mtime_ns)
+
+    def _ensure(self) -> dict:
+        if self._data is None:
+            with self._lock:
+                if self._data is None:
+                    self._stamp = self._stat()
+                    self._data = {}
+                    if self._stamp is not None:
+                        try:
+                            with open(self.path, "rb") as f:
+                                self._data = pickle.load(f)
+                        except Exception as e:                  # noqa: BLE001
+                            self._load_failed = True
+                            logger.warning("Cache load failed for %s: %s", self.path, e)
+                    logger.info("Wikidata %s cache loaded: %d entries",
+                                self.name, len(self._data))
+        return self._data
+
+    def __getitem__(self, key):
+        return self._ensure()[key]
+
+    def __setitem__(self, key, value) -> None:
+        data = self._ensure()
+        if key not in data or data[key] != value:
+            data[key] = value
+            self._dirty = True
+
+    def __delitem__(self, key) -> None:
+        del self._ensure()[key]
+        self._dirty = True
+
+    def __iter__(self):
+        return iter(self._ensure())
+
+    def __len__(self) -> int:
+        return len(self._ensure())
+
+    def __contains__(self, key) -> bool:
+        return key in self._ensure()
+
+    @property
+    def loaded(self) -> bool:
+        return self._data is not None
+
+    def save(self) -> bool:
+        """Write to disk if changed. Returns True if the file was rewritten."""
+        with self._lock:
+            if self._data is None or not self._dirty:
+                return False
+            if self._load_failed:
+                logger.warning("Not saving %s cache: the existing file failed to load "
+                               "and would be overwritten", self.name)
+                return False
+            tmp = f"{self.path}.{os.getpid()}.tmp"
+            try:
+                os.makedirs(_CACHE_DIR, exist_ok=True)
+                if self._stat() != self._stamp:
+                    with open(self.path, "rb") as f:
+                        disk = pickle.load(f)
+                    for k, v in disk.items():
+                        if k not in self._data:
+                            self._data[k] = v
+                with open(tmp, "wb") as f:
+                    pickle.dump(self._data, f)
+                os.replace(tmp, self.path)
+            except Exception as e:                              # noqa: BLE001
+                logger.warning("Cache save failed for %s: %s", self.name, e)
+                try:
+                    os.remove(tmp)
+                except OSError:
+                    pass
+                return False
+            self._stamp = self._stat()
+            self._dirty = False
+            return True
 
 
-def _save_caches():
-    # Only write if something changed, to avoid clobbering with empty dicts on error.
-    sizes = (len(_entity_cache), len(_label_cache), len(_coords_cache))
-    if sizes == _initial_sizes:
-        return
-    try:
-        for key, path in _CACHE_FILES.items():
-            tmp = path + ".tmp"
-            data = {"entity": _entity_cache, "label": _label_cache, "coords": _coords_cache}[key]
-            with open(tmp, "wb") as f:
-                pickle.dump(data, f)
-            os.replace(tmp, path)
-        print(f"  Wikidata cache saved: {sizes[0]} entities, {sizes[1]} labels, {sizes[2]} coord lookups")
-    except Exception as e:
-        print(f"  Cache save failed: {e}")
+_entity_cache = Cache("entity", "entity.pkl")   # QID -> entity data
+_label_cache = Cache("label", "label.pkl")      # QID -> English label
+_coords_cache = Cache("coords", "coords.pkl")   # (text, type, top_n) -> candidates
+_search_cache = Cache("search", "search.pkl")   # (text, limit) -> [qid]
+_alias_cache = Cache("alias", "alias.pkl")      # QID -> [alias]
+_geonames_cache = Cache("geonames", "geonames.pkl")  # GeoNames id -> QID or None
+_enwiki_cache = Cache("enwiki", "enwiki.pkl")        # enwiki title -> QID or None
+_CACHES = (_entity_cache, _label_cache, _coords_cache, _search_cache, _alias_cache,
+           _geonames_cache, _enwiki_cache)
 
 
-atexit.register(_save_caches)
+def save_caches() -> None:
+    """Write any changed caches to disk; also called at exit, and by long-running
+    drivers to checkpoint mid-run."""
+    saved = [c for c in _CACHES if c.save()]
+    if saved:
+        logger.info("Wikidata cache saved: %s",
+                    ", ".join(f"{c.name}={len(c)}" for c in _CACHES))
 
 
-def save_caches():
-    """Public helper so long-running drivers can checkpoint mid-run."""
-    _save_caches()
-
-_last_request_time = 0.0
-_MIN_REQUEST_INTERVAL = 0.5
+_save_caches = save_caches
+atexit.register(save_caches)
 
 
-def _api_get(params, timeout=15):
-    """Single entry point for all Wikidata API calls, with rate limiting and retry on 429."""
-    global _last_request_time
-    elapsed = time.time() - _last_request_time
-    if elapsed < _MIN_REQUEST_INTERVAL:
-        time.sleep(_MIN_REQUEST_INTERVAL - elapsed)
+class RateLimiter:
+    """Thread-safe minimum spacing between calls."""
 
-    for attempt in range(6):
-        _last_request_time = time.time()
-        resp = requests.get(WIKIDATA_API, params=params, headers=HEADERS, timeout=timeout)
-        if resp.status_code == 429:
-            wait = 2 ** attempt
-            print(f"  Rate limited, waiting {wait}s...")
-            time.sleep(wait)
-            continue
-        resp.raise_for_status()
-        return resp.json()
-    raise requests.exceptions.HTTPError("429 Too Many Requests after retries")
+    def __init__(self, min_interval: float):
+        self.min_interval = min_interval
+        self._last = 0.0
+        self._lock = threading.Lock()
+
+    def wait(self) -> None:
+        with self._lock:
+            delay = self.min_interval - (time.time() - self._last)
+            if delay > 0:
+                time.sleep(delay)
+            self._last = time.time()
 
 
-def _search_entities(text, limit=10):
-    try:
+_rate_limiter = RateLimiter(MIN_REQUEST_INTERVAL)
+
+
+def _retry_wait(resp: requests.Response | None, attempt: int) -> float:
+    wait = min(2 ** attempt, MAX_BACKOFF)
+    if resp is not None:
+        try:
+            wait = max(wait, min(float(resp.headers.get("Retry-After", 0)), MAX_RETRY_AFTER))
+        except ValueError:
+            pass
+    return wait
+
+
+def _api_get(params: dict, timeout: float = REQUEST_TIMEOUT, url: str = WIKIDATA_API) -> dict:
+    """Single entry point for all Wikidata API calls.
+
+    Rate limited; retries on 429, 5xx, connection errors, timeouts and
+    retryable API errors (honouring Retry-After). Raises WikidataError on
+    failure, including a 200 response carrying an {"error": ...} body.
+    """
+    last_error = "no attempt made"
+    for attempt in range(MAX_ATTEMPTS):
+        _rate_limiter.wait()
+        resp = None
+        try:
+            resp = requests.get(url, params=params, headers=HEADERS, timeout=timeout)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            last_error = str(e)
+        else:
+            if resp.status_code == 429 or resp.status_code >= 500:
+                last_error = f"HTTP {resp.status_code}"
+            elif resp.status_code >= 400:
+                raise WikidataError(f"HTTP {resp.status_code} from Wikidata")
+            else:
+                try:
+                    data = resp.json()
+                except ValueError as e:
+                    raise WikidataError(f"Invalid JSON from Wikidata: {e}") from e
+                err = data.get("error") if isinstance(data, dict) else None
+                if not err:
+                    return data
+                code = err.get("code", "") if isinstance(err, dict) else str(err)
+                last_error = f"API error: {code}"
+                if code not in RETRYABLE_API_ERRORS:
+                    raise WikidataError(last_error)
+        wait = _retry_wait(resp, attempt)
+        logger.warning("Wikidata request failed (%s), retrying in %.0fs", last_error, wait)
+        time.sleep(wait)
+    raise WikidataError(f"Wikidata request failed after {MAX_ATTEMPTS} attempts: {last_error}")
+
+
+def _search_checked(text: str, limit: int = SEARCH_LIMIT) -> list[str]:
+    """wbsearchentities, disk-cached. Raises WikidataError on failure.
+
+    A failed search is never cached, so a transient network error does not
+    become a permanent empty answer. Caching successful searches is what makes
+    a second run over the same datasets close to free.
+    """
+    key = (text, limit)
+    if key in _search_cache:
+        return _search_cache[key]
+    data = _api_get({
+        "action": "wbsearchentities",
+        "search": text,
+        "language": "en",
+        "limit": limit,
+        "format": "json",
+    })
+    hits = [item["id"] for item in data.get("search", [])]
+    _search_cache[key] = hits
+    return hits
+
+
+def qid_for_geonames_id(geonames_id) -> str | None:
+    """The Wikidata item whose GeoNames ID (P1566) is `geonames_id`, or None.
+
+    Disk-cached, including a successful empty answer; a failed request raises
+    WikidataError and is not cached. If several items carry the same GeoNames
+    ID, the first search hit is taken."""
+    key = str(geonames_id)
+    if key in _geonames_cache:
+        return _geonames_cache[key]
+    data = _api_get({
+        "action": "query",
+        "list": "search",
+        "srsearch": f"haswbstatement:P1566={key}",
+        "srnamespace": 0,
+        "srlimit": 5,
+        "format": "json",
+    })
+    hits = [h["title"] for h in data.get("query", {}).get("search", [])
+            if h.get("title", "").startswith("Q")]
+    qid = hits[0] if hits else None
+    _geonames_cache[key] = qid
+    return qid
+
+
+def qids_for_enwiki_titles(titles: list[str]) -> dict[str, str | None]:
+    """{English Wikipedia title: QID or None}, read from the page's
+    wikibase_item. Redirects are followed, so a title that has since been
+    renamed still resolves. Disk-cached, including a title with no item; a
+    failed request raises WikidataError and is not cached."""
+    out = {t: _enwiki_cache[t] for t in titles if t in _enwiki_cache}
+    todo = sorted({t for t in titles if t not in out})
+    for i in range(0, len(todo), BATCH_SIZE):
+        batch = todo[i:i + BATCH_SIZE]
         data = _api_get({
-            "action": "wbsearchentities",
-            "search": text,
-            "language": "en",
-            "limit": limit,
+            "action": "query",
+            "titles": "|".join(batch),
+            "prop": "pageprops",
+            "ppprop": "wikibase_item",
+            "redirects": 1,
             "format": "json",
-        })
-        return [item["id"] for item in data.get("search", [])]
-    except Exception as e:
-        print(f"  Search error: {e}")
+            "formatversion": 2,
+        }, url=ENWIKI_API).get("query", {})
+        step = {m["from"]: m["to"] for key in ("normalized", "redirects")
+                for m in data.get(key) or []}
+        item = {page["title"]: (page.get("pageprops") or {}).get("wikibase_item")
+                for page in data.get("pages") or []}
+        for title in batch:
+            target = title
+            for _ in range(3):              # normalised, then redirected
+                if target in item or target not in step:
+                    break
+                target = step[target]
+            qid = item.get(target)
+            _enwiki_cache[title] = qid
+            out[title] = qid
+    return out
+
+
+def search_entities(text: str, limit: int = SEARCH_LIMIT) -> list[str]:
+    """Search Wikidata for QIDs matching text; [] on failure (not cached)."""
+    try:
+        return _search_checked(text, limit)
+    except WikidataError as e:
+        logger.warning("Search error for %r: %s", text, e)
         return []
 
 
-def _fetch_entities(qids):
-    """Batch-fetch entity data, using cache. Returns dict QID -> entity data."""
-    missing = [q for q in qids if q not in _entity_cache]
-    if missing:
-        for i in range(0, len(missing), 50):
-            batch = missing[i:i+50]
-            try:
-                data = _api_get({
-                    "action": "wbgetentities",
-                    "ids": "|".join(batch),
-                    "props": "claims|descriptions|sitelinks/urls|labels",
-                    "languages": "en",
-                    "format": "json",
-                })
-                for qid, ent in data.get("entities", {}).items():
-                    _entity_cache[qid] = ent
-                    lbl = ent.get("labels", {}).get("en", {}).get("value", "")
-                    if lbl:
-                        _label_cache[qid] = lbl
-            except Exception as e:
-                print(f"  API error: {e}")
-    return {q: _entity_cache.get(q, {}) for q in qids}
+def _fetch_entities_status(qids: list[str]) -> tuple[dict[str, dict], bool]:
+    """Batch-fetch entity data via the cache. Returns ({QID: entity}, complete),
+    where complete is False if any wanted QID could not be fetched."""
+    missing = list(dict.fromkeys(q for q in qids if q not in _entity_cache))
+    for i in range(0, len(missing), BATCH_SIZE):
+        batch = missing[i:i + BATCH_SIZE]
+        try:
+            data = _api_get({
+                "action": "wbgetentities",
+                "ids": "|".join(batch),
+                "props": "claims|descriptions|sitelinks/urls|labels",
+                "languages": "en",
+                "format": "json",
+            })
+        except WikidataError as e:
+            logger.warning("Entity fetch error: %s", e)
+            continue
+        for qid, ent in data.get("entities", {}).items():
+            _entity_cache[qid] = ent
+            lbl = ent.get("labels", {}).get("en", {}).get("value", "")
+            if lbl:
+                _label_cache[qid] = lbl
+    return ({q: _entity_cache.get(q, {}) for q in qids},
+            all(q in _entity_cache for q in qids))
 
 
-def _fetch_labels(qids):
+def fetch_entities(qids: list[str]) -> dict[str, dict]:
+    """Batch-fetch entity data, using cache. Returns dict QID -> entity data
+    ({} for QIDs that could not be fetched; those are not cached)."""
+    return _fetch_entities_status(qids)[0]
+
+
+def _fetch_labels_status(qids: list[str]) -> tuple[dict[str, str], bool]:
+    """Batch-fetch English labels via the cache. Returns ({QID: label}, complete)."""
+    missing = list(dict.fromkeys(q for q in qids if q not in _label_cache))
+    for i in range(0, len(missing), BATCH_SIZE):
+        batch = missing[i:i + BATCH_SIZE]
+        try:
+            data = _api_get({
+                "action": "wbgetentities",
+                "ids": "|".join(batch),
+                "props": "labels",
+                "languages": "en",
+                "format": "json",
+            })
+        except WikidataError as e:
+            logger.warning("Label fetch error: %s", e)
+            continue
+        for qid, ent in data.get("entities", {}).items():
+            _label_cache[qid] = ent.get("labels", {}).get("en", {}).get("value", "")
+    return ({q: _label_cache.get(q, "") for q in qids},
+            all(q in _label_cache for q in qids))
+
+
+def _fetch_labels(qids: list[str]) -> dict[str, str]:
     """Batch-fetch English labels, using cache. Returns dict QID -> label."""
-    missing = [q for q in qids if q not in _label_cache]
-    if missing:
-        for i in range(0, len(missing), 50):
-            batch = missing[i:i+50]
-            try:
-                data = _api_get({
-                    "action": "wbgetentities",
-                    "ids": "|".join(batch),
-                    "props": "labels",
-                    "languages": "en",
-                    "format": "json",
-                })
-                for qid, ent in data.get("entities", {}).items():
-                    _label_cache[qid] = ent.get("labels", {}).get("en", {}).get("value", "")
-            except Exception:
-                pass
-    return {q: _label_cache.get(q, "") for q in qids}
+    return _fetch_labels_status(qids)[0]
 
 
-def _claim_id(entity, prop):
+def fetch_aliases(qids: list[str]) -> dict[str, list[str]]:
+    """Batch-fetch English aliases, using a cache. {QID: [alias, ...]}.
+
+    Aliases are a separate call rather than an extra prop on fetch_entities,
+    because the entity cache already holds thousands of entries fetched without
+    them and widening the props there would silently return alias-less entries
+    for everything already cached.
+    """
+    missing = [q for q in qids if q not in _alias_cache]
+    for i in range(0, len(missing), BATCH_SIZE):
+        batch = missing[i:i + BATCH_SIZE]
+        try:
+            data = _api_get({
+                "action": "wbgetentities",
+                "ids": "|".join(batch),
+                "props": "aliases",
+                "languages": "en",
+                "format": "json",
+            })
+        except WikidataError as e:
+            logger.warning("Alias fetch error: %s", e)
+            continue
+        for qid, ent in data.get("entities", {}).items():
+            _alias_cache[qid] = [a.get("value", "")
+                                 for a in ent.get("aliases", {}).get("en", [])
+                                 if a.get("value")]
+        for q in batch:
+            _alias_cache.setdefault(q, [])
+    return {q: _alias_cache.get(q, []) for q in qids}
+
+
+def _claim_id(entity: dict, prop: str) -> str | None:
     """Get QID of the most appropriate single value for a property claim.
 
     Skips deprecated-rank claims and end-dated (P582) historical claims.
@@ -180,7 +449,7 @@ def _claim_id(entity, prop):
     return None
 
 
-def _claim_ids(entity, prop):
+def _claim_ids(entity: dict, prop: str) -> list[str]:
     """Get all QIDs from a property claim."""
     claims = entity.get("claims", {})
     out = []
@@ -191,354 +460,290 @@ def _claim_ids(entity, prop):
     return out
 
 
-def _get_coords(entity):
+def get_coords_of(entity: dict) -> tuple[float, float] | None:
+    """Coordinate location (P625) as (lat, lon), or None.
+
+    Rank handling matches SPARQL `wdt:P625` truthy semantics -- preferred rank
+    wins, deprecated claims are skipped, normal rank is the fallback. The gold
+    coordinates in the datasets were sourced through wdt:P625, so the pipeline
+    reading a different claim off the same item would put a systematic offset
+    between gold and predicted coordinates on multi-coordinate entities.
+    """
     claims = entity.get("claims", {})
     if "P625" not in claims:
         return None
+    normal = None
+    for claim in claims["P625"]:
+        if claim.get("rank") == "deprecated":
+            continue
+        val = claim.get("mainsnak", {}).get("datavalue", {}).get("value")
+        if not (val and "latitude" in val):
+            continue
+        if claim.get("rank") == "preferred":
+            return val["latitude"], val["longitude"]
+        if normal is None:
+            normal = (val["latitude"], val["longitude"])
+    if normal is not None:
+        return normal
+    # Every claim was deprecated or malformed: fall back to the raw first
+    # value rather than reporting no coordinate at all.
     val = claims["P625"][0].get("mainsnak", {}).get("datavalue", {}).get("value")
     if val and "latitude" in val:
         return val["latitude"], val["longitude"]
     return None
 
 
-def _resolve_country_continent(entities_dict):
+def coords_for_qids(qids) -> dict[str, tuple[float, float] | None]:
+    """Coordinates for a batch of QIDs: {qid: (lat, lon) | None}.
+
+    The one coordinate client. The dataset tooling used to reach Wikidata
+    through a second transport (a SPARQL endpoint) with a second on-disk cache
+    (src/.qid_coords_cache.pkl) for exactly this fact; both are gone. This goes
+    through the same rate-limited wbgetentities path and the same
+    src/.wikidata_cache the pipeline uses, so a QID fetched by either side is
+    cached for both. QIDs that could not be fetched map to None for this call
+    and are not cached.
+    """
+    wanted = sorted({q for q in qids if isinstance(q, str) and q.startswith("Q")})
+    if not wanted:
+        return {}
+    entities = fetch_entities(wanted)
+    return {q: get_coords_of(entities.get(q, {})) for q in wanted}
+
+
+def _resolve_cc(entities_dict: dict[str, dict]) -> tuple[dict[str, tuple[str, str]], bool]:
+    """As resolve_country_continent, plus a flag that is False if any
+    entity or label lookup failed (the result may then have blank labels)."""
+    country_of = {qid: _claim_id(ent, "P17") for qid, ent in entities_dict.items()}
+    continent_of = {qid: _claim_id(ent, "P30") for qid, ent in entities_dict.items()}
+    complete = True
+
+    # Places without a direct continent inherit their country's continent.
+    need_country = {c for qid, c in country_of.items() if c and not continent_of[qid]}
+    if need_country:
+        country_ents, complete = _fetch_entities_status(list(need_country))
+        country_continent = {cq: _claim_id(ent, "P30") for cq, ent in country_ents.items()}
+        for qid, c in country_of.items():
+            if c and not continent_of[qid]:
+                continent_of[qid] = country_continent.get(c)
+
+    label_qids = {q for q in (*country_of.values(), *continent_of.values()) if q}
+    labels: dict[str, str] = {}
+    if label_qids:
+        labels, labels_ok = _fetch_labels_status(list(label_qids))
+        complete = complete and labels_ok
+
+    result = {qid: (labels.get(country_of[qid] or "", ""),
+                    labels.get(continent_of[qid] or "", ""))
+              for qid in entities_dict}
+    return result, complete
+
+
+def resolve_country_continent(entities_dict: dict[str, dict]) -> dict[str, tuple[str, str]]:
     """For a dict of QID->entity, resolve country/continent labels in bulk.
     Returns dict of QID -> (country_label, continent_label)."""
-    # Collect all country and continent QIDs
-    country_qids = {}   # place_qid -> country_qid
-    continent_qids = {}  # place_qid -> continent_qid
-
-    for qid, ent in entities_dict.items():
-        country_qids[qid] = _claim_id(ent, "P17")
-        continent_qids[qid] = _claim_id(ent, "P30")
-
-    # Fetch all country entities (to get their P30 continent) in one batch
-    all_country_qids = set(q for q in country_qids.values() if q)
-    # Also need labels for country QIDs and continent QIDs
-    all_label_qids = set()
-    all_label_qids.update(all_country_qids)
-    all_label_qids.update(q for q in continent_qids.values() if q)
-
-    # For places without direct continent, we need the country entity to find its continent
-    need_country_entity = set()
-    for qid in entities_dict:
-        if not continent_qids[qid] and country_qids[qid]:
-            need_country_entity.add(country_qids[qid])
-
-    # Batch fetch country entities if needed
-    if need_country_entity:
-        country_ents = _fetch_entities(list(need_country_entity))
-        for cq, cent in country_ents.items():
-            cont_qid = _claim_id(cent, "P30")
-            if cont_qid:
-                all_label_qids.add(cont_qid)
-                # Store this for later lookup
-                for qid in entities_dict:
-                    if country_qids[qid] == cq and not continent_qids[qid]:
-                        continent_qids[qid] = cont_qid
-
-    # Single batch label fetch for all country + continent QIDs
-    if all_label_qids:
-        _fetch_labels(list(all_label_qids))
-
-    result = {}
-    for qid in entities_dict:
-        country_label = _label_cache.get(country_qids.get(qid, ""), "")
-        continent_label = _label_cache.get(continent_qids.get(qid, ""), "")
-        result[qid] = (country_label, continent_label)
-    return result
+    return _resolve_cc(entities_dict)[0]
 
 
-def get_coords(entity_text, entity_type, top_n=10):
+def _description(ent: dict, default: str) -> str:
+    return ent.get("descriptions", {}).get("en", {}).get("value", default)
+
+
+def _candidate(place_qid: str, ent: dict, coords: tuple[float, float],
+               geo: dict[str, tuple[str, str]], entity_text: str) -> dict:
+    country, continent = geo.get(place_qid, ("", ""))
+    return {
+        "lat": coords[0], "lon": coords[1],
+        "description": _description(ent, entity_text),
+        "qid": place_qid, "country": country, "continent": continent,
+    }
+
+
+def _loc_candidates(entity_text: str, qids: list[str], cap: int) -> tuple[list[dict], bool]:
+    entities, ok = _fetch_entities_status(qids)
+    place_ents = {q: e for q, e in entities.items() if get_coords_of(e)}
+    geo, geo_ok = _resolve_cc(place_ents)
+    ranked = sorted(place_ents, key=lambda q: len(place_ents[q].get("sitelinks", {})),
+                    reverse=True)[:cap]
+    return ([_candidate(q, place_ents[q], get_coords_of(place_ents[q]), geo, entity_text)
+             for q in ranked], ok and geo_ok)
+
+
+def _per_candidates(entity_text: str, qids: list[str], cap: int) -> tuple[list[dict], bool]:
+    entities, ok = _fetch_entities_status(qids)
+    person_to_bp = {}
+    for qid in qids:
+        ent = entities.get(qid, {})
+        if "Q5" not in _claim_ids(ent, "P31"):
+            continue
+        bp = _claim_id(ent, "P19")
+        if bp:
+            person_to_bp[qid] = bp
+    if not person_to_bp:
+        return [], ok
+
+    bp_ents, bp_ok = _fetch_entities_status(list(person_to_bp.values()))
+    place_ents = {bp: e for bp, e in bp_ents.items() if get_coords_of(e)}
+    geo, geo_ok = _resolve_cc(place_ents)
+    out = []
+    for bp_qid in list(person_to_bp.values())[:cap]:
+        if bp_qid in place_ents:
+            out.append(_candidate(bp_qid, place_ents[bp_qid], get_coords_of(place_ents[bp_qid]),
+                                  geo, entity_text))
+    return out, ok and bp_ok and geo_ok
+
+
+def _org_candidates(entity_text: str, qids: list[str], cap: int) -> tuple[list[dict], bool]:
+    entities, ok = _fetch_entities_status(qids)
+    hq_map = {}
+    for qid in qids:
+        hq = _claim_id(entities.get(qid, {}), "P159")
+        if hq:
+            hq_map[qid] = hq
+    if not hq_map:
+        return [], ok
+
+    hq_ents, hq_ok = _fetch_entities_status(list(dict.fromkeys(hq_map.values())))
+    ok = ok and hq_ok
+
+    # For HQs without coords, fall back to the P131 admin territory.
+    hq_to_admin = {}
+    for hq_qid, hq_ent in hq_ents.items():
+        if not get_coords_of(hq_ent):
+            admin = _claim_id(hq_ent, "P131")
+            if admin:
+                hq_to_admin[hq_qid] = admin
+    admin_ents: dict[str, dict] = {}
+    if hq_to_admin:
+        admin_ents, admin_ok = _fetch_entities_status(list(hq_to_admin.values()))
+        ok = ok and admin_ok
+
+    place_ents = {}
+    for hq_qid in hq_map.values():
+        hq_ent = hq_ents.get(hq_qid, {})
+        if get_coords_of(hq_ent):
+            place_ents[hq_qid] = hq_ent
+        elif hq_qid in hq_to_admin:
+            admin_ent = admin_ents.get(hq_to_admin[hq_qid], {})
+            if get_coords_of(admin_ent):
+                place_ents[hq_to_admin[hq_qid]] = admin_ent
+
+    # One candidate per place, in first-seen org order, then by sitelinks.
+    ordered = []
+    for hq_qid in hq_map.values():
+        place_qid = hq_qid if hq_qid in place_ents else hq_to_admin.get(hq_qid)
+        if place_qid in place_ents and place_qid not in ordered:
+            ordered.append(place_qid)
+    ordered.sort(key=lambda q: len(place_ents[q].get("sitelinks", {})), reverse=True)
+
+    geo, geo_ok = _resolve_cc(place_ents)
+    return ([_candidate(q, place_ents[q], get_coords_of(place_ents[q]), geo, entity_text)
+             for q in ordered[:cap]], ok and geo_ok)
+
+
+_TYPE_HANDLERS = {
+    "LOC": (_loc_candidates, LOC_CAP),
+    "PER": (_per_candidates, PER_CAP),
+    "ORG": (_org_candidates, ORG_CAP),
+}
+
+
+def _search_with_fallback(entity_text: str, limit: int) -> list[str]:
+    """Search, progressively dropping trailing words if nothing is found
+    (e.g. "Kaizer Chiefs Foundation" -> "Kaizer Chiefs"). Raises WikidataError."""
+    qids = _search_checked(entity_text, limit)
+    words = entity_text.split()
+    while not qids and len(words) > 1:
+        words.pop()
+        qids = _search_checked(" ".join(words), limit)
+    return qids
+
+
+def get_coords(entity_text: str, entity_type: str, top_n: int = 10) -> list[dict]:
+    """Candidate places for an entity mention, as dicts with lat/lon/description/
+    qid/country/continent.
+
+    Considers the top_n search hits. The per-type result caps (LOC 10, PER 5,
+    ORG 10) apply for top_n up to SEARCH_LIMIT and scale to top_n beyond it.
+    If any network lookup fails the partial result is returned but not cached.
+    """
     cache_key = (entity_text, entity_type, top_n)
     if cache_key in _coords_cache:
         return _coords_cache[cache_key]
-
-    if entity_type not in ["LOC", "PER", "ORG"]:
+    if entity_type not in ENTITY_TYPES:
         return []
 
-    # Step 1: search, with progressive fallback for long entity names
-    qids = _search_entities(entity_text)
-    if not qids:
-        # Try removing trailing words one at a time (e.g. "Kaizer Chiefs Foundation" -> "Kaizer Chiefs")
-        words = entity_text.split()
-        while not qids and len(words) > 1:
-            words.pop()
-            qids = _search_entities(" ".join(words))
+    try:
+        qids = _search_with_fallback(entity_text, min(max(top_n, SEARCH_LIMIT), MAX_SEARCH_LIMIT))
+    except WikidataError as e:
+        logger.warning("Search error for %r: %s", entity_text, e)
+        return []
     if not qids:
         _coords_cache[cache_key] = []
         return []
 
-    # Restrict to top-N search results (original mode: top_n=1 = strict popularity-biased pick)
-    qids = qids[:top_n]
-
-    # Step 2: batch-fetch all candidate entities (1 API call)
-    entities = _fetch_entities(qids)
-
-    coords = []
-
-    if entity_type == "LOC":
-        # Filter to entities with coordinates
-        place_ents = {}
-        sitelink_counts = {}
-        for qid in qids:
-            ent = entities.get(qid, {})
-            c = _get_coords(ent)
-            if c:
-                place_ents[qid] = ent
-                sitelink_counts[qid] = len(ent.get("sitelinks", {}))
-
-        # Batch resolve country/continent (1-2 API calls)
-        geo = _resolve_country_continent(place_ents)
-
-        for qid in sorted(place_ents, key=lambda q: sitelink_counts.get(q, 0), reverse=True)[:10]:
-            ent = place_ents[qid]
-            c = _get_coords(ent)
-            country, continent = geo[qid]
-            coords.append({
-                "lat": c[0], "lon": c[1],
-                "description": ent.get("descriptions", {}).get("en", {}).get("value", entity_text),
-                "qid": qid, "country": country, "continent": continent,
-            })
-
-    elif entity_type == "PER":
-        # Find humans and collect birthplace QIDs
-        bp_qids = []
-        person_to_bp = {}
-        for qid in qids:
-            ent = entities.get(qid, {})
-            types = _claim_ids(ent, "P31")
-            if "Q5" not in types:
-                continue
-            bp = _claim_id(ent, "P19")
-            if bp:
-                person_to_bp[qid] = bp
-                bp_qids.append(bp)
-
-        # Batch fetch all birthplace entities (1 API call)
-        if bp_qids:
-            bp_ents = _fetch_entities(bp_qids)
-            place_ents = {}
-            for person_qid, bp_qid in person_to_bp.items():
-                bp_ent = bp_ents.get(bp_qid, {})
-                c = _get_coords(bp_ent)
-                if c:
-                    place_ents[bp_qid] = bp_ent
-
-            geo = _resolve_country_continent(place_ents)
-
-            for person_qid, bp_qid in list(person_to_bp.items())[:5]:
-                bp_ent = bp_ents.get(bp_qid, {})
-                c = _get_coords(bp_ent)
-                if c:
-                    country, continent = geo.get(bp_qid, ("", ""))
-                    coords.append({
-                        "lat": c[0], "lon": c[1],
-                        "description": bp_ent.get("descriptions", {}).get("en", {}).get("value", entity_text),
-                        "qid": bp_qid, "country": country, "continent": continent,
-                    })
-
-    elif entity_type == "ORG":
-        # Collect all HQ QIDs
-        hq_map = {}
-        for qid in qids:
-            ent = entities.get(qid, {})
-            hq = _claim_id(ent, "P159")
-            if hq:
-                hq_map[qid] = hq
-
-        # Batch fetch all HQ entities (1 API call)
-        if hq_map:
-            hq_qids = list(set(hq_map.values()))
-            hq_ents = _fetch_entities(hq_qids)
-
-            # For HQs without coords, try P131 admin territory
-            admin_qids = []
-            hq_to_admin = {}
-            for hq_qid, hq_ent in hq_ents.items():
-                if not _get_coords(hq_ent):
-                    admin = _claim_id(hq_ent, "P131")
-                    if admin:
-                        hq_to_admin[hq_qid] = admin
-                        admin_qids.append(admin)
-
-            if admin_qids:
-                _fetch_entities(admin_qids)
-
-            # Collect all place entities we'll use
-            place_ents = {}
-            org_to_place = {}
-            for org_qid, hq_qid in hq_map.items():
-                hq_ent = hq_ents.get(hq_qid, {})
-                if _get_coords(hq_ent):
-                    place_ents[hq_qid] = hq_ent
-                    org_to_place[org_qid] = hq_qid
-                elif hq_qid in hq_to_admin:
-                    admin_qid = hq_to_admin[hq_qid]
-                    admin_ent = _entity_cache.get(admin_qid, {})
-                    if _get_coords(admin_ent):
-                        place_ents[admin_qid] = admin_ent
-                        org_to_place[org_qid] = admin_qid
-
-            geo = _resolve_country_continent(place_ents)
-
-            for org_qid, place_qid in org_to_place.items():
-                ent = place_ents[place_qid]
-                c = _get_coords(ent)
-                country, continent = geo.get(place_qid, ("", ""))
-                sitelinks = len(ent.get("sitelinks", {}))
-                coords.append({
-                    "lat": c[0], "lon": c[1],
-                    "description": ent.get("descriptions", {}).get("en", {}).get("value", entity_text),
-                    "qid": place_qid, "country": country, "continent": continent,
-                    "_sitelinks": sitelinks,
-                })
-            coords.sort(key=lambda x: x.pop("_sitelinks", 0), reverse=True)
-            coords = coords[:10]
-
-    _coords_cache[cache_key] = coords
+    handler, default_cap = _TYPE_HANDLERS[entity_type]
+    cap = default_cap if top_n <= SEARCH_LIMIT else top_n
+    coords, complete = handler(entity_text, qids[:top_n], cap)
+    if complete:
+        _coords_cache[cache_key] = coords
     return coords
 
 
 GEO_PROP_CHAIN = ["P159", "P131", "P19", "P937", "P276"]
 
 
-# Geographic-area types for the refined_gemma routing gate. A ReFinED-linked
-# LOC whose P31 (directly or one P279 hop above) hits this set is a real
-# settlement / country / admin region. Anything outside (sports venues,
-# generic "old town" / "neighborhood" concepts, oceans, shopping centers)
-# means the Flair LOC tag was a generic noun and the entry should fall back
-# to Gemma instead of committing the ReFinED branch.
-GEO_AREA_P31 = {
-    # Settlements
-    "Q486972",   # human settlement
-    "Q515",      # city
-    "Q3957",     # town
-    "Q532",      # village
-    "Q5084",     # hamlet
-    "Q748149",   # locality
-    "Q1549591",  # big city
-    "Q1637706",  # city with millions of inhabitants
-    "Q702492",   # urban area
-    "Q1907114",  # metropolitan area
-    "Q174844",   # megacity
-    "Q15284",    # municipality
-    "Q5119",     # capital
-    "Q5152",     # capital city
-    # Countries
-    "Q6256",     # country
-    "Q3624078",  # sovereign state
-    "Q5107",     # continent
-    "Q15916867", # historical country
-    "Q3024240",  # former country
-    # Administrative divisions
-    "Q56061",    # administrative territorial entity
-    "Q10864048", # first-level administrative country subdivision
-    "Q13220204", # second-level administrative country subdivision
-    "Q149621",   # district
-    "Q28575",    # county
-    "Q34876",    # province
-    "Q35657",    # state of the United States
-    "Q24698",    # federal subject of Russia
-    "Q3950",     # oblast
-    "Q5852411",  # autonomous region
-    # Geographic regions
-    "Q82794",    # geographic region
-    "Q3455524",  # region
-    "Q1620908",  # historical region
-}
-
-
-# P31 types that describe subdivisions or architectural concepts rather than
-# specific named geographies. These reach human-settlement / region via a P279
-# hop, but they are exactly the descriptors ReFinED resolves wrongly when the
-# Flair LOC tag is a generic noun ("Old Town", "Riverside" district). Gate
-# rejects whenever ALL P31 fall in this set, regardless of P279 chain.
-GEO_NONPLACE_P31 = {
-    "Q123705",   # neighborhood
-    "Q676050",   # old town
-    "Q1497375",  # architectural ensemble
-    "Q48907157", # section of populated place
-}
-
-
-def is_geographic_qid(qid):
-    """Routing-gate helper: True iff QID's P31 (directly, or via one P279
-    hop) hits GEO_AREA_P31. The P279 hop catches subclass patterns like
-    'region of Ghana' -> 'region' and 'commune of France' -> 'municipality'
-    without each subclass being enumerated. Reject when every P31 is in
-    GEO_NONPLACE_P31 (neighborhood / old town / etc.) — those classes reach
-    human settlement via P279 but are too generic to commit ReFinED for."""
-    if not qid:
-        return False
-    ent = _fetch_entities([qid]).get(qid, {})
-    if not ent:
-        return False
-    p31s = _claim_ids(ent, "P31")
-    if not p31s:
-        return False
-    if any(p in GEO_AREA_P31 for p in p31s):
-        return True
-    if all(p in GEO_NONPLACE_P31 for p in p31s):
-        return False
-    for parent in _fetch_entities(p31s).values():
-        if any(s in GEO_AREA_P31 for s in _claim_ids(parent, "P279")):
-            return True
-    return False
-
-
-def resolve_qid_to_candidate(qid, entity_text, entity_type):
+def resolve_qid_to_candidate(qid: str, entity_text: str, entity_type: str) -> dict | None:
     """Resolve a known QID (e.g. from BLINK) to a geographic candidate dict via
     the property chain P625 (coords) → P159 → P131 → P19 → P937 → P276, with one
     extra P131 hop if the chained target also lacks coords. Returns None if no
     coordinates can be reached."""
     if not qid:
         return None
-    ents = _fetch_entities([qid])
-    ent = ents.get(qid, {})
+    ent = fetch_entities([qid]).get(qid, {})
     if not ent:
         return None
 
     place_qid = None
     place_ent = None
 
-    if _get_coords(ent):
+    if get_coords_of(ent):
         place_qid, place_ent = qid, ent
     else:
         for prop in GEO_PROP_CHAIN:
             target = _claim_id(ent, prop)
             if not target:
                 continue
-            target_ent = _fetch_entities([target]).get(target, {})
-            if _get_coords(target_ent):
+            target_ent = fetch_entities([target]).get(target, {})
+            if get_coords_of(target_ent):
                 place_qid, place_ent = target, target_ent
                 break
             admin = _claim_id(target_ent, "P131")
             if admin:
-                admin_ent = _fetch_entities([admin]).get(admin, {})
-                if _get_coords(admin_ent):
+                admin_ent = fetch_entities([admin]).get(admin, {})
+                if get_coords_of(admin_ent):
                     place_qid, place_ent = admin, admin_ent
                     break
 
     if not place_ent:
         return None
 
-    c = _get_coords(place_ent)
-    geo = _resolve_country_continent({place_qid: place_ent})
+    c = get_coords_of(place_ent)
+    geo = resolve_country_continent({place_qid: place_ent})
     country, continent = geo.get(place_qid, ("", ""))
     return {
         "entity": entity_text,
         "entity_type": entity_type,
         "lat": c[0], "lon": c[1],
-        "description": place_ent.get("descriptions", {}).get("en", {}).get("value", entity_text),
+        "description": _description(place_ent, entity_text),
         "qid": place_qid,
         "country": country,
         "continent": continent,
     }
 
 
-def get_all_coords(entities, top_n=10):
-    """Vezme seznam entit z ner.py a vrátí kandidátní souřadnice"""
+def get_all_coords(entities: list[dict], top_n: int = 10) -> list[dict]:
+    """Take the entity list from ner.py and return candidate coordinates."""
     all_candidates = []
     for entity in entities:
         coords = get_coords(entity["text"], entity["type"], top_n=top_n)
@@ -553,5 +758,11 @@ def get_all_coords(entities, top_n=10):
                 "country": coord["country"],
                 "continent": coord["continent"],
             })
-        time.sleep(0.5)
     return all_candidates
+
+
+# Backward-compatible aliases for the former private names.
+_search_entities = search_entities
+_fetch_entities = fetch_entities
+_get_coords = get_coords_of
+_resolve_country_continent = resolve_country_continent

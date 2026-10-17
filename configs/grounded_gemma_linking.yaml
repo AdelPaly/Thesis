@@ -1,0 +1,34 @@
+name: grounded_gemma_linking
+tier: 5
+paradigm: grounded_llm
+description: >
+  Tier 5, second variant. Identical to grounded_gemma except that the
+  candidates come from entity linking (tier 2b) instead of dense retrieval
+  (tier 3).
+
+  The pair answers a question neither variant can answer alone: does grounding
+  help because of the LLM or because of the retriever? Same model, same prompt,
+  same selection contract, different candidate source. Decided on dev only.
+ner:
+  model: flair/ner-large
+  entity_types: [LOC, PER, ORG]
+linking:
+  backend: refined
+  refined_model: wikipedia_model
+  refined_entity_set: wikipedia
+  top_n: 10
+rerank:
+  model: null
+  enabled: false
+llm:
+  provider: google
+  model: gemma-4-31b-it
+  revision: null
+  temperature: 0.0
+  top_p: null
+  prompt_template: v1
+  run_date: null
+  cache_name: gemma4_31b
+grounded:
+  candidate_source: linking
+  top_k: 10
