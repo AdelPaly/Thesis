@@ -38,22 +38,25 @@ paths:
 # --------------------------------------------------------------------------- #
 
 plan:
-  # Items per (place, condition) before the surplus pass. A place that cannot
-  # support a condition contributes nothing for it and is logged in
-  # output/plan_rejections.jsonl.
+  # The conditions to plan. While finalise.per_condition is set (below), each
+  # condition is planned at per_condition x surplus_factor items (150 x 1.3 =
+  # 195), spread over as many places as it has, and the numbers here are not
+  # used. With it unset they are the items per (place, condition) before the
+  # surplus pass. A place that cannot support a condition contributes nothing
+  # for it and is logged in output/plan_rejections.jsonl.
   replicates:
     A1: 2          # one entity clue, no place name
     A3: 2          # three entity clues, no place name
     B: 1           # ambiguous place name, context disambiguates, no clue
-    AB: 1          # ambiguous place name plus one entity clue
-    CEILING: 1     # place named plainly - the upper bound on any system
+    EXPLICIT: 1    # place named plainly - the upper bound on any system
     NOISE_A1: 1    # A1 plus one entity from another continent
     NOISE_B: 1     # B plus one entity from another continent
 
   # The model will sometimes name the place in a condition that forbids it.
   # Those items are dropped in finalise.py, so the plan has to be larger than the
-  # target set. 1.3 assumes a leak rate near 20 per cent with room to spare;
-  # measure it on a smoke run and set this from the measurement.
+  # target set, by this factor. 1.3 assumes a leak rate near 20 per cent with
+  # room to spare (a condition may lose 45 of its 195); measure it on a smoke
+  # run and set this from the measurement.
   surplus_factor: 1.3
 
   # No (place, condition) pair may exceed this, so the surplus cannot pile up
@@ -68,7 +71,7 @@ plan:
   random_min: 1
   random_max: 1000000
 
-  # A1, AB, NOISE_A1 and every NOISE distractor use one clue on its own. A
+  # A1, NOISE_A1 and every NOISE distractor use one clue on its own. A
   # clue that several places satisfy gives such an item no single correct
   # answer, so only clues with place_ambiguity at or below this are drawn.
   # It is a ceiling: raising it admits more, and more ambiguous, clues.
@@ -82,7 +85,7 @@ plan:
 
   # A clue that is itself a place name (05b_clue_types.jsonl: a village,
   # island, river, street, time zone...) forces a place name into a post whose
-  # prompt forbids one, or adds a second toponym to an AB item. When true,
+  # prompt forbids one. When true,
   # such clues are never drawn, a best set containing one is not used for A3,
   # and each exclusion is logged. On 2026-10-01 this was 74 of 614 clue
   # entities; A3 then fits 70 places rather than 87, A1 99 rather than 102.
@@ -99,18 +102,18 @@ plan:
 
   # An ambiguous surface form that already carries a qualifier ("Las Cruces,
   # NM") or contains the country's name ("Guatemala City", "Panama") cannot
-  # serve as the ambiguous toponym: the B/AB constraint forbids exactly those
-  # additions. When true, such forms are held back from B, AB and NOISE_B and
+  # serve as the ambiguous toponym: the B constraint forbids exactly those
+  # additions. When true, such forms are held back from B and NOISE_B and
   # logged. Exact forms are never filtered.
   exclude_qualified_ambiguous_forms: true
 
-  # CEILING is the upper bound, so it should name the place the plainest way:
+  # EXPLICIT is the upper bound, so it should name the place the plainest way:
   # the bare label when that is unique, otherwise "<name>, <country>". When
   # true, every other exact form (altLabels, nicknames, native-language names)
-  # is held back from CEILING and logged. The 2026-10-01 smoke run drew
+  # is held back from EXPLICIT and logged. The 2026-10-01 smoke run drew
   # "Ō-hine-puhiawe" for Bulls, which the model wrote as a festival name, and
   # "Whangas" for Whangārei.
-  ceiling_plain_name: true
+  explicit_plain_name: true
 
 
 registers:
@@ -232,6 +235,20 @@ slots:
 
 
 # --------------------------------------------------------------------------- #
+# finalise.py
+# --------------------------------------------------------------------------- #
+
+finalise:
+  # Posts kept per condition after the checks: 6 conditions x 150 = 900. It
+  # also sizes the plan: plan.py plans per_condition x plan.surplus_factor per
+  # condition, so the checks have spares to cut. If any condition ends below
+  # this, finalise.py stops with an error rather than write fewer. null cuts
+  # to the smallest condition instead (and plans by replicates).
+  # --per-condition overrides it here only, not in plan.py.
+  per_condition: 150
+
+
+# --------------------------------------------------------------------------- #
 # generate.py
 # --------------------------------------------------------------------------- #
 
@@ -315,7 +332,7 @@ generation:
 # str.format, so a literal brace in any template below must be doubled.
 prompt:
   # "In English" is stated in both. The 2026-10-01 smoke run had no language
-  # instruction, and a CEILING item for Cîșlița-Prut came back in Romanian.
+  # instruction, and an EXPLICIT item for Cîșlița-Prut came back in Romanian.
   system: >-
     You write short social media posts in English, in the voice of ordinary
     people. You follow the instructions you are given exactly, including
@@ -350,6 +367,12 @@ prompt:
     place_or_org: a place or organisation
     work_or_event: a work or event
 
+  # Properties whose clues get no type note whatever their family. P276
+  # (location) reaches paintings, battles, sports events and nature reserves
+  # alike; "a place or organisation" was wrong for most of them, and the
+  # relation line already says "location".
+  untyped_properties: [P276]
+
   # Length bands, referenced by the plan.
   length_bands:
     very_short: one line, under 12 words
@@ -358,10 +381,13 @@ prompt:
 
   # Constraint templates. One is inserted per item depending on the condition.
   # Keep these blunt and specific: a hedged constraint is one the model
-  # negotiates with.
+  # negotiates with. {country} and {other_names} arrive already quoted, as
+  # '"France" or "Italy"' for a place in several countries; {other_names} is
+  # the place name (left out when the planned form already is it) plus the
+  # countries.
   forbidden_toponym: >-
     Hard constraint. The post must not contain any place name at all. Do not
-    write "{place_name}". Do not write "{country}". Do not write any other
+    write "{place_name}". Do not write {country}. Do not write any other
     settlement, region, province, island, mountain, park, street or country
     name, in any language or spelling. Do not write a demonym or an adjective
     formed from a place name. Do not write a postcode, a dialling code, an
@@ -373,8 +399,8 @@ prompt:
   ambiguous_toponym: >-
     Hard constraint. The only place name in the post is "{surface}", written
     exactly like that and on its own. Do not add a country, region, province,
-    state or any other qualifier to it, and do not write "{place_name}" or
-    "{country}" anywhere. That name is shared by several places in the world,
+    state or any other qualifier to it, and do not write {other_names}
+    anywhere. That name is shared by several places in the world,
     and it must stay ambiguous on its own. The surrounding detail should be
     consistent with the intended place without naming it - climate, currency,
     language, distances, the entities you were told to mention.

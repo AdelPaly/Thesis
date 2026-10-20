@@ -54,10 +54,9 @@ and its verdict is in `output/finalise_report.csv`.
 | `A1` | one clue entity, no place name |
 | `A3` | three clue entities, no place name |
 | `B` | an ambiguous place name (shared by several places), no clue |
-| `AB` | an ambiguous place name plus one clue |
+| `EXPLICIT` | the place named plainly: the easy upper bound |
 | `NOISE_A1` | `A1` plus a distractor entity from another continent |
 | `NOISE_B` | `B` plus a distractor entity from another continent |
-| `CEILING` | the place named plainly: the easy upper bound |
 
 What you would change, and where: model, prompt wording, number of posts per
 condition, writing styles and their slot values are all in

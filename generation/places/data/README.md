@@ -15,6 +15,12 @@ these names.
 | `05_name_leakage.csv` | `external/clues.jsonl` | `scripts/05_name_leakage.py` |
 | `05b_clue_types.jsonl` | `05_clue_sets.jsonl` | `scripts/05b_clue_types.py` |
 
+A surface form is `ambiguous_alias` (usable for B and NOISE_B) only when
+another item **with coordinates, more than 161 km away** carries the same
+English label or alias (`geo_shared_by` >= 1). A name shared only with films,
+songs or ships ("Cape Town") is `exact`. On 2026-10-20 this left 154 places
+with an ambiguous form, 149 after the planner's own filters (was 216).
+
 `05_name_leakage.csv` has a header and no rows: the export already drops clues
 that name their place. The planner's own label check (place forms, country,
 demonyms, regions) still runs on top of it.
@@ -60,9 +66,10 @@ The source the set was made from. Not read by the planner.
 
 - 25 places have no `best_sets` in the export (London, Chiang Mai, Mount
   Vesuvius, Lake Constance, ...). With the planner's exclusions, 18 places
-  support only `CEILING`.
-- Six clue labels give their place away inside a longer word, which the
-  planner's whole-word check misses: Capetonians (Cape Town),
-  Hangötidningen-Hangonlehti (Hanko), Métropole lémanique (Lake Geneva),
-  Huronian glaciation (Lake Huron), Hannaea superiorensis (Lake Superior),
-  Odinarchaeum yellowstonii (Yellowstone National Park).
+  support only `EXPLICIT`.
+- Six clue labels give their place away at the start of a longer word:
+  Capetonians (Cape Town), Hangötidningen-Hangonlehti (Hanko), Métropole
+  lémanique (Lake Geneva), Huronian glaciation (Lake Huron), Hannaea
+  superiorensis (Lake Superior), Odinarchaeum yellowstonii (Yellowstone
+  National Park). They stay in the data; `plan.py`'s `label_leak` holds them
+  back (word-start match on place forms of 4+ letters).

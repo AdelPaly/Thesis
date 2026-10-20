@@ -97,6 +97,8 @@ try:
 except ImportError:  # pragma: no cover
     sys.exit("PyYAML is required: pip install pyyaml")
 
+import plan   # noqa: E402  (contains_word, so prompt and planner match names alike)
+
 
 HERE = Path(__file__).resolve().parent
 
@@ -323,6 +325,8 @@ def describe_clue(clue: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     relation = clue.get("property_label") or clue.get("property")
     labels = prompt_cfg.get("entity_type_labels") or {}
     entity_type = labels.get(clue.get("entity_type"))
+    if clue.get("property") in (prompt_cfg.get("untyped_properties") or []):
+        entity_type = None
     suffix = f" ({entity_type})" if entity_type else ""
     return prompt_cfg["clue_line"].format(
         label=clue["clue_label"], type_note=suffix, relation=relation
@@ -425,6 +429,20 @@ def build_output_shape(prompt_cfg: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def countries_of(item: dict[str, Any]) -> list[str]:
+    """The place's countries. The place CSV joins several with "; " (Lake
+    Geneva: "France; Switzerland")."""
+    return [c.strip() for c in (item.get("place_country") or "").split(";") if c.strip()]
+
+
+def quoted_list(names: Sequence[str]) -> str:
+    """'"A"', '"A" or "B"', '"A", "B" or "C"'."""
+    quoted = [f'"{name}"' for name in names]
+    if len(quoted) <= 1:
+        return "".join(quoted)
+    return ", ".join(quoted[:-1]) + " or " + quoted[-1]
+
+
 def build_constraint(item: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     """
     The constraint block, chosen by what the condition forbids.
@@ -432,19 +450,25 @@ def build_constraint(item: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     Templates live in the config so the wording can be revised without touching
     code. The banned-string list is built from the plan, not from the model's
     knowledge of the place.
+
+    For an ambiguous form the place name is banned only when the form is not
+    itself that name: a B item whose planned form is "Lake Baikal" must not
+    also be told not to write "Lake Baikal".
     """
     surface = item["surface_form"]
+    countries = countries_of(item)
     if surface["kind"] == "none":
         banned = prompt_cfg["forbidden_toponym"]
         return banned.format(
             place_name=item["place_name"],
-            country=item["place_country"],
+            country=quoted_list(countries),
         )
     if surface["kind"] == "ambiguous_alias":
+        place = item["place_name"]
+        others = [] if plan.contains_word(surface["text"], place) else [place]
         return prompt_cfg["ambiguous_toponym"].format(
             surface=surface["text"],
-            place_name=item["place_name"],
-            country=item["place_country"],
+            other_names=quoted_list(others + countries),
         )
     return prompt_cfg["exact_toponym"].format(
         surface=surface["text"],

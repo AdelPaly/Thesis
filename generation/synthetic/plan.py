@@ -10,7 +10,7 @@ WHAT THIS SCRIPT DOES
     Every choice that could otherwise be made by the generating model is made
     here instead:
         - which place the item is about
-        - which condition the item belongs to (A1, A3, B, AB, CEILING, NOISE_*)
+        - which condition the item belongs to (A1, A3, B, EXPLICIT, NOISE_*)
         - which clue entities appear (see NOTE ON CLUE SELECTION below)
         - which surface form of the place name is used, if any
         - which register and length band the text should follow
@@ -68,7 +68,7 @@ NOTE ON CLUE SELECTION
     Within that pool the draw is uniform, but the pool itself is a ranked
     selection, and the methodology should say so.
 
-    Single-clue conditions (A1, AB, NOISE_A1, and the NOISE distractors) draw
+    Single-clue conditions (A1, NOISE_A1, and the NOISE distractors) draw
     only clues whose place_ambiguity is within the configured ceiling: a lone
     clue that several places satisfy has no single correct answer. A3 draws a
     complete size-3 set as stage 5 built it, because that set's intersection
@@ -82,7 +82,7 @@ NOTE ON CLUE SELECTION
 NOTE ON SURFACE FORMS
     Entity names (people, organisations, works) are always written in full,
     recognisable form. Only place names carry ambiguity. That asymmetry is the
-    point of the B and AB conditions: the toponym is ambiguous and the
+    point of the B conditions: the toponym is ambiguous and the
     surrounding context is what disambiguates it.
 
 USAGE
@@ -106,6 +106,7 @@ import csv
 import functools
 import hashlib
 import json
+import math
 import os
 import re
 import sys
@@ -143,8 +144,7 @@ CONDITION_SPECS: dict[str, dict[str, Any]] = {
     "A1":       {"n_clues": 1, "needs_toponym": None,        "noise": False},
     "A3":       {"n_clues": 3, "needs_toponym": None,        "noise": False},
     "B":        {"n_clues": 0, "needs_toponym": "ambiguous", "noise": False},
-    "AB":       {"n_clues": 1, "needs_toponym": "ambiguous", "noise": False},
-    "CEILING":  {"n_clues": 0, "needs_toponym": "exact",     "noise": False},
+    "EXPLICIT": {"n_clues": 0, "needs_toponym": "exact",     "noise": False},
     "NOISE_A1": {"n_clues": 1, "needs_toponym": None,        "noise": True},
     "NOISE_B":  {"n_clues": 0, "needs_toponym": "ambiguous", "noise": True},
 }
@@ -509,6 +509,27 @@ def contains_word(haystack: str, needle: str) -> bool:
     return bool(needle) and _word_pattern(needle).search(fold(haystack)) is not None
 
 
+# Shorter place forms are left to the whole-word test: "Ely" or "Rye" would
+# otherwise catch every "Elysian" and "Ryerson". Four letters is the floor that
+# still catches "Capetonians" (Cape) and "yellowstonii" (YELL); on the
+# 2026-10-20 place set it excluded those and four more, and nothing else.
+MIN_WORD_START_FORM = 4
+
+
+@functools.lru_cache(maxsize=None)
+def _word_start_pattern(folded_needle: str) -> re.Pattern[str]:
+    return re.compile(rf"(?<!\w){re.escape(folded_needle)}")
+
+
+def starts_word(haystack: str, needle: str) -> bool:
+    """
+    needle begins a word of haystack, ignoring case and accents: a derived
+    word such as "Huronian" for Huron or "lémanique" for Léman.
+    """
+    needle = fold(needle).strip()
+    return bool(needle) and _word_start_pattern(needle).search(fold(haystack)) is not None
+
+
 # Underscore aliases kept for older callers.
 _fold = fold
 _contains_word = contains_word
@@ -518,7 +539,7 @@ def _is_qualified(text: str, country_forms: list[str]) -> bool:
     """
     A form that already narrows itself: it carries a comma qualifier ("Las
     Cruces, NM") or contains the country's name ("Guatemala City", the bare
-    "Guatemala", the Spanish "Panamá"). The B and AB constraint forbids exactly
+    "Guatemala", the Spanish "Panamá"). The B constraint forbids exactly
     those additions and forbids writing the country, so such a form cannot
     serve as an ambiguous toponym without the prompt contradicting itself.
     """
@@ -534,11 +555,16 @@ def label_leak(label: str, place_forms: Sequence[str], country_forms: Sequence[s
     05_name_leakage.csv checks only the bare place name; this also checks every
     surface form of the place ("Qaw el-Kebir" for Tjebu, "Mount McKinley" for
     Denali) and the country's name and demonyms ("Tuvalu Association...",
-    "MIAT Mongolian Airlines"). Whole words only, ignoring case and accents.
+    "MIAT Mongolian Airlines"). Whole words, ignoring case and accents; a place
+    form of MIN_WORD_START_FORM letters or more also counts at the start of a
+    longer word ("Huronian glaciation" for Lake Huron, "Capetonians" for Cape
+    Town). Country and region forms stay whole-word: demonyms are listed.
     """
     for form in place_forms:
         if contains_word(label, form):
             return f'label contains the place name or alias "{form}"'
+        if len(fold(form).strip()) >= MIN_WORD_START_FORM and starts_word(label, form):
+            return f'label has a word starting with the place name or alias "{form}"'
     for form in country_forms:
         if contains_word(label, form):
             return f'label contains the country or its demonym "{form}"'
@@ -559,7 +585,7 @@ class ClueRules:
     exclude_qualified: bool = True
     exclude_toponyms: bool = True
     exclude_label_leaks: bool = True
-    ceiling_plain_name: bool = True
+    explicit_plain_name: bool = True
 
     @classmethod
     def from_config(cls, plan_cfg: dict[str, Any]) -> "ClueRules":
@@ -570,7 +596,7 @@ class ClueRules:
             exclude_qualified=bool(plan_cfg.get("exclude_qualified_ambiguous_forms", True)),
             exclude_toponyms=bool(plan_cfg.get("exclude_toponym_clues", True)),
             exclude_label_leaks=bool(plan_cfg.get("exclude_label_leaks", True)),
-            ceiling_plain_name=bool(plan_cfg.get("ceiling_plain_name", True)),
+            explicit_plain_name=bool(plan_cfg.get("explicit_plain_name", True)),
         )
 
 
@@ -695,7 +721,8 @@ def select_clues(
     """
     Fill place.clues, place.single_clues and place.triple_sets from the
     collected clues and return one clue_excluded record per held-back clue.
-    A best_sets entry containing an excluded clue is excluded whole.
+    A best_sets entry containing an excluded clue is excluded whole, and so is
+    one naming the same clue entity twice.
     """
     place.clues = list(by_key.values())
     reasons = {id(c): clue_excluded_because(c, clue_types, rules) for c in place.clues}
@@ -725,17 +752,21 @@ def select_clues(
         members = [by_key[(c["clue_qid"], c["property"])] for c in entry["clues"]]
         if any(reasons[id(c)] for c in members):
             continue
+        # One entity reached twice (born and died there: P19 and P20) makes
+        # a "three-clue" set two clues; finalise.py drops it as repeated_clue.
+        if len({c["clue_qid"] for c in members}) < len(members):
+            continue
         place.triple_sets.append({"source_set_index": set_index, "clues": members})
     return held_back
 
 
-def ceiling_source_of(source_forms: list[dict[str, Any]], rules: ClueRules) -> str | None:
+def explicit_source_of(source_forms: list[dict[str, Any]], rules: ClueRules) -> str | None:
     """
-    The one source of exact form CEILING may use: the plain label when it is
+    The one source of exact form EXPLICIT may use: the plain label when it is
     unique, otherwise the derived "<name>, <country>". None when
-    ceiling_plain_name is off and every exact form is allowed.
+    explicit_plain_name is off and every exact form is allowed.
     """
-    if not rules.ceiling_plain_name:
+    if not rules.explicit_plain_name:
         return None
     label_exact = any(f.get("source") == "label" and f.get("kind") == "exact"
                       for f in source_forms)
@@ -743,7 +774,7 @@ def ceiling_source_of(source_forms: list[dict[str, Any]], rules: ClueRules) -> s
 
 
 def form_excluded_because(
-    form: dict[str, Any], country_forms: list[str], ceiling_source: str | None,
+    form: dict[str, Any], country_forms: list[str], explicit_source: str | None,
     rules: ClueRules,
 ) -> str | None:
     """Why this surface form is held back, or None."""
@@ -751,9 +782,9 @@ def form_excluded_because(
     if (rules.exclude_qualified and kind == "ambiguous_alias"
             and _is_qualified(form["text"], country_forms)):
         return "ambiguous form already qualified or contains the country"
-    if ceiling_source and kind == "exact" and form.get("source") != ceiling_source:
-        return (f"exact form other than the plain name; CEILING uses the "
-                f"{'unique label' if ceiling_source == 'label' else 'derived name, country'}")
+    if explicit_source and kind == "exact" and form.get("source") != explicit_source:
+        return (f"exact form other than the plain name; EXPLICIT uses the "
+                f"{'unique label' if explicit_source == 'label' else 'derived name, country'}")
     return None
 
 
@@ -768,18 +799,18 @@ def filter_forms(
     Fill place.surface_forms with the forms that survive and return one
     form_excluded record per form held back.
 
-    CEILING is the only consumer of exact forms. With ceiling_plain_name set it
+    EXPLICIT is the only consumer of exact forms. With explicit_plain_name set it
     gets one: the plain label when that is unique, otherwise the derived
     "<name>, <country>". Any other exact form - an altLabel, a nickname, a
     native-language name - is held back, because an obscure form ("Whangas",
     "Ō-hine-puhiawe") makes the upper bound harder than the conditions it
     bounds.
     """
-    ceiling_source = ceiling_source_of(source_forms, rules)
+    explicit_source = explicit_source_of(source_forms, rules)
     held_back: list[dict[str, Any]] = []
     forms = []
     for form in source_forms:
-        reason = form_excluded_because(form, country_forms, ceiling_source, rules)
+        reason = form_excluded_because(form, country_forms, explicit_source, rules)
         if reason:
             held_back.append({
                 "record": "form_excluded",
@@ -828,7 +859,7 @@ def load_clue_sets(
         source_set_sizes    the sizes of the best_sets containing it
         leaks_place_name    from 05_name_leakage.csv (strict test)
 
-    SINGLE-CLUE CONDITIONS (A1, AB, NOISE_A1) draw only from clues with
+    SINGLE-CLUE CONDITIONS (A1, NOISE_A1) draw only from clues with
     place_ambiguity <= max_place_ambiguity_for_single_clue. One clue that
     several places satisfy gives the item no single correct answer.
 
@@ -842,7 +873,7 @@ def load_clue_sets(
     TOPONYM CLUES - a village, island, river, street, time zone - are excluded
     the same way when exclude_toponym_clues is set. Such a clue puts a real
     place name into a post whose prompt forbids place names (A1, A3,
-    NOISE_A1) or allows exactly one (AB), and the smoke run showed the model
+    NOISE_A1), and the smoke run showed the model
     inventing around the contradiction. Each clue carries is_toponym either
     way.
 
@@ -856,9 +887,9 @@ def load_clue_sets(
     AMBIGUOUS FORMS that are already qualified (see _is_qualified) are held
     back when exclude_qualified_ambiguous_forms is set.
 
-    EXACT FORMS, which only CEILING uses, are cut to one when
-    ceiling_plain_name is set (filter_forms): the plain label if it is unique,
-    otherwise the derived "<name>, <country>". CEILING is meant to name the
+    EXACT FORMS, which only EXPLICIT uses, are cut to one when
+    explicit_plain_name is set (filter_forms): the plain label if it is unique,
+    otherwise the derived "<name>, <country>". EXPLICIT is meant to name the
     place plainly.
     """
     rules = ClueRules.from_config(plan_cfg)
@@ -1124,17 +1155,110 @@ def make_item_id(payload: dict[str, Any], replicate: int) -> str:
 # allocation
 # --------------------------------------------------------------------------- #
 
+def allocate_even(available: dict[str, int], n: int) -> dict[str, int]:
+    """
+    Split n picks across groups as evenly as the supply allows: every group gets
+    the same share until one runs out, and its unused share goes to the rest.
+    The remainder after an even split goes to groups in sorted-name order.
+    Shared with finalise.py, which cuts the conditions the same way.
+    """
+    take = dict.fromkeys(available, 0)
+    remaining = min(n, sum(available.values()))
+    open_groups = sorted(g for g, k in available.items() if k > 0)
+    while remaining > 0 and open_groups:
+        share, extra = divmod(remaining, len(open_groups))
+        progressed = 0
+        for index, group in enumerate(open_groups):
+            want = share + (1 if index < extra else 0)
+            got = min(want, available[group] - take[group])
+            take[group] += got
+            progressed += got
+        remaining -= progressed
+        open_groups = [g for g in open_groups if take[g] < available[g]]
+        if not progressed:
+            break
+    return take
+
+
+def per_condition_target(config: dict[str, Any]) -> int | None:
+    """
+    Items to plan per condition: finalise.per_condition (the final size) times
+    plan.surplus_factor, rounded up. None when finalise.per_condition is unset,
+    which keeps the older replicate-based sizing.
+    """
+    final = (config.get("finalise") or {}).get("per_condition")
+    if final is None:
+        return None
+    factor = float(config["plan"].get("surplus_factor", DEFAULT_SURPLUS_FACTOR))
+    return math.ceil(int(final) * factor)
+
+
+def target_slate(
+    places: dict[str, Place],
+    feasible_by_condition: dict[str, list[str]],
+    conditions: list[str],
+    target: int,
+    max_per_pair: int,
+    stream: RandomStream,
+) -> list[tuple[str, str, int]]:
+    """
+    `target` items per condition, spread as widely as the supply allows.
+
+    In rounds: while the open places (feasible, under max_per_pair) number no
+    more than what is still needed, each gets one more item; otherwise the
+    remaining items go to places drawn without replacement, split evenly over
+    continents (allocate_even). So no place gets a second item while another
+    feasible place has none, and a condition short of places repeats them
+    evenly. A condition that cannot reach the target is reported, not padded.
+    """
+    slate: list[tuple[str, str, int]] = []
+    for condition in conditions:
+        counts: dict[str, int] = defaultdict(int)
+        remaining = target
+        while remaining > 0:
+            open_places = [q for q in feasible_by_condition.get(condition, [])
+                           if counts[q] < max_per_pair]
+            if not open_places:
+                print(f"  note: {condition} planned {target - remaining} of {target}: "
+                      f"every feasible place is at the cap of {max_per_pair}",
+                      file=sys.stderr)
+                break
+            if remaining >= len(open_places):
+                chosen = open_places
+            else:
+                by_continent: dict[str, list[str]] = defaultdict(list)
+                for qid in open_places:
+                    by_continent[places[qid].continent].append(qid)
+                take = allocate_even({c: len(v) for c, v in by_continent.items()},
+                                     remaining)
+                chosen = []
+                for continent in sorted(by_continent):
+                    if take[continent]:
+                        chosen += stream.sample(by_continent[continent], take[continent])
+            for qid in chosen:
+                slate.append((qid, condition, counts[qid]))
+                counts[qid] += 1
+            remaining -= len(chosen)
+    return slate
+
+
 def build_slate(
     places: dict[str, Place], config: dict[str, Any], stream: RandomStream
 ) -> tuple[list[tuple[str, str, int]], list[dict[str, Any]]]:
     """
     Decide which (place, condition, replicate) triples to plan.
 
-    Base pass: every feasible pair gets the replicate count from the config.
-    Surplus pass: extra replicates are drawn at random until the surplus target
-    is met. The surplus exists because the model will sometimes name the place
-    outright in a condition that forbids it. Those items are dropped at
-    validation in finalise.py, so the plan has to be larger than the target set.
+    With finalise.per_condition set (the size of each condition in the final
+    dataset), every condition is planned at per_condition_target() items: that
+    size times surplus_factor. The surplus exists because the model will
+    sometimes name the place outright in a condition that forbids it; those
+    items are dropped in finalise.py, so the plan must be larger than the
+    final set, but only by the expected loss. See target_slate() for how the
+    items are spread over places.
+
+    Without it, the older sizing applies. Base pass: every feasible pair gets
+    the replicate count from the config. Surplus pass: extra replicates are
+    drawn at random until the total is surplus_factor times the base.
     """
     plan_cfg = config["plan"]
     replicates: dict[str, int] = plan_cfg["replicates"]
@@ -1149,6 +1273,7 @@ def build_slate(
     slate: list[tuple[str, str, int]] = []
     rejections: list[dict[str, Any]] = []
     counts: dict[tuple[str, str], int] = defaultdict(int)
+    feasible_by_condition: dict[str, list[str]] = defaultdict(list)
 
     for qid in sorted(places):
         place = places[qid]
@@ -1169,9 +1294,19 @@ def build_slate(
                     }
                 )
                 continue
+            feasible_by_condition[condition].append(qid)
+
+    target = per_condition_target(config)
+    if target is not None:
+        return target_slate(places, feasible_by_condition, sorted(replicates),
+                            target, max_per_pair, stream), rejections
+
+    for condition in sorted(replicates):
+        for qid in feasible_by_condition[condition]:
             for replicate in range(replicates[condition]):
                 slate.append((qid, condition, replicate))
                 counts[(qid, condition)] += 1
+    slate.sort()
 
     base_total = len(slate)
     target_total = round(base_total * surplus_factor)
@@ -1297,7 +1432,7 @@ def _signal_label(condition: str) -> str:
     toponym disambiguated by context.
     """
     spec = CONDITION_SPECS[condition]
-    if condition == "CEILING":
+    if condition == "EXPLICIT":
         return "explicit"
     has_a = spec["n_clues"] > 0
     has_b = spec["needs_toponym"] == "ambiguous"

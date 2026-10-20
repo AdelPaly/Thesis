@@ -15,6 +15,7 @@ import re
 import sys
 import tempfile
 import unittest
+from collections import Counter
 from pathlib import Path
 
 SYN = Path(__file__).resolve().parent.parent
@@ -180,6 +181,18 @@ class ContainsWordAndLabelLeak(unittest.TestCase):
             with self.subTest(haystack=haystack, needle=needle):
                 self.assertEqual(plan.contains_word(haystack, needle), expected)
 
+    def test_starts_word_table(self):
+        table = [
+            ("Huronian glaciation", "Huron", True),
+            ("Odinarchaeum yellowstonii", "YELL", True),
+            ("Kagulu of Buganda", "Uganda", False),          # inside a word
+            ("Hangötidningen", "Hango", True),               # accents
+            ("hello", "", False),
+        ]
+        for haystack, needle, expected in table:
+            with self.subTest(haystack=haystack, needle=needle):
+                self.assertEqual(plan.starts_word(haystack, needle), expected)
+
     def test_underscore_alias_still_works(self):
         self.assertIs(plan._contains_word, plan.contains_word)
         self.assertIs(plan._label_leak, plan.label_leak)
@@ -191,6 +204,13 @@ class ContainsWordAndLabelLeak(unittest.TestCase):
             ("Rock-cut tombs of Qaw el-Kebir", ["Tjebu", "Qaw el-Kebir"], [], [], "place name"),
             ("Some Band", ["Young"], ["Uruguay"], ["Rio Negro"], None),
             ("Rio Negro Rowing Club", ["Young"], ["Uruguay"], ["Rio Negro"], "region"),
+            # a place form starting a longer word
+            ("Huronian glaciation", ["Lake Huron", "Huron"], [], [], "word starting"),
+            ("Métropole lémanique", ["Lake Geneva", "Léman"], [], [], "word starting"),
+            # ... but not inside one, not a short form, not a country form
+            ("Kagulu of Buganda", ["Lake Victoria"], ["Uganda"], [], None),
+            ("Elysian Fields", ["Ely"], [], [], None),
+            ("Panamanian hats", ["Colón"], ["Panama"], [], None),
         ]
         for label, forms, country, regions, fragment in table:
             with self.subTest(label=label):
@@ -246,6 +266,46 @@ class PlanHelpers(unittest.TestCase):
                              exclude_label_leaks=False)
         self.assertIsNone(plan.clue_excluded_because(self.clue(leaks=True, toponym=True), types, off))
 
+    def test_select_clues_skips_set_naming_one_entity_twice(self):
+        place = plan.Place(qid="Q1", name="X", place_type="town", country="C",
+                           continent="Europe", places_sharing_name=1, sitelinks=0,
+                           wikidata_links=0)
+        by_key = {(q, p): {**self.clue(label=q, qid=q), "property": p}
+                  for q, p in [("Q2", "P19"), ("Q3", "P19"), ("Q3", "P20"), ("Q4", "P19")]}
+        ref = lambda q, p: {"clue_qid": q, "property": p}  # noqa: E731
+        best_sets = [
+            {"resolves": True, "clues": [ref("Q2", "P19"), ref("Q3", "P19"), ref("Q3", "P20")]},
+            {"resolves": True, "clues": [ref("Q2", "P19"), ref("Q3", "P19"), ref("Q4", "P19")]},
+        ]
+        plan.select_clues("Q1", place, best_sets, by_key, {}, self.RULES)
+        self.assertEqual([s["source_set_index"] for s in place.triple_sets], [1])
+
+    def test_target_slate_spreads_before_repeating(self):
+        def place(qid, continent):
+            return plan.Place(qid=qid, name=qid, place_type="town", country="C",
+                              continent=continent, places_sharing_name=1,
+                              sitelinks=0, wikidata_links=0)
+        places = {f"Q{i}": place(f"Q{i}", "Africa" if i < 6 else "Asia") for i in range(10)}
+        feasible = {"B": sorted(places), "A3": ["Q0", "Q1", "Q2"]}
+        stream = make_stream(range(1, 1001), 1, 1000)
+        slate = plan.target_slate(places, feasible, ["A3", "B"], 7, 6, stream)
+        per = lambda c: Counter(q for q, cond, _ in slate if cond == c)  # noqa: E731
+        # B: 10 places, 7 items -> 7 distinct places, split 4/3 over continents
+        self.assertEqual(sum(per("B").values()), 7)
+        self.assertEqual(max(per("B").values()), 1)
+        by_cont = Counter(places[q].continent for q in per("B"))
+        self.assertEqual(sorted(by_cont.values()), [3, 4])
+        # A3: 3 places, 7 items -> 3, 2, 2 (every place twice before any thrice)
+        self.assertEqual(sorted(per("A3").values()), [2, 2, 3])
+        # replicate indices are 0.. per place
+        self.assertEqual(sorted(r for q, c, r in slate if c == "A3" and q == "Q0")[0], 0)
+
+    def test_per_condition_target(self):
+        cfg = {"plan": {"surplus_factor": 1.3}, "finalise": {"per_condition": 150}}
+        self.assertEqual(plan.per_condition_target(cfg), 195)
+        self.assertIsNone(plan.per_condition_target({"plan": {}, "finalise": {"per_condition": None}}))
+        self.assertIsNone(plan.per_condition_target({"plan": {}}))
+
     def test_filter_forms(self):
         place = plan.Place("Q1", "Young", "town", "Uruguay", "South America", 1, 1, 1)
         forms = [
@@ -259,12 +319,12 @@ class PlanHelpers(unittest.TestCase):
         self.assertEqual([h["text"] for h in held], ["Young, Rio Negro", "Younger"])
         self.assertTrue(all(h["record"] == "form_excluded" for h in held))
 
-    def test_ceiling_source(self):
+    def test_explicit_source(self):
         label_forms = [{"source": "label", "kind": "exact"}]
-        self.assertEqual(plan.ceiling_source_of(label_forms, self.RULES), "label")
-        self.assertEqual(plan.ceiling_source_of([], self.RULES), "derived")
-        self.assertIsNone(plan.ceiling_source_of(label_forms,
-                                                 plan.ClueRules(ceiling_plain_name=False)))
+        self.assertEqual(plan.explicit_source_of(label_forms, self.RULES), "label")
+        self.assertEqual(plan.explicit_source_of([], self.RULES), "derived")
+        self.assertIsNone(plan.explicit_source_of(label_forms,
+                                                  plan.ClueRules(explicit_plain_name=False)))
 
     def test_atomic_write_jsonl(self):
         path = Path(tempfile.mkdtemp()) / "sub" / "out.jsonl"
@@ -272,6 +332,43 @@ class PlanHelpers(unittest.TestCase):
         self.assertEqual(n, 2)
         self.assertEqual(path.read_text(encoding="utf-8"), '{"a": 1}\n{"b": "é"}\n')
         self.assertFalse(path.with_name("out.jsonl.tmp").exists())
+
+
+class PromptConstraint(unittest.TestCase):
+    PROMPT = plan.load_config(SYN / "config.yaml")["prompt"]
+
+    @staticmethod
+    def item(kind, surface=None, place="Lake Baikal", country="Russia"):
+        return {"place_name": place, "place_country": country,
+                "surface_form": {"kind": kind, "text": surface}}
+
+    def test_quoted_list(self):
+        self.assertEqual(gen.quoted_list([]), "")
+        self.assertEqual(gen.quoted_list(["A"]), '"A"')
+        self.assertEqual(gen.quoted_list(["A", "B", "C"]), '"A", "B" or "C"')
+
+    def test_ambiguous_form_that_is_the_place_name_is_not_also_banned(self):
+        text = gen.build_constraint(self.item("ambiguous_alias", "Lake Baikal"), self.PROMPT)
+        self.assertIn('do not write "Russia" anywhere', text)
+        self.assertNotIn('write "Lake Baikal" or', text)
+
+    def test_ambiguous_alias_still_bans_the_place_name(self):
+        text = gen.build_constraint(
+            self.item("ambiguous_alias", "Baikal Lake", place="Lake Baikal"), self.PROMPT)
+        self.assertIn('do not write "Lake Baikal" or "Russia" anywhere', text)
+
+    def test_several_countries_are_listed_one_by_one(self):
+        text = gen.build_constraint(
+            self.item("none", place="Dead Sea", country="Israel; Jordan; Palestine"), self.PROMPT)
+        self.assertIn('Do not write "Israel", "Jordan" or "Palestine".', text)
+        self.assertNotIn(";", text)
+
+    def test_untyped_property_gets_no_type_note(self):
+        clue = {"clue_label": "Battle of X", "property": "P276",
+                "property_label": "location", "entity_type": "place_or_org"}
+        self.assertNotIn("(a place or organisation)", gen.describe_clue(clue, self.PROMPT))
+        clue = {**clue, "property": "P159", "property_label": "headquarters location"}
+        self.assertIn("(a place or organisation)", gen.describe_clue(clue, self.PROMPT))
 
 
 class LatestRows(unittest.TestCase):
@@ -320,13 +417,12 @@ class FinaliseCheck(unittest.TestCase):
             (self.item("B", surface="Young"), "Young, Uruguay", ("wrong_toponym", None)),
             (self.item("B", surface="Young"), "Young near the Rio Negro", ("wrong_toponym", None)),
             (self.item("B", surface="Young"), "Young aka Yg Town", ("wrong_toponym", 'also wrote "Yg Town"')),
-            (self.item("AB", surface="Young", clues=["Bob"]), "Young has Bob", None),
             (self.item("NOISE_B", surface="Young", noise="Zed"), "Young and Zed", None),
             (self.item("NOISE_B", surface="Young", noise="Zed"), "Young only", ("noise_missing", '"Zed" is missing')),
-            # CEILING
-            (self.item("CEILING", surface="Young"), "Young!", None),
-            (self.item("CEILING", surface="Young"), "nothing", ("missing_name", '"Young" is missing')),
-            (self.item("CEILING", surface=None), "visit Young", None),
+            # EXPLICIT
+            (self.item("EXPLICIT", surface="Young"), "Young!", None),
+            (self.item("EXPLICIT", surface="Young"), "nothing", ("missing_name", '"Young" is missing')),
+            (self.item("EXPLICIT", surface=None), "visit Young", None),
         ]
         for item, text, expected in table:
             with self.subTest(condition=item["condition"], text=text):
@@ -347,7 +443,7 @@ class FinaliseCheck(unittest.TestCase):
         self.assertIsNone(finalise.check(item, "Back in Young, Rio Negro", names))
 
     def test_verdict_for(self):
-        item = {**self.item("CEILING", surface="Young"), "place_qid": "Q1"}
+        item = {**self.item("EXPLICIT", surface="Young"), "place_qid": "Q1"}
         aliases = {"Q1": self.NAMES}
         table = [
             (None, ("not_generated", "")),
@@ -360,7 +456,7 @@ class FinaliseCheck(unittest.TestCase):
                 self.assertEqual(finalise.verdict_for(item, row, aliases), expected)
 
     def test_error_reason_is_truncated(self):
-        item = {**self.item("CEILING", surface="Young"), "place_qid": "Q1"}
+        item = {**self.item("EXPLICIT", surface="Young"), "place_qid": "Q1"}
         status, reason = finalise.verdict_for(item, {"error": "e" * 500}, {})
         self.assertEqual(status, "error")
         self.assertEqual(len(reason), finalise.ERROR_REASON_CHARS)

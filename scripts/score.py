@@ -21,7 +21,8 @@ exact          : predicted_qid == place_qid, over items that HAVE a gold QID.
                  0% exact would be wrong. The n_gold_qid column is the
                  denominator, so a dataset without gold QIDs reports exact as
                  "-" rather than zero.
-country        : exact, or predicted_country == gold_country. The hierarchy is
+country        : exact, or predicted_country == gold_country (any one of a
+                 "; "-joined gold, for a place in several). The hierarchy is
                  derived HERE, at report time, not baked into stored booleans.
                  Denominator: items that have a gold country.
 continent      : country, or predicted_continent == gold_continent.
@@ -150,8 +151,11 @@ def score_record(rec: dict) -> dict:
                           or rec.get("predicted_continent"))
     exact = bool(gold_qid and pred_qid and gold_qid == pred_qid)
 
+    # A gold place in several countries (Lake Geneva) carries them joined with
+    # "; "; a prediction naming any one of them is in the right country.
     gold_country, pred_country = _norm(rec.get("gold_country")), _norm(rec.get("predicted_country"))
-    country = exact or bool(gold_country and pred_country and gold_country == pred_country)
+    gold_countries = {c.strip() for c in gold_country.split(";")} if gold_country else set()
+    country = exact or bool(pred_country and pred_country in gold_countries)
 
     gold_cont, pred_cont = _norm(rec.get("gold_continent")), _norm(rec.get("predicted_continent"))
     continent = country or bool(gold_cont and pred_cont and gold_cont == pred_cont)

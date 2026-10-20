@@ -28,10 +28,10 @@ A post is dropped when:
     names_place     a no-place-name condition (A1, A3, NOISE_A1) wrote the
                     place, another of its names, its country or a demonym, or
                     a region it sits in
-    wrong_toponym   B, AB or NOISE_B did not write the planned ambiguous name,
+    wrong_toponym   B or NOISE_B did not write the planned ambiguous name,
                     or also wrote the country, a region or another name of
                     the place that gives it away
-    missing_name    CEILING did not write the place name
+    missing_name    EXPLICIT did not write the place name
     clue_missing    a clue entity the plan asked for is not in the text
     noise_missing   a NOISE item does not contain its distractor
     no_coordinates  the place's QID has no P625 coordinate on Wikidata, so the
@@ -46,8 +46,8 @@ Balancing: the plan is deliberately uneven (A1 and A3 get two posts per place,
 the others one) and oversized, so after the checks the conditions hold
 different numbers of posts. Pooled and per-condition numbers are easier to
 compare when every condition has the same n, so each condition is cut to N
-posts, N being the size of the smallest condition after the checks (or
---per-condition). Within a condition the posts are spread as evenly as the
+posts: finalise.per_condition in config.yaml (150), or --per-condition, or the
+size of the smallest condition after the checks when neither is set. Within a condition the posts are spread as evenly as the
 supply allows across continents, and which posts are chosen is decided only by
 --seed, so the same inputs always give the same dataset. Every post cut this
 way stays in finalise_report.csv as balanced_out. --no-balance keeps them all.
@@ -55,7 +55,7 @@ way stays in finalise_report.csv as balanced_out. --no-balance keeps them all.
 Name matching is whole-word and ignores case and accents, the same test the
 planner uses to keep leaking clues out.
 
-signal_type is the plan's condition (A1, A3, B, AB, CEILING, NOISE_A1,
+signal_type is the plan's condition (A1, A3, B, EXPLICIT, NOISE_A1,
 NOISE_B), so `scripts/score.py --by condition` reports each one separately.
 Gold coordinates come from Wikidata P625 (truthy), the same property the
 other datasets were built from.
@@ -79,7 +79,7 @@ import generate as gen   # noqa: E402  (config, jsonl reading, latest_rows)
 import plan              # noqa: E402  (contains_word, atomic_write_text, ...)
 
 NO_NAME = {"A1", "A3", "NOISE_A1"}
-AMBIGUOUS = {"B", "AB", "NOISE_B"}
+AMBIGUOUS = {"B", "NOISE_B"}
 
 BALANCE_SEED = 20261004    # default --seed: which posts survive balancing
 SPARQL_BATCH = 50          # QIDs per VALUES clause
@@ -146,7 +146,7 @@ def check(item: dict[str, Any], text: str, names: dict[str, Any]) -> tuple[str, 
             if not contains(surface, form) and contains(text, form):
                 return "wrong_toponym", f'also wrote the region "{form}"'
 
-    elif condition == "CEILING":
+    elif condition == "EXPLICIT":
         if not (contains(text, surface or place) or contains(text, place)):
             return "missing_name", f'"{surface or place}" is missing'
 
@@ -237,28 +237,7 @@ def _rank(seed: int, item_id: str) -> str:
     return hashlib.sha256(f"{seed}:{item_id}".encode("utf-8")).hexdigest()
 
 
-def allocate_even(available: dict[str, int], n: int) -> dict[str, int]:
-    """
-    Split n picks across groups as evenly as the supply allows: every group gets
-    the same share until one runs out, and its unused share goes to the rest.
-    The remainder after an even split goes to groups in sorted-name order.
-    """
-    take = dict.fromkeys(available, 0)
-    remaining = min(n, sum(available.values()))
-    open_groups = sorted(g for g, k in available.items() if k > 0)
-    while remaining > 0 and open_groups:
-        share, extra = divmod(remaining, len(open_groups))
-        progressed = 0
-        for index, group in enumerate(open_groups):
-            want = share + (1 if index < extra else 0)
-            got = min(want, available[group] - take[group])
-            take[group] += got
-            progressed += got
-        remaining -= progressed
-        open_groups = [g for g in open_groups if take[g] < available[g]]
-        if not progressed:
-            break
-    return take
+allocate_even = plan.allocate_even  # one implementation, shared with the planner
 
 
 def balance(kept: list[Entry], seed: int,
@@ -365,8 +344,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="keep every post that passes the checks instead of "
                              "cutting each condition to the same size")
     parser.add_argument("--per-condition", type=int, default=None, metavar="N",
-                        help="posts to keep per condition (default: the size of "
-                             "the smallest condition)")
+                        help="posts to keep per condition (default: finalise."
+                             "per_condition in the config, else the size of the "
+                             "smallest condition)")
     parser.add_argument("--seed", type=int, default=BALANCE_SEED,
                         help="decides which posts survive balancing "
                              f"(default {BALANCE_SEED})")
@@ -374,6 +354,9 @@ def main(argv: list[str] | None = None) -> int:
 
     config = gen.load_config(args.config)
     paths = config["paths"]
+    per_condition = args.per_condition
+    if per_condition is None:
+        per_condition = (config.get("finalise") or {}).get("per_condition")
     items = gen.read_jsonl(Path(paths["item_plan"]))
     if not items:
         raise SystemExit("no plan - run plan.py first")
@@ -421,7 +404,7 @@ def main(argv: list[str] | None = None) -> int:
                   f"Generate more, or re-run with --no-balance.", file=sys.stderr)
             return 1
         try:
-            kept, cut, balanced_n = balance(kept, args.seed, args.per_condition)
+            kept, cut, balanced_n = balance(kept, args.seed, per_condition)
         except ValueError as exc:
             print(f"\n! {exc}", file=sys.stderr)
             return 1

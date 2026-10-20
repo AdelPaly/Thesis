@@ -20,8 +20,13 @@ altLabel matches, the bare-name count does not. `source` on each form says
 which one applies.
 
 KIND
-    ambiguous_alias  shared_by >= 2
-    exact            shared_by == 1, and always the derived "<name>, <country>"
+    ambiguous_alias  shared_by >= 2 AND geo_shared_by >= 1: another item with
+                     coordinates carries the string as an English label or
+                     alias, more than GEO_SHARER_MIN_KM from the place
+    exact            shared_by == 1, or shared_by >= 2 with geo_shared_by == 0
+                     (every other bearer is a film, song, ship, person, or a
+                     second item for the same spot: "Cape Town"), and always
+                     the derived "<name>, <country>"
     unmatched        shared_by == 0: the string is not an English label or
                      alias of anything, the place included. Typically a P1705
                      native label in another language or script, or a P1449
@@ -35,6 +40,12 @@ the derived "<name>, <country>" always wins its own string. Six places carry
 it as an altLabel too, and one of those (Santo Domingo) is shared by two
 entities -- letting the alias win would classify a string that names the
 country as ambiguous, and hand it to a B item as the ambiguous toponym.
+
+GEO_SHARED_BY is what makes a B item ambiguous at all. shared_by counts any
+entity, so a name shared only with a song is not a toponym two places compete
+for. The distance floor is the evaluation's own acc@161km radius: a namesake
+closer than that (the city's municipality item, the park around a lake) is not
+a different answer at that resolution.
 
 COUNTRY FORMS are written alongside, never as surface forms: the CSV country,
 the English label of the place's P17 country, and that country's English
@@ -61,6 +72,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import re
 import sys
 from collections import Counter
@@ -69,7 +81,7 @@ from pathlib import Path
 
 from io_utils import utf8_stdout, write_jsonl_atomic
 from jsoncache import JsonCache, cache_key
-from wdqs import qid_from_uri, value_of
+from wdqs import escape_literal, qid_from_uri, value_of
 
 # Query builders and collectors shared with 04; they live in a numeric-prefix
 # module, so this is the one place that needs import_module.
@@ -95,6 +107,9 @@ KINDS_REPORTED = ("ambiguous_alias", "exact", "unmatched")
 REGION_CHUNK = 25         # P131+ is expensive; a 102-place block timed out on WDQS
 MIN_REGION_FORM_LETTERS = 4   # shorter forms ("ON" for Ontario) match ordinary words
 AMBIGUOUS_MIN_SHARED = 2  # shared_by at or above this is an ambiguous alias
+GEO_SHARER_MIN_KM = 161.0  # a namesake must be this far away to count (acc@161km)
+GEO_CHUNK = 20            # strings per geo-sharer query ("Saint Martin" alone has hundreds)
+EARTH_RADIUS_KM = 6371.0
 BAD_PLACES_SHOWN = 5
 FAILURES_SHOWN = 10
 ERROR_SNIPPET = 110
@@ -189,9 +204,95 @@ SELECT DISTINCT ?place ?text ?src WHERE {{
 """
 
 
+def place_coord_query(qids: list[str]) -> str:
+    """Each place's own P625 coordinate."""
+    values = " ".join(f"wd:{q}" for q in qids)
+    return f"""
+SELECT ?place ?coord WHERE {{
+  VALUES ?place {{ {values} }}
+  ?place wdt:P625 ?coord .
+}}
+"""
+
+
+def geo_sharer_query(labels: list[str]) -> str:
+    """Every entity WITH COORDINATES carrying the string as an English label or
+    alias: the same match as surface_count_query, restricted to things on a
+    map."""
+    values = " ".join(f'"{escape_literal(text)}"@en' for text in labels)
+    return f"""
+SELECT DISTINCT ?label ?e ?coord WHERE {{
+  VALUES ?label {{ {values} }}
+  ?e rdfs:label|skos:altLabel ?label .
+  ?e wdt:P625 ?coord .
+}}
+"""
+
+
+def parse_point(wkt: str | None) -> list[float] | None:
+    """[lat, lon] from a WKT "Point(lon lat)", or None. A coordinate on another
+    globe carries a "<...>" prefix and is not on Earth, so it is dropped."""
+    if not wkt or wkt.lstrip().startswith("<"):
+        return None
+    match = re.search(r"Point\(\s*(-?[\d.eE+-]+)\s+(-?[\d.eE+-]+)\s*\)", wkt)
+    if not match:
+        return None
+    return [float(match.group(2)), float(match.group(1))]
+
+
+def collect_place_coords(batch: list[str], rows: list[dict], out: dict) -> None:
+    """Fill `out[qid] = [lat, lon]` (first Earth coordinate) or None, per place."""
+    found: dict[str, list[float] | None] = {q: None for q in batch}
+    for row in rows:
+        place = value_of(row, "place")
+        point = parse_point(value_of(row, "coord"))
+        if place and point and found.get(qid_from_uri(place)) is None:
+            found[qid_from_uri(place)] = point
+    out.update(found)
+
+
+def collect_geo_sharers(batch: list[str], rows: list[dict], out: dict) -> None:
+    """Fill `out[text] = [[qid, lat, lon], ...]` for every string in the batch."""
+    found: dict[str, list] = {t: [] for t in batch}
+    for row in rows:
+        text = value_of(row, "label")
+        entity = value_of(row, "e")
+        point = parse_point(value_of(row, "coord"))
+        if text in found and entity and point:
+            entry = [qid_from_uri(entity), *point]
+            if entry not in found[text]:
+                found[text].append(entry)
+    out.update(found)
+
+
 # --------------------------------------------------------------------------
 # Pure helpers
 # --------------------------------------------------------------------------
+
+def haversine_km(a: list[float], b: list[float]) -> float:
+    """Great-circle distance between two [lat, lon] points."""
+    lat1, lon1, lat2, lon2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+    h = (math.sin((lat2 - lat1) / 2) ** 2
+         + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2)
+    return 2 * EARTH_RADIUS_KM * math.asin(math.sqrt(h))
+
+
+def geo_shared_by(place_qid: str, place_coord: list[float] | None,
+                  sharers: list | None) -> int | None:
+    """Other entities with coordinates bearing the string, more than
+    GEO_SHARER_MIN_KM from the place (nearest of each one's coordinates).
+    None when the lookup failed. A place with no coordinate of its own cannot be
+    measured from, so every other bearer counts."""
+    if sharers is None:
+        return None
+    nearest: dict[str, float] = {}
+    for qid, lat, lon in sharers:
+        if qid == place_qid:
+            continue
+        km = haversine_km(place_coord, [lat, lon]) if place_coord else math.inf
+        nearest[qid] = min(km, nearest.get(qid, math.inf))
+    return sum(1 for km in nearest.values() if km > GEO_SHARER_MIN_KM)
+
 
 def usable_region_form(text: str) -> bool:
     """
@@ -283,14 +384,27 @@ def fill_missing(found: dict, want: list[str], prefix: str, cache: JsonCache, ch
 # Compute
 # --------------------------------------------------------------------------
 
+def csv_countries(csv_country: str) -> list[str]:
+    """The CSV country column split: a place in several countries carries them
+    joined with "; " ("France; Switzerland")."""
+    return [c.strip() for c in csv_country.split(";") if c.strip()]
+
+
+def derived_form(name: str, csv_country: str) -> str:
+    """'<name>, <country>', several countries as 'A, B and C'."""
+    countries = csv_countries(csv_country)
+    if len(countries) > 1:
+        return f"{name}, {', '.join(countries[:-1])} and {countries[-1]}"
+    return f"{name}, {csv_country.strip()}"
+
+
 def build_forms_by_place(places: list[dict], aliases: dict[str, list]) -> dict[str, list[dict]]:
     """Candidate surface forms per place, first source wins ({'text', 'source'} dicts)."""
     forms_by_place: dict[str, list[dict]] = {}
     for place in places:
         qid = place["wikidata_id"].strip()
         name = place["place_name"].strip()
-        country = place["country"].strip()
-        derived = f"{name}, {country}"
+        derived = derived_form(name, place["country"])
         candidates = [(name, "label")]
         found = sorted(aliases.get(qid, []), key=lambda pair: source_rank(pair[1]))
         candidates += [(text.strip(), src) for text, src in found
@@ -308,10 +422,14 @@ def build_forms_by_place(places: list[dict], aliases: dict[str, list]) -> dict[s
     return forms_by_place
 
 
-def measure_forms(place: dict, forms: list[dict], surface: dict[str, int]) -> tuple[list[dict], int]:
-    """Attach kind/shared_by to each form. Returns (forms, number left unmeasured)."""
+def measure_forms(place: dict, forms: list[dict], surface: dict[str, int],
+                  geo: dict[str, list], place_coord: list[float] | None
+                  ) -> tuple[list[dict], int]:
+    """Attach kind/shared_by/geo_shared_by to each form. Returns (forms, number
+    left unmeasured)."""
     out = []
     unmeasured = 0
+    qid = place["wikidata_id"].strip()
     for form in forms:
         src = form["source"]
         if src == "label":
@@ -328,15 +446,28 @@ def measure_forms(place: dict, forms: list[dict], surface: dict[str, int]) -> tu
                         "shared_by": None, "source": src})
             continue
         kind = "exact" if src == "derived" else kind_of(shared_by)
-        out.append({"text": form["text"], "kind": kind,
-                    "shared_by": shared_by, "source": src})
+        record = {"text": form["text"], "kind": kind, "shared_by": shared_by, "source": src}
+        if kind == "ambiguous_alias":
+            geo_n = geo_shared_by(qid, place_coord, geo.get(form["text"]))
+            record["geo_shared_by"] = geo_n
+            if geo_n is None:
+                unmeasured += 1
+                record["kind"] = "unmeasured"
+            elif geo_n == 0:
+                record["kind"] = "exact"
+        out.append(record)
     return out, unmeasured
 
 
 def country_forms_for(csv_country: str, forms: list) -> tuple[list[dict], set[str]]:
-    """The CSV country first, then the P17 label and demonyms, deduplicated."""
-    seen_country = {csv_country}
-    country = [{"text": csv_country, "source": "csv"}]
+    """The CSV country (each one, for a place in several) first, then the P17
+    labels and demonyms, deduplicated."""
+    seen_country: set[str] = set()
+    country = []
+    for text in csv_countries(csv_country) or [csv_country]:
+        if text not in seen_country:
+            seen_country.add(text)
+            country.append({"text": text, "source": "csv"})
     for text, src in forms:
         if text not in seen_country:
             seen_country.add(text)
@@ -360,13 +491,15 @@ def region_forms_for(raw: list, taken: set[str]) -> list[dict]:
 
 def build_records(places: list[dict], forms_by_place: dict[str, list[dict]],
                   surface: dict[str, int], country_forms: dict[str, list],
-                  region_raw: dict[str, list]) -> tuple[list[dict], int]:
+                  region_raw: dict[str, list], geo: dict[str, list],
+                  place_coords: dict[str, list[float] | None]) -> tuple[list[dict], int]:
     """One output record per place. Returns (records, number of unmeasured forms)."""
     out_records = []
     unmeasured_total = 0
     for place in places:
         qid = place["wikidata_id"].strip()
-        forms, unmeasured = measure_forms(place, forms_by_place[qid], surface)
+        forms, unmeasured = measure_forms(place, forms_by_place[qid], surface,
+                                          geo, place_coords.get(qid))
         unmeasured_total += unmeasured
         csv_country = place["country"].strip()
         country, seen_country = country_forms_for(csv_country, country_forms.get(qid, []))
@@ -404,6 +537,8 @@ def print_report(out_records: list[dict]) -> None:
             print(f"  {kind:<30}: {by_kind[kind]}")
     print(f"places with no ambiguous form   : {len(no_ambiguous)}")
     print(f"places with >= 1 ambiguous form : {len(out_records) - len(no_ambiguous)}")
+    demoted = [f for f in all_forms if f.get("geo_shared_by") == 0]
+    print(f"shared only with non-places     : {len(demoted)} forms, now exact")
 
     print(f"\n{'source':<10} " + " ".join(f"{k:>16}" for k in KINDS_REPORTED))
     print("-" * 62)
@@ -489,6 +624,27 @@ def main(argv: list[str] | None = None) -> int:
     fill_missing(surface, want_texts, "sa", cache, LABEL_CHUNK, surface_count_query,
                  collect_surface_counts, "surface", failures)
 
+    # ---- pass 2b: which of the would-be ambiguous strings other PLACES share ----
+    # shared_by counts any entity; a name shared only with a song is not an
+    # ambiguous toponym. Only strings that pass the shared_by test are asked.
+    candidates = sorted({
+        f["text"]
+        for place in places
+        for f in forms_by_place[place["wikidata_id"].strip()]
+        if f["source"] != "derived" and (as_int(place["places_sharing_name"])
+                                        if f["source"] == "label"
+                                        else surface.get(f["text"], 0)) >= AMBIGUOUS_MIN_SHARED
+    })
+    geo, want_texts = split_cached(candidates, "gs", cache)
+    print(f"pass 2b: geo share  {len(candidates)} ambiguous strings, {len(want_texts)} to query")
+    fill_missing(geo, want_texts, "gs", cache, GEO_CHUNK, geo_sharer_query,
+                 collect_geo_sharers, "geo sharers", failures)
+
+    place_coords, want = split_cached(qids, "pc", cache)
+    print(f"pass 2c: coords     {len(qids)} places, {len(want)} to query")
+    fill_missing(place_coords, want, "pc", cache, ALIAS_CHUNK, place_coord_query,
+                 collect_place_coords, "place coords", failures)
+
     # ---- pass 3: country forms ----
     # The strings that name the place's country: the CSV country, the P17
     # country's English label, and its English demonyms (P1549). Not surface
@@ -524,7 +680,7 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     out_records, unmeasured = build_records(places, forms_by_place, surface,
-                                            country_forms, region_raw)
+                                            country_forms, region_raw, geo, place_coords)
     write_jsonl_atomic(args.out, out_records)
 
     print_report(out_records)

@@ -3,8 +3,7 @@
 PLACE NAME. Measurement only -- changes nothing downstream.
 
 Why it matters. The no-toponym conditions (A1, A3, NOISE_A1) forbid any
-settlement, region, island, mountain, park or street name in the post, and AB
-allows exactly one place name, the ambiguous one. A clue that is itself a
+settlement, region, island, mountain, park or street name in the post. A clue that is itself a
 village ("Rüttmannsdorf", reached through P131) or a mountain ("Cheopsfjellet",
 reached through P138) makes those prompts contradict themselves: the post must
 mention the clue by name and must not contain a place name. The smoke run
