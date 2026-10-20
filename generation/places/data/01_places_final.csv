@@ -1,305 +1,296 @@
-place_name,type,country,continent,wikidata_id,clue_count,clue_total,wikimedia_sitelinks,wikidata_links,places_sharing_name,area_km2
-Lagos,town,Nigeria,Africa,Q8673,246,12655,,12795,24,1171.3
-Abidjan,town,Ivory Coast,Africa,Q1515,206,1434,,1398,3,2119
-Dodoma,town,Tanzania,Africa,Q3866,68,68,,79,4,2576
-Lüderitz,town,Namibia,Africa,Q159325,36,36,53,44,4,15.3
-Leptis Magna,manmade structure,Libya,Africa,Q191504,31,39,,89,3,3.875
-Accra,town,Ghana,Africa,Q3761,189,2389,201,2348,7,173
-Birao,town,Central African Republic,Africa,Q864999,13,13,33,14,5,
-Tidjikja,town,Mauritania,Africa,Q757041,12,12,,13,2,3929
-Cape Town,town,South Africa,Africa,Q5465,213,3445,217,3513,9,2454.72
-Kabinda,town,Democratic Republic of the Congo,Africa,Q3191660,11,11,,16,2,27
-Bimbo,town,Central African Republic,Africa,Q863461,10,10,,12,21,
-Addis Ababa,town,Ethiopia,Africa,Q3624,186,1274,200,1229,3,526.99
-Cairo,town,Egypt,Africa,Q85,230,8734,261,10494,49,528
-Oranjemund,town,Namibia,Africa,Q1404518,7,7,26,11,2,
-Nairobi,town,Kenya,Africa,Q3870,185,2342,238,2332,3,696
-Great Pyramid of Giza,manmade structure,Egypt,Africa,Q37200,5,5,,27,1,0.0530611
-Marrakech,town,Morocco,Africa,Q101625,180,1267,142,1226,15,230
-Anjouan,island,Comoros,Africa,Q231324,36,356,59,378,2,424
-Robben Island,island,South Africa,Africa,Q192493,6,8,72,57,3,5.18
-Mohéli,island,Comoros,Africa,Q271797,19,173,54,186,3,290
-Príncipe,island,São Tomé and Príncipe,Africa,Q210636,16,22,55,42,6,136
-Rodrigues,island,Mauritius,Africa,Q208668,28,73,62,129,7,109
-Fogo,island,Cape Verde,Africa,Q426555,10,16,53,34,15,476
-Annobón Island,island,Equatorial Guinea,Africa,Q728665,4,4,40,22,1,17
-Mahé,island,Seychelles,Africa,Q219642,48,51,60,62,8,157.3
-Lake Malawi,lake,Malawi; Mozambique; Tanzania,Africa,Q5532,3,3,107,76,3,2.96E+04
-Lake Tanganyika,lake,Burundi; Democratic Republic of the Congo; Tanzania; Zambia,Africa,Q5511,11,13,151,108,2,3.29E+04
-Lake Victoria,lake,Kenya; Tanzania; Uganda,Africa,Q5505,10,13,162,430,20,6.81E+04
-Lake of Tunis,lake,Tunisia,Africa,Q576856,17,21,29,17,1,37
-Etosha Pan,lake,Namibia,Africa,Q280231,11,11,26,16,1,
-Lake Chad,lake,Cameroon; Chad; Niger; Nigeria,Africa,Q125309,5,7,105,32,3,1540
-Carthage,manmade structure,Tunisia,Africa,Q6343,73,265,121,424,42,
-Aswan Dam,manmade structure,Egypt,Africa,Q38891,3,3,100,8,3,
-Timgad,manmade structure,Algeria,Africa,Q459629,17,24,59,50,7,0.9054
-Stade Alphonse Massemba-Débat,manmade structure,Republic of the Congo,Africa,Q2743618,21,21,10,17,1,
-Banadir Stadium,manmade structure,Somalia,Africa,Q3545656,14,14,9,13,1,
-Stade du 26 Mars,manmade structure,Mali,Africa,Q3496077,7,7,14,6,1,
-Mount Kilimanjaro,mountain,Tanzania,Africa,Q7296,25,29,188,56,1,
-Piton de la Fournaise,mountain,Réunion,Africa,Q1049644,3,30,38,46,1,
-Table Mountain,mountain,South Africa,Africa,Q213360,6,7,72,30,181,
-Mount Cameroon,mountain,Cameroon,Africa,Q190562,3,4,60,12,1,
-Qubbet el-Hawa,manmade structure,Egypt,Africa,Q1518125,8,8,16,14,1,0.3268
-Tendaguru Formation,manmade structure,Tanzania,Africa,Q1432102,50,53,13,60,1,
-El-Khokha,manmade structure,Egypt,Africa,Q1323768,17,33,16,35,1,
-Amba Alagi,mountain,Ethiopia,Africa,Q456557,6,8,18,8,1,
-Bwindi Impenetrable National Park,national park,Uganda,Africa,Q500397,5,5,47,7,1,331
-Djerba,island,Tunisia,Africa,Q188938,39,119,69,143,1,514
-Unguja,island,Tanzania,Africa,Q7332301,34,34,48,49,2,1575
-Kabul,town,Afghanistan,Asia,Q5838,189,1267,,1305,12,275
-Phnom Penh,town,Cambodia,Asia,Q1850,186,843,,945,6,678.5
-Chiang Mai,town,Thailand,Asia,Q52028,174,339,,322,6,405
-Dehloran,town,Iran,Asia,Q862457,30,77,26,83,1,
-Beijing,town,China,Asia,Q956,218,7937,305,18625,8,16410.54
-Amarah,town,Iraq,Asia,Q366010,53,74,,80,1,
-Hat Yai,town,Thailand,Asia,Q651286,26,26,,29,7,21
-Mafraq,town,Jordan,Asia,Q276747,16,16,,23,3,14
-Jask,town,Iran,Asia,Q719781,16,16,35,29,3,
-Agutaya,town,Philippines,Asia,Q111351,10,10,24,17,1,37.31
-Sitra,island,Bahrain,Asia,Q1416753,9,9,,13,6,22.45
-Tokyo,town,Japan,Asia,Q1490,232,37084,302,38206,37,2194.05
-Alaçam district,town,Turkey,Asia,Q1947471,29,79,28,83,1,598
-Ushguli,town,Georgia,Asia,Q1011028,4,4,,3,1,
-Mörön,town,Mongolia,Asia,Q572951,8,8,44,13,5,102.9
-Arvaikheer,town,Mongolia,Asia,Q717684,7,7,37,12,2,173
-Quảng Ngãi,town,Vietnam,Asia,Q33994,31,31,34,36,5,160.2
-Timor,island,Indonesia; Timor-Leste,Asia,Q83067,9,23,102,65,17,3.08E+04
-Borneo,island,Brunei; Indonesia; Malaysia,Asia,Q36117,89,134,147,420,11,7.48E+05
-Mindanao,island,Philippines,Asia,Q124873,29,46,111,123,7,9.75E+04
-Atauro,island,Timor-Leste,Asia,Q753794,6,9,38,14,1,140.1
-Amanohashidate,island,Japan,Asia,Q259727,4,10,26,14,2,
-Dead Sea,lake,Israel; Jordan; Palestine,Asia,Q23883,16,26,163,117,9,605
-Lake Baikal,lake,Russia,Asia,Q5513,24,32,183,163,2,3.17E+04
-Lotus Pond,lake,Taiwan,Asia,Q698996,13,14,8,9,11,0.42
-Golden Horn,town,Turkey,Asia,Q179839,4,5,63,24,10,
-Tangeum Lake,lake,South Korea,Asia,Q2885379,51,87,8,43,1,
-Chengcing Lake,lake,Taiwan,Asia,Q57333,21,21,12,13,2,1.03
-Angkor Wat,manmade structure,Cambodia,Asia,Q43473,7,9,137,24,4,
-Palmyra,manmade structure,Syria,Asia,Q5747,33,61,107,126,44,168
-Grand Hamad Stadium,manmade structure,Qatar,Asia,Q3271676,7,7,19,5,1,
-Mohammed Al-Hamad Stadium,manmade structure,Kuwait,Asia,Q3272392,4,4,9,2,1,
-Tower of David,manmade structure,Palestine,Asia,Q1177765,6,7,34,15,3,
-Kazakhstan Sports Palace,manmade structure,Kazakhstan,Asia,Q1186465,32,32,15,16,1,
-K2,mountain,Pakistan,Asia,Q43512,25,47,112,76,44,
-Kanchenjunga,mountain,India; Nepal,Asia,Q82019,9,14,102,39,2,
-Mount Everest,mountain,People's Republic of China; Nepal,Asia,Q513,72,114,237,283,8,
-Baekdu Mountain,mountain,People's Republic of China; North Korea,Asia,Q107635,11,11,77,27,1,
-Victoria Peak,mountain,Hong Kong,Asia,Q17541,9,10,35,21,13,
-Mount Kumgang,mountain,North Korea,Asia,Q495501,5,6,41,11,2,
-Amman Citadel,manmade structure,Jordan,Asia,Q3157009,4,4,20,6,1,
-Ayub National Park,national park,Pakistan,Asia,Q9055975,4,4,11,7,1,1.267
-Qumran,manmade structure,Palestine,Asia,Q223399,3,18,51,30,4,
-Belvoir Fortress,manmade structure,Israel,Asia,Q1010980,6,6,20,12,1,
-Taroko National Park,national park,Taiwan,Asia,Q707427,5,5,34,79,1,920
-Chitwan National Park,national park,Nepal,Asia,Q1075023,9,9,60,10,1,952.6
-Kenting National Park,national park,Taiwan,Asia,Q707982,3,3,26,21,1,333
-Taj Mahal,manmade structure,India,Asia,Q9141,18,24,184,59,28,0.17
-Great Wall of China,manmade structure,China,Asia,Q12501,13,13,194,68,9,
-Petronas Towers,manmade structure,Malaysia,Asia,Q83063,3,4,89,12,1,0.395
-Kinkaku-ji Temple,manmade structure,Japan,Asia,Q270983,4,4,57,14,2,0.093
-Hagia Sophia,manmade structure,Turkey,Asia,Q12506,10,16,152,59,5,
-Marina Bay Sands,manmade structure,Singapore,Asia,Q548679,15,16,41,14,1,
-Wat Arun,manmade structure,Thailand,Asia,Q724970,6,8,43,10,2,
-Neustadt bei Coburg,town,Germany,Europe,Q32074,91,288,47,279,2,61.89
-Tirana,town,Albania,Europe,Q19689,207,2317,,4841,6,41.8
-Poitiers,town,France,Europe,Q6616,189,1897,,1939,5,42.11
-Kerch,town,Ukraine,Europe,Q157065,118,484,,527,7,108
-Tuzla,town,Bosnia and Herzegovina,Europe,Q174684,115,533,,559,23,302.4
-Hanko,town,Finland,Europe,Q216790,95,571,,653,8,117.4
-Sozopol,town,Bulgaria,Europe,Q271925,60,60,,75,3,41.829
-Podgorica City Stadium,manmade structure,Montenegro,Europe,Q1166175,52,116,,60,1,
-Delos,island,Greece,Europe,Q173148,39,68,,93,18,3.506
-Prague,town,Czechia,Europe,Q1085,187,96693,268,195956,20,496.21
-Berlin,town,Germany,Europe,Q64,166,104590,334,98743,108,891.12
-Rome,town,Italy,Europe,Q220,221,62557,344,57381,69,1287.36
-Paris,town,France,Europe,Q90,182,141492,366,145039,213,105.4
-London,town,United Kingdom,Europe,Q84,244,83224,357,101858,130,1572
-Malmberget,town,Sweden,Europe,Q83718,39,43,28,47,6,0.7
-Mallorca,island,Spain,Europe,Q8828,144,631,124,1091,26,3620
-Gotland,island,Sweden,Europe,Q1027830,101,184,104,713,13,2968
-Gozo,island,Malta,Europe,Q170488,32,39,79,71,7,67
-Ada Kaleh,island,Romania,Europe,Q346141,3,4,33,12,1,0.8
-Sark,island,Guernsey,Europe,Q3405693,22,31,80,56,7,5.5
-Goeree-Overflakkee,island,Netherlands,Europe,Q933459,30,1576,38,1600,1,422.4
-Lake Constance,lake,Austria; Germany; Switzerland,Europe,Q4127,43,51,100,238,6,536
-Lake Geneva,lake,France; Switzerland,Europe,Q6403,27,30,101,190,22,581.3
-Galvė,lake,Lithuania,Europe,Q2579161,51,135,20,72,2,3.6
-Lake Garda,lake,Italy,Europe,Q6414,22,24,88,89,5,370
-Albufera of Valencia,lake,Spain,Europe,Q84165268,5,5,9,16,1,
-Lake Bagsværd,lake,Denmark,Europe,Q3360834,55,187,12,94,2,1.163
-Lake Ossiach,lake,Austria,Europe,Q702260,30,30,26,20,1,10.79
-Lake Malta,lake,Poland,Europe,Q2311941,56,160,19,83,1,0.64
-St. Peter's Basilica,manmade structure,Vatican City,Europe,Q12512,29,53,131,248,3,
-Palace of Versailles,manmade structure,France,Europe,Q2946,117,594,109,1719,1,0.067
-Kielce City Stadium,manmade structure,Poland,Europe,Q2002170,5,5,18,4,1,
-Kostanjevica Monastery,manmade structure,Slovenia,Europe,Q914189,3,3,12,5,1,
-Makario Stadium,manmade structure,Cyprus,Europe,Q3655367,48,48,14,26,1,
-Mont Blanc,mountain,France; Italy,Europe,Q583,38,50,127,113,24,
-Mount Vesuvius,mountain,Italy,Europe,Q524,17,20,136,219,4,
-Mount Etna,mountain,Italy,Europe,Q16990,18,24,125,92,13,192.4
-Mount Parnassus,mountain,Greece,Europe,Q105261,17,17,66,40,5,
-Mount Saint Peter,mountain,Belgium; Netherlands,Europe,Q1754591,4,5,13,111,1,
-Mount Kazbek,mountain,Russia,Europe,Q207680,6,6,63,18,2,
-Coudenberg - Koudenberg,mountain,Belgium,Europe,Q13451667,4,5,6,14,2,
-Mount Olympus,mountain,Greece,Europe,Q80344,22,26,109,54,26,191.4
-Peneda-Gerês National Park,national park,Portugal,Europe,Q1473702,4,4,33,6,1,695.9
-Plitvice Lakes National Park,national park,Croatia,Europe,Q189849,6,6,70,38,1,296.9
-Kampinos National Park,national park,Poland,Europe,Q619061,3,3,29,11,1,385.4
-Thingvellir National Park,national park,Iceland,Europe,Q107370,9,11,62,31,1,227.9
-Eiffel Tower,manmade structure,France,Europe,Q243,17,30,191,211,17,
-Colosseum,manmade structure,Italy,Europe,Q10285,12,17,148,109,38,0.03
-Basilica and Expiatory Church of the Holy Family,manmade structure,Spain,Europe,Q48435,8,11,109,43,1,
-Brandenburg Gate,manmade structure,Germany,Europe,Q82425,23,25,86,42,4,
-Leaning Tower of Pisa,manmade structure,Italy,Europe,Q39054,9,15,119,34,1,0.0005
-Schönbrunn Palace,manmade structure,Austria,Europe,Q131330,47,68,64,91,1,2.6064
-Atomium,manmade structure,Belgium,Europe,Q180901,4,12,53,21,6,
-Rijksmuseum,manmade structure,Netherlands,Europe,Q190804,40,6092,70,9834,3,
-Corfu,island,Greece,Europe,Q121378,121,493,100,616,17,626
-Guatemala City,town,Guatemala,North America,Q1555,192,2342,,1737,4,692
-Santo Domingo,town,Dominican Republic,North America,Q34820,192,2454,,2110,108,1302.2
-Panama City,town,Panama,North America,Q3306,190,1480,,4376,4,275
-Las Cruces,town,United States,North America,Q33264,172,262,,269,50,199.5
-Jinotega,town,Nicaragua,North America,Q1026296,38,102,39,112,3,880.3
-Chilliwack,town,Canada,North America,Q983026,80,120,,141,7,261.6
-Metropolitan Museum of Art,manmade structure,United States,North America,Q160236,54,28797,,81570,1,
-Guantánamo,town,Cuba,North America,Q185156,53,152,,163,4,741.4
-Juigalpa,town,Nicaragua,North America,Q1025801,32,56,,61,3,726.8
-Guna Yala,town,Panama,North America,Q919017,28,208,,222,1,2358.2
-Cozumel Island,island,Mexico,North America,Q20119933,23,23,52,36,1,539
-Acajutla,town,El Salvador,North America,Q937292,15,15,,21,3,166.6
-Tikal,manmade structure,Guatemala,North America,Q181172,12,12,,19,7,
-New York City,town,United States,North America,Q60,269,68850,325,79890,76,1213.369839
-Mexico City,town,Mexico,North America,Q1489,230,18981,260,17865,11,1485
-Denali,mountain,United States,North America,Q130018,7,7,,35,7,
-Paradise Island,island,The Bahamas,North America,Q3181503,7,7,,11,26,2.77
-Hispaniola,island,Dominican Republic; Haiti,North America,Q25277,38,53,123,98,5,7.64E+04
-Newfoundland,island,Canada,North America,Q48335,55,80,102,145,11,1.09E+05
-Saint Martin,island,Saint-Martin; Sint Maarten,North America,Q25596,16,21,97,61,35,87
-Vieques,island,Puerto Rico,North America,Q737624,36,68,51,76,6,136
-Mustique,island,Saint Vincent and the Grenadines,North America,Q607357,3,5,27,11,1,5.7
-Nevis,island,Saint Kitts and Nevis,North America,Q207794,37,55,61,105,10,93
-Lake Ontario,lake,Canada; United States,North America,Q1062,12,16,108,189,3,1.85E+04
-Lake Erie,lake,Canada; United States,North America,Q5492,12,16,102,193,4,2.57E+04
-Lake Superior,lake,Canada; United States,North America,Q1066,10,15,112,272,12,8.24E+04
-Lake Huron,lake,Canada; United States,North America,Q1383,7,11,100,149,3,5.96E+04
-Lake Cerrillos,lake,Puerto Rico,North America,Q6475229,3,3,5,4,1,
-Lago de Atitlán,lake,Guatemala,North America,Q273276,3,3,41,20,1,130.1
-Lake Lanier,lake,United States,North America,Q3295796,15,16,13,15,2,
-Chichen Itza,manmade structure,Mexico,North America,Q5859,5,7,110,19,2,
-White House,manmade structure,United States,North America,Q35525,87,230,143,356,196,
-Statue of Liberty,manmade structure,United States,North America,Q9202,7,8,158,65,20,
-Estadio Nacional Jose de la Paz Herrera,manmade structure,Honduras,North America,Q619322,17,18,15,16,1,
-Thomas Robinson Stadium,manmade structure,The Bahamas,North America,Q590296,62,79,13,47,1,
-Popocatépetl,mountain,Mexico,North America,Q181157,3,3,72,20,2,
-Mont-Sainte-Anne,mountain,Canada,North America,Q1231413,15,21,13,12,3,
-Mount Royal,mountain,Canada,North America,Q1757764,6,10,21,24,36,
-Parliament Hill,manmade structure,Canada,North America,Q1589289,10,12,20,25,8,
-Siesta Key,island,United States,North America,Q1787284,6,8,31,12,2,9.021
-Mount Hood,mountain,United States,North America,Q275662,3,9,43,23,9,
-Yellowstone National Park,national park,United States,North America,Q351,18,22,116,477,3,8983
-Soberanía National Park,national park,Panama,North America,Q1473095,4,4,12,4,1,221
-Bryce Canyon National Park,national park,United States,North America,Q219562,4,6,61,87,2,145
-Badlands National Park,national park,United States,North America,Q306216,3,3,42,29,1,982.4
-Arches National Park,national park,United States,North America,Q223969,5,5,51,84,2,354.2
-Crater Lake National Park,national park,United States,North America,Q239304,4,5,37,64,1,741
-Haleakalā National Park,national park,United States,North America,Q1137640,3,3,35,31,1,134.6
-Cape Breton Highlands National Park,national park,Canada,North America,Q253517,7,7,21,9,1,948
-Lincoln Memorial,manmade structure,United States,North America,Q213559,9,12,53,23,5,
-Sphere,manmade structure,United States,North America,Q60749353,25,27,30,20,34,
-Melbourne,town,Australia,Oceania,Q3141,241,10145,,10193,40,9993
-Christchurch,town,New Zealand,Oceania,Q79990,208,3082,,3353,33,295.1
-Port Moresby,town,Papua New Guinea,Oceania,Q36526,162,303,,312,2,240
-Whangārei,town,New Zealand,Oceania,Q744239,122,335,,394,2,57.06
-Funafuti,island,Tuvalu,Oceania,Q34126,77,77,,134,3,2.4
-Akaroa,town,New Zealand,Oceania,Q416098,67,80,28,108,7,1.766
-Tarawa,island,Kiribati,Oceania,Q2486,27,27,,40,4,31.02
-Wellington,town,New Zealand,Oceania,Q23661,177,3667,186,4273,76,444
-Upolu,island,Samoa,Oceania,Q274569,17,17,,42,1,1125
-Yaren District,town,Nauru,Oceania,Q31026,14,14,114,23,1,1.5
-Sir John Guise Stadium,manmade structure,Papua New Guinea,Oceania,Q2289928,15,15,8,9,1,
-Chatham Island,island,New Zealand,Oceania,Q1427436,6,6,,75,8,920
-Tikopia,island,Solomon Islands,Oceania,Q889519,5,5,,7,3,5
-Suva,town,Fiji,Oceania,Q38807,163,567,139,481,8,2048
-Capricornia Cays National Park,national park,Australia,Oceania,Q1034937,5,5,8,7,3,180
-Auckland,town,New Zealand,Oceania,Q37100,164,7082,160,7929,15,559
-Brisbane,town,Australia,Oceania,Q34932,178,3784,167,3837,15,15826
-Tahiti,island,French Polynesia,Oceania,Q42000,130,274,123,1007,16,1042
-Great Barrier Reef,island,Australia,Oceania,Q7343,11,16,158,40,5,3.48E+05
-Lake Barrington,lake,Australia,Oceania,Q1332906,47,47,7,24,4,
-Lake Karapiro,lake,New Zealand,Oceania,Q596083,52,90,8,48,1,7.7
-Lake Wānaka,lake,New Zealand,Oceania,Q1192728,3,3,27,27,1,192
-Albert Park and Lake,lake,Australia,Oceania,Q4710971,5,5,6,4,1,
-Lake Wendouree,lake,Australia,Oceania,Q4256116,8,8,8,4,3,
-Lake Pedder,lake,Australia,Oceania,Q653152,3,3,11,9,1,242
-National Stadium,manmade structure,Cook Islands,Oceania,Q790237,6,6,11,5,14,
-HFC Bank Stadium,manmade structure,Fiji,Oceania,Q998980,29,29,20,19,1,
-Stade Numa-Daly Magenta,manmade structure,New Caledonia,Oceania,Q182992,14,14,10,12,1,
-Korman Stadium,manmade structure,Vanuatu,Oceania,Q1784475,13,13,10,11,1,
-Lawson Tama Stadium,manmade structure,Solomon Islands,Oceania,Q333549,14,14,17,13,1,
-National Soccer Stadium,manmade structure,Samoa,Oceania,Q1784042,17,19,12,18,2,
-Royal Palace of Nukuʻalofa,manmade structure,Tonga,Oceania,Q2992825,9,9,16,16,1,
-Aoba Island,island,Vanuatu,Oceania,Q456599,11,11,30,16,1,402
-Savo Island,island,Solomon Islands,Oceania,Q1059040,4,6,28,6,1,31
-Ambrym,island,Vanuatu,Oceania,Q459948,8,8,37,11,1,678
-Uluru,mountain,Australia,Oceania,Q33910,6,9,94,15,2,
-Mount Lofty,mountain,Australia,Oceania,Q1984533,10,10,11,15,7,
-Mount Ruapehu,mountain,New Zealand,Oceania,Q207284,3,3,52,86,2,
-Rangitoto Island,island,New Zealand,Oceania,Q1422715,3,3,27,25,1,23.11
-Port Hills,mountain,New Zealand,Oceania,Q941581,3,4,7,18,3,
-Namadgi National Park,national park,Australia,Oceania,Q1635824,4,4,16,6,1,777.8
-Tongariro National Park,national park,New Zealand,Oceania,Q202845,5,6,47,207,1,796
-Royal National Park,national park,Australia,Oceania,Q113523,4,5,32,22,3,153.2
-Avon Valley National Park,national park,Australia,Oceania,Q791260,6,6,14,13,2,48
-Yanchep National Park,national park,Australia,Oceania,Q932964,8,8,9,11,1,28.6
-Sydney Opera House,manmade structure,Australia,Oceania,Q45178,26,26,99,42,2,4.381
-Cartagena,town,Colombia,South America,Q657461,160,754,116,757,32,572
-Bogotá,town,Colombia,South America,Q2841,235,6192,,7090,3,1578
-Guayaquil,town,Ecuador,South America,Q43509,207,1866,,1713,4,354.5
-Río Gallegos,town,Argentina,South America,Q44242,70,184,57,206,1,
-Rio Branco,town,Brazil,South America,Q171612,111,593,,615,7,8835.5
-San Nicolás de los Arroyos,town,Argentina,South America,Q377965,82,250,,254,2,
-Pichilemu,town,Chile,South America,Q25304,61,84,103,106,4,10.07
-Caracas,town,Venezuela,South America,Q1533,195,6136,216,5922,12,776
-Arena Fonte Nova,manmade structure,Brazil,South America,Q6499360,50,50,,31,1,
-Tocopilla,town,Chile,South America,Q188192,36,45,,57,7,7.95
-Santiago,town,Chile,South America,Q2887,179,12069,275,10802,112,837.89
-Montevideo,town,Uruguay,South America,Q1335,185,13453,205,13386,23,730
-Riberalta,town,Bolivia,South America,Q941357,18,18,31,20,2,20.1
-Cusco,town,Peru,South America,Q5582862,121,632,115,646,4,385
-Rio de Janeiro,town,Brazil,South America,Q8678,230,28408,303,43146,26,1260.029215
-Buenos Aires,town,Argentina,South America,Q1486,200,32617,276,32199,184,203.3
-Acrelândia,town,Brazil,South America,Q953086,15,15,37,23,1,1.6
-Blanquilla Island,island,Venezuela,South America,Q1366578,4,4,22,4,1,64.53
-Devil's Island,island,French Guiana,South America,Q220385,5,5,44,21,10,0.14
-Floreana Island,island,Ecuador,South America,Q1048209,6,6,33,10,1,172.5
-Isla del Sol,island,Bolivia,South America,Q600282,3,3,31,7,4,14.3
-Robinson Crusoe Island,island,Chile,South America,Q329422,3,3,47,11,8,47.93
-Saint Andrew,island,Colombia,South America,Q131051,9,9,27,17,79,26
-Martín García Island,island,Argentina,South America,Q719903,5,11,25,17,1,1.84
-Ilha do Governador,island,Brazil,South America,Q1658442,27,34,17,39,3,36.12
-Ilha das Cobras,island,Brazil,South America,Q5997836,6,7,8,25,16,
-Itaparica Island,island,Brazil,South America,Q2095391,6,6,19,18,1,146
-Ilha Grande,island,Brazil,South America,Q1369095,6,7,31,15,37,193
-Mocha Island,island,Chile,South America,Q1635008,4,4,29,8,1,48
-Titicaca,lake,Bolivia; Peru,South America,Q35342,5,9,132,57,2,8372
-Calima Lake,lake,Colombia,South America,Q3133513,8,8,12,5,1,20
-Laguna de los Padres,lake,Argentina,South America,Q3216248,4,5,6,3,1,
-Lagoa Rodrigo de Freitas,lake,Brazil,South America,Q429897,50,109,25,69,5,2.2
-La Angostura Lake,lake,Bolivia,South America,Q842339,9,9,5,4,1,
-Machu Picchu,manmade structure,Peru,South America,Q676203,9,15,150,26,7,325
-Curupaiti Fort,manmade structure,Paraguay,South America,Q3748678,8,8,5,8,1,
-Ferro Carril Oeste Stadium,manmade structure,Argentina,South America,Q764585,6,6,11,4,1,
-Estadio Defensores del Chaco,manmade structure,Paraguay,South America,Q367297,16,16,25,12,1,
-Museo Nacional de Bellas Artes de Asunción,manmade structure,Paraguay,South America,Q6319285,6,8,10,13,1,
-Cathedral of Lima,manmade structure,Peru,South America,Q2446793,3,3,19,31,1,
-Tiwanaku,manmade structure,Bolivia,South America,Q61750,8,9,70,26,4,
-José María Minella Stadium,manmade structure,Argentina,South America,Q1369282,22,23,20,14,1,
-"National Museum of Art, La Paz",manmade structure,Bolivia,South America,Q10333587,7,13,6,19,1,
-Estadio Hernando Siles,manmade structure,Bolivia,South America,Q1369261,26,26,25,21,1,
-Estadio Olímpico,manmade structure,Venezuela,South America,Q1369553,28,32,19,29,3,
-National Museum of Decorative Arts,manmade structure,Argentina,South America,Q1136338,6,8,17,25,3,
-Aconcagua,mountain,Argentina,South America,Q39739,8,9,113,35,9,
-Cotopaxi volcano,mountain,Ecuador,South America,Q181476,4,4,65,25,1,
-Huascarán,mountain,Peru,South America,Q200935,6,6,49,17,1,
-Saqsaywaman,manmade structure,Peru,South America,Q828336,3,3,38,9,1,
+place_name,type,country,continent,wikidata_id,clue_count,clue_total,capped,wikimedia_sitelinks,wikidata_links,places_sharing_name,area_km2
+Lagos,town,Nigeria,Africa,Q8673,246,12655,true,,12795,24,1171.3
+Abidjan,town,Ivory Coast,Africa,Q1515,206,1434,true,,1398,3,2119.0
+Dodoma,town,Tanzania,Africa,Q3866,68,68,false,,79,4,2576.0
+Lüderitz,town,Namibia,Africa,Q159325,36,36,false,53,44,4,15.3
+Leptis Magna,manmade structure,Libya,Africa,Q191504,31,39,true,,89,3,3.875
+Accra,town,Ghana,Africa,Q3761,189,2389,true,201,2348,7,173.0
+Birao,town,Central African Republic,Africa,Q864999,13,13,false,33,14,5,
+Tidjikja,town,Mauritania,Africa,Q757041,12,12,false,,13,2,3929.0
+Cape Town,town,South Africa,Africa,Q5465,213,3445,true,217,3513,9,2454.72
+Kabinda,town,Democratic Republic of the Congo,Africa,Q3191660,11,11,false,,16,2,27
+Bimbo,town,Central African Republic,Africa,Q863461,10,10,false,,12,21,
+Addis Ababa,town,Ethiopia,Africa,Q3624,186,1274,true,200,1229,3,526.99
+Cairo,town,Egypt,Africa,Q85,230,8734,true,261,10494,49,528.0
+Oranjemund,town,Namibia,Africa,Q1404518,7,7,false,26,11,2,
+Nairobi,town,Kenya,Africa,Q3870,185,2342,true,238,2332,3,696.0
+Great Pyramid of Giza,manmade structure,Egypt,Africa,Q37200,5,5,false,,27,1,0.0530611
+Marrakech,town,Morocco,Africa,Q101625,180,1267,true,142,1226,15,230.0
+Anjouan,island,Comoros,Africa,Q231324,36,356,true,59,378,2,424
+Robben Island,island,South Africa,Africa,Q192493,6,8,false,72,57,3,5.18
+Mohéli,island,Comoros,Africa,Q271797,19,173,true,54,186,3,290
+Príncipe,island,São Tomé and Príncipe,Africa,Q210636,16,22,false,55,42,6,136
+Rodrigues,island,Mauritius,Africa,Q208668,28,73,true,62,129,7,109
+Fogo,island,Cape Verde,Africa,Q426555,10,16,false,53,34,15,476
+Annobón Island,island,Equatorial Guinea,Africa,Q728665,4,4,false,40,22,1,17
+Mahé,island,Seychelles,Africa,Q219642,48,51,false,60,62,8,157.3
+Lake Malawi,lake,Malawi; Mozambique; Tanzania,Africa,Q5532,3,3,false,107,76,3,2.96e+04
+Lake Tanganyika,lake,Burundi; Democratic Republic of the Congo; Tanzania; Zambia,Africa,Q5511,11,13,false,151,108,2,3.29e+04
+Lake Victoria,lake,Kenya; Tanzania; Uganda,Africa,Q5505,10,13,false,162,430,20,6.81e+04
+Lake of Tunis,lake,Tunisia,Africa,Q576856,17,21,false,29,17,1,37
+Etosha Pan,lake,Namibia,Africa,Q280231,11,11,false,26,16,1,
+Lake Chad,lake,Cameroon; Chad; Niger; Nigeria,Africa,Q125309,5,7,false,105,32,3,1540
+Carthage,manmade structure,Tunisia,Africa,Q6343,73,265,true,121,424,42,
+Aswan Dam,manmade structure,Egypt,Africa,Q38891,3,3,false,100,8,3,
+Timgad,manmade structure,Algeria,Africa,Q459629,17,24,false,59,50,7,0.9054
+Stade Alphonse Massemba-Débat,manmade structure,Republic of the Congo,Africa,Q2743618,21,21,false,10,17,1,
+Banadir Stadium,manmade structure,Somalia,Africa,Q3545656,14,14,false,9,13,1,
+Stade du 26 Mars,manmade structure,Mali,Africa,Q3496077,7,7,false,14,6,1,
+Mount Kilimanjaro,mountain,Tanzania,Africa,Q7296,25,29,false,188,56,1,
+Piton de la Fournaise,mountain,Réunion,Africa,Q1049644,3,30,true,38,46,1,
+Table Mountain,mountain,South Africa,Africa,Q213360,6,7,false,72,30,181,
+Mount Cameroon,mountain,Cameroon,Africa,Q190562,3,4,false,60,12,1,
+Qubbet el-Hawa,manmade structure,Egypt,Africa,Q1518125,8,8,false,16,14,1,0.3268
+Tendaguru Formation,manmade structure,Tanzania,Africa,Q1432102,50,53,true,13,60,1,
+Amba Alagi,mountain,Ethiopia,Africa,Q456557,6,8,false,18,8,1,
+Bwindi Impenetrable National Park,national park,Uganda,Africa,Q500397,5,5,false,47,7,1,331
+Djerba,island,Tunisia,Africa,Q188938,39,119,true,69,143,1,514.0
+Unguja,island,Tanzania,Africa,Q7332301,34,34,false,48,49,2,1575.0
+Kabul,town,Afghanistan,Asia,Q5838,189,1267,true,,1305,12,275.0
+Phnom Penh,town,Cambodia,Asia,Q1850,186,843,true,,945,6,678.5
+Chiang Mai,town,Thailand,Asia,Q52028,174,339,true,,322,6,405.0
+Dehloran,town,Iran,Asia,Q862457,30,77,true,26,83,1,
+Beijing,town,China,Asia,Q956,218,7937,true,305,18625,8,16410.54
+Amarah,town,Iraq,Asia,Q366010,53,74,true,,80,1,
+Hat Yai,town,Thailand,Asia,Q651286,26,26,false,,29,7,21
+Mafraq,town,Jordan,Asia,Q276747,16,16,false,,23,3,14
+Jask,town,Iran,Asia,Q719781,16,16,false,35,29,3,
+Agutaya,town,Philippines,Asia,Q111351,10,10,false,24,17,1,37.31
+Sitra,island,Bahrain,Asia,Q1416753,9,9,false,,13,6,22.45
+Tokyo,town,Japan,Asia,Q1490,232,37084,true,302,38206,37,2194.05
+Alaçam district,town,Turkey,Asia,Q1947471,29,79,true,28,83,1,598.0
+Ushguli,town,Georgia,Asia,Q1011028,4,4,false,,3,1,
+Mörön,town,Mongolia,Asia,Q572951,8,8,false,44,13,5,102.9
+Arvaikheer,town,Mongolia,Asia,Q717684,7,7,false,37,12,2,173.0
+Quảng Ngãi,town,Vietnam,Asia,Q33994,31,31,false,34,36,5,160.2
+Timor,island,Indonesia; Timor-Leste,Asia,Q83067,9,23,false,102,65,17,3.078e+04
+Borneo,island,Brunei; Indonesia; Malaysia,Asia,Q36117,89,134,true,147,420,11,7.482e+05
+Mindanao,island,Philippines,Asia,Q124873,29,46,false,111,123,7,9.753e+04
+Atauro,island,Timor-Leste,Asia,Q753794,6,9,false,38,14,1,140.1
+Amanohashidate,island,Japan,Asia,Q259727,4,10,false,26,14,2,
+Dead Sea,lake,Israel; Jordan; Palestine,Asia,Q23883,16,26,false,163,117,9,605
+Lake Baikal,lake,Russia,Asia,Q5513,24,32,false,183,163,2,3.172e+04
+Lotus Pond,lake,Taiwan,Asia,Q698996,13,14,false,8,9,11,0.42
+Golden Horn,town,Turkey,Asia,Q179839,4,5,false,63,24,10,
+Tangeum Lake,lake,South Korea,Asia,Q2885379,51,87,true,8,43,1,
+Chengcing Lake,lake,Taiwan,Asia,Q57333,21,21,false,12,13,2,1.03
+Angkor Wat,manmade structure,Cambodia,Asia,Q43473,7,9,false,137,24,4,
+Palmyra,manmade structure,Syria,Asia,Q5747,33,61,false,107,126,44,168
+Grand Hamad Stadium,manmade structure,Qatar,Asia,Q3271676,7,7,false,19,5,1,
+Mohammed Al-Hamad Stadium,manmade structure,Kuwait,Asia,Q3272392,4,4,false,9,2,1,
+Tower of David,manmade structure,Palestine,Asia,Q1177765,6,7,false,34,15,3,
+Kazakhstan Sports Palace,manmade structure,Kazakhstan,Asia,Q1186465,32,32,false,15,16,1,
+K2,mountain,Pakistan,Asia,Q43512,25,47,true,112,76,44,
+Kanchenjunga,mountain,India; Nepal,Asia,Q82019,9,14,false,102,39,2,
+Mount Everest,mountain,People's Republic of China; Nepal,Asia,Q513,72,114,true,237,283,8,
+Victoria Peak,mountain,Hong Kong,Asia,Q17541,9,10,false,35,21,13,
+Mount Kumgang,mountain,North Korea,Asia,Q495501,5,6,false,41,11,2,
+Amman Citadel,manmade structure,Jordan,Asia,Q3157009,4,4,false,20,6,1,
+Ayub National Park,national park,Pakistan,Asia,Q9055975,4,4,false,11,7,1,1.267
+Qumran,manmade structure,Palestine,Asia,Q223399,3,18,false,51,30,4,
+Belvoir Fortress,manmade structure,Israel,Asia,Q1010980,6,6,false,20,12,1,
+Taroko National Park,national park,Taiwan,Asia,Q707427,5,5,false,34,79,1,920
+Kenting National Park,national park,Taiwan,Asia,Q707982,3,3,false,26,21,1,333
+Taj Mahal,manmade structure,India,Asia,Q9141,18,24,false,184,59,28,0.17
+Great Wall of China,manmade structure,China,Asia,Q12501,13,13,false,194,68,9,
+Kinkaku-ji Temple,manmade structure,Japan,Asia,Q270983,4,4,false,57,14,2,0.093
+Hagia Sophia,manmade structure,Turkey,Asia,Q12506,10,16,false,152,59,5,
+Marina Bay Sands,manmade structure,Singapore,Asia,Q548679,15,16,false,41,14,1,
+Wat Arun,manmade structure,Thailand,Asia,Q724970,6,8,false,43,10,2,
+Neustadt bei Coburg,town,Germany,Europe,Q32074,91,288,true,47,279,2,61.89
+Tirana,town,Albania,Europe,Q19689,207,2317,true,,4841,6,41.8
+Poitiers,town,France,Europe,Q6616,189,1897,true,,1939,5,42.11
+Kerch,town,Ukraine,Europe,Q157065,118,484,true,,527,7,108.0
+Tuzla,town,Bosnia and Herzegovina,Europe,Q174684,115,533,true,,559,23,302.4
+Hanko,town,Finland,Europe,Q216790,95,571,true,,653,8,117.4
+Sozopol,town,Bulgaria,Europe,Q271925,60,60,false,,75,3,41.829
+Podgorica City Stadium,manmade structure,Montenegro,Europe,Q1166175,52,116,true,,60,1,
+Delos,island,Greece,Europe,Q173148,39,68,true,,93,18,3.506
+Prague,town,Czechia,Europe,Q1085,187,96693,true,268,195956,20,496.21
+Berlin,town,Germany,Europe,Q64,166,104590,true,334,98743,108,891.12
+Rome,town,Italy,Europe,Q220,221,62557,true,344,57381,69,1287.36
+Paris,town,France,Europe,Q90,182,141492,true,366,145039,213,105.4
+London,town,United Kingdom,Europe,Q84,244,83224,true,357,101858,130,1572.0
+Malmberget,town,Sweden,Europe,Q83718,39,43,true,28,47,6,0.7
+Mallorca,island,Spain,Europe,Q8828,144,631,true,124,1091,26,3620
+Gotland,island,Sweden,Europe,Q1027830,101,184,true,104,713,13,2968
+Gozo,island,Malta,Europe,Q170488,32,39,false,79,71,7,67
+Ada Kaleh,island,Romania,Europe,Q346141,3,4,false,33,12,1,0.8
+Sark,island,Guernsey,Europe,Q3405693,22,31,false,80,56,7,5.5
+Goeree-Overflakkee,island,Netherlands,Europe,Q933459,30,1576,true,38,1600,1,422.4
+Lake Constance,lake,Austria; Germany; Switzerland,Europe,Q4127,43,51,false,100,238,6,536
+Lake Geneva,lake,France; Switzerland,Europe,Q6403,27,30,false,101,190,22,581.3
+Galvė,lake,Lithuania,Europe,Q2579161,51,135,true,20,72,2,3.6
+Lake Garda,lake,Italy,Europe,Q6414,22,24,false,88,89,5,370
+Albufera of Valencia,lake,Spain,Europe,Q84165268,5,5,false,9,16,1,
+Lake Bagsværd,lake,Denmark,Europe,Q3360834,55,187,true,12,94,2,1.163
+Lake Ossiach,lake,Austria,Europe,Q702260,30,30,false,26,20,1,10.79
+Lake Malta,lake,Poland,Europe,Q2311941,56,160,true,19,83,1,0.64
+St. Peter's Basilica,manmade structure,Vatican City,Europe,Q12512,29,53,true,131,248,3,
+Palace of Versailles,manmade structure,France,Europe,Q2946,117,594,true,109,1719,1,0.067
+Kielce City Stadium,manmade structure,Poland,Europe,Q2002170,5,5,false,18,4,1,
+Kostanjevica Monastery,manmade structure,Slovenia,Europe,Q914189,3,3,false,12,5,1,
+Makario Stadium,manmade structure,Cyprus,Europe,Q3655367,48,48,false,14,26,1,
+Mont Blanc,mountain,France; Italy,Europe,Q583,38,50,false,127,113,24,
+Mount Vesuvius,mountain,Italy,Europe,Q524,17,20,false,136,219,4,
+Mount Etna,mountain,Italy,Europe,Q16990,18,24,false,125,92,13,192.4
+Mount Parnassus,mountain,Greece,Europe,Q105261,17,17,false,66,40,5,
+Mount Kazbek,mountain,Russia,Europe,Q207680,6,6,false,63,18,2,
+Mount Olympus,mountain,Greece,Europe,Q80344,22,26,false,109,54,26,191.4
+Peneda-Gerês National Park,national park,Portugal,Europe,Q1473702,4,4,false,33,6,1,695.9
+Plitvice Lakes National Park,national park,Croatia,Europe,Q189849,6,6,false,70,38,1,296.9
+Kampinos National Park,national park,Poland,Europe,Q619061,3,3,false,29,11,1,385.4
+Thingvellir National Park,national park,Iceland,Europe,Q107370,9,11,false,62,31,1,227.9
+Eiffel Tower,manmade structure,France,Europe,Q243,17,30,false,191,211,17,
+Colosseum,manmade structure,Italy,Europe,Q10285,12,17,false,148,109,38,0.03
+Basilica and Expiatory Church of the Holy Family,manmade structure,Spain,Europe,Q48435,8,11,false,109,43,1,
+Brandenburg Gate,manmade structure,Germany,Europe,Q82425,23,25,false,86,42,4,
+Leaning Tower of Pisa,manmade structure,Italy,Europe,Q39054,9,15,false,119,34,1,0.0005
+Schönbrunn Palace,manmade structure,Austria,Europe,Q131330,47,68,true,64,91,1,2.6064
+Atomium,manmade structure,Belgium,Europe,Q180901,4,12,false,53,21,6,
+Rijksmuseum,manmade structure,Netherlands,Europe,Q190804,40,6092,true,70,9834,3,
+Corfu,island,Greece,Europe,Q121378,121,493,true,100,616,17,626.0
+Guatemala City,town,Guatemala,North America,Q1555,192,2342,true,,1737,4,692.0
+Santo Domingo,town,Dominican Republic,North America,Q34820,192,2454,true,,2110,108,1302.2
+Panama City,town,Panama,North America,Q3306,190,1480,true,,4376,4,275.0
+Las Cruces,town,United States,North America,Q33264,172,262,true,,269,50,199.5
+Jinotega,town,Nicaragua,North America,Q1026296,38,102,true,39,112,3,880.3
+Chilliwack,town,Canada,North America,Q983026,80,120,true,,141,7,261.6
+Metropolitan Museum of Art,manmade structure,United States,North America,Q160236,54,28797,true,,81570,1,
+Guantánamo,town,Cuba,North America,Q185156,53,152,true,,163,4,741.4
+Juigalpa,town,Nicaragua,North America,Q1025801,32,56,true,,61,3,726.8
+Guna Yala,town,Panama,North America,Q919017,28,208,true,,222,1,2358.2
+Cozumel Island,island,Mexico,North America,Q20119933,23,23,false,52,36,1,539.0
+Acajutla,town,El Salvador,North America,Q937292,15,15,false,,21,3,166.6
+Tikal,manmade structure,Guatemala,North America,Q181172,12,12,false,,19,7,
+New York City,town,United States,North America,Q60,269,68850,true,325,79890,76,1213.369839
+Mexico City,town,Mexico,North America,Q1489,230,18981,true,260,17865,11,1485.0
+Denali,mountain,United States,North America,Q130018,7,7,false,,35,7,
+Paradise Island,island,The Bahamas,North America,Q3181503,7,7,false,,11,26,2.77
+Hispaniola,island,Dominican Republic; Haiti,North America,Q25277,38,53,true,123,98,5,7.642e+04
+Newfoundland,island,Canada,North America,Q48335,55,80,true,102,145,11,1.089e+05
+Saint Martin,island,Saint-Martin; Sint Maarten,North America,Q25596,16,21,false,97,61,35,87
+Vieques,island,Puerto Rico,North America,Q737624,36,68,true,51,76,6,136
+Mustique,island,Saint Vincent and the Grenadines,North America,Q607357,3,5,false,27,11,1,5.7
+Nevis,island,Saint Kitts and Nevis,North America,Q207794,37,55,true,61,105,10,93
+Lake Ontario,lake,Canada; United States,North America,Q1062,12,16,false,108,189,3,1.853e+04
+Lake Erie,lake,Canada; United States,North America,Q5492,12,16,false,102,193,4,2.574e+04
+Lake Superior,lake,Canada; United States,North America,Q1066,10,15,false,112,272,12,8.235e+04
+Lake Huron,lake,Canada; United States,North America,Q1383,7,11,false,100,149,3,5.96e+04
+Lake Cerrillos,lake,Puerto Rico,North America,Q6475229,3,3,false,5,4,1,
+Lago de Atitlán,lake,Guatemala,North America,Q273276,3,3,false,41,20,1,130.1
+Lake Lanier,lake,United States,North America,Q3295796,15,16,false,13,15,2,
+Chichen Itza,manmade structure,Mexico,North America,Q5859,5,7,false,110,19,2,
+White House,manmade structure,United States,North America,Q35525,87,230,true,143,356,196,
+Statue of Liberty,manmade structure,United States,North America,Q9202,7,8,false,158,65,20,
+Estadio Nacional Jose de la Paz Herrera,manmade structure,Honduras,North America,Q619322,17,18,false,15,16,1,
+Thomas Robinson Stadium,manmade structure,The Bahamas,North America,Q590296,62,79,true,13,47,1,
+Popocatépetl,mountain,Mexico,North America,Q181157,3,3,false,72,20,2,
+Mont-Sainte-Anne,mountain,Canada,North America,Q1231413,15,21,false,13,12,3,
+Mount Royal,mountain,Canada,North America,Q1757764,6,10,false,21,24,36,
+Parliament Hill,manmade structure,Canada,North America,Q1589289,10,12,false,20,25,8,
+Siesta Key,island,United States,North America,Q1787284,6,8,false,31,12,2,9.021
+Mount Hood,mountain,United States,North America,Q275662,3,9,false,43,23,9,
+Yellowstone National Park,national park,United States,North America,Q351,18,22,false,116,477,3,8983
+Soberanía National Park,national park,Panama,North America,Q1473095,4,4,false,12,4,1,221
+Bryce Canyon National Park,national park,United States,North America,Q219562,4,6,false,61,87,2,145
+Arches National Park,national park,United States,North America,Q223969,5,5,false,51,84,2,354.2
+Crater Lake National Park,national park,United States,North America,Q239304,4,5,false,37,64,1,741
+Haleakalā National Park,national park,United States,North America,Q1137640,3,3,false,35,31,1,134.6
+Cape Breton Highlands National Park,national park,Canada,North America,Q253517,7,7,false,21,9,1,948
+Lincoln Memorial,manmade structure,United States,North America,Q213559,9,12,false,53,23,5,
+Sphere,manmade structure,United States,North America,Q60749353,25,27,false,30,20,34,
+Melbourne,town,Australia,Oceania,Q3141,241,10145,true,,10193,40,9993.0
+Christchurch,town,New Zealand,Oceania,Q79990,208,3082,true,,3353,33,295.1
+Port Moresby,town,Papua New Guinea,Oceania,Q36526,162,303,true,,312,2,240.0
+Whangārei,town,New Zealand,Oceania,Q744239,122,335,true,,394,2,57.06
+Funafuti,island,Tuvalu,Oceania,Q34126,77,77,false,,134,3,2.4
+Akaroa,town,New Zealand,Oceania,Q416098,67,80,true,28,108,7,1.766
+Tarawa,island,Kiribati,Oceania,Q2486,27,27,false,,40,4,31.02
+Wellington,town,New Zealand,Oceania,Q23661,177,3667,true,186,4273,76,444.0
+Upolu,island,Samoa,Oceania,Q274569,17,17,false,,42,1,1125.0
+Yaren District,town,Nauru,Oceania,Q31026,14,14,false,114,23,1,1.5
+Sir John Guise Stadium,manmade structure,Papua New Guinea,Oceania,Q2289928,15,15,false,8,9,1,
+Chatham Island,island,New Zealand,Oceania,Q1427436,6,6,false,,75,8,920.0
+Tikopia,island,Solomon Islands,Oceania,Q889519,5,5,false,,7,3,5
+Suva,town,Fiji,Oceania,Q38807,163,567,true,139,481,8,2048.0
+Capricornia Cays National Park,national park,Australia,Oceania,Q1034937,5,5,false,8,7,3,180.0
+Auckland,town,New Zealand,Oceania,Q37100,164,7082,true,160,7929,15,559.0
+Brisbane,town,Australia,Oceania,Q34932,178,3784,true,167,3837,15,15826.0
+Tahiti,island,French Polynesia,Oceania,Q42000,130,274,true,123,1007,16,1042
+Great Barrier Reef,island,Australia,Oceania,Q7343,11,16,false,158,40,5,3.48e+05
+Lake Barrington,lake,Australia,Oceania,Q1332906,47,47,false,7,24,4,
+Lake Karapiro,lake,New Zealand,Oceania,Q596083,52,90,true,8,48,1,7.7
+Lake Wānaka,lake,New Zealand,Oceania,Q1192728,3,3,false,27,27,1,192
+Albert Park and Lake,lake,Australia,Oceania,Q4710971,5,5,false,6,4,1,
+Lake Wendouree,lake,Australia,Oceania,Q4256116,8,8,false,8,4,3,
+Lake Pedder,lake,Australia,Oceania,Q653152,3,3,false,11,9,1,242
+National Stadium,manmade structure,Cook Islands,Oceania,Q790237,6,6,false,11,5,14,
+HFC Bank Stadium,manmade structure,Fiji,Oceania,Q998980,29,29,false,20,19,1,
+Stade Numa-Daly Magenta,manmade structure,New Caledonia,Oceania,Q182992,14,14,false,10,12,1,
+Korman Stadium,manmade structure,Vanuatu,Oceania,Q1784475,13,13,false,10,11,1,
+Lawson Tama Stadium,manmade structure,Solomon Islands,Oceania,Q333549,14,14,false,17,13,1,
+Royal Palace of Nukuʻalofa,manmade structure,Tonga,Oceania,Q2992825,9,9,false,16,16,1,
+Aoba Island,island,Vanuatu,Oceania,Q456599,11,11,false,30,16,1,402
+Savo Island,island,Solomon Islands,Oceania,Q1059040,4,6,false,28,6,1,31
+Ambrym,island,Vanuatu,Oceania,Q459948,8,8,false,37,11,1,678
+Uluru,mountain,Australia,Oceania,Q33910,6,9,false,94,15,2,
+Mount Lofty,mountain,Australia,Oceania,Q1984533,10,10,false,11,15,7,
+Mount Ruapehu,mountain,New Zealand,Oceania,Q207284,3,3,false,52,86,2,
+Rangitoto Island,island,New Zealand,Oceania,Q1422715,3,3,false,27,25,1,23.11
+Port Hills,mountain,New Zealand,Oceania,Q941581,3,4,false,7,18,3,
+Namadgi National Park,national park,Australia,Oceania,Q1635824,4,4,false,16,6,1,777.8
+Tongariro National Park,national park,New Zealand,Oceania,Q202845,5,6,false,47,207,1,796
+Royal National Park,national park,Australia,Oceania,Q113523,4,5,false,32,22,3,153.2
+Yanchep National Park,national park,Australia,Oceania,Q932964,8,8,false,9,11,1,28.6
+Sydney Opera House,manmade structure,Australia,Oceania,Q45178,26,26,false,99,42,2,4.381
+Cartagena,town,Colombia,South America,Q657461,160,754,true,116,757,32,572.0
+Bogotá,town,Colombia,South America,Q2841,235,6192,true,,7090,3,1578.0
+Guayaquil,town,Ecuador,South America,Q43509,207,1866,true,,1713,4,354.5
+Río Gallegos,town,Argentina,South America,Q44242,70,184,true,57,206,1,
+Rio Branco,town,Brazil,South America,Q171612,111,593,true,,615,7,8835.5
+San Nicolás de los Arroyos,town,Argentina,South America,Q377965,82,250,true,,254,2,
+Pichilemu,town,Chile,South America,Q25304,61,84,true,103,106,4,10.07
+Caracas,town,Venezuela,South America,Q1533,195,6136,true,216,5922,12,776.0
+Arena Fonte Nova,manmade structure,Brazil,South America,Q6499360,50,50,true,,31,1,
+Tocopilla,town,Chile,South America,Q188192,36,45,true,,57,7,7.95
+Santiago,town,Chile,South America,Q2887,179,12069,true,275,10802,112,837.89
+Montevideo,town,Uruguay,South America,Q1335,185,13453,true,205,13386,23,730.0
+Riberalta,town,Bolivia,South America,Q941357,18,18,false,31,20,2,20.1
+Cusco,town,Peru,South America,Q5582862,121,632,true,115,646,4,385.0
+Rio de Janeiro,town,Brazil,South America,Q8678,230,28408,true,303,43146,26,1260.029215
+Buenos Aires,town,Argentina,South America,Q1486,200,32617,true,276,32199,184,203.3
+Acrelândia,town,Brazil,South America,Q953086,15,15,false,37,23,1,1.6
+Blanquilla Island,island,Venezuela,South America,Q1366578,4,4,false,22,4,1,64.53
+Devil's Island,island,French Guiana,South America,Q220385,5,5,false,44,21,10,0.14
+Floreana Island,island,Ecuador,South America,Q1048209,6,6,false,33,10,1,172.5
+Isla del Sol,island,Bolivia,South America,Q600282,3,3,false,31,7,4,14.3
+Robinson Crusoe Island,island,Chile,South America,Q329422,3,3,false,47,11,8,47.93
+Saint Andrew,island,Colombia,South America,Q131051,9,9,false,27,17,79,26
+Martín García Island,island,Argentina,South America,Q719903,5,11,false,25,17,1,1.84
+Ilha do Governador,island,Brazil,South America,Q1658442,27,34,true,17,39,3,36.12
+Ilha das Cobras,island,Brazil,South America,Q5997836,6,7,false,8,25,16,
+Itaparica Island,island,Brazil,South America,Q2095391,6,6,false,19,18,1,146
+Ilha Grande,island,Brazil,South America,Q1369095,6,7,false,31,15,37,193
+Mocha Island,island,Chile,South America,Q1635008,4,4,false,29,8,1,48
+Titicaca,lake,Bolivia; Peru,South America,Q35342,5,9,false,132,57,2,8372
+Calima Lake,lake,Colombia,South America,Q3133513,8,8,false,12,5,1,20
+Laguna de los Padres,lake,Argentina,South America,Q3216248,4,5,false,6,3,1,
+Lagoa Rodrigo de Freitas,lake,Brazil,South America,Q429897,50,109,true,25,69,5,2.2
+La Angostura Lake,lake,Bolivia,South America,Q842339,9,9,false,5,4,1,
+Machu Picchu,manmade structure,Peru,South America,Q676203,9,15,false,150,26,7,325
+Curupaiti Fort,manmade structure,Paraguay,South America,Q3748678,8,8,false,5,8,1,
+Ferro Carril Oeste Stadium,manmade structure,Argentina,South America,Q764585,6,6,false,11,4,1,
+Estadio Defensores del Chaco,manmade structure,Paraguay,South America,Q367297,16,16,false,25,12,1,
+Museo Nacional de Bellas Artes de Asunción,manmade structure,Paraguay,South America,Q6319285,6,8,false,10,13,1,
+Cathedral of Lima,manmade structure,Peru,South America,Q2446793,3,3,false,19,31,1,
+Tiwanaku,manmade structure,Bolivia,South America,Q61750,8,9,false,70,26,4,
+José María Minella Stadium,manmade structure,Argentina,South America,Q1369282,22,23,false,20,14,1,
+"National Museum of Art, La Paz",manmade structure,Bolivia,South America,Q10333587,7,13,false,6,19,1,
+Estadio Hernando Siles,manmade structure,Bolivia,South America,Q1369261,26,26,false,25,21,1,
+Estadio Olímpico,manmade structure,Venezuela,South America,Q1369553,28,32,false,19,29,3,
+National Museum of Decorative Arts,manmade structure,Argentina,South America,Q1136338,6,8,false,17,25,3,
+Aconcagua,mountain,Argentina,South America,Q39739,8,9,false,113,35,9,
+Cotopaxi volcano,mountain,Ecuador,South America,Q181476,4,4,false,65,25,1,
+Huascarán,mountain,Peru,South America,Q200935,6,6,false,49,17,1,
+Saqsaywaman,manmade structure,Peru,South America,Q828336,3,3,false,38,9,1,

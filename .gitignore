@@ -58,6 +58,8 @@ src/.dense_index/
 *.bak-*
 *.bak[0-9]*
 generation/places/data/*/
+# except the hand-edited external export the place set is built from
+!generation/places/data/external/
 generation/synthetic/output/archive/
 
 # BLINK link cache
