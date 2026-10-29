@@ -12,11 +12,13 @@ paths:
   # (see ../places/build_inputs.py); everything else lives here.
 
   # inputs
-  places_csv:        ../places/data/01_places_final.csv
-  clue_sets:         ../places/data/05_clue_sets.jsonl
-  place_aliases:     ../places/data/04b_place_aliases.jsonl
-  name_leakage:      ../places/data/05_name_leakage.csv
-  clue_types:        ../places/data/05b_clue_types.jsonl
+  # The old (v1) 737-place set, archived 2026-10-29. The current place set is
+  # ../out/places.csv (reform_places.py); the generator still needs switching to it.
+  places_csv:        ../places/archive_v1/env_places.csv
+  clue_sets:         ../places/archive_v1/05_clue_sets.jsonl
+  place_aliases:     ../places/archive_v1/04b_place_aliases.jsonl
+  clue_types:        ../places/archive_v1/05b_clue_types.jsonl
+  clue_prominence:   ../places/data/external/clues.jsonl  # finalise.py only
   random_stream:     sampler/geo_random.txt
   style_exemplars:   data/style_exemplars.jsonl   # built by build_exemplars.py
   bluesky_dump:      data/bluesky_en.jsonl        # source for build_exemplars.py
@@ -39,32 +41,112 @@ paths:
 
 plan:
   # The conditions to plan. While finalise.per_condition is set (below), each
-  # condition is planned at per_condition x surplus_factor items (150 x 1.3 =
-  # 195), spread over as many places as it has, and the numbers here are not
+  # condition is planned at per_condition x surplus_factor items (400 x 1.3 =
+  # 520), one per place (max_replicates_per_pair), and the numbers here are not
   # used. With it unset they are the items per (place, condition) before the
   # surplus pass. A place that cannot support a condition contributes nothing
   # for it and is logged in output/plan_rejections.jsonl.
   replicates:
     A1: 2          # one entity clue, no place name
     A3: 2          # three entity clues, no place name
-    B: 1           # ambiguous place name, context disambiguates, no clue
-    EXPLICIT: 1    # place named plainly - the upper bound on any system
-    NOISE_A1: 1    # A1 plus one entity from another continent
-    NOISE_B: 1     # B plus one entity from another continent
+    B: 1           # ambiguous place name plus one A1-style clue that picks the namesake
+    EXPLICIT: 1    # the bare place name, no clue; rows record if the name is shared
+    NOISE_A1: 1    # A1 plus one entity from any other place
+    NOISE_B: 1     # B plus one entity from any other place
+
+  # Conditions planned for every place that can support them, this many items
+  # per place, instead of per_condition x surplus_factor items spread evenly.
+  # EXPLICIT is meant to be usable on every place in the dataset, B-only places
+  # included, so it is not sized or balanced like the others (finalise.unbalanced).
+  cover_all_places: [EXPLICIT]
 
   # The model will sometimes name the place in a condition that forbids it.
   # Those items are dropped in finalise.py, so the plan has to be larger than the
   # target set, by this factor. 1.3 assumes a leak rate near 20 per cent with
-  # room to spare (a condition may lose 45 of its 195); measure it on a smoke
+  # room to spare (a condition may lose 120 of its 520); measure it on a smoke
   # run and set this from the measurement.
   surplus_factor: 1.3
 
-  # No (place, condition) pair may exceed this, so the surplus cannot pile up
-  # on a handful of clue-rich places.
-  max_replicates_per_pair: 6
+  # No (place, condition) pair may exceed this. 1: a place is used at most once
+  # per condition (2026-10-27); a condition short of places is planned short
+  # and reported, never padded with repeats.
+  max_replicates_per_pair: 1
 
-  # The inclusive range the integers in sampler/geo_random.txt were requested
-  # with from random.org (the min and max of the request, not of the file).
+  # The A conditions share one fixed set of places (the core), chosen once
+  # from the places feasible for all of them, so a difference between A1, A3
+  # and NOISE_A1 cannot come from different places (2026-10-27). B and NOISE_B
+  # need shared names and draw their own places.
+  core_conditions: [A1, A3, NOISE_A1]
+
+  # Type mix (2026-10-27, user: balanced, not dominated by towns and islands).
+  # Each place type belongs to a group; a condition's items (and the core) are
+  # split over the groups by these shares, continents balanced within each
+  # group. A group short of places hands its share to the others in proportion
+  # to their targets and a note is printed; B, short of shared-name nature
+  # places, ends up town-heavier, which the user accepted.
+  type_groups:
+    town: town
+    island: island
+    mountain: mountain
+    lake: lake
+    bay: coast
+    peninsula: coast
+    archipelago: coast
+    beach: coast
+    lagoon: coast
+    reef: coast
+    national park: park
+    protected area: park
+    desert: landscape
+    forest: landscape
+    glacier: landscape
+    wetland: landscape
+    canyon: landscape
+    waterfall: landscape
+    valley: landscape
+    plateau: landscape
+    heritage: heritage
+    manmade structure: heritage
+  type_targets:
+    town: 0.30
+    island: 0.15
+    mountain: 0.12
+    lake: 0.10
+    coast: 0.10
+    park: 0.10
+    landscape: 0.07
+    heritage: 0.06
+
+  # Within each type group and continent, draw each place from the countries
+  # used least so far in the condition, so no country piles up (2026-10-27,
+  # user: 31 UK and 50 Australian places against one or two for most
+  # countries). Countries with no eligible places cannot appear at all.
+  balance_countries: true
+  # And no country may have more places than this in one condition; a type
+  # group that cannot fill its share within the cap hands the rest to the other
+  # groups. null: no cap.
+  max_places_per_country: 12
+
+  # EXPLICIT (cover_all_places) covers only the places some other condition
+  # uses, not every place in the file.
+  cover_used_places_only: true
+
+  # Difficulty and relevance band. Places with fewer Wikimedia sitelinks than
+  # min_sitelinks are too obscure for anyone to care or to place; those with
+  # more than max_sitelinks are too easy (live count from the alias file).
+  # Applies to every place (2026-10-27; min_sitelinks_from null). Each place
+  # left out is logged in plan_rejections.
+  min_sitelinks: 30
+  max_sitelinks: 300
+  min_sitelinks_from: null
+
+  # A clue nobody could know makes a post unplaceable: a single clue needs at
+  # least this many Wikipedia articles (any language), and a three-clue set at
+  # least one member that has. Read from paths.clue_prominence. null: no check.
+  min_clue_wikipedia_articles: 1
+
+  # The inclusive range the integers in sampler/geo_random.txt were generated
+  # over (the range they were drawn from, not the min and max of the file).
   # Draws use rejection sampling against this range, so they are exactly
   # uniform; the planner refuses to run until both are set, and refuses a file
   # holding any integer outside them.
@@ -77,12 +159,6 @@ plan:
   # It is a ceiling: raising it admits more, and more ambiguous, clues.
   max_place_ambiguity_for_single_clue: 1
 
-  # A clue whose label contains its place's name (05_name_leakage.csv,
-  # strict test) makes the name unavoidable and the item fails finalise.py. When
-  # true, such clues are never drawn, and a best set containing one is not
-  # used for A3. Each exclusion is written to the rejection log.
-  exclude_leaking_clues: true
-
   # A clue that is itself a place name (05b_clue_types.jsonl: a village,
   # island, river, street, time zone...) forces a place name into a post whose
   # prompt forbids one. When true,
@@ -91,73 +167,70 @@ plan:
   # entities; A3 then fits 70 places rather than 87, A1 99 rather than 102.
   exclude_toponym_clues: true
 
+  # Toponym categories that stay usable as clues all the same. A river can be
+  # named without giving the place away (2026-10-27, user), so a clue typed
+  # watercourse (with or without body_of_water) is kept; the prompt then gets
+  # prompt.river_clue_exception, which allows exactly that river's name.
+  toponym_clue_categories: [watercourse]
+
   # A clue whose own label names the place or its country: any surface form
   # of the place ("Rock-cut tombs of Qaw el-Kebir" for Tjebu, "USS Mount
   # McKinley" for Denali), or the country's name or English demonym from
   # 04b_place_aliases.jsonl ("Tuvalu Association of Sports", "MIAT Mongolian
-  # Airlines"). The 05_name_leakage.csv test checks only the bare place name
-  # and missed these; 4 of 20 smoke posts on 2026-10-01 leaked this way. When
-  # true, such clues are never drawn and each exclusion is logged.
+  # Airlines"), or the bare place name. 4 of 20 smoke posts on 2026-10-01
+  # leaked this way. When true, such clues are never drawn, a best set
+  # containing one is not used for A3, and each exclusion is logged.
   exclude_label_leaks: true
 
   # An ambiguous surface form that already carries a qualifier ("Las Cruces,
   # NM") or contains the country's name ("Guatemala City", "Panama") cannot
   # serve as the ambiguous toponym: the B constraint forbids exactly those
   # additions. When true, such forms are held back from B and NOISE_B and
-  # logged. Exact forms are never filtered.
+  # logged. Exact forms are never filtered. EXPLICIT does not draw a form at
+  # all: it writes the bare label for every place, shared or not.
   exclude_qualified_ambiguous_forms: true
 
-  # EXPLICIT is the upper bound, so it should name the place the plainest way:
-  # the bare label when that is unique, otherwise "<name>, <country>". When
-  # true, every other exact form (altLabels, nicknames, native-language names)
-  # is held back from EXPLICIT and logged. The 2026-10-01 smoke run drew
-  # "Ō-hine-puhiawe" for Bulls, which the model wrote as a festival name, and
-  # "Whangas" for Whangārei.
-  explicit_plain_name: true
 
-
+# Every register uses the one length band in prompt.length_bands (7 to 30
+# words), which plan.py applies when a register lists none. finalise.min_words
+# and max_words enforce it.
 registers:
   - name: personal_update
     description: >-
       First person, present or recent past, addressed to people who already
       know the writer. No explanation of context.
     slots: [time_of_day, activity, mood_marker]
-    length_bands: [short, medium]
 
   - name: local_complaint
     description: >-
       Mild irritation about something local and mundane. Assumes the reader
       shares the surroundings.
     slots: [time_of_day, irritant, mood_marker]
-    length_bands: [short, medium]
 
   - name: event_mention
     description: >-
       A note about something happening nearby, written as if the reader could
       plausibly attend.
     slots: [time_reference, event_kind]
-    length_bands: [short, medium]
 
   - name: photo_caption
     description: >-
       A caption for a photograph the reader cannot see. Fragmentary, often
-      without a main verb.
+      without a main verb. Written by the person who posted the photo, not by
+      someone describing it from outside.
     slots: [time_of_day, visual_detail]
-    length_bands: [very_short, short]
 
   - name: reply_in_thread
     description: >-
       A reply to someone else, so it begins mid-conversation and carries no
       framing.
     slots: [stance, mood_marker]
-    length_bands: [very_short, short]
 
   - name: recommendation
     description: >-
       Recommending or warning against something to an unspecified local
       audience.
     slots: [stance, activity]
-    length_bands: [short, medium]
 
 
 # Slot values. The plan picks one per slot per item, which is where the
@@ -181,6 +254,8 @@ slots:
     - at the end of the month
     - in a fortnight
 
+  # The slot values are worded as a person would say them, and chosen so that
+  # they can sit beside an environmental claim (every post has one).
   activity:
     - walking somewhere
     - waiting for transport
@@ -190,33 +265,46 @@ slots:
     - looking for parking
     - sheltering from the weather
     - meeting someone
+    - taking the bins out
+    - hanging the washing out
+    - cycling somewhere
+    - filling water bottles
 
   irritant:
+    - rubbish not being collected
+    - a smell coming off the water
+    - dust from a building site
+    - the air on bad days
+    - trees being cut down
+    - the heat
+    - water running brown from the tap
     - roadworks
-    - a closure with no notice
     - noise
     - queues
-    - prices
-    - something broken and unrepaired
-    - poor signage
 
   event_kind:
     - a market
-    - a concert
-    - a talk
-    - a sports fixture
     - a festival
     - a fundraiser
-    - a repair or open day
+    - a clean-up day
+    - a council meeting
+    - a protest march
+    - a tree planting
+    - a repair cafe
+    - a talk on the local water
+    - a clothes swap
 
   visual_detail:
-    - the light
-    - a building
     - the water
     - the sky
-    - a street
     - something growing
-    - a queue of people
+    - the light
+    - a pile of rubbish
+    - dry cracked ground
+    - the river after the rain
+    - a hazy street
+    - a row of cut-down trees
+    - a field after the flood
 
   stance:
     - agreeing
@@ -239,13 +327,109 @@ slots:
 # --------------------------------------------------------------------------- #
 
 finalise:
-  # Posts kept per condition after the checks: 6 conditions x 150 = 900. It
+  # Posts kept per condition after the checks: 5 conditions x 400 = 2,000,
+  # plus EXPLICIT (unbalanced, one per place). It
   # also sizes the plan: plan.py plans per_condition x plan.surplus_factor per
   # condition, so the checks have spares to cut. If any condition ends below
   # this, finalise.py stops with an error rather than write fewer. null cuts
   # to the smallest condition instead (and plans by replicates).
   # --per-condition overrides it here only, not in plan.py.
-  per_condition: 150
+  per_condition: 400
+
+  # Conditions left out of the cut to per_condition: every post that passes the
+  # checks is kept, whatever continent it is on. EXPLICIT, so it stays usable on
+  # every place (plan.cover_all_places).
+  unbalanced: [EXPLICIT]
+
+  # Every post is between these many words, counted on whitespace
+  # (prompt.length_bands). A post outside is dropped as "length". Set either to
+  # null to turn the check off.
+  min_words: 7
+  max_words: 30
+
+  # Every post must make an environmental claim (prompt.environment_line). This
+  # is only a presence check: a post with none of these terms is dropped as
+  # no_environment. It cannot tell a claim from a mention, so read a sample of
+  # the kept posts as well. Each term is a regular expression matched at the
+  # start of a word, case-insensitively, so "pollut" matches "pollution" but
+  # "rain" would not match "train". Words that are common outside the topic
+  # (green, oil, gas, plan, park) are left out on purpose.
+  environment_keywords:
+    - climate
+    - environment
+    - pollut
+    - smog
+    - air quality
+    - emission
+    - carbon
+    - fossil
+    - greenhouse
+    - flood
+    - drought
+    - wildfire
+    - bushfire
+    - heat ?wave
+    - extreme heat
+    - warming
+    - hotter
+    - storm
+    - cyclone
+    - hurricane
+    - glacier
+    - permafrost
+    - sea[- ]ice
+    - sea[- ]level
+    - coral
+    - reef
+    - erosion
+    - sewage
+    - contaminat
+    - toxic
+    - chemical
+    - pfas
+    - pesticide
+    - landfill
+    - incinerat
+    - recycl
+    - plastic
+    - litter
+    - rubbish
+    - waste
+    - fracking
+    - drilling
+    - mining
+    - quarr
+    - logging
+    - deforest
+    - forest
+    - tree (felling|loss)
+    - trees? (cut|felled|chopped|removed)
+    - habitat
+    - wildlife
+    - species
+    - extinct
+    - biodiversity
+    - solar
+    - wind (farm|turbine|power)
+    - renewable
+    - energy
+    - greenwash
+    - sustainab
+    - fast fashion
+    - textile
+    - zero[- ]waste
+    - second[- ]hand
+    - mou?ld
+    - damp
+    - water (quality|shortage|level|supply|table)
+    - (drinking|tap) water
+    - drought
+    - smoke
+    - fumes
+    - exhaust
+    - dust
+    - snowline
+    - melt
 
 
 # --------------------------------------------------------------------------- #
@@ -334,29 +518,30 @@ prompt:
   # "In English" is stated in both. The 2026-10-01 smoke run had no language
   # instruction, and an EXPLICIT item for Cîșlița-Prut came back in Romanian.
   system: >-
-    You write short social media posts in English, in the voice of ordinary
-    people. You follow the instructions you are given exactly, including
-    instructions about what must not appear in the text. You return JSON and
-    nothing else.
+    You write short social media posts in English that sound like ordinary
+    people wrote them. Follow the instructions exactly, especially the ones
+    about what must not appear in the post. Reply with JSON only.
 
   task: >-
-    Write one social media post by someone who lives in, or is currently in, a
-    particular place. The post is ordinary: the writer is not describing where
-    they are, they are talking about their day and happen to be somewhere. A
-    reader who knows the region could work out roughly where they are from what
-    is mentioned; the writer is not trying to make that easy or hard. Write the
-    post in English, whatever language the names you are given are in; keep
-    those names exactly as written.
+    Write one social media post by someone who lives in, or is spending time
+    in, a particular place. They are not describing where they are. They are
+    just talking about their day. Someone who knows the area might work out
+    roughly where they are from what they mention, but the writer is not
+    trying to make that easy or hard. Write in English, even when the names
+    you are given are in another language, and keep those names as they are.
 
-    Write the way people really post, not the way a writer would polish it.
-    Plain words, no neat closing line or moral. Never use an em dash or an en
-    dash; use a comma, a full stop or a line break. No hashtags. Do not add an
-    emoji unless the tone references below use them, and then at most one.
+    Write the way people actually post: plain words, no neat ending or moral,
+    no hashtags. Do not use em or en dashes; use a comma, a full stop or a line
+    break instead. Only add an emoji if the example posts below use them, and
+    then just one.
 
-    Mention each entity in passing, the way a local who already knows it would,
-    and as what it is: a person is a person, not a place or a shop. You never
-    need to say how an entity connects to the place; a plain mention is enough,
-    and it is usually better to leave the connection out than to hint at it.
+    Mention each thing in passing, the way a local who knows it would, and as
+    what it is: a person is a person, not a shop or a place. Refer to people
+    the way others would in a post, usually by first name and surname, without
+    middle names, titles or numbers like "III", but always with the surname.
+    Write everything else by the name given. There is no need to say how
+    anything is connected to the place, and it is usually better not to hint
+    at it.
 
   # How each clue's entity type is written in the prompt. The plan keeps
   # the places pipeline's property family codes; these are only the words the model sees.
@@ -370,14 +555,71 @@ prompt:
   # Properties whose clues get no type note whatever their family. P276
   # (location) reaches paintings, battles, sports events and nature reserves
   # alike; "a place or organisation" was wrong for most of them, and the
-  # relation line already says "location".
+  # relation line already says where it is.
   untyped_properties: [P276]
 
-  # Length bands, referenced by the plan.
+  # How each clue's link to the place is worded, by property, in place of the
+  # Wikidata property label ("located in administrative entity"). A property
+  # missing here falls back to that label.
+  relation_phrases:
+    P19: born here
+    P20: died here
+    P937: worked here
+    P131: located here
+    P159: headquartered here
+    P276: located or held here
+    P1071: made here
+    P138: named after this place
+    P495: comes from here
+    P1435: a heritage listing for this place
+    SPORTS: a club or team based here
+    EVENTS: held here
+    WORKS: set or filmed here
+
+  # How the style slots are labelled in the prompt, by slot name in the plan.
+  # A slot missing here is shown as its name with underscores as spaces.
+  slot_labels:
+    time_of_day: Time of day
+    time_reference: When
+    activity: What they are doing
+    irritant: What is bothering them
+    event_kind: The event
+    visual_detail: The picture is of
+    stance: Their take
+    mood_marker: Mood
+
+  # Length bands, referenced by the plan. One band for every post.
   length_bands:
-    very_short: one line, under 12 words
-    short: one sentence, 8 to 25 words
-    medium: two or three sentences, 25 to 45 words
+    7_to_30_words: between 7 and 30 words
+
+  # What the post is about, inserted when the item has an env_theme from the
+  # plan (one of the place's env_themes). {theme} is a short topic such as
+  # "falling water levels". The claim only has to be plausible, not true.
+  environment_line: >-
+    What the post is about: {theme}. The writer states a claim on this subject
+    with some confidence, the way people post about it online. The claim can be
+    about the place, about other people, about themselves or about anything
+    else connected to it, and the writer does not have to be there. It can be a
+    complaint, a warning, a boast or a piece of news, and it does not have to
+    be true or sourced. Do not write the topic as a label or a headline. This
+    does not change anything above about what may and may not be named.
+
+  # Added after environment_line for every post. How far a claim travels is a
+  # matter of the story, not of how famous the place is (2026-10-27, user): a
+  # village can have a row only its neighbours care about, and a little-known
+  # island can be news abroad because a developer or a famous family wants it.
+  # The model picks a plausible scale; it is not planned or measured. People
+  # and organisations are named by role only: a real name could give the
+  # country away, and the claims are not checked, so they must not be pinned
+  # on real people.
+  scale_line: >-
+    Pick whatever scale fits the claim. It can be small, something only locals
+    or regular visitors would care about, with a few people agreeing. It can be
+    national news. Or it can be the kind of story that puts a place in the news
+    abroad, even one few people had heard of, usually because an outside
+    developer, investor, government or well-known family is involved. Refer to
+    any person or organisation by role (the council, the minister, a foreign
+    developer, a former president's family), never by name.
 
   # Constraint templates. One is inserted per item depending on the condition.
   # Keep these blunt and specific: a hedged constraint is one the model
@@ -386,82 +628,84 @@ prompt:
   # the place name (left out when the planned form already is it) plus the
   # countries.
   forbidden_toponym: >-
-    Hard constraint. The post must not contain any place name at all. Do not
-    write "{place_name}". Do not write {country}. Do not write any other
-    settlement, region, province, island, mountain, park, street or country
-    name, in any language or spelling. Do not write a demonym or an adjective
-    formed from a place name. Do not write a postcode, a dialling code, an
-    airport code or a road number. The reader must be able to work out the
-    location only from the entities you were told to mention and from
-    everyday detail. If you cannot write the post without naming a place,
-    write about something smaller instead.
+    Do not name any place at all. That means no "{place_name}", no {country},
+    and no other town, region, island, mountain, park, street or country, in
+    any language or spelling. Also leave out words made from place names (like
+    "Parisian"), postcodes, phone area codes, airport codes and road numbers.
+    Where this is should only show through the things you mention and
+    everyday detail. If a sentence needs a place name, write about something
+    smaller instead.
 
   ambiguous_toponym: >-
-    Hard constraint. The only place name in the post is "{surface}", written
-    exactly like that and on its own. Do not add a country, region, province,
-    state or any other qualifier to it, and do not write {other_names}
-    anywhere. That name is shared by several places in the world,
-    and it must stay ambiguous on its own. The surrounding detail should be
-    consistent with the intended place without naming it - climate, currency,
-    language, distances, the entities you were told to mention.
+    The only place name in the post is "{surface}", written exactly like that,
+    with nothing added after it: no country, state or region. Do not write
+    {other_names} anywhere. Several places in the world have this name, so the
+    name on its own does not say which one is meant. What you mention above
+    does: write the post so that it is the real one, and do not explain it.
 
   exact_toponym: >-
-    Write the place name "{surface}" plainly in the post, the way someone
-    would who assumes their reader knows where they live. This item is the
-    upper bound for the experiment, so the location should be obvious from the
-    text. Do not add qualifiers the writer would not use.
+    Name the place plainly as "{surface}", the way someone would when telling
+    friends where they are, with nothing added after it: no country, state or
+    region. Do not write {other_names}. Mention nothing else that names or
+    locates the place.
+
+  # Appended to the two constraints above only when the item's clue (or noise
+  # entity) is a river, the one kind of place name plan.py lets through.
+  river_clue_exception: >-
+    The one exception: you may name the river {rivers}, since it is one of the
+    things to mention.
 
 
   # Line templates for the entity block. {type_note} is " (a person)" and so
-  # on from entity_type_labels, or empty.
+  # on from entity_type_labels, or empty; {relation} comes from
+  # relation_phrases.
   entities_header: >-
-    Entities the post must mention, by name, in full:
+    Mention these by name:
 
   clue_line: >-
-    - "{label}"{type_note} - relation to the location: {relation}
+    - "{label}"{type_note}, {relation}
 
   noise_entity: >-
-    - "{label}" - mention by name. Do not connect it to the writer's location
-    in any way; it belongs somewhere else.
+    - "{label}"{type_note}, which belongs to a different place from the one
+    this post is about. Mention it, but do not link it to that place.
 
   surface_ambiguous: >-
-    Place name the post must use, written exactly like this and with nothing
-    added to it: "{surface}"
+    Place name to use: "{surface}"
 
   surface_exact: >-
-    Place name the post must use, written exactly like this: "{surface}"
+    Place name to use: "{surface}"
 
   # Introduces the real-post tone references. Keep "copy nothing".
   exemplar_intro: >-
-    Tone and rhythm references. Copy nothing from these - not a phrase, not a
-    name, not a subject. They show how people in this register punctuate,
-    abbreviate and break lines:
+    A few real posts of the same kind, for tone only. Copy nothing from them,
+    not a phrase, a name or a topic. They show how people punctuate,
+    abbreviate and break lines in posts like this:
 
   # The slot block. Slot lines themselves ("Time of day: lunchtime") come from
-  # the plan.
+  # the plan, labelled by slot_labels.
   register_line: >-
-    Register: {register}
+    Kind of post: {register}
 
   length_line: >-
     Length: {length}
 
   register_notes_line: >-
-    Register notes: {notes}
+    What that means: {notes}
 
   slots_footer: >-
-    Use every value above. They are the specifics of this post and they are
-    not suggestions. Show them through detail in your own words rather than
-    stating them, and do not name the time of day or the activity as such
-    unless that is how you would really say it.
+    Work all of these in, through detail in your own words rather than by
+    stating them. Do not name the time of day or the activity outright unless
+    that is how someone would really say it. Write it as the person would
+    post it, not as a description of this setup.
 
   # The output-shape block. The field list and its order come from
   # RESPONSE_SCHEMA in generate.py; this is the wording for each. A schema
   # field with no wording here is a load error.
   output_intro: >-
-    Return one JSON object and nothing else, with these fields:
+    Reply with one JSON object with these fields:
 
   output_fields:
-    post_text: the post itself
-    entities_referenced: every named entity you wrote, exactly as written
-    naming_form_used: the place name you wrote, exactly as written, or null if you wrote none
-    register: the register you followed
+    post_text: the post
+    entities_referenced: each named thing you mentioned, written exactly as it appears in the post
+    naming_form_used: the place name exactly as you wrote it, or null if there is none
+    register: the kind of post you wrote

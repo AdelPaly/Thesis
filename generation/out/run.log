@@ -1,0 +1,95 @@
+﻿  EU natural: gated 100, filled 0
+  EU natural: gated 200, filled 50
+  EU natural: gated 208, filled 68
+  EU natural: gated 100, filled 70
+  EU natural: gated 200, filled 111
+  EU natural: gated 201, filled 117
+  EU island: gated 100, filled 0
+  wait 60s: IncompleteRead(13787934 bytes read)
+  wait 60s: Invalid control character at: line 1 column 2095876 (char 2095875)
+  split sitelinks 30-100 at 65 (cut off: IncompleteRead(16309280 bytes read))
+  wait 60s: IncompleteRead(12322755 bytes read)
+  split sitelinks 30-65 at 47 (cut off: Expecting property name enclosed in double quotes: line 2 column 2 (char 2095940)
+  wait 60s: IncompleteRead(14864270 bytes read)
+  split sitelinks 30-47 at 38 (cut off: Invalid control character at: line 1 column 6287401 (char 6287400))
+  wait 60s: Invalid control character at: line 1 column 1047981 (char 1047980)
+  wait 60s: HTTP Error 414: Request-URI Too Large
+  wait 120s: HTTP Error 414: Request-URI Too Large
+  wait 240s: HTTP Error 414: Request-URI Too Large
+  wait 480s: HTTP Error 414: Request-URI Too Large
+  wait 600s: HTTP Error 414: Request-URI Too Large
+  EU natural: gated 189, filled 0
+  EU natural: gated 300, filled 56
+  EU natural: gated 301, filled 103
+  EU island: gated 125, filled 0
+  EU island: gated 300, filled 14
+  EU manmade: gated 54, filled 0
+  EU manmade: gated 296, filled 21
+  EU infra: gated 300, filled 0
+  EU settlement: gated 300, filled 8
+  dropped Q693021: reply too big ({
+    "exception": "Operation timed out. Last operation: Sort (internal order) o)
+  dropped Q854923: reply too big ({
+    "exception": "Operation timed out. Last operation: Sort (internal order) o)
+  EU settlement: gated 300, filled 42
+  EU settlement: gated 600, filled 116
+  EU settlement: gated 900, filled 147
+EU A/island/high=5/5 A/island/low=5/5 A/island/mid=5/5 A/manmade/high=5/5 A/manmade/low=5/5 A/manmade/mid=5/5 A/natural/high=2/15 A/natural/low=15/15 A/natural/mid=15/15 A/settlement/high=39/39 A/settlement/low=26/26 A/settlement/mid=26/26 B/island/place_leads=3/3 B/island/rival_leads=3/3 B/island/similar=3/3 B/manmade/place_leads=5/5 B/manmade/rival_leads=5/5 B/manmade/similar=5/5 B/natural/place_leads=24/24 B/natural/rival_leads=24/24 B/natural/similar=24/24 B/settlement/place_leads=21/21 B/settlement/rival_leads=21/21 B/settlement/similar=21/21 X/infra/-=25/25
+  AS natural: gated 38, filled 0
+  AS natural: gated 300, filled 18
+  AS island: gated 16, filled 0
+  AS island: gated 300, filled 4
+  AS manmade: gated 43, filled 0
+  AS manmade: gated 245, filled 14
+  AS infra: gated 300, filled 0
+  dropped Q3436054: reply too big ({
+    "exception": "Operation timed out. Last operation: Sort (internal order) o)
+  AS settlement: gated 300, filled 15
+  AS settlement: gated 300, filled 45
+AS A/island/high=0/3 A/island/low=3/3 A/island/mid=3/3 A/manmade/high=3/3 A/manmade/low=3/3 A/manmade/mid=3/3 A/natural/high=2/9 A/natural/low=9/9 A/natural/mid=9/9 A/settlement/high=24/24 A/settlement/low=14/14 A/settlement/mid=14/14 B/island/place_leads=1/1 B/island/rival_leads=1/1 B/island/similar=1/1 B/manmade/place_leads=3/3 B/manmade/rival_leads=3/3 B/manmade/similar=3/3 B/natural/place_leads=13/13 B/natural/rival_leads=13/13 B/natural/similar=13/13 B/settlement/place_leads=11/11 B/settlement/rival_leads=11/11 B/settlement/similar=11/11 X/infra/-=25/25
+  AF natural: gated 4, filled 0
+  AF natural: gated 89, filled 2
+  AF island: gated 17, filled 0
+  AF island: gated 3, filled 5
+  AF manmade: gated 4, filled 0
+  AF manmade: gated 52, filled 4
+  AF infra: gated 300, filled 0
+  AF settlement: gated 110, filled 26
+  AF settlement: gated 300, filled 36
+AF A/island/high=1/1 A/island/low=1/1 A/island/mid=1/1 A/manmade/high=1/1 A/manmade/low=1/1 A/manmade/mid=1/1 A/natural/high=0/5 A/natural/low=5/5 A/natural/mid=5/5 A/settlement/high=13/13 A/settlement/low=8/8 A/settlement/mid=8/8 B/island/place_leads=1/1 B/island/rival_leads=1/1 B/island/similar=1/1 B/manmade/place_leads=1/1 B/manmade/rival_leads=1/1 B/manmade/similar=1/1 B/natural/place_leads=8/8 B/natural/rival_leads=8/8 B/natural/similar=8/8 B/settlement/place_leads=6/6 B/settlement/rival_leads=6/6 B/settlement/similar=6/6 X/infra/-=25/25
+  NA natural: gated 79, filled 0
+  wait 60s: HTTP Error 504: Gateway Time-out
+  NA natural: gated 300, filled 34
+  NA natural: gated 302, filled 62
+  NA island: gated 14, filled 0
+  NA island: gated 20, filled 12
+  NA manmade: gated 1, filled 0
+  NA manmade: gated 61, filled 0
+  NA infra: gated 300, filled 0
+  NA settlement: gated 145, filled 2
+  NA settlement: gated 300, filled 48
+  NA settlement: gated 308, filled 125
+  NA settlement: gated 128, filled 128
+NA A/island/high=3/4 A/island/low=4/4 A/island/mid=4/4 A/manmade/high=0/4 A/manmade/low=0/4 A/manmade/mid=1/4 A/natural/high=0/11 A/natural/low=11/11 A/natural/mid=11/11 A/settlement/high=36/36 A/settlement/low=24/24 A/settlement/mid=23/23 B/island/place_leads=2/2 B/island/rival_leads=2/2 B/island/similar=2/2 B/manmade/place_leads=4/4 B/manmade/rival_leads=4/4 B/manmade/similar=4/4 B/natural/place_leads=15/18 B/natural/rival_leads=8/18 B/natural/similar=18/18 B/settlement/place_leads=18/18 B/settlement/rival_leads=25/25 B/settlement/similar=15/15 X/infra/-=25/25
+  SA natural: gated 10, filled 0
+  SA natural: gated 300, filled 0
+  SA island: gated 1, filled 0
+  SA island: gated 15, filled 2
+  SA manmade: gated 1, filled 0
+  SA manmade: gated 6, filled 0
+  SA infra: gated 153, filled 0
+  SA settlement: gated 67, filled 0
+  SA settlement: gated 300, filled 28
+  SA settlement: gated 301, filled 45
+  SA settlement: gated 300, filled 47
+SA A/island/high=1/1 A/island/low=0/1 A/island/mid=1/1 A/manmade/high=0/1 A/manmade/low=0/1 A/manmade/mid=1/1 A/natural/high=1/5 A/natural/low=5/5 A/natural/mid=5/5 A/settlement/high=14/14 A/settlement/low=11/11 A/settlement/mid=9/9 B/island/place_leads=1/1 B/island/rival_leads=1/1 B/island/similar=1/1 B/manmade/place_leads=1/1 B/manmade/rival_leads=0/1 B/manmade/similar=0/1 B/natural/place_leads=8/8 B/natural/rival_leads=8/8 B/natural/similar=8/8 B/settlement/place_leads=6/6 B/settlement/rival_leads=7/7 B/settlement/similar=7/7 X/infra/-=25/25
+  OC natural: gated 12, filled 0
+  OC natural: gated 199, filled 6
+  OC island: gated 5, filled 0
+  OC island: gated 45, filled 4
+  OC infra: gated 87, filled 0
+  OC settlement: gated 8, filled 1
+  OC settlement: gated 300, filled 11
+  OC settlement: gated 3, filled 34
+  OC settlement: gated 32, filled 47
+OC A/island/high=0/1 A/island/low=1/1 A/island/mid=1/1 A/manmade/high=0/1 A/manmade/low=0/1 A/manmade/mid=0/1 A/natural/high=0/5 A/natural/low=5/5 A/natural/mid=5/5 A/settlement/high=15/15 A/settlement/low=8/8 A/settlement/mid=10/10 B/island/place_leads=1/1 B/island/rival_leads=1/1 B/island/similar=1/1 B/manmade/place_leads=0/1 B/manmade/rival_leads=0/1 B/manmade/similar=0/1 B/natural/place_leads=5/8 B/natural/rival_leads=3/8 B/natural/similar=7/8 B/settlement/place_leads=11/21 B/settlement/rival_leads=5/5 B/settlement/similar=4/4 X/infra/-=14/25

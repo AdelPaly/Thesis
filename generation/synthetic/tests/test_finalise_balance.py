@@ -58,12 +58,13 @@ class RepeatedClueTests(unittest.TestCase):
         self.assertIn("Q1", reason)
 
     @unittest.skipUnless(PLAN_PATH.exists(), "committed plan not present")
-    def test_committed_plan_has_19_repeats_all_a3(self):
+    def test_committed_plan_repeats_only_in_a3(self):
+        # The plan changes whenever it is re-made (the 2026-10-20 plan had 19
+        # repeats), so this checks where repeats may be, not how many there are.
         items = [json.loads(line) for line in PLAN_PATH.read_text(encoding="utf-8").splitlines() if line]
         bad = [i for i in items if finalise.repeated_clue(i)]
-        self.assertEqual(len(items), 984)
-        self.assertEqual(len(bad), 19)
-        self.assertEqual({i["condition"] for i in bad}, {"A3"})
+        self.assertTrue(items)
+        self.assertLessEqual({i["condition"] for i in bad}, {"A3"})
 
 
 class AllocateEvenTests(unittest.TestCase):
@@ -116,6 +117,14 @@ class BalanceTests(unittest.TestCase):
         self.assertEqual(n, 90)
         a1 = Counter(e[0]["place_continent"] for e in selected if e[0]["condition"] == "A1")
         self.assertEqual(a1, {"Africa": 2, "Asia": 44, "Europe": 44})
+
+    def test_unbalanced_condition_is_kept_whole(self):
+        kept = make_kept({"A1": {c: 5 for c in CONTINENTS}, "EXPLICIT": {"Africa": 3, "Asia": 40}})
+        selected, excluded, n = finalise.balance(kept, seed=1, unbalanced=["EXPLICIT"])
+        self.assertEqual(n, 30)
+        counts = Counter(e[0]["condition"] for e in selected)
+        self.assertEqual(counts, {"A1": 30, "EXPLICIT": 43})
+        self.assertEqual(excluded, [])
 
     def test_per_condition_override_and_limit(self):
         _, _, n = finalise.balance(self.kept, seed=1, per_condition=12)

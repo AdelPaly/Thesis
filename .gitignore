@@ -64,3 +64,7 @@ generation/synthetic/output/archive/
 
 # BLINK link cache
 src/.blink_cache/
+
+# Query caches (regenerated at runtime)
+src/*.pkl
+generation/out/cache/

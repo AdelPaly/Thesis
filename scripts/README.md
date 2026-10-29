@@ -28,7 +28,6 @@ on the path rather than as a leftover.
 
 | Script | Purpose |
 |--------|---------|
-| `generate_synthetic.py` | Regenerates a synthetic dataset from the spec at [`../prompt`](../prompt) via OpenRouter, in batches of signal type × continent, resumable, logging every request/response plus a `.meta.json` with model, date and spec hash. |
 | `dataset_qids.py validate \| repair` | Checks each row's `qid` against Wikidata (item exists, English label matches, `P17` country agrees) and optionally repairs it by searching for a candidate whose country matches. Either action runs on any dataset. |
 | `dataset_coords.py add \| verify` | Fills `latitude`/`longitude` from Wikidata `P625` for each row's `qid`, or checks the stored values still match (~1.1 km tolerance). |
 
@@ -102,7 +101,6 @@ statistics, bootstrap and grounding tables as CSV, with `n_boot` and `seed`.
 
 ## API keys
 
-No script here contains a key, and the Wikidata endpoints are public.
-`generate_synthetic.py` needs `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`, and
-the LLM configurations need `GOOGLE_API_KEY`; all are read
-from a git-ignored `src/.env`.
+No script here contains a key, and the Wikidata endpoints are public. The LLM
+configurations need `GOOGLE_API_KEY`, read from a git-ignored `src/.env`. The
+synthetic dataset is generated in `../generation/`, which reads its own key.

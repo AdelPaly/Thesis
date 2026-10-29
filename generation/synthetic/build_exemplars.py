@@ -25,7 +25,8 @@ post whose prompt forbids place names. So a post has to pass two filters:
 Two registers are also checked against the post's metadata: reply_in_thread
 must be a real reply, photo_caption must have had an image.
 
---topic climate or --topic misinformation builds a topical variant instead:
+--topic environment builds a topical variant instead (--dump reads a
+different post file, e.g. one made by csv_to_dump.py):
 only posts matching that topic's keywords (TOPICS below) are candidates, the
 labeller also gives each post a subtopic or "none" (off topic, which is
 rejected), and the result goes to data/style_exemplars_<topic>.jsonl with its
@@ -122,43 +123,23 @@ def passes_text_filter(text: str) -> bool:
 
 # Topical variants. "keywords" only decides which posts are labelled at all
 # (it is deliberately looser than the topic: "climate" also matches "the
-# political climate"); the labeller's subtopic decides what is on topic. Terms
-# that were mostly off topic in the 2024-11-27 dump are left out: "bots" and
-# "lies"/"lying" (spam accounts, interpersonal rows), "gaslighting", and "ev".
+# political climate"); the labeller's subtopic decides what is on topic.
 TOPICS = {
-    "climate": {
-        "keywords": r"\bclimate\b|global warming|greenhouse|fossil fuels?\b|"
-                    r"carbon (emissions?|footprint|tax|capture|dioxide|neutral)|\bco2\b|"
-                    r"net[- ]zero|renewables?\b|solar (panels?|power|energy|farms?)|"
-                    r"wind (turbines?|farms?|power|energy)|sea[- ]levels?|\bcop ?29\b|"
-                    r"\bemissions\b|decarboni[sz]|heat ?waves?|wildfires?|\bdroughts?\b|"
-                    r"\bflood(s|ing|ed)?\b|glaciers?|extreme weather|\bipcc\b|"
-                    r"green energy|electric (vehicles?|cars?)|heat pumps?|"
-                    r"environmental|deforestation|biodiversity|\bpollution\b",
-        "description": "climate change, its causes and effects, energy and the "
-                       "transition away from fossil fuels, climate policy or "
-                       "activism, or extreme weather and environmental hazards",
+    "environment": {
+        "keywords": r"climate|environment|pollut|emissions?\b|fossil|carbon|renewable|solar|"
+                    r"wind (turbines?|farms?|power)|flood|drought|wildfire|heat ?wave|"
+                    r"plastic|recycl|waste|landfill|sewage|fracking|drilling|mining|"
+                    r"deforest|biodiversity|wildlife|habitat|extinction|coral|glacier|"
+                    r"sea[- ]levels?|water (quality|shortage|supply)|air quality|smog|"
+                    r"fast fashion|greenwash|sustainab|\bpfas\b|pesticides?|"
+                    r"green (energy|space|belt)|tree (felling|loss)|ecolog",
+        "description": "the environment: pollution, climate, weather hazards, nature "
+                       "and wildlife, waste and recycling, energy, or what companies, "
+                       "councils and governments do to the environment",
         "subtopics": {
-            "climate_change": "climate change itself: warming, its causes, science, denial, anxiety about it",
-            "energy_transition": "emissions, fossil fuels, renewables, electric vehicles, heat pumps, climate policy or activism",
-            "extreme_weather": "a heatwave, drought, flood, wildfire, storm or other weather or environmental hazard, experienced or discussed",
-        },
-    },
-    "misinformation": {
-        "keywords": r"misinformation|disinformation|malinformation|fake news|"
-                    r"conspirac(y|ies)|propaganda|\bhoax(es)?\b|debunk|fact[- ]?check|"
-                    r"false (claims?|information|narratives?|stories)|deep ?fakes?|"
-                    r"misleading|\bpsyops?\b|troll farms?|\banti-?vax|flat earth|"
-                    r"chemtrails?|post-truth|media literacy|propagandists?|"
-                    r"\brumou?rs?\b|doctored|out of context|"
-                    r"\bdo your (own )?research\b|\bsheeple\b",
-        "description": "misinformation, disinformation, propaganda, conspiracy "
-                       "theories, hoaxes, rumours, fake or misleading content, or "
-                       "fact-checking and correcting false claims",
-        "subtopics": {
-            "spreading": "the post itself asserts or passes on a false, conspiratorial or unverified claim",
-            "debunking": "the post corrects, fact-checks or pushes back on a specific false or misleading claim",
-            "discussing": "the post talks about misinformation, propaganda, conspiracy theories or media literacy in general",
+            "claim": "the post itself asserts something about the environment: a problem, its cause or effect, or a company's, council's or government's environmental record",
+            "experience": "a first-hand report or complaint about local conditions, such as flooding, smog, drought, heat, rubbish or a polluted river",
+            "opinion": "a view on environmental policy, politics, activism or business without a specific factual claim",
         },
     },
 }
@@ -441,6 +422,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--env-file", type=Path, default=HERE / ".env")
     parser.add_argument("--topic", choices=sorted(TOPICS),
                         help="build a topical variant (see TOPICS) instead of the plain set")
+    parser.add_argument("--dump", type=Path,
+                        help="read posts from this JSONL instead of paths.bluesky_dump "
+                             "(same fields: uri, text, reply_to, has_images, created_at)")
     parser.add_argument("--label-cache", type=Path,
                         help="where labels are cached (default data/exemplar_labels.jsonl, "
                              "or data/exemplar_labels_<topic>.jsonl)")
@@ -459,7 +443,7 @@ def main(argv: list[str] | None = None) -> int:
     gen.load_dotenv(args.env_file)
     config = gen.load_config(args.config)
     paths = config["paths"]
-    dump = Path(paths["bluesky_dump"])
+    dump = args.dump or Path(paths["bluesky_dump"])
     out_path = Path(paths["style_exemplars"])
     registers = config["registers"]
     names = {r["name"] for r in registers}

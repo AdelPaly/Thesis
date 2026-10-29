@@ -5,7 +5,9 @@ The external export (data/external/) has the same clue_sets.jsonl shape as
 stage 5, except that best_sets[].clues[] carry no property_label, which the
 planner requires and generate.py uses to word each clue's relation. This adds
 it back from the external clues.jsonl, matched on (place_qid, clue_qid,
-property). Nothing else is changed.
+property), together with the clue's Wikidata aliases, which finalise.py
+accepts as a mention of the clue ("Abdul Amu" for "Abdul Karim Amu"). Nothing
+else is changed.
 
 A clue with no exact match takes the label of any clue with the same property;
 one with neither is reported and left without, so plan.py stops on it rather
@@ -50,11 +52,16 @@ def main(argv: list[str] | None = None) -> int:
 
     exact: dict[tuple[str, str, str], str] = {}
     by_property: dict[str, str] = {}
+    aliases: dict[str, list[str]] = {}
     for clue in read_jsonl(args.clues):
         label = clue.get("property_label")
         if label:
             exact[(clue["place_qid"], clue["clue_qid"], clue["property"])] = label
             by_property.setdefault(clue["property"], label)
+        known = aliases.setdefault(clue["clue_qid"], [])
+        for alias in clue.get("aliases") or []:
+            if alias and alias != clue.get("clue_label") and alias not in known:
+                known.append(alias)
 
     records = read_jsonl(args.sets)
     stats: Counter[str] = Counter()
@@ -62,6 +69,7 @@ def main(argv: list[str] | None = None) -> int:
     for record in records:
         for best in record.get("best_sets") or []:
             for clue in best["clues"]:
+                clue["aliases"] = aliases.get(clue["clue_qid"], [])
                 if clue.get("property_label"):
                     stats["already set"] += 1
                     continue

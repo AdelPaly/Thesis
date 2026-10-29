@@ -35,9 +35,10 @@ INPUTS
     ../places/data/01_places_final.csv the 102-place set (17 per continent)
     ../places/data/05_clue_sets.jsonl stage 5 best_sets per place
     ../places/data/04b_place_aliases.jsonl surface forms per place
-    ../places/data/05_name_leakage.csv which clues contain their place's name
     ../places/data/05b_clue_types.jsonl which clue entities are themselves places
-    sampler/geo_random.txt         one random.org integer per line
+    sampler/geo_random.txt         one pre-generated integer per line (the
+                                   source of each batch is logged in
+                                   sampler/geo_random_batches.csv)
     config.yaml         everything configurable
 
 OUTPUTS
@@ -51,8 +52,9 @@ OUTPUTS
                                    continues the stream instead of reusing it
 
 RANDOMNESS
-    All randomness comes from sampler/geo_random.txt, which holds integers
-    fetched from the random.org HTTP API. The file is consumed as a stream: a
+    All randomness comes from sampler/geo_random.txt, a file of pre-generated
+    integers (sampler/geo_random_batches.csv records how each batch was
+    produced). The file is consumed as a stream: a
     cursor is persisted between runs so no integer is ever used twice for two
     different decisions. Each item records the stream positions it consumed, so
     any single decision can be traced back to the exact integer behind it.
@@ -125,28 +127,31 @@ except ImportError:  # pragma: no cover
 
 HERE = Path(__file__).resolve().parent
 
-PLAN_VERSION = "1"
+PLAN_VERSION = "4"   # 2: items carry env_theme; 3: B/NOISE_B carry a clue, EXPLICIT is the bare label; 4: fixed core, type groups
 
 # Defaults for the plan: section of config.yaml. config.yaml is the source of
 # truth; these apply only when a key is absent from it.
 DEFAULT_MAX_PLACE_AMBIGUITY = 1
 DEFAULT_SURPLUS_FACTOR = 1.0
 DEFAULT_MAX_REPLICATES_PER_PAIR = 6
-DEFAULT_LENGTH_BANDS = ["medium"]
+DEFAULT_LENGTH_BANDS = ["7_to_30_words"]
 
 # The conditions, and what each one requires to be feasible for a given place.
 # n_clues        how many entity clues appear in the text
 # needs_toponym  "ambiguous" -> an alias shared with other places must exist
-#                "exact"     -> the plain, unambiguous name is used
+#                "label"     -> the place's bare label, whether or not other
+#                               places share it (EXPLICIT; the row records which)
 #                None        -> no place name may appear at all
-# noise          whether a distractor entity from another continent is added
+# noise          whether a distractor entity from another place is added
+# B and NOISE_B carry one A1-style clue: a name shared by several places has no
+# single answer without something to pick the namesake.
 CONDITION_SPECS: dict[str, dict[str, Any]] = {
     "A1":       {"n_clues": 1, "needs_toponym": None,        "noise": False},
     "A3":       {"n_clues": 3, "needs_toponym": None,        "noise": False},
-    "B":        {"n_clues": 0, "needs_toponym": "ambiguous", "noise": False},
-    "EXPLICIT": {"n_clues": 0, "needs_toponym": "exact",     "noise": False},
+    "B":        {"n_clues": 1, "needs_toponym": "ambiguous", "noise": False},
+    "EXPLICIT": {"n_clues": 0, "needs_toponym": "label",     "noise": False},
     "NOISE_A1": {"n_clues": 1, "needs_toponym": None,        "noise": True},
-    "NOISE_B":  {"n_clues": 0, "needs_toponym": "ambiguous", "noise": True},
+    "NOISE_B":  {"n_clues": 1, "needs_toponym": "ambiguous", "noise": True},
 }
 
 
@@ -187,7 +192,7 @@ def atomic_write_text(path: Path, text: str, newline: str | None = None) -> None
 
 class RandomStream:
     """
-    An append-only cursor over a file of integers fetched from random.org.
+    An append-only cursor over a file of pre-generated integers.
 
     Every draw consumes one integer, or occasionally more (see below()), and
     advances the cursor past everything it consumed. The cursor is persisted
@@ -195,8 +200,8 @@ class RandomStream:
     Nothing here derives extra values from one integer - each integer serves
     at most one decision, so the audit trail stays traceable.
 
-    low and high are the inclusive range the integers were requested with from
-    random.org. They are declared rather than inferred from the file, because
+    low and high are the inclusive range the integers were generated over.
+    They are declared rather than inferred from the file, because
     the observed minimum and maximum are only estimates of the true range and
     the uniformity of every draw depends on it being exact.
     """
@@ -224,7 +229,8 @@ class RandomStream:
             raise SystemExit(
                 f"random stream exhausted before this run started: cursor is at "
                 f"{self.position} and {path} holds {len(self.values)} integers. "
-                f"Fetch more integers from random.org and append them to the file."
+                f"Generate more integers in the declared range, append them to "
+                f"the file and log the batch in geo_random_batches.csv."
             )
 
     @staticmethod
@@ -273,7 +279,8 @@ class RandomStream:
         if self.position >= len(self.values):
             raise SystemExit(
                 f"random stream exhausted at position {self.position}. "
-                f"Append more random.org integers to {self.path} and re-run; "
+                f"Append more integers to {self.path} (log the batch in "
+                f"geo_random_batches.csv) and re-run; "
                 f"the cursor in {self.state_path} means nothing already used "
                 f"will be reused."
             )
@@ -298,8 +305,8 @@ class RandomStream:
         if n > span:
             raise SystemExit(
                 f"cannot choose uniformly among {n} options with integers from "
-                f"{self.low}..{self.high} ({span} possible values). Fetch "
-                f"integers over a wider range from random.org."
+                f"{self.low}..{self.high} ({span} possible values). Generate "
+                f"integers over a wider range."
             )
         limit = span - span % n
         while True:
@@ -343,8 +350,22 @@ class Place:
     places_sharing_name: int
     sitelinks: int
     wikidata_links: int
+    # Added for its shared name (b_extra_places.csv). Since 2026-10-27 it is
+    # planned like any other place wherever its clues allow; the flag is kept
+    # so results can still be split by it.
+    b_only: bool = False
+    # Date the place joined the set (ISO, from the place file's added column;
+    # blank for the older places). plan.min_sitelinks_from compares against it.
+    added: str = ""
+    # The environmental topics a post about this place may take, from the
+    # place file's env_themes column (";"-separated). Empty when it has none.
+    env_themes: list[str] = field(default_factory=list)
     clues: list[dict[str, Any]] = field(default_factory=list)
     surface_forms: list[dict[str, Any]] = field(default_factory=list)
+    # The place's own label as 04b recorded it (source "label"), kept before any
+    # filtering: kind says whether other places share it, and an ambiguous one
+    # carries shared_by and top_namesake. {} when 04b has no label form.
+    label_form: dict[str, Any] = field(default_factory=dict)
     # The clues a single-clue condition may use: place_ambiguity within the
     # configured ceiling and, when so configured, not leaking the place name.
     single_clues: list[dict[str, Any]] = field(default_factory=list)
@@ -372,19 +393,20 @@ class Place:
         """
         cached = self._distractors.get(donor.qid)
         if cached is None:
+            # Not an entity that also points at this place: the distractor must
+            # differ from what is to be guessed.
+            own = {c.get("clue_qid") for c in self.clues}
             cached = [
                 c for c in donor.single_clues
-                if label_leak(c["clue_label"], self.name_forms, self.country_forms,
-                              self.region_forms) is None
+                if c.get("clue_qid") not in own
+                and label_leak(c["clue_label"], self.name_forms, self.country_forms,
+                               self.region_forms) is None
             ]
             self._distractors[donor.qid] = cached
         return cached
 
     def ambiguous_forms(self) -> list[dict[str, Any]]:
         return [f for f in self.surface_forms if f.get("kind") == "ambiguous_alias"]
-
-    def exact_forms(self) -> list[dict[str, Any]]:
-        return [f for f in self.surface_forms if f.get("kind") == "exact"]
 
 
 def load_places(path: Path) -> dict[str, Place]:
@@ -417,6 +439,10 @@ def load_places(path: Path) -> dict[str, Place]:
                 places_sharing_name=_as_int(row.get("places_sharing_name"), 1),
                 sitelinks=_as_int(row.get("wikimedia_sitelinks"), 0),
                 wikidata_links=_as_int(row.get("wikidata_links"), 0),
+                b_only=(row.get("b_only") or "").strip().lower() == "true",
+                added=(row.get("added") or "").strip(),
+                env_themes=[t.strip() for t in (row.get("env_themes") or "").split(";")
+                            if t.strip()],
             )
     if not places:
         raise SystemExit(f"{path} yielded no places")
@@ -444,32 +470,6 @@ def _read_jsonl_by_place(path: Path, what: str) -> dict[str, tuple[int, dict]]:
                 raise SystemExit(f"{path}:{line_no} is a duplicate entry for {qid}")
             by_place[qid] = (line_no, record)
     return by_place
-
-
-def _load_leaks(path: Path) -> set[tuple[str, str, str]]:
-    """
-    (place_qid, clue_qid, property) for every row of 05_name_leakage.csv with
-    leak_strict == true. The CSV lists only rows that leak by the strict or
-    relaxed test, so a clue absent from it leaks by neither.
-    """
-    if not path.exists():
-        raise SystemExit(f"name leakage file not found: {path}")
-    leaks: set[tuple[str, str, str]] = set()
-    with path.open(encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        required = {"place_qid", "clue_qid", "property", "leak_strict"}
-        missing = required - set(reader.fieldnames or [])
-        if missing:
-            raise SystemExit(f"{path} is missing columns: {sorted(missing)}")
-        for row in reader:
-            value = (row["leak_strict"] or "").strip().lower()
-            if value not in ("true", "false"):
-                raise SystemExit(f"{path}: leak_strict is {row['leak_strict']!r}, "
-                                 f"expected true or false")
-            if value == "true":
-                leaks.add((row["place_qid"].strip(), row["clue_qid"].strip(),
-                           row["property"].strip()))
-    return leaks
 
 
 def _load_clue_types(path: Path) -> dict[str, dict[str, Any]]:
@@ -530,11 +530,6 @@ def starts_word(haystack: str, needle: str) -> bool:
     return bool(needle) and _word_start_pattern(needle).search(fold(haystack)) is not None
 
 
-# Underscore aliases kept for older callers.
-_fold = fold
-_contains_word = contains_word
-
-
 def _is_qualified(text: str, country_forms: list[str]) -> bool:
     """
     A form that already narrows itself: it carries a comma qualifier ("Las
@@ -551,8 +546,7 @@ def _is_qualified(text: str, country_forms: list[str]) -> bool:
 def label_leak(label: str, place_forms: Sequence[str], country_forms: Sequence[str],
                region_forms: Sequence[str] = ()) -> str | None:
     """
-    Why a clue's own label gives the answer away, or None. The strict test in
-    05_name_leakage.csv checks only the bare place name; this also checks every
+    Why a clue's own label gives the answer away, or None. It checks every
     surface form of the place ("Qaw el-Kebir" for Tjebu, "Mount McKinley" for
     Denali) and the country's name and demonyms ("Tuvalu Association...",
     "MIAT Mongolian Airlines"). Whole words, ignoring case and accents; a place
@@ -574,30 +568,33 @@ def label_leak(label: str, place_forms: Sequence[str], country_forms: Sequence[s
     return None
 
 
-_label_leak = label_leak  # underscore alias kept for older callers
-
-
 @dataclass(frozen=True)
 class ClueRules:
     """The plan: flags that decide which clues and forms are held back."""
     max_place_ambiguity: int = DEFAULT_MAX_PLACE_AMBIGUITY
-    exclude_leaks: bool = True
     exclude_qualified: bool = True
     exclude_toponyms: bool = True
     exclude_label_leaks: bool = True
-    explicit_plain_name: bool = True
+    # Toponym categories that may still be clues (rivers: naming one does not
+    # name the place). body_of_water rides along, since 05b gives rivers both.
+    toponym_clue_categories: frozenset[str] = frozenset()
 
     @classmethod
     def from_config(cls, plan_cfg: dict[str, Any]) -> "ClueRules":
         return cls(
             max_place_ambiguity=int(plan_cfg.get(
                 "max_place_ambiguity_for_single_clue", DEFAULT_MAX_PLACE_AMBIGUITY)),
-            exclude_leaks=bool(plan_cfg.get("exclude_leaking_clues", True)),
             exclude_qualified=bool(plan_cfg.get("exclude_qualified_ambiguous_forms", True)),
             exclude_toponyms=bool(plan_cfg.get("exclude_toponym_clues", True)),
             exclude_label_leaks=bool(plan_cfg.get("exclude_label_leaks", True)),
-            explicit_plain_name=bool(plan_cfg.get("explicit_plain_name", True)),
+            toponym_clue_categories=frozenset(plan_cfg.get("toponym_clue_categories") or ()),
         )
+
+    def allows_toponym(self, categories: Sequence[str]) -> bool:
+        """A toponym clue whose categories are all allowed (body_of_water aside)."""
+        cats = set(categories)
+        return bool(cats & self.toponym_clue_categories) and \
+            cats <= self.toponym_clue_categories | {"body_of_water"}
 
 
 def check_alias_record(alias_path: Path, alias_line: int,
@@ -646,7 +643,6 @@ def collect_clues(
     clue_path: Path,
     types_path: Path,
     clue_types: dict[str, dict[str, Any]],
-    leaks: set[tuple[str, str, str]],
     place_forms: list[str],
     country_forms: list[str],
     region_forms: list[str],
@@ -687,8 +683,12 @@ def collect_clues(
                     "surface_ambiguity": raw.get("surface_ambiguity"),
                     "discriminativeness": None,
                     "source_set_sizes": [],
-                    "leaks_place_name": (qid, raw["clue_qid"], raw["property"]) in leaks,
                     "is_toponym": clue_types[raw["clue_qid"]]["toponym"],
+                    # A person may be written by a shorter name in the post
+                    # (finalise.py accepts the surname); anything else needs
+                    # its label or a Wikidata alias.
+                    "is_human": "human" in (clue_types[raw["clue_qid"]].get("instance_of") or []),
+                    "aliases": list(raw.get("aliases") or []),
                     "label_leak": label_leak(raw["clue_label"], place_forms,
                                               country_forms, region_forms),
                 }
@@ -700,11 +700,10 @@ def clue_excluded_because(
     clue: dict[str, Any], clue_types: dict[str, dict[str, Any]], rules: ClueRules
 ) -> str | None:
     """Why this clue is held back from every condition, or None."""
-    if rules.exclude_leaks and clue["leaks_place_name"]:
-        return "leaks the place name (leak_strict)"
     if rules.exclude_toponyms and clue["is_toponym"]:
         cats = clue_types[clue["clue_qid"]].get("categories") or []
-        return f"is itself a place name ({', '.join(cats)})"
+        if not rules.allows_toponym(cats):
+            return f"is itself a place name ({', '.join(cats)})"
     if rules.exclude_label_leaks and clue["label_leak"]:
         return clue["label_leak"]
     return None
@@ -760,31 +759,22 @@ def select_clues(
     return held_back
 
 
-def explicit_source_of(source_forms: list[dict[str, Any]], rules: ClueRules) -> str | None:
+def label_form_of(source_forms: list[dict[str, Any]]) -> dict[str, Any]:
     """
-    The one source of exact form EXPLICIT may use: the plain label when it is
-    unique, otherwise the derived "<name>, <country>". None when
-    explicit_plain_name is off and every exact form is allowed.
+    The place's own label as 04b recorded it (source "label"), or {} when it
+    has none. kind is "exact" when no other place shares the label and
+    "ambiguous_alias" when others do.
     """
-    if not rules.explicit_plain_name:
-        return None
-    label_exact = any(f.get("source") == "label" and f.get("kind") == "exact"
-                      for f in source_forms)
-    return "label" if label_exact else "derived"
+    return next((f for f in source_forms if f.get("source") == "label"), {})
 
 
 def form_excluded_because(
-    form: dict[str, Any], country_forms: list[str], explicit_source: str | None,
-    rules: ClueRules,
+    form: dict[str, Any], country_forms: list[str], rules: ClueRules,
 ) -> str | None:
     """Why this surface form is held back, or None."""
-    kind = form.get("kind")
-    if (rules.exclude_qualified and kind == "ambiguous_alias"
+    if (rules.exclude_qualified and form.get("kind") == "ambiguous_alias"
             and _is_qualified(form["text"], country_forms)):
         return "ambiguous form already qualified or contains the country"
-    if explicit_source and kind == "exact" and form.get("source") != explicit_source:
-        return (f"exact form other than the plain name; EXPLICIT uses the "
-                f"{'unique label' if explicit_source == 'label' else 'derived name, country'}")
     return None
 
 
@@ -799,18 +789,15 @@ def filter_forms(
     Fill place.surface_forms with the forms that survive and return one
     form_excluded record per form held back.
 
-    EXPLICIT is the only consumer of exact forms. With explicit_plain_name set it
-    gets one: the plain label when that is unique, otherwise the derived
-    "<name>, <country>". Any other exact form - an altLabel, a nickname, a
-    native-language name - is held back, because an obscure form ("Whangas",
-    "Ō-hine-puhiawe") makes the upper bound harder than the conditions it
-    bounds.
+    Only ambiguous forms are filtered (B and NOISE_B draw from them). Exact
+    forms are not drawn at all: EXPLICIT uses the bare label for every place,
+    which is kept whole in place.label_form before any filtering.
     """
-    explicit_source = explicit_source_of(source_forms, rules)
+    place.label_form = label_form_of(source_forms)
     held_back: list[dict[str, Any]] = []
     forms = []
     for form in source_forms:
-        reason = form_excluded_because(form, country_forms, explicit_source, rules)
+        reason = form_excluded_because(form, country_forms, rules)
         if reason:
             held_back.append({
                 "record": "form_excluded",
@@ -831,7 +818,6 @@ def filter_forms(
 def load_clue_sets(
     clue_path: Path,
     alias_path: Path,
-    leak_path: Path,
     types_path: Path,
     places: dict[str, Place],
     plan_cfg: dict[str, Any],
@@ -845,7 +831,6 @@ def load_clue_sets(
     Reads
         05_clue_sets.jsonl       best_sets[].clues[] per place
         04b_place_aliases.jsonl  surface_forms per place
-        05_name_leakage.csv      which (place, clue, property) leak the name
         05b_clue_types.jsonl     which clue entities are themselves places
     The place attributes come from the place CSV via load_places().
 
@@ -857,7 +842,6 @@ def load_clue_sets(
         discriminativeness  null: no such score exists upstream, and
                             finalise.py must be able to see that
         source_set_sizes    the sizes of the best_sets containing it
-        leaks_place_name    from 05_name_leakage.csv (strict test)
 
     SINGLE-CLUE CONDITIONS (A1, NOISE_A1) draw only from clues with
     place_ambiguity <= max_place_ambiguity_for_single_clue. One clue that
@@ -867,8 +851,7 @@ def load_clue_sets(
     5 kept those sets because their intersection resolves to the place, and a
     random three-clue group has no such guarantee.
 
-    LEAKING CLUES are excluded from both when exclude_leaking_clues is set. A
-    set containing a leaking clue is excluded whole (select_clues).
+    A set containing an excluded clue is excluded whole (select_clues).
 
     TOPONYM CLUES - a village, island, river, street, time zone - are excluded
     the same way when exclude_toponym_clues is set. Such a clue puts a real
@@ -887,24 +870,24 @@ def load_clue_sets(
     AMBIGUOUS FORMS that are already qualified (see _is_qualified) are held
     back when exclude_qualified_ambiguous_forms is set.
 
-    EXACT FORMS, which only EXPLICIT uses, are cut to one when
-    explicit_plain_name is set (filter_forms): the plain label if it is unique,
-    otherwise the derived "<name>, <country>". EXPLICIT is meant to name the
-    place plainly.
+    EXPLICIT names the place by its bare label, unique or shared, so the
+    plan can say how many places share it (filter_forms keeps label_form).
     """
     rules = ClueRules.from_config(plan_cfg)
 
     clue_sets = _read_jsonl_by_place(clue_path, "clue set")
     aliases = _read_jsonl_by_place(alias_path, "place alias")
-    leaks = _load_leaks(leak_path)
     clue_types = _load_clue_types(types_path)
     held_back: list[dict[str, Any]] = []
 
     for source, path in ((clue_sets, clue_path), (aliases, alias_path)):
+        # The place file may be a subset of what these files cover (the
+        # environmental set leaves out stadiums, palaces and the like); only
+        # the places in it are planned.
         extra = sorted(set(source) - set(places))
         if extra:
-            raise SystemExit(f"{path} has records for {len(extra)} places not in "
-                             f"the place set, e.g. {extra[:3]}")
+            print(f"note: {path.name} has {len(extra)} places that are not in the "
+                  f"place file; they are not planned")
 
     for qid, place in places.items():
         if qid not in aliases:
@@ -912,6 +895,10 @@ def load_clue_sets(
                              f"Re-run scripts/04b_place_aliases.py.")
         alias_line, alias_record = aliases[qid]
         check_alias_record(alias_path, alias_line, alias_record)
+        # 04b's live count, fetched with the namesakes' counts so the two
+        # compare like for like; the CSV column is blank for some places.
+        if alias_record.get("sitelinks") is not None:
+            place.sitelinks = int(alias_record["sitelinks"])
         place_forms, country_forms, region_forms = name_forms_of(place, alias_record)
         place.name_forms = place_forms
         place.country_forms = country_forms
@@ -919,7 +906,7 @@ def load_clue_sets(
 
         best_sets = best_sets_of(clue_path, clue_sets, qid)
         by_key = collect_clues(qid, best_sets, clue_path, types_path, clue_types,
-                               leaks, place_forms, country_forms, region_forms)
+                               place_forms, country_forms, region_forms)
         held_back += select_clues(qid, place, best_sets, by_key, clue_types, rules)
         held_back += filter_forms(qid, place, alias_record["surface_forms"] or [],
                                   country_forms, rules)
@@ -928,6 +915,76 @@ def load_clue_sets(
     for place in places.values():
         place.reset_caches()
     return held_back
+
+
+def drop_little_known(places: dict[str, Place], plan_cfg: dict[str, Any]
+                      ) -> list[dict[str, Any]]:
+    """
+    Remove places under plan.min_sitelinks (the live count from the alias
+    file) from `places`, for every condition and as noise donors, and return
+    one rejection record each. With plan.min_sitelinks_from set, only places
+    whose added date is on or after it are held to the floor; older places
+    stay whatever their count. No floor when min_sitelinks is unset.
+    plan.max_sitelinks likewise leaves out the very best-known places (every
+    place, whatever its date), whose posts would be too easy to place.
+    """
+    floor, ceiling = plan_cfg.get("min_sitelinks"), plan_cfg.get("max_sitelinks")
+    since = str(plan_cfg.get("min_sitelinks_from") or "")
+    records = []
+    for q, p in list(places.items()):
+        if floor is not None and p.sitelinks < int(floor) and (not since or p.added >= since):
+            reason = f"{p.sitelinks} sitelinks, under min_sitelinks {floor}"
+        elif ceiling is not None and p.sitelinks > int(ceiling):
+            reason = f"{p.sitelinks} sitelinks, over max_sitelinks {ceiling}"
+        else:
+            continue
+        records.append({"record": "place_rejected", "place_qid": q, "place_name": p.name,
+                        "reason": reason})
+        del places[q]
+    return records
+
+
+def load_clue_articles(path: Path) -> dict[str, int]:
+    """clue_qid -> Wikipedia articles about it (external/clues.jsonl), max over rows."""
+    articles: dict[str, int] = {}
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                row = json.loads(line)
+                n = int(row.get("clue_wikipedia_articles") or 0)
+                articles[row["clue_qid"]] = max(articles.get(row["clue_qid"], 0), n)
+    return articles
+
+
+def drop_unknown_clues(places: dict[str, Place], articles_path: Path,
+                       plan_cfg: dict[str, Any]) -> list[dict[str, Any]]:
+    """
+    Hold back clues nobody could know: with plan.min_clue_wikipedia_articles
+    set, a single clue (A1, B, NOISE and distractors) needs at least that many
+    Wikipedia articles about it, and a three-clue set (A3) needs at least one
+    member that has. A post built only on entities with no article in any
+    language is a guess, not a test. One record per place affected.
+    """
+    floor = plan_cfg.get("min_clue_wikipedia_articles")
+    if not floor:
+        return []
+    articles = load_clue_articles(articles_path)
+    known = lambda c: articles.get(c["clue_qid"], 0) >= int(floor)  # noqa: E731
+    records = []
+    for qid, place in places.items():
+        singles = [c for c in place.single_clues if known(c)]
+        triples = [s for s in place.triple_sets if any(known(c) for c in s["clues"])]
+        lost = (len(place.single_clues) - len(singles), len(place.triple_sets) - len(triples))
+        if any(lost):
+            records.append({"record": "clue_excluded", "place_qid": qid,
+                            "place_name": place.name, "clue_qid": None, "clue_label": None,
+                            "property": None,
+                            "reason": "clues with no Wikipedia article held back",
+                            "single_clues_held_back": lost[0],
+                            "three_clue_sets_held_back": lost[1]})
+        place.single_clues, place.triple_sets = singles, triples
+        place.reset_caches()
+    return records
 
 
 def load_config(path: Path) -> dict[str, Any]:
@@ -951,15 +1008,13 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def noise_donors(place: Place, places: dict[str, Place]) -> list[str]:
     """
-    Places that can supply a distractor for this place: on a different
-    continent, and with at least one single-clue-eligible clue to draw from.
-    The distractor has to point somewhere specific to be wrong in a useful way,
-    so it meets the same place_ambiguity and leakage rules as an A1 clue. A
-    place with no continent recorded has no donors, because "different
-    continent" cannot be established for it.
+    Places that can supply a distractor for this place: any other place with
+    at least one single-clue-eligible clue to draw from. It may be on the same
+    continent or on another, but not in the same country as the post's place.
+    The distractor has to
+    point somewhere specific to be wrong in a useful way, so it meets the same
+    place_ambiguity and label-leak rules as an A1 clue.
     """
-    if not place.continent:
-        return []
     # A distractor whose label names THIS place ("2013 South American
     # Championships" carries "American" into a United States item) would put a
     # forbidden name into the post, so donors are counted only for the clues
@@ -967,9 +1022,21 @@ def noise_donors(place: Place, places: dict[str, Place]) -> list[str]:
     return [
         qid
         for qid, other in places.items()
-        if other.continent and other.continent != place.continent
+        if qid != place.qid
+        and donor_relation(place, other) != "same_country"
         and place.distractor_clues(other)
     ]
+
+
+def donor_relation(place: Place, donor: Place) -> str:
+    """How far the distractor's place is from the item's place: same_country,
+    same_continent or other_continent (what is known from the place table)."""
+    countries = lambda p: {c.strip() for c in p.country.split(";") if c.strip()}  # noqa: E731
+    if countries(place) & countries(donor):
+        return "same_country"
+    if place.continent and place.continent == donor.continent:
+        return "same_continent"
+    return "other_continent"
 
 
 def feasible(
@@ -984,15 +1051,12 @@ def feasible(
     """
     spec = CONDITION_SPECS[condition]
 
-    if spec["noise"]:
-        if not place.continent:
-            return False, "no continent recorded, so no distractor can be chosen"
-        if not noise_donors(place, places):
-            return False, "no place on another continent has an eligible clue to donate"
+    if spec["noise"] and not noise_donors(place, places):
+        return False, "no other place has an eligible clue to donate"
 
     n_needed = spec["n_clues"]
     if n_needed == 1 and not place.single_clues:
-        return False, "no single-clue-eligible clue (place_ambiguity ceiling, leakage or toponym)"
+        return False, "no single-clue-eligible clue (place_ambiguity ceiling, label leak or toponym)"
     if n_needed == 3 and not place.triple_sets:
         return False, "no complete size-3 best_sets entry that resolves and holds no excluded clue"
     if n_needed not in (0, 1, 3):
@@ -1002,8 +1066,8 @@ def feasible(
     toponym = spec["needs_toponym"]
     if toponym == "ambiguous" and not place.ambiguous_forms():
         return False, "no usable ambiguous surface form"
-    if toponym == "exact" and not place.exact_forms():
-        return False, "no exact surface form recorded"
+    if toponym == "label" and not place.label_form:
+        return False, "no label form recorded in the place aliases"
 
     return True, ""
 
@@ -1038,13 +1102,33 @@ def choose_surface_form(
     kind = CONDITION_SPECS[condition]["needs_toponym"]
     if kind is None:
         return {"kind": "none", "text": None, "shared_by": None}
-    options = place.ambiguous_forms() if kind == "ambiguous" else place.exact_forms()
-    chosen = stream.pick(options)
-    return {
-        "kind": kind if kind == "exact" else "ambiguous_alias",
+    if kind == "label":
+        # No draw: the bare place name, whatever else shares it. name_ambiguous
+        # and top_namesake carry the same facts B records, so EXPLICIT rows can
+        # be binned like B rows.
+        label = place.label_form
+        return {
+            "kind": "exact",
+            "text": place.name,
+            "shared_by": label.get("shared_by"),
+            "name_ambiguous": label.get("kind") == "ambiguous_alias",
+            "geo_shared_by": label.get("geo_shared_by"),
+            "top_namesake": label.get("top_namesake"),
+        }
+    chosen = stream.pick(place.ambiguous_forms())
+    form = {
+        "kind": "ambiguous_alias",
         "text": chosen["text"],
         "shared_by": chosen.get("shared_by"),
+        "name_ambiguous": True,
     }
+    if kind == "ambiguous":
+        # The best-known other place 161+ km away with this name, so results
+        # can be split by whether the intended place is the obvious reading
+        # (compare its sitelinks with the item's place_sitelinks).
+        form["geo_shared_by"] = chosen.get("geo_shared_by")
+        form["top_namesake"] = chosen.get("top_namesake")
+    return form
 
 
 def choose_noise_entity(
@@ -1054,10 +1138,9 @@ def choose_noise_entity(
     stream: RandomStream,
 ) -> dict[str, Any] | None:
     """
-    For the noise conditions, add one entity associated with a place on a
-    different continent. Continent is used as the separation criterion rather
-    than a distance threshold because the place table carries no coordinates;
-    a cross-continent distractor is unambiguously far enough to be wrong.
+    For the noise conditions, add one entity associated with another place.
+    The other place can be anywhere except the post's own country
+    (donor_relation records whether it is on the same or another continent).
 
     The distractor is a real clue for a real other place, which is what makes
     it a useful distractor: a system that follows the wrong association lands
@@ -1080,15 +1163,17 @@ def choose_noise_entity(
     donor = places[donor_qid]
     donor_clue = stream.pick(place.distractor_clues(donor))
     return {
+        "donor_relation": donor_relation(place, donor),
         "clue_qid": donor_clue["clue_qid"],
         "clue_label": donor_clue["clue_label"],
         "property": donor_clue["property"],
         "property_label": donor_clue.get("property_label"),
         "entity_type": donor_clue.get("entity_type"),
         "place_ambiguity": donor_clue.get("place_ambiguity"),
-        "leaks_place_name": donor_clue.get("leaks_place_name"),
         "is_toponym": donor_clue.get("is_toponym"),
         "label_leak": donor_clue.get("label_leak"),
+        "is_human": donor_clue.get("is_human"),
+        "aliases": donor_clue.get("aliases") or [],
         "donor_place_qid": donor_qid,
         "donor_place_name": donor.name,
         "donor_continent": donor.continent,
@@ -1141,6 +1226,7 @@ def make_item_id(payload: dict[str, Any], replicate: int) -> str:
             "register": payload["register"],
             "length_band": payload["length_band"],
             "slots": payload["slots"],
+            "env_theme": payload.get("env_theme"),
             "replicate": replicate,
             "plan_version": PLAN_VERSION,
         },
@@ -1193,6 +1279,82 @@ def per_condition_target(config: dict[str, Any]) -> int | None:
     return math.ceil(int(final) * factor)
 
 
+def type_group(place: Place, plan_cfg: dict[str, Any]) -> str:
+    """The place's type group (plan.type_groups), or its own type when unlisted."""
+    return (plan_cfg.get("type_groups") or {}).get(place.place_type, place.place_type)
+
+
+def group_quotas(supply: dict[str, int], targets: dict[str, float], n: int,
+                 label: str = "") -> dict[str, int]:
+    """
+    Split n items over type groups by their target shares (largest remainder),
+    each capped by its supply. A group short of places hands its shortfall to
+    the groups that still have places, in proportion to their targets (an
+    untargeted group counts as a tiny share), so the total is n whenever the
+    supply allows. Every shortfall is reported.
+    """
+    groups = sorted(set(supply) | set(targets))
+    weight = {g: targets.get(g, 0.0) or 1e-6 for g in groups}
+    quotas = dict.fromkeys(groups, 0)
+    remaining = min(n, sum(supply.values()))
+    while remaining > 0:
+        open_groups = [g for g in groups if quotas[g] < supply.get(g, 0)]
+        if not open_groups:
+            break
+        total = sum(weight[g] for g in open_groups)
+        raw = {g: remaining * weight[g] / total for g in open_groups}
+        share = {g: math.floor(v) for g, v in raw.items()}
+        for g in sorted(open_groups, key=lambda g: (share[g] - raw[g], g))[:remaining - sum(share.values())]:
+            share[g] += 1
+        progressed = 0
+        for g in open_groups:
+            got = min(share[g], supply[g] - quotas[g])
+            quotas[g] += got
+            progressed += got
+        remaining -= progressed
+        if not progressed:
+            break
+    ideal = {g: round(n * targets.get(g, 0.0)) for g in groups}
+    short = {g: ideal[g] - quotas[g] for g in groups if quotas[g] < ideal[g]}
+    if short:
+        print(f"  note: {label} type groups short of their target share: "
+              + ", ".join(f"{g} {quotas[g]}/{ideal[g]}" for g in sorted(short)),
+              file=sys.stderr)
+    return {g: q for g, q in quotas.items() if q}
+
+
+def country_key(place: Place) -> str:
+    """The country a place counts against for balancing (its first listed one)."""
+    return place.country.split(";")[0].strip()
+
+
+def pick_country_balanced(qids: list[str], n: int, places: dict[str, Place],
+                          country_uses: dict[str, int], stream: RandomStream,
+                          cap: int | None = None) -> list[str]:
+    """
+    Up to n of qids, each drawn from the countries used least so far in this
+    condition (country_uses, plus the picks made here), so no country gets
+    another place while one with fewer still has a place to offer, and none
+    goes past `cap`. Ties are drawn from the stream. country_uses itself is
+    not changed.
+    """
+    uses = dict(country_uses)
+    pool = sorted(qids)
+    chosen: list[str] = []
+    for _ in range(n):
+        if cap is not None:
+            pool = [q for q in pool if uses.get(country_key(places[q]), 0) < cap]
+        if not pool:
+            break
+        least = min(uses.get(country_key(places[q]), 0) for q in pool)
+        qid = stream.pick([q for q in pool if uses.get(country_key(places[q]), 0) == least])
+        chosen.append(qid)
+        pool.remove(qid)
+        key = country_key(places[qid])
+        uses[key] = uses.get(key, 0) + 1
+    return chosen
+
+
 def target_slate(
     places: dict[str, Place],
     feasible_by_condition: dict[str, list[str]],
@@ -1200,9 +1362,16 @@ def target_slate(
     target: int,
     max_per_pair: int,
     stream: RandomStream,
+    plan_cfg: dict[str, Any] | None = None,
+    prefer: set[str] | None = None,
 ) -> list[tuple[str, str, int]]:
     """
     `target` items per condition, spread as widely as the supply allows.
+
+    With plan.type_targets set, the target is first split into type groups
+    (group_quotas) and each group is filled separately as below. With `prefer`
+    (the core places), each group is filled from preferred places first, so
+    conditions outside the core share as many places with it as they can.
 
     In rounds: while the open places (feasible, under max_per_pair) number no
     more than what is still needed, each gets one more item; otherwise the
@@ -1211,34 +1380,66 @@ def target_slate(
     feasible place has none, and a condition short of places repeats them
     evenly. A condition that cannot reach the target is reported, not padded.
     """
+    plan_cfg = plan_cfg or {}
+    targets = plan_cfg.get("type_targets") or {}
     slate: list[tuple[str, str, int]] = []
     for condition in conditions:
+        feasible_qids = feasible_by_condition.get(condition, [])
+        groups: dict[str, list[str]] = defaultdict(list)
+        for qid in feasible_qids:
+            groups[type_group(places[qid], plan_cfg) if targets else ""].append(qid)
+        quotas = (group_quotas({g: len(v) * max_per_pair for g, v in groups.items()},
+                               targets, target, condition)
+                  if targets else {"": target})
+        quotas.pop("*", None)
         counts: dict[str, int] = defaultdict(int)
-        remaining = target
-        while remaining > 0:
-            open_places = [q for q in feasible_by_condition.get(condition, [])
-                           if counts[q] < max_per_pair]
-            if not open_places:
-                print(f"  note: {condition} planned {target - remaining} of {target}: "
-                      f"every feasible place is at the cap of {max_per_pair}",
-                      file=sys.stderr)
-                break
-            if remaining >= len(open_places):
-                chosen = open_places
-            else:
-                by_continent: dict[str, list[str]] = defaultdict(list)
-                for qid in open_places:
-                    by_continent[places[qid].continent].append(qid)
-                take = allocate_even({c: len(v) for c, v in by_continent.items()},
-                                     remaining)
-                chosen = []
-                for continent in sorted(by_continent):
-                    if take[continent]:
-                        chosen += stream.sample(by_continent[continent], take[continent])
-            for qid in chosen:
-                slate.append((qid, condition, counts[qid]))
-                counts[qid] += 1
-            remaining -= len(chosen)
+        # Places per country so far in this condition, across type groups.
+        country_uses: dict[str, int] = defaultdict(int)
+        cap = plan_cfg.get("max_places_per_country")
+        under_cap = lambda q: cap is None or country_uses[country_key(places[q])] < cap  # noqa: E731
+        balance = plan_cfg.get("balance_countries") or cap is not None
+        planned = 0
+        # A group that cannot fill its quota within the country cap leaves the
+        # rest to a last pass over every group ("*"), still within the cap.
+        for group in sorted(quotas) + ["*"]:
+            remaining = quotas[group] if group != "*" else target - planned
+            members = groups[group] if group != "*" else feasible_qids
+            while remaining > 0:
+                open_places = [q for q in members if counts[q] < max_per_pair and under_cap(q)]
+                if not open_places:
+                    break
+                if prefer:
+                    open_places = [q for q in open_places if q in prefer] or open_places
+                if remaining >= len(open_places) and not balance:
+                    chosen = open_places
+                else:
+                    by_continent: dict[str, list[str]] = defaultdict(list)
+                    for qid in open_places:
+                        by_continent[places[qid].continent].append(qid)
+                    take = allocate_even({c: len(v) for c, v in by_continent.items()},
+                                         remaining)
+                    chosen = []
+                    for continent in sorted(by_continent):
+                        if not take[continent]:
+                            continue
+                        if balance:
+                            chosen += pick_country_balanced(by_continent[continent],
+                                                            take[continent], places,
+                                                            country_uses, stream, cap)
+                        else:
+                            chosen += stream.sample(by_continent[continent], take[continent])
+                if not chosen:
+                    break
+                for qid in chosen:
+                    slate.append((qid, condition, counts[qid]))
+                    counts[qid] += 1
+                    country_uses[country_key(places[qid])] += 1
+                remaining -= len(chosen)
+                planned += len(chosen)
+        if planned < target:
+            print(f"  note: {condition} planned {planned} of {target}: every feasible "
+                  f"place is used ({max_per_pair} per place) or its country is at "
+                  f"max_places_per_country {cap}", file=sys.stderr)
     return slate
 
 
@@ -1296,10 +1497,38 @@ def build_slate(
                 continue
             feasible_by_condition[condition].append(qid)
 
+    # cover_all_places conditions get replicates[condition] items on every
+    # place that can support them, not an evenly spread share of a target.
+    cover_all = sorted(set(plan_cfg.get("cover_all_places") or []) & set(replicates))
+    covered = [(qid, condition, replicate)
+               for condition in cover_all
+               for qid in sorted(feasible_by_condition[condition])
+               for replicate in range(replicates[condition])]
+
     target = per_condition_target(config)
     if target is not None:
-        return target_slate(places, feasible_by_condition, sorted(replicates),
-                            target, max_per_pair, stream), rejections
+        spread = [c for c in sorted(replicates) if c not in cover_all]
+        # The core conditions share one set of places, chosen once from the
+        # places feasible for all of them, so their results compare like for
+        # like. Each core condition then has one item per core place.
+        core_conditions = [c for c in plan_cfg.get("core_conditions") or [] if c in spread]
+        slate = []
+        core: list[str] = []
+        if core_conditions:
+            pool = sorted(set.intersection(*(set(feasible_by_condition[c])
+                                             for c in core_conditions)))
+            core = [q for q, _, _ in target_slate(places, {"CORE": pool}, ["CORE"], target,
+                                                  1, stream, plan_cfg)]
+            slate += [(q, c, 0) for c in core_conditions for q in core]
+        # The other conditions take core places first wherever they can (B:
+        # core places with a shared name), so they share most places with it.
+        slate += target_slate(places, feasible_by_condition,
+                              [c for c in spread if c not in core_conditions],
+                              target, max_per_pair, stream, plan_cfg, prefer=set(core))
+        if plan_cfg.get("cover_used_places_only"):
+            used = {q for q, _, _ in slate}
+            covered = [(q, c, r) for q, c, r in covered if q in used]
+        return slate + covered, rejections
 
     for condition in sorted(replicates):
         for qid in feasible_by_condition[condition]:
@@ -1317,7 +1546,7 @@ def build_slate(
         pool = [
             (qid, condition)
             for (qid, condition), n in counts.items()
-            if n < max_per_pair
+            if n < max_per_pair and condition not in cover_all
         ]
         pool.sort()
         added = 0
@@ -1363,14 +1592,17 @@ def plan_items(
         surface_form = choose_surface_form(place, condition, stream)
         noise_entity = choose_noise_entity(place, condition, places, stream)
         register = choose_register(config, stream)
-        length_band = stream.pick(register.get("length_bands", DEFAULT_LENGTH_BANDS))
+        bands = register.get("length_bands", DEFAULT_LENGTH_BANDS)
+        length_band = bands[0] if len(bands) == 1 else stream.pick(bands)
         slots = choose_slots(register, config, stream)
+        env_theme = stream.pick(place.env_themes) if place.env_themes else None
 
         payload: dict[str, Any] = {
             "plan_version": PLAN_VERSION,
             "place_qid": qid,
             "place_name": place.name,
             "place_type": place.place_type,
+            "place_type_group": type_group(place, config["plan"]),
             "place_country": place.country,
             "place_continent": place.continent,
             "place_sitelinks": place.sitelinks,
@@ -1389,9 +1621,10 @@ def plan_items(
                     "place_ambiguity": c.get("place_ambiguity"),
                     "surface_ambiguity": c.get("surface_ambiguity"),
                     "source_set_sizes": c.get("source_set_sizes"),
-                    "leaks_place_name": c.get("leaks_place_name"),
                     "is_toponym": c.get("is_toponym"),
                     "label_leak": c.get("label_leak"),
+                    "is_human": c.get("is_human"),
+                    "aliases": c.get("aliases") or [],
                 }
                 for c in clues
             ],
@@ -1402,6 +1635,7 @@ def plan_items(
             "register_description": register.get("description"),
             "length_band": length_band,
             "slots": slots,
+            "env_theme": env_theme,
             "replicate": replicate,
         }
 
@@ -1487,10 +1721,29 @@ def summarise(items: list[dict[str, Any]], rejections: list[dict[str, Any]]) -> 
     for continent, n in sorted(by_continent.items()):
         print(f"    {continent:<16} {n:>5}")
 
+    print("\n  type groups per condition (%)")
+    groups = sorted({i["place_type_group"] for i in items})
+    print("    " + " " * 10 + "".join(f"{g[:9]:>10}" for g in groups))
+    for condition in sorted({i["condition"] for i in items}):
+        mine = Counter(i["place_type_group"] for i in items if i["condition"] == condition)
+        total = sum(mine.values())
+        print(f"    {condition:<10}" + "".join(f"{100 * mine[g] / total:>10.1f}" for g in groups))
+
+    print("\n  countries per condition (most used)")
+    for condition in sorted({i["condition"] for i in items}):
+        mine = Counter(i["place_country"].split(";")[0].strip()
+                       for i in items if i["condition"] == condition)
+        top = ", ".join(f"{c} {n}" for c, n in mine.most_common(5))
+        print(f"    {condition:<10} {len(mine):>3} countries; {top}")
+
     by_register = Counter(i["register"] for i in items)
     print("\n  by register")
     for register, n in sorted(by_register.items()):
         print(f"    {register:<22} {n:>5}")
+
+    themed = sum(1 for i in items if i.get("env_theme"))
+    if themed:
+        print(f"\n  {themed} of {len(items)} items have an environmental theme")
 
     held_back = [r for r in rejections if r["record"] != "pair_rejected"]
     for kind, label in (("clue_excluded", "clues excluded"),
@@ -1536,7 +1789,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     places_path = Path(paths["places_csv"])
     clues_path = Path(paths["clue_sets"])
     aliases_path = Path(paths["place_aliases"])
-    leakage_path = Path(paths["name_leakage"])
     types_path = Path(paths["clue_types"])
     stream_path = Path(paths["random_stream"])
     state_path = Path(paths["plan_stream_state"])
@@ -1560,7 +1812,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"places   {places_path}")
     print(f"clues    {clues_path}")
     print(f"aliases  {aliases_path}")
-    print(f"leakage  {leakage_path}")
     print(f"types    {types_path}")
     print(f"random   {stream_path}")
 
@@ -1568,14 +1819,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     if plan_cfg.get("random_min") is None or plan_cfg.get("random_max") is None:
         raise SystemExit(
             f"{args.config} must set plan.random_min and plan.random_max to the "
-            f"range the integers in {stream_path} were requested with from "
-            f"random.org. Every draw's uniformity depends on it."
+            f"range the integers in {stream_path} were generated over. "
+            f"Every draw's uniformity depends on it."
         )
 
     places = load_places(places_path)
     held_back = load_clue_sets(
-        clues_path, aliases_path, leakage_path, types_path, places, plan_cfg
+        clues_path, aliases_path, types_path, places, plan_cfg
     )
+    little_known = drop_little_known(places, plan_cfg)
+    if little_known:
+        print(f"left out {len(little_known)} places outside the sitelink band "
+              f"{plan_cfg.get('min_sitelinks')}..{plan_cfg.get('max_sitelinks')}")
+    held_back += little_known
+    unknown = drop_unknown_clues(places, Path(paths["clue_prominence"]), plan_cfg)
+    if unknown:
+        print(f"held back {len(unknown)} clues and clue sets no reader could know "
+              f"(min_clue_wikipedia_articles {plan_cfg.get('min_clue_wikipedia_articles')})")
+    held_back += unknown
     stream = RandomStream(
         stream_path, state_path,
         low=int(plan_cfg["random_min"]), high=int(plan_cfg["random_max"]),

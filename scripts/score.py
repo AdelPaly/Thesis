@@ -3,6 +3,8 @@
     python scripts/score.py                                   # everything
     python scripts/score.py --config refined --dataset geocorpora
     python scripts/score.py --by condition
+    python scripts/score.py --by place_prominence      # also rival_prominence,
+                                                       # clue_prominence, env_theme
 
 It touches no model, makes no network call, and needs no API key: it only reads
 results/predictions/*.jsonl and splits/item_split.csv (the one src/ import is
@@ -47,6 +49,11 @@ from keys import current_config_name, place_key  # noqa: E402
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
 CONFIG_DIR = REPO_ROOT / "configs"
 ITEM_SPLIT_PATH = REPO_ROOT / "splits" / "item_split.csv"
+
+# Prominence bins and the environmental theme, written by generation/synthetic/
+# finalise.py and copied onto each record by src/runner.py (its BIN_COLUMNS).
+# Records from datasets without them fall in one "(none)" group.
+BIN_COLUMNS = ["place_prominence", "rival_prominence", "clue_prominence", "env_theme"]
 
 LABEL_WIDTH = 34
 CSV_FIELDS = ["group", "n", "n_gold_qid", "exact", "country", "continent",
@@ -295,7 +302,7 @@ def main() -> None:
                         "(default all; configurations and thresholds are chosen "
                         "on dev, test is reported once)")
     p.add_argument("--by", default=None,
-                   choices=["condition", "paradigm", "dataset"],
+                   choices=["condition", "paradigm", "dataset", *BIN_COLUMNS],
                    help="extra breakdown within each config/dataset pair")
     p.add_argument("--out", default=None, help="write the table to a CSV file")
     args = p.parse_args()
@@ -320,7 +327,8 @@ def main() -> None:
         if args.by:
             for sub, sub_items in sorted(group_by(items, args.by).items(),
                                          key=lambda kv: str(kv[0])):
-                rows.append((f"    {args.by}={sub}", summarise_metrics(sub_items)))
+                shown = "(none)" if sub is None else sub
+                rows.append((f"    {args.by}={shown}", summarise_metrics(sub_items)))
 
     print_table(rows)
     if args.out:

@@ -53,6 +53,11 @@ GIT_STATUS_TIMEOUT_S = 20
 # tracked in git and changes on every run.
 CODE_PATHS = ("src", "configs")
 
+# Optional dataset columns copied onto each prediction record so scripts/score.py
+# can split results by them (--by). Written by generation/synthetic/finalise.py;
+# datasets without them just get None. Keep in step with BIN_COLUMNS in score.py.
+BIN_COLUMNS = ("place_prominence", "rival_prominence", "clue_prominence", "env_theme")
+
 
 @functools.lru_cache(maxsize=1)
 def code_rev() -> str:
@@ -120,6 +125,7 @@ def build_record(cfg: PipelineConfig, dataset: str, row, out) -> dict:
         "text": row["text"],
         "place_qid": _clean(row.get("qid")),
         "condition": _clean(row.get("signal_type")),
+        **{column: _clean(row.get(column)) for column in BIN_COLUMNS},
         "gold_latlon": _latlon(row),
         "gold_country": _clean(row.get("country")),
         "gold_continent": _clean(row.get("continent")),

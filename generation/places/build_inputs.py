@@ -387,7 +387,6 @@ def main(argv: list[str] | None = None) -> int:
     for key, name in (("places_csv", "01_places_final.csv"),
                       ("clue_sets", "05_clue_sets.jsonl"),
                       ("place_aliases", "04b_place_aliases.jsonl"),
-                      ("name_leakage", "05_name_leakage.csv"),
                       ("clue_types", "05b_clue_types.jsonl")):
         print(f"  {key + ':':<18} {(rel / name).as_posix()}")
     print("then make a new plan: python plan.py --replace")

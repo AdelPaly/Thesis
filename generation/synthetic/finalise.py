@@ -28,11 +28,12 @@ A post is dropped when:
     names_place     a no-place-name condition (A1, A3, NOISE_A1) wrote the
                     place, another of its names, its country or a demonym, or
                     a region it sits in
-    wrong_toponym   B or NOISE_B did not write the planned ambiguous name,
-                    or also wrote the country, a region or another name of
-                    the place that gives it away
+    wrong_toponym   B, NOISE_B or EXPLICIT also wrote the country, a region or
+                    another name of the place that gives it away, or B or
+                    NOISE_B did not write the planned ambiguous name
     missing_name    EXPLICIT did not write the place name
-    clue_missing    a clue entity the plan asked for is not in the text
+    clue_missing    a clue entity the plan asked for is not in the text, by its
+                    label, a Wikidata alias or, for a person, the surname
     noise_missing   a NOISE item does not contain its distractor
     no_coordinates  the place's QID has no P625 coordinate on Wikidata, so the
                     row could not be scored
@@ -41,6 +42,10 @@ A post is dropped when:
                     (a planning-stage defect; checked before anything else)
     balanced_out    the post passed every check but was not selected when the
                     conditions were cut to the same size (see below)
+
+Conditions listed in finalise.unbalanced in config.yaml (EXPLICIT) are not cut:
+every post that passes the checks is kept, so the condition covers as many
+places as it can.
 
 Balancing: the plan is deliberately uneven (A1 and A3 get two posts per place,
 the others one) and oversized, so after the checks the conditions hold
@@ -70,7 +75,7 @@ import re
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 HERE = Path(__file__).resolve().parent
 PLACES_SCRIPTS = HERE.parent / "places" / "scripts"
@@ -85,21 +90,81 @@ BALANCE_SEED = 20261004    # default --seed: which posts survive balancing
 SPARQL_BATCH = 50          # QIDs per VALUES clause
 ERROR_REASON_CHARS = 200   # how much of a generation error goes in the report
 
+# Prominence bins, for splitting results; they do not change which posts are
+# kept. All three go by Wikipedia counts.
+# place_prominence (every condition), by the place's own sitelinks (language
+# versions): under 30, 30 to 99, 100 or more (100+ is the "famous" tier of the
+# place selection). Over the 295 base places that is 87 / 112 / 96.
+PLACE_PROMINENCE_BINS = [(100, "high_100_plus"), (30, "mid_30_to_99"), (0, "low_under_30")]
+# rival_prominence (B, NOISE_B, and EXPLICIT when other places share the name;
+# name_ambiguous says which): (place sitelinks + 1) / (sitelinks + 1 of the
+# best-known other place with the same name, the "rival"). place_leads_2x at a
+# ratio of 2 or more, rival_leads_2x at 0.5 or less, and close in between,
+# where the counts are too near to call either one more prominent.
+RIVAL_RATIO = 2.0
+RIVAL_PROMINENCE_BINS = (f"place_leads_{RIVAL_RATIO:g}x", "close",
+                         f"rival_leads_{RIVAL_RATIO:g}x")
+# clue_prominence (A1, A3, NOISE_A1), by the Wikipedia articles of the post's
+# best-known clue (for A3, one recognisable clue is enough to start from):
+# none is "unknown", 1-9 "niche", 10+ "well_known".
+CLUE_PROMINENCE_BINS = [(10, "well_known"), (1, "niche"), (0, "unknown")]
+
 DATASET_COLUMNS = ["text", "qid", "location_name", "country", "continent",
                    "signal_type", "latitude", "longitude",
                    "signal", "surface_form", "clue_qids", "clue_labels",
-                   "noise_entity", "register", "length_band", "item_id", "model"]
+                   "clue_forms", "noise_entity", "register", "length_band",
+                   "place_sitelinks", "rival_qid", "rival_sitelinks",
+                   "name_ambiguous", "place_is_most_famous", "place_prominence",
+                   "rival_prominence", "clue_prominence", "env_theme",
+                   "item_id", "model"]
 REPORT_COLUMNS = ["item_id", "condition", "place_qid", "place_name", "status",
                   "reason", "text"]
 
+# Trailing name parts that are not the surname ("Louis Jones Jr.", "Henry III").
+NAME_SUFFIXES = {"jr", "jr.", "sr", "sr.", "junior", "senior", "ii", "iii", "iv", "v"}
 
-def mentions(text: str, label: str) -> bool:
-    """A clue counts as mentioned if its label, or the label without a
-    trailing "(film)"-style qualifier, appears as a whole word."""
-    if plan.contains_word(text, label):
-        return True
-    bare = re.sub(r"\s*\([^)]*\)\s*$", "", label).strip()
-    return bare != label and plan.contains_word(text, bare)
+
+def _bare(label: str) -> str:
+    """The label without a trailing "(film)"-style qualifier."""
+    return re.sub(r"\s*\([^)]*\)\s*$", "", label).strip()
+
+
+def surname(label: str) -> str:
+    """The last name part of a person's label, numbering and Jr./Sr. dropped:
+    "Percival Fredrickstein von Musel Klossowski de Rolo III" -> "Rolo"."""
+    words = [w.strip(",") for w in _bare(label).split()]
+    while len(words) > 1 and words[-1].casefold() in NAME_SUFFIXES:
+        words.pop()
+    return words[-1] if words else ""
+
+
+def mention_form(text: str, clue: dict[str, Any] | str) -> str | None:
+    """
+    The form in which the post mentions the clue, or None if it does not.
+
+    The prompt lets the model write an entity the way people would: a person
+    by the shorter name people use ("Percy Rolo" for Percival Fredrickstein
+    von Musel Klossowski de Rolo III), anything else by its usual name. So a
+    mention is the label, the label without a "(film)" qualifier, any
+    Wikidata alias, or, for a person (is_human from the planner), the surname
+    as a whole word. Nicknames that are not aliases still need the surname.
+    """
+    if isinstance(clue, str):
+        clue = {"clue_label": clue}
+    label = clue["clue_label"]
+    for form in [label, _bare(label), *(clue.get("aliases") or [])]:
+        if form and plan.contains_word(text, form):
+            return form
+    if clue.get("is_human"):
+        last = surname(label)
+        if len(plan.fold(last)) >= 2 and plan.contains_word(text, last):
+            return last
+    return None
+
+
+def mentions(text: str, clue: dict[str, Any] | str) -> bool:
+    """True when the post mentions the clue in any accepted form (mention_form)."""
+    return mention_form(text, clue) is not None
 
 
 def load_aliases(path: Path) -> dict[str, dict[str, Any]]:
@@ -114,8 +179,71 @@ def load_aliases(path: Path) -> dict[str, dict[str, Any]]:
     return out
 
 
-def check(item: dict[str, Any], text: str, names: dict[str, Any]) -> tuple[str, str] | None:
-    """(status, reason) when the post must be dropped, None when it passes."""
+def load_clue_articles(path: Path) -> dict[str, int]:
+    """Clue QID -> number of Wikipedia articles, from the external clues export."""
+    return {c["clue_qid"]: int(c.get("clue_wikipedia_articles") or 0)
+            for c in gen.read_jsonl(path)}
+
+
+def _bin(value: int, bins: list[tuple[int, str]]) -> str:
+    """The label of the first (threshold, label) that value reaches."""
+    return next(label for threshold, label in bins if value >= threshold)
+
+
+def place_prominence(sitelinks: int | None) -> str:
+    return "" if sitelinks is None else _bin(sitelinks, PLACE_PROMINENCE_BINS)
+
+
+def rival_prominence(sitelinks: int | None, rival: dict[str, Any]) -> str:
+    """The RIVAL_PROMINENCE_BINS label of the place's sitelinks against the
+    best-known place with the same name (B only). Both counts get +1 so a rival
+    with no sitelinks still compares."""
+    if sitelinks is None or "sitelinks" not in rival:
+        return ""
+    ratio = (sitelinks + 1) / (rival["sitelinks"] + 1)
+    place_leads, close, rival_leads = RIVAL_PROMINENCE_BINS
+    if ratio >= RIVAL_RATIO:
+        return place_leads
+    return rival_leads if ratio <= 1 / RIVAL_RATIO else close
+
+
+def name_ambiguous(surface: dict[str, Any]) -> str:
+    """"true" when other places share the name the post uses, "false" when none
+    does, "" for a post that names no place. B and NOISE_B are always "true";
+    EXPLICIT is either, and then carries rival_prominence like B."""
+    flag = surface.get("name_ambiguous")
+    return "" if flag is None else str(bool(flag)).lower()
+
+
+def clue_prominence(clues: list[dict[str, Any]], articles: dict[str, int]) -> str:
+    """The bin of the best-known clue; "" for posts without clues or unknown QIDs."""
+    known = [articles[c["clue_qid"]] for c in clues if c["clue_qid"] in articles]
+    return _bin(max(known), CLUE_PROMINENCE_BINS) if known else ""
+
+
+def environment_pattern(terms: list[str] | None) -> re.Pattern | None:
+    """The finalise.environment_keywords terms as one pattern, each matched at the
+    start of a word; None when there are no terms (the check is then off)."""
+    terms = [t for t in (terms or []) if t]
+    if not terms:
+        return None
+    return re.compile(r"\b(?:" + "|".join(f"(?:{t})" for t in terms) + ")", re.I)
+
+
+def word_limits(finalise_cfg: dict[str, Any] | None) -> tuple[int, int] | None:
+    """(min, max) words from finalise.min_words and max_words; None when either is unset."""
+    cfg = finalise_cfg or {}
+    if cfg.get("min_words") is None or cfg.get("max_words") is None:
+        return None
+    return int(cfg["min_words"]), int(cfg["max_words"])
+
+
+def check(item: dict[str, Any], text: str, names: dict[str, Any],
+          env_pattern: re.Pattern | None = None,
+          limits: tuple[int, int] | None = None) -> tuple[str, str] | None:
+    """(status, reason) when the post must be dropped, None when it passes.
+    env_pattern, when given, drops a post with an env_theme and none of its terms.
+    limits, when given, drops a post with fewer or more words than (min, max)."""
     condition = item["condition"]
     place = item["place_name"]
     surface = (item.get("surface_form") or {}).get("text")
@@ -132,30 +260,37 @@ def check(item: dict[str, Any], text: str, names: dict[str, Any]) -> tuple[str, 
             if contains(text, form):
                 return "names_place", f'wrote the region "{form}"'
 
-    elif condition in AMBIGUOUS:
+    elif condition in AMBIGUOUS or condition == "EXPLICIT":
+        # The bare planned name and nothing that would add context to it.
+        # EXPLICIT's planned name is the place's label.
+        status = "missing_name" if condition == "EXPLICIT" else "wrong_toponym"
+        surface = surface or (place if condition == "EXPLICIT" else None)
         if not surface or not contains(text, surface):
-            return "wrong_toponym", f'planned name "{surface}" is missing'
+            return status, f'planned name "{surface}" is missing'
         for form in [place, *names["forms"]]:
             # Another name of the place that is not just part of the planned one.
             if not contains(surface, form) and contains(text, form):
                 return "wrong_toponym", f'also wrote "{form}"'
         for form in names["country"]:
-            if contains(text, form):
+            # A country that is part of the name itself ("Guatemala City") is fine.
+            if not contains(surface, form) and contains(text, form):
                 return "wrong_toponym", f'also wrote the country or demonym "{form}"'
         for form in names["regions"]:
             if not contains(surface, form) and contains(text, form):
                 return "wrong_toponym", f'also wrote the region "{form}"'
 
-    elif condition == "EXPLICIT":
-        if not (contains(text, surface or place) or contains(text, place)):
-            return "missing_name", f'"{surface or place}" is missing'
-
     for clue in item.get("clues") or []:
-        if not mentions(text, clue["clue_label"]):
+        if not mentions(text, clue):
             return "clue_missing", f'"{clue["clue_label"]}" is missing'
     noise = item.get("noise_entity")
-    if noise and not mentions(text, noise["clue_label"]):
+    if noise and not mentions(text, noise):
         return "noise_missing", f'"{noise["clue_label"]}" is missing'
+    if env_pattern is not None and item.get("env_theme") and not env_pattern.search(text):
+        return "no_environment", f'no environmental wording (theme "{item["env_theme"]}")'
+    if limits is not None:
+        words = len(text.split())
+        if not limits[0] <= words <= limits[1]:
+            return "length", f"{words} words, allowed {limits[0]} to {limits[1]}"
     return None
 
 
@@ -171,7 +306,9 @@ def repeated_clue(item: dict[str, Any]) -> str | None:
 
 
 def verdict_for(item: dict[str, Any], row: dict[str, Any] | None,
-                aliases: dict[str, dict[str, Any]]) -> tuple[str, str] | None:
+                aliases: dict[str, dict[str, Any]],
+                env_pattern: re.Pattern | None = None,
+                limits: tuple[int, int] | None = None) -> tuple[str, str] | None:
     """The drop (status, reason) for one planned item, or None when it is kept."""
     duplicate = repeated_clue(item)
     if duplicate:
@@ -184,7 +321,7 @@ def verdict_for(item: dict[str, Any], row: dict[str, Any] | None,
     if not text:
         return "empty", ""
     names = aliases.get(item["place_qid"], {"forms": [], "country": [], "regions": []})
-    return check(item, text, names)
+    return check(item, text, names, env_pattern, limits)
 
 
 def coordinates(qids: list[str]) -> dict[str, tuple[float, float]]:
@@ -240,27 +377,32 @@ def _rank(seed: int, item_id: str) -> str:
 allocate_even = plan.allocate_even  # one implementation, shared with the planner
 
 
-def balance(kept: list[Entry], seed: int,
-            per_condition: int | None = None) -> tuple[list[Entry], list[Entry], int]:
+def balance(kept: list[Entry], seed: int, per_condition: int | None = None,
+            unbalanced: Iterable[str] = ()) -> tuple[list[Entry], list[Entry], int]:
     """
-    Cut every condition to the same number of posts.
+    Cut every condition to the same number of posts, except those in
+    `unbalanced`, which keep every post that passed the checks.
 
-    N is the smallest condition's size unless per_condition is given (it may not
-    exceed that size). Within a condition the picks are spread evenly over
-    continents (allocate_even) and ordered by a seeded hash, so the choice
-    depends on nothing but the seed. Returns (selected, excluded, N); selected
-    keeps the order of `kept`.
+    N is the smallest balanced condition's size unless per_condition is given
+    (it may not exceed that size). Within a condition the picks are spread
+    evenly over continents (allocate_even) and ordered by a seeded hash, so the
+    choice depends on nothing but the seed. Returns (selected, excluded, N);
+    selected keeps the order of `kept`.
     """
+    skip = set(unbalanced)
     by_condition: dict[str, list[Entry]] = {}
     for entry in kept:
         by_condition.setdefault(entry[0]["condition"], []).append(entry)
-    smallest = min(len(v) for v in by_condition.values())
+    cut = {c: v for c, v in by_condition.items() if c not in skip}
+    if not cut:
+        return list(kept), [], 0
+    smallest = min(len(v) for v in cut.values())
     n = smallest if per_condition is None else per_condition
     if n > smallest:
         raise ValueError(f"--per-condition {n} exceeds the smallest condition "
                          f"({smallest} posts)")
-    chosen: set[str] = set()
-    for entries in by_condition.values():
+    chosen: set[str] = {e[0]["item_id"] for c in skip for e in by_condition.get(c, [])}
+    for entries in cut.values():
         by_continent: dict[str, list[Entry]] = {}
         for entry in entries:
             by_continent.setdefault(entry[0]["place_continent"], []).append(entry)
@@ -297,8 +439,14 @@ def write_csv(path: Path, columns: list[str], rows: list[dict[str, Any]]) -> Non
 
 
 def dataset_row(item: dict[str, Any], row: dict[str, Any], text: str,
-                coord: tuple[float, float]) -> dict[str, Any]:
+                coord: tuple[float, float],
+                clue_articles: dict[str, int] | None = None) -> dict[str, Any]:
     lat, lon = coord
+    surface = item.get("surface_form") or {}
+    namesake = surface.get("top_namesake") or {}
+    place_links = item.get("place_sitelinks")
+    most_famous = ("" if not namesake or place_links is None
+                   else str(place_links > namesake["sitelinks"]).lower())
     return {
         "text": text,
         "qid": item["place_qid"],
@@ -312,9 +460,19 @@ def dataset_row(item: dict[str, Any], row: dict[str, Any], text: str,
         "surface_form": (item.get("surface_form") or {}).get("text") or "",
         "clue_qids": ";".join(c["clue_qid"] for c in item.get("clues") or []),
         "clue_labels": ";".join(c["clue_label"] for c in item.get("clues") or []),
+        "clue_forms": ";".join(mention_form(text, c) or "" for c in item.get("clues") or []),
         "noise_entity": (item.get("noise_entity") or {}).get("clue_label") or "",
         "register": item["register"],
         "length_band": item["length_band"],
+        "place_sitelinks": "" if place_links is None else place_links,
+        "rival_qid": namesake.get("qid", ""),
+        "rival_sitelinks": namesake.get("sitelinks", ""),
+        "name_ambiguous": name_ambiguous(surface),
+        "place_is_most_famous": most_famous,
+        "place_prominence": place_prominence(place_links),
+        "rival_prominence": rival_prominence(place_links, namesake),
+        "clue_prominence": clue_prominence(item.get("clues") or [], clue_articles or {}),
+        "env_theme": item.get("env_theme") or "",
         "item_id": item["item_id"],
         "model": row.get("model"),
     }
@@ -365,10 +523,13 @@ def main(argv: list[str] | None = None) -> int:
     report_path = Path(paths["finalise_report"])
     dataset_path = Path(paths["dataset_csv"])
 
+    env_pattern = environment_pattern((config.get("finalise") or {}).get("environment_keywords"))
+    limits = word_limits(config.get("finalise"))
+
     report, kept = [], []
     for item in items:
         row = latest.get(item["item_id"])
-        verdict = verdict_for(item, row, aliases)
+        verdict = verdict_for(item, row, aliases, env_pattern, limits)
         text = ((row or {}).get("post_text") or "").strip()
         report.append({"item_id": item["item_id"], "condition": item["condition"],
                        "place_qid": item["place_qid"], "place_name": item["place_name"],
@@ -404,14 +565,17 @@ def main(argv: list[str] | None = None) -> int:
                   f"Generate more, or re-run with --no-balance.", file=sys.stderr)
             return 1
         try:
-            kept, cut, balanced_n = balance(kept, args.seed, per_condition)
+            kept, cut, balanced_n = balance(
+                kept, args.seed, per_condition,
+                (config.get("finalise") or {}).get("unbalanced") or ())
         except ValueError as exc:
             print(f"\n! {exc}", file=sys.stderr)
             return 1
         apply_balanced_out(report, cut, balanced_n, args.seed)
         write_csv(report_path, REPORT_COLUMNS, report)
 
-    dataset = [dataset_row(item, row, text, coords[item["place_qid"]])
+    clue_articles = load_clue_articles(Path(paths["clue_prominence"]))
+    dataset = [dataset_row(item, row, text, coords[item["place_qid"]], clue_articles)
                for item, row, text in kept]
     write_csv(dataset_path, DATASET_COLUMNS, dataset)
 

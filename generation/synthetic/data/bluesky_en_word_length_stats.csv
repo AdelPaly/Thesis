@@ -1,0 +1,14 @@
+group,measure,value
+Location,Mean,19.3
+Location,Median,15
+Location,Mode,6 (4.2% of posts)
+Range,Minimum,1
+Range,Maximum,97
+Variability,Standard deviation,14.6
+Variability,Variance,213.2
+Variability,Coefficient of variation,75.60%
+Quartiles,Q1,8
+Quartiles,Q3,28
+Quartiles,Interquartile range,20
+Quartiles,Quartile deviation,10
+Quartiles,Quartile coefficient of variation,55.60%

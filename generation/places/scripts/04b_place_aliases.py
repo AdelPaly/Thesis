@@ -205,26 +205,28 @@ SELECT DISTINCT ?place ?text ?src WHERE {{
 
 
 def place_coord_query(qids: list[str]) -> str:
-    """Each place's own P625 coordinate."""
+    """Each place's own P625 coordinate and sitelink count."""
     values = " ".join(f"wd:{q}" for q in qids)
     return f"""
-SELECT ?place ?coord WHERE {{
+SELECT ?place ?coord ?n WHERE {{
   VALUES ?place {{ {values} }}
   ?place wdt:P625 ?coord .
+  OPTIONAL {{ ?place wikibase:sitelinks ?n }}
 }}
 """
 
 
 def geo_sharer_query(labels: list[str]) -> str:
     """Every entity WITH COORDINATES carrying the string as an English label or
-    alias: the same match as surface_count_query, restricted to things on a
-    map."""
+    alias, with its sitelink count: the same match as surface_count_query,
+    restricted to things on a map."""
     values = " ".join(f'"{escape_literal(text)}"@en' for text in labels)
     return f"""
-SELECT DISTINCT ?label ?e ?coord WHERE {{
+SELECT DISTINCT ?label ?e ?coord ?n WHERE {{
   VALUES ?label {{ {values} }}
   ?e rdfs:label|skos:altLabel ?label .
   ?e wdt:P625 ?coord .
+  OPTIONAL {{ ?e wikibase:sitelinks ?n }}
 }}
 """
 
@@ -241,25 +243,32 @@ def parse_point(wkt: str | None) -> list[float] | None:
 
 
 def collect_place_coords(batch: list[str], rows: list[dict], out: dict) -> None:
-    """Fill `out[qid] = [lat, lon]` (first Earth coordinate) or None, per place."""
-    found: dict[str, list[float] | None] = {q: None for q in batch}
+    """Fill `out[qid] = {"coord": [lat, lon] or None, "sitelinks": n or None}`
+    per place (first Earth coordinate)."""
+    found: dict[str, dict] = {q: {"coord": None, "sitelinks": None} for q in batch}
     for row in rows:
         place = value_of(row, "place")
+        if not place or qid_from_uri(place) not in found:
+            continue
+        entry = found[qid_from_uri(place)]
         point = parse_point(value_of(row, "coord"))
-        if place and point and found.get(qid_from_uri(place)) is None:
-            found[qid_from_uri(place)] = point
+        if point and entry["coord"] is None:
+            entry["coord"] = point
+        if value_of(row, "n") is not None:
+            entry["sitelinks"] = int(value_of(row, "n"))
     out.update(found)
 
 
 def collect_geo_sharers(batch: list[str], rows: list[dict], out: dict) -> None:
-    """Fill `out[text] = [[qid, lat, lon], ...]` for every string in the batch."""
+    """Fill `out[text] = [[qid, lat, lon, sitelinks], ...]` for every string in
+    the batch."""
     found: dict[str, list] = {t: [] for t in batch}
     for row in rows:
         text = value_of(row, "label")
         entity = value_of(row, "e")
         point = parse_point(value_of(row, "coord"))
         if text in found and entity and point:
-            entry = [qid_from_uri(entity), *point]
+            entry = [qid_from_uri(entity), *point, int(value_of(row, "n") or 0)]
             if entry not in found[text]:
                 found[text].append(entry)
     out.update(found)
@@ -277,21 +286,43 @@ def haversine_km(a: list[float], b: list[float]) -> float:
     return 2 * EARTH_RADIUS_KM * math.asin(math.sqrt(h))
 
 
-def geo_shared_by(place_qid: str, place_coord: list[float] | None,
-                  sharers: list | None) -> int | None:
-    """Other entities with coordinates bearing the string, more than
-    GEO_SHARER_MIN_KM from the place (nearest of each one's coordinates).
-    None when the lookup failed. A place with no coordinate of its own cannot be
-    measured from, so every other bearer counts."""
-    if sharers is None:
-        return None
+def far_namesakes(place_qid: str, place_coord: list[float] | None,
+                  sharers: list) -> dict[str, int]:
+    """{qid: sitelinks} of the other entities with coordinates bearing the
+    string more than GEO_SHARER_MIN_KM from the place (nearest of each one's
+    coordinates). A place with no coordinate of its own cannot be measured
+    from, so every other bearer counts."""
     nearest: dict[str, float] = {}
-    for qid, lat, lon in sharers:
+    links: dict[str, int] = {}
+    for qid, lat, lon, sitelinks in sharers:
         if qid == place_qid:
             continue
         km = haversine_km(place_coord, [lat, lon]) if place_coord else math.inf
         nearest[qid] = min(km, nearest.get(qid, math.inf))
-    return sum(1 for km in nearest.values() if km > GEO_SHARER_MIN_KM)
+        links[qid] = sitelinks
+    return {q: links[q] for q, km in nearest.items() if km > GEO_SHARER_MIN_KM}
+
+
+def geo_shared_by(place_qid: str, place_coord: list[float] | None,
+                  sharers: list | None) -> int | None:
+    """How many far namesakes the string has (far_namesakes). None when the
+    lookup failed."""
+    if sharers is None:
+        return None
+    return len(far_namesakes(place_qid, place_coord, sharers))
+
+
+def top_namesake(place_qid: str, place_coord: list[float] | None,
+                 sharers: list | None) -> dict | None:
+    """The best-known far namesake, {"qid", "sitelinks"}, or None. Ties go to
+    the lower QID so the choice is stable."""
+    if not sharers:
+        return None
+    far = far_namesakes(place_qid, place_coord, sharers)
+    if not far:
+        return None
+    qid = min(far, key=lambda q: (-far[q], int(q[1:]) if q[1:].isdigit() else 0, q))
+    return {"qid": qid, "sitelinks": far[qid]}
 
 
 def usable_region_form(text: str) -> bool:
@@ -455,6 +486,10 @@ def measure_forms(place: dict, forms: list[dict], surface: dict[str, int],
                 record["kind"] = "unmeasured"
             elif geo_n == 0:
                 record["kind"] = "exact"
+            else:
+                # How famous the strongest competitor for this name is, so a B
+                # result can be split by whether the place is the obvious reading.
+                record["top_namesake"] = top_namesake(qid, place_coord, geo.get(form["text"]))
         out.append(record)
     return out, unmeasured
 
@@ -492,14 +527,15 @@ def region_forms_for(raw: list, taken: set[str]) -> list[dict]:
 def build_records(places: list[dict], forms_by_place: dict[str, list[dict]],
                   surface: dict[str, int], country_forms: dict[str, list],
                   region_raw: dict[str, list], geo: dict[str, list],
-                  place_coords: dict[str, list[float] | None]) -> tuple[list[dict], int]:
+                  place_coords: dict[str, dict]) -> tuple[list[dict], int]:
     """One output record per place. Returns (records, number of unmeasured forms)."""
     out_records = []
     unmeasured_total = 0
     for place in places:
         qid = place["wikidata_id"].strip()
+        here = place_coords.get(qid) or {}
         forms, unmeasured = measure_forms(place, forms_by_place[qid], surface,
-                                          geo, place_coords.get(qid))
+                                          geo, here.get("coord"))
         unmeasured_total += unmeasured
         csv_country = place["country"].strip()
         country, seen_country = country_forms_for(csv_country, country_forms.get(qid, []))
@@ -510,6 +546,9 @@ def build_records(places: list[dict], forms_by_place: dict[str, list[dict]],
             "place_qid": qid,
             "place_name": place["place_name"].strip(),
             "country": csv_country,
+            # Fetched with the namesakes' counts, so the two compare like
+            # for like (the CSV column is blank for some places).
+            "sitelinks": here.get("sitelinks"),
             "surface_forms": forms,
             "country_forms": country,
             "region_forms": region_forms_for(region_raw.get(qid, []), taken),
@@ -635,14 +674,14 @@ def main(argv: list[str] | None = None) -> int:
                                         if f["source"] == "label"
                                         else surface.get(f["text"], 0)) >= AMBIGUOUS_MIN_SHARED
     })
-    geo, want_texts = split_cached(candidates, "gs", cache)
+    geo, want_texts = split_cached(candidates, "gs2", cache)
     print(f"pass 2b: geo share  {len(candidates)} ambiguous strings, {len(want_texts)} to query")
-    fill_missing(geo, want_texts, "gs", cache, GEO_CHUNK, geo_sharer_query,
+    fill_missing(geo, want_texts, "gs2", cache, GEO_CHUNK, geo_sharer_query,
                  collect_geo_sharers, "geo sharers", failures)
 
-    place_coords, want = split_cached(qids, "pc", cache)
+    place_coords, want = split_cached(qids, "pc2", cache)
     print(f"pass 2c: coords     {len(qids)} places, {len(want)} to query")
-    fill_missing(place_coords, want, "pc", cache, ALIAS_CHUNK, place_coord_query,
+    fill_missing(place_coords, want, "pc2", cache, ALIAS_CHUNK, place_coord_query,
                  collect_place_coords, "place coords", failures)
 
     # ---- pass 3: country forms ----

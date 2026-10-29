@@ -134,6 +134,7 @@ REQUIRED_PATHS = (
 # Keys of the config's prompt: section that build_messages needs.
 REQUIRED_PROMPT_KEYS = (
     "system", "task", "length_bands", "forbidden_toponym", "ambiguous_toponym",
+    "river_clue_exception",
     "exact_toponym", "entities_header", "clue_line", "noise_entity",
     "surface_ambiguous", "surface_exact", "exemplar_intro", "register_line",
     "length_line", "register_notes_line", "slots_footer", "output_intro",
@@ -311,26 +312,33 @@ def describe_clue(clue: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     One line per clue, naming the entity in full and stating its relation to
     the place without naming the place.
 
-    Entity names are always given in full and recognisable form. An indirect
-    reference to an entity ("the anatomy professor who lived here") gives a
-    reader nothing to resolve, so the task would stop being geolocation and
-    start being guesswork. The ambiguity in this dataset lives in the place
-    names only.
+    The prompt gives each entity's full name, and the model writes it by name:
+    a person by the shorter name people use, with the surname (finalise.py
+    checks for it), anything else as given. An indirect reference ("the
+    anatomy professor who lived here") gives a reader nothing to resolve, so
+    the task would stop being geolocation and start being guesswork.
 
     entity_type in the plan is the places pipeline's property family code (place_or_org).
     The prompt shows the wording from prompt.entity_type_labels instead; a
     family with no wording there gets no type note at all, rather than the raw
     code.
     """
-    relation = clue.get("property_label") or clue.get("property")
+    phrases = prompt_cfg.get("relation_phrases") or {}
+    relation = (phrases.get(clue.get("property"))
+                or clue.get("property_label") or clue.get("property"))
+    return prompt_cfg["clue_line"].format(
+        label=clue["clue_label"], type_note=type_note(clue, prompt_cfg), relation=relation
+    )
+
+
+def type_note(clue: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
+    """' (a person)' and so on from prompt.entity_type_labels, or '' for an
+    unlisted family or a property in prompt.untyped_properties."""
     labels = prompt_cfg.get("entity_type_labels") or {}
     entity_type = labels.get(clue.get("entity_type"))
     if clue.get("property") in (prompt_cfg.get("untyped_properties") or []):
         entity_type = None
-    suffix = f" ({entity_type})" if entity_type else ""
-    return prompt_cfg["clue_line"].format(
-        label=clue["clue_label"], type_note=suffix, relation=relation
-    )
+    return f" ({entity_type})" if entity_type else ""
 
 
 def build_messages(
@@ -340,7 +348,8 @@ def build_messages(
 ) -> list[dict[str, str]]:
     """
     Assemble the prompt in a fixed order:
-        task -> entities -> hard constraint -> style references -> slots -> schema
+        task -> entities -> hard constraint -> environmental theme -> style
+        references -> slots -> schema
 
     The constraint sits directly after the entities, before the style material.
     Putting the style examples last, nearest the generation, is what drags the
@@ -364,7 +373,7 @@ def build_messages(
         mentions.extend(describe_clue(c, prompt_cfg) for c in clues)
     if noise:
         mentions.append(prompt_cfg["noise_entity"].strip().format(
-            label=noise["clue_label"]))
+            label=noise["clue_label"], type_note=type_note(noise, prompt_cfg)))
     if surface.get("text"):
         key = ("surface_ambiguous" if surface["kind"] == "ambiguous_alias"
                else "surface_exact")
@@ -374,6 +383,12 @@ def build_messages(
 
     # 3. hard constraint
     parts.append(build_constraint(item, prompt_cfg).strip())
+
+    # 3b. what the post is about: an environmental claim on the planned theme
+    if item.get("env_theme"):
+        parts.append(prompt_cfg["environment_line"].strip().format(theme=item["env_theme"]))
+        if prompt_cfg.get("scale_line"):
+            parts.append(prompt_cfg["scale_line"].strip())
 
     # 4. style references, labelled as tone only
     register = item["register"]
@@ -389,8 +404,11 @@ def build_messages(
         parts.append("\n".join(block))
 
     # 5. slot values from the plan
+    # The plan's names are codes (personal_update, mood_marker); the model
+    # sees words.
+    slot_labels = prompt_cfg.get("slot_labels") or {}
     detail: list[str] = [
-        prompt_cfg["register_line"].strip().format(register=register),
+        prompt_cfg["register_line"].strip().format(register=register.replace("_", " ")),
         prompt_cfg["length_line"].strip().format(
             length=prompt_cfg["length_bands"][item["length_band"]]),
     ]
@@ -398,7 +416,8 @@ def build_messages(
         detail.append(prompt_cfg["register_notes_line"].strip().format(
             notes=item["register_description"]))
     for slot_name, slot_value in (item.get("slots") or {}).items():
-        detail.append(f"{slot_name.replace('_', ' ').capitalize()}: {slot_value}")
+        label = slot_labels.get(slot_name) or slot_name.replace("_", " ").capitalize()
+        detail.append(f"{label}: {slot_value}")
     detail.append(prompt_cfg["slots_footer"].strip())
     parts.append("\n".join(detail))
 
@@ -457,22 +476,32 @@ def build_constraint(item: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     """
     surface = item["surface_form"]
     countries = countries_of(item)
+    # The only toponym clues the planner lets through are rivers
+    # (plan.toponym_clue_categories); their names are allowed explicitly.
+    rivers = [c["clue_label"] for c in (item.get("clues") or []) + [item.get("noise_entity") or {}]
+              if c.get("is_toponym")]
+    river_line = (" " + prompt_cfg["river_clue_exception"].format(rivers=quoted_list(rivers))
+                  if rivers else "")
     if surface["kind"] == "none":
         banned = prompt_cfg["forbidden_toponym"]
         return banned.format(
             place_name=item["place_name"],
             country=quoted_list(countries),
-        )
+        ) + river_line
     if surface["kind"] == "ambiguous_alias":
         place = item["place_name"]
         others = [] if plan.contains_word(surface["text"], place) else [place]
         return prompt_cfg["ambiguous_toponym"].format(
             surface=surface["text"],
             other_names=quoted_list(others + countries),
-        )
+        ) + river_line
+    # EXPLICIT: the bare name, with nothing added. A country that is part of
+    # the name itself ("Guatemala City") is not banned.
+    others = [c for c in countries if not plan.contains_word(surface["text"], c)]
     return prompt_cfg["exact_toponym"].format(
         surface=surface["text"],
         place_name=item["place_name"],
+        other_names=quoted_list(others) or "any country or region",
     )
 
 
