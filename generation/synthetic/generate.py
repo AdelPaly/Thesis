@@ -77,12 +77,15 @@ USAGE
 from __future__ import annotations
 
 import argparse
+import copy
 import email.utils
 import hashlib
 import http.client
 import json
 import os
 import random
+import re
+import ssl
 import sys
 import time
 import urllib.error
@@ -116,6 +119,8 @@ GENERATION_DEFAULTS: dict[str, Any] = {
     "send_seed": False,
     "exclude_reasoning": False,
     "reasoning_effort": None,
+    "reasoning_enabled": True,
+    "extra_body": {},
     "exemplars_per_prompt": 3,
     "delay_between_calls_seconds": 1.0,
     "max_attempts": 6,
@@ -127,14 +132,15 @@ GENERATION_DEFAULTS: dict[str, Any] = {
 
 # paths: keys the scripts index directly. load_config checks them once.
 REQUIRED_PATHS = (
-    "item_plan", "raw_generations", "raw_response_log", "style_exemplars",
-    "place_aliases", "bluesky_dump", "dataset_csv", "finalise_report",
+    "item_plan", "raw_generations", "raw_response_log", "style_exemplars", "length_dist",
+    "place_inputs", "bluesky_dump", "dataset_csv", "finalise_report",
 )
 
 # Keys of the config's prompt: section that build_messages needs.
 REQUIRED_PROMPT_KEYS = (
     "system", "task", "length_bands", "forbidden_toponym", "ambiguous_toponym",
-    "river_clue_exception",
+    "place_clue_exception", "scale_lines", "valence_lines", "role_hint_intro", "role_hints",
+    "claim_rules", "target_len_line",
     "exact_toponym", "entities_header", "clue_line", "noise_entity",
     "surface_ambiguous", "surface_exact", "exemplar_intro", "register_line",
     "length_line", "register_notes_line", "slots_footer", "output_intro",
@@ -164,6 +170,15 @@ def gen_setting(gen: dict[str, Any], key: str) -> Any:
 RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
+        # First, so the model settles the one situation the post grows from
+        # before it writes: with thinking off this is its only planning step.
+        # A reason per name (smoke5-6) gave posts that listed the reasons.
+        # Not dataset content.
+        "situation": {
+            "type": "string",
+            "description": "One sentence: the single situation that ties every "
+                           "name and the environmental point together.",
+        },
         "post_text": {
             "type": "string",
             "description": "The social media post. This is the only field that "
@@ -184,8 +199,13 @@ RESPONSE_SCHEMA: dict[str, Any] = {
             "type": "string",
             "description": "The register that was followed.",
         },
+        "angle": {
+            "type": "string",
+            "description": "The environmental angle the writer chose, in a short phrase.",
+        },
     },
-    "required": ["post_text", "entities_referenced", "naming_form_used", "register"],
+    "required": ["situation", "post_text", "entities_referenced", "naming_form_used",
+                 "register", "angle"],
     "additionalProperties": False,
 }
 
@@ -326,8 +346,12 @@ def describe_clue(clue: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     phrases = prompt_cfg.get("relation_phrases") or {}
     relation = (phrases.get(clue.get("property"))
                 or clue.get("property_label") or clue.get("property"))
-    return prompt_cfg["clue_line"].format(
-        label=clue["clue_label"], type_note=type_note(clue, prompt_cfg), relation=relation
+    template = (prompt_cfg.get("clue_line_person") if clue.get("is_human") else None) \
+        or prompt_cfg["clue_line"]
+    note = type_note(clue, prompt_cfg)
+    return template.format(
+        label=clue["clue_label"], type_note=note, relation=relation,
+        known_for=clue.get("description") or note.strip(" ()") or "a person",
     )
 
 
@@ -336,6 +360,9 @@ def type_note(clue: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     unlisted family or a property in prompt.untyped_properties."""
     labels = prompt_cfg.get("entity_type_labels") or {}
     entity_type = labels.get(clue.get("entity_type"))
+    if clue.get("is_living") is not None:   # people: living or from history
+        entity_type = labels.get("person_living" if clue["is_living"] else "person_historical",
+                                 entity_type)
     if clue.get("property") in (prompt_cfg.get("untyped_properties") or []):
         entity_type = None
     return f" ({entity_type})" if entity_type else ""
@@ -384,11 +411,22 @@ def build_messages(
     # 3. hard constraint
     parts.append(build_constraint(item, prompt_cfg).strip())
 
-    # 3b. what the post is about: an environmental claim on the planned theme
+    # 3b. what the post is about: an environmental claim on the planned theme,
+    # with the planned valence and scale, a hint from the clues' roles and the
+    # rules for claims (items planned before version 6 have no scale or role,
+    # before version 8 no valence)
     if item.get("env_theme"):
         parts.append(prompt_cfg["environment_line"].strip().format(theme=item["env_theme"]))
-        if prompt_cfg.get("scale_line"):
-            parts.append(prompt_cfg["scale_line"].strip())
+        if item.get("valence"):
+            parts.append(prompt_cfg["valence_lines"][item["valence"]].strip())
+        if item.get("scale"):
+            parts.append(prompt_cfg["scale_lines"][item["scale"]].strip())
+        hints = prompt_cfg.get("role_hints") or {}
+        if item["clues"]:
+            parts.append("\n".join([prompt_cfg["role_hint_intro"].strip()] + [
+                f'- "{c["clue_label"]}": {hints.get(c.get("role") or "other", hints["other"])}'
+                for c in item["clues"]]))
+        parts.append(prompt_cfg["claim_rules"].strip())
 
     # 4. style references, labelled as tone only
     register = item["register"]
@@ -409,16 +447,20 @@ def build_messages(
     slot_labels = prompt_cfg.get("slot_labels") or {}
     detail: list[str] = [
         prompt_cfg["register_line"].strip().format(register=register.replace("_", " ")),
-        prompt_cfg["length_line"].strip().format(
+        prompt_cfg["target_len_line"].strip().format(n=item["target_len"]) if "target_len" in item
+        else prompt_cfg["length_line"].strip().format(
             length=prompt_cfg["length_bands"][item["length_band"]]),
     ]
     if item.get("register_description"):
         detail.append(prompt_cfg["register_notes_line"].strip().format(
             notes=item["register_description"]))
-    for slot_name, slot_value in (item.get("slots") or {}).items():
-        label = slot_labels.get(slot_name) or slot_name.replace("_", " ").capitalize()
-        detail.append(f"{label}: {slot_value}")
-    detail.append(prompt_cfg["slots_footer"].strip())
+    # prompt.show_slots: false leaves the planned slots out of the prompt (they
+    # stay in the plan). They competed with the clues for words.
+    if prompt_cfg.get("show_slots", True) and item.get("slots"):
+        for slot_name, slot_value in item["slots"].items():
+            label = slot_labels.get(slot_name) or slot_name.replace("_", " ").capitalize()
+            detail.append(f"{label}: {slot_value}")
+        detail.append(prompt_cfg["slots_footer"].strip())
     parts.append("\n".join(detail))
 
     # 6. output shape, generated from RESPONSE_SCHEMA so the two cannot drift
@@ -476,12 +518,12 @@ def build_constraint(item: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     """
     surface = item["surface_form"]
     countries = countries_of(item)
-    # The only toponym clues the planner lets through are rivers
-    # (plan.toponym_clue_categories); their names are allowed explicitly.
-    rivers = [c["clue_label"] for c in (item.get("clues") or []) + [item.get("noise_entity") or {}]
-              if c.get("is_toponym")]
-    river_line = (" " + prompt_cfg["river_clue_exception"].format(rivers=quoted_list(rivers))
-                  if rivers else "")
+    # Clues that are themselves place names (part, water and range families)
+    # are allowed explicitly, and nothing else.
+    toponyms = [c["clue_label"] for c in (item.get("clues") or []) + [item.get("noise_entity") or {}]
+                if c.get("is_toponym")]
+    river_line = (" " + prompt_cfg["place_clue_exception"].format(names=quoted_list(toponyms))
+                  if toponyms else "")
     if surface["kind"] == "none":
         banned = prompt_cfg["forbidden_toponym"]
         return banned.format(
@@ -525,6 +567,24 @@ class ApiError(Exception):
         self.body = body
         self.retry_after = retry_after
         self.attempt_log: list[dict[str, Any]] = []
+
+
+def tls_context() -> ssl.SSLContext:
+    """
+    Certificate checks against certifi's current list of authorities when it
+    is installed (on its own, or the copy inside pip), else Python's default.
+    The default store on this machine lacks Let's Encrypt's newer chain, so
+    litellm.vse.cz (issuer YE1) failed with "certificate has expired" although
+    its certificate is valid. Verification stays on either way.
+    """
+    try:
+        import certifi
+    except ImportError:
+        try:
+            from pip._vendor import certifi
+        except ImportError:
+            return ssl.create_default_context()
+    return ssl.create_default_context(cafile=certifi.where())
 
 
 def is_retryable_status(code: int | None) -> bool:
@@ -603,9 +663,19 @@ class ChatClient:
         # empty content. The effort level is what actually shortens it.
         self.reasoning_effort = gen_setting(gen, "reasoning_effort") or None
 
+        # Off altogether (OpenRouter's reasoning.enabled = false): no thinking
+        # tokens at all, which effort and exclude cannot promise.
+        self.reasoning_enabled = bool(gen_setting(gen, "reasoning_enabled"))
+
+        # Provider-specific fields added to every request as they are, e.g.
+        # reasoning_effort: none for Qwen behind LiteLLM.
+        self.extra_body: dict[str, Any] = dict(gen_setting(gen, "extra_body") or {})
+
         # Optional attribution headers. OpenRouter recommends them and ignores
         # them if absent; other providers ignore them entirely.
         self.extra_headers: dict[str, str] = dict(gen.get("extra_headers") or {})
+
+        self.ssl_context = tls_context()
 
         key_env = gen["api_key_env"]
         self.api_key = os.environ.get(key_env, "").strip()
@@ -617,8 +687,10 @@ class ChatClient:
             )
 
     def build_payload(
-        self, messages: list[dict[str, str]], seed: int | None = None
+        self, messages: list[dict[str, str]], seed: int | None = None,
+        schema: tuple[dict[str, Any], str] | None = None,
     ) -> dict[str, Any]:
+        schema_body, schema_name = schema or (RESPONSE_SCHEMA, "social_media_post")
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
@@ -629,19 +701,23 @@ class ChatClient:
         if self.send_seed and seed is not None:
             payload["seed"] = seed
         reasoning: dict[str, Any] = {}
-        if self.reasoning_effort:
-            reasoning["effort"] = self.reasoning_effort
-        if self.exclude_reasoning:
-            reasoning["exclude"] = True
+        if not self.reasoning_enabled:
+            reasoning["enabled"] = False
+        else:
+            if self.reasoning_effort:
+                reasoning["effort"] = self.reasoning_effort
+            if self.exclude_reasoning:
+                reasoning["exclude"] = True
         if reasoning:
             payload["reasoning"] = reasoning
+        payload.update(self.extra_body)
         if self.structured_output == "json_schema":
             payload["response_format"] = {
                 "type": "json_schema",
                 "json_schema": {
-                    "name": "social_media_post",
+                    "name": schema_name,
                     "strict": True,
-                    "schema": RESPONSE_SCHEMA,
+                    "schema": schema_body,
                 },
             }
         elif self.structured_output == "json_object":
@@ -649,13 +725,14 @@ class ChatClient:
         return payload
 
     def call(
-        self, messages: list[dict[str, str]], seed: int | None = None
+        self, messages: list[dict[str, str]], seed: int | None = None,
+        schema: tuple[dict[str, Any], str] | None = None,
     ) -> tuple[str, dict[str, Any]]:
         """
         One request. Returns (raw_content, response_metadata).
         Raises ApiError; retrying is the caller's job.
         """
-        payload = self.build_payload(messages, seed=seed)
+        payload = self.build_payload(messages, seed=seed, schema=schema)
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
@@ -669,7 +746,8 @@ class ChatClient:
         )
 
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            with urllib.request.urlopen(request, timeout=self.timeout,
+                                        context=self.ssl_context) as response:
                 body = response.read().decode("utf-8", errors="replace")
                 status = response.status
         except urllib.error.HTTPError as exc:
@@ -727,6 +805,12 @@ class ChatClient:
         reasoning = choice.get("message", {}).get("reasoning")
         if reasoning:
             metadata["reasoning_chars"] = len(str(reasoning))
+        # Some (Qwen behind LiteLLM/Ollama) put it inline as <think>...</think>
+        # instead, where its braces would confuse the JSON extraction.
+        if content and "<think>" in content:
+            stripped = re.sub(r"<think>.*?(</think>|$)", "", content, flags=re.S)
+            metadata["reasoning_chars"] = len(content) - len(stripped)
+            content = stripped
 
         # A truncated response is the most common silent cause of a parse
         # failure on a reasoning model: the thinking consumed max_tokens and
@@ -753,9 +837,11 @@ def call_with_backoff(
     messages: list[dict[str, str]],
     config: dict[str, Any],
     seed: int | None = None,
+    schema: tuple[dict[str, Any], str] | None = None,
 ) -> tuple[str, dict[str, Any], list[dict[str, Any]]]:
     """
-    Retry with exponential backoff and jitter. Returns
+    Retry with exponential backoff and jitter. schema, (JSON schema, name),
+    replaces RESPONSE_SCHEMA for this call (judge.py). Returns
     (content, metadata, attempt_log) or raises the final ApiError, whose
     attempt_log attribute holds the failed attempts. A server-supplied
     Retry-After (seconds or HTTP date) lengthens the wait, up to the backoff
@@ -778,7 +864,7 @@ def call_with_backoff(
     while True:
         attempt += 1
         try:
-            content, metadata = client.call(messages, seed=seed)
+            content, metadata = client.call(messages, seed=seed, schema=schema)
             metadata["attempts"] = attempt
             return content, metadata, attempts
         except ApiError as exc:
@@ -908,6 +994,8 @@ def parse_response(raw: str) -> tuple[dict[str, Any] | None, str | None]:
         "entities_referenced": [str(e) for e in entities],
         "naming_form_used": naming_form,
         "register_reported": parsed.get("register"),
+        "angle": parsed.get("angle"),
+        "situation": parsed.get("situation"),
     }, None
 
 
@@ -939,6 +1027,9 @@ def select_items(
 ) -> list[dict[str, Any]]:
     items = plan
 
+    # Reserve items (pool "reserve") replace posts that failed finalise.py;
+    # they run only when asked for. Plans before version 5 have no pool.
+    items = [i for i in items if i.get("pool", "plan") in args.pool]
     if args.only_condition:
         wanted = set(args.only_condition)
         items = [i for i in items if i["condition"] in wanted]
@@ -958,9 +1049,33 @@ def select_items(
     # relies on. Only the order of calls changes, never what is sent.
     items = sorted(items, key=lambda i: i["item_id"])
 
+    if getattr(args, "sample_per_condition", None):
+        items = spread_sample(items, args.sample_per_condition)
     if args.limit:
         items = items[: args.limit]
     return items
+
+
+def spread_sample(items: list[dict[str, Any]], per_condition: int) -> list[dict[str, Any]]:
+    """
+    per_condition items of each condition, taken in turn from each (continent,
+    place type) group, so a small pilot covers the spread. Within a group the
+    item_id order is kept (a hash, so arbitrary but stable).
+    """
+    chosen = []
+    for condition in sorted({i["condition"] for i in items}):
+        groups: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+        for i in items:
+            if i["condition"] == condition:
+                groups[i["place_continent"], i["place_type"]].append(i)
+        queues = [groups[k] for k in sorted(groups)]
+        picked: list[dict[str, Any]] = []
+        while len(picked) < per_condition and any(queues):
+            for q in queues:
+                if q and len(picked) < per_condition:
+                    picked.append(q.pop(0))
+        chosen += picked
+    return sorted(chosen, key=lambda i: i["item_id"])
 
 
 def config_fingerprint(config: dict[str, Any], use_exemplars: bool = True) -> str:
@@ -976,7 +1091,8 @@ def config_fingerprint(config: dict[str, Any], use_exemplars: bool = True) -> st
     gen = config["generation"]
     settings = {key: gen_setting(gen, key) for key in (
         "temperature", "top_p", "max_tokens", "structured_output", "send_seed",
-        "exclude_reasoning", "reasoning_effort", "exemplars_per_prompt",
+        "exclude_reasoning", "reasoning_effort", "reasoning_enabled", "extra_body",
+        "exemplars_per_prompt",
     )}
     material = {
         "generator_version": GENERATOR_VERSION,
@@ -985,6 +1101,9 @@ def config_fingerprint(config: dict[str, Any], use_exemplars: bool = True) -> st
         "prompt": config["prompt"],
         "schema": RESPONSE_SCHEMA,
         "use_exemplars": use_exemplars,
+        # The judge decides which tries are kept, so a change to it is a
+        # change to the dataset too.
+        "judge": config.get("judge"),
     }
     blob = json.dumps(material, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
@@ -1010,6 +1129,9 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
                         help="restrict to a condition, repeatable")
     parser.add_argument("--only-place", action="append", default=None,
                         help="restrict to a place QID, repeatable")
+    parser.add_argument("--pool", nargs="+", choices=["plan", "reserve"], default=["plan"],
+                        help="which planned items to run: plan (default), reserve "
+                             "(to replace failed posts), or both")
     parser.add_argument("--dry-run", action="store_true",
                         help="print the prompts and send nothing")
     parser.add_argument("--no-exemplars", action="store_true",
@@ -1017,6 +1139,13 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
                              "(normally built by build_exemplars.py)")
     parser.add_argument("--retry-errors", action="store_true",
                         help="re-attempt items whose existing row has an error")
+    parser.add_argument("--sample-per-condition", type=int, default=None, metavar="N",
+                        help="run only N items per condition, spread over continents and "
+                             "place types (the pilot)")
+    parser.add_argument("--no-judge", action="store_true",
+                        help="skip the judge model; only the rule checks decide")
+    parser.add_argument("--no-swap", action="store_true",
+                        help="do not swap failed places for reserves")
     parser.add_argument("--force-mixed", action="store_true",
                         help="resume even though existing rows were generated "
                              "with a different model, prompt or sampling "
@@ -1066,6 +1195,8 @@ def build_raw_entry(
             "top_p": client.top_p,
             "max_tokens": client.max_tokens,
             "reasoning_effort": client.reasoning_effort,
+            "reasoning_enabled": client.reasoning_enabled,
+            "extra_body": client.extra_body,
         },
         "messages": messages,
         "raw_content": content,
@@ -1104,7 +1235,11 @@ def build_record(
         "surface_form": item["surface_form"],
         "noise_entity_qid": (item.get("noise_entity") or {}).get("clue_qid"),
         "register": item["register"],
-        "length_band": item["length_band"],
+        "length_band": item.get("length_band"),
+        "target_len": item.get("target_len"),
+        "scale": item.get("scale"),
+        "valence": item.get("valence"),
+        "role": item.get("role"),
         "response_metadata": metadata,
     }
     if api_error is not None:
@@ -1123,6 +1258,106 @@ def build_record(
     return record, "ok"
 
 
+def try_seed(item_id: str, n: int) -> int:
+    """The seed for try n of an item: try 1 keeps the item's own seed, later
+    tries hash the item_id with the try number."""
+    if n == 1:
+        return seed_for_item(item_id)
+    return seed_for_item(hashlib.sha256(f"{item_id}#{n}".encode()).hexdigest())
+
+
+def swap_decorative(item: dict[str, Any], names: list[str]) -> list[dict[str, str]]:
+    """
+    Replace each clue the judge found only dropped in (by label) with the
+    item's next spare clue, in place. Returns the swaps made; none when the
+    item has no spare left (A3 mostly, B places with one clean clue).
+    """
+    swaps = []
+    wanted = {n.strip().lower() for n in names}
+    for k, clue in enumerate(item["clues"]):
+        if clue["clue_label"].strip().lower() in wanted and item.get("spare_clues"):
+            new = item["spare_clues"].pop(0)
+            item["clues"][k] = new
+            swaps.append({"from_qid": clue["clue_qid"], "from_label": clue["clue_label"],
+                          "to_qid": new["clue_qid"], "to_label": new["clue_label"]})
+    if swaps:
+        item["role"] = ";".join(dict.fromkeys(c.get("role") or "other" for c in item["clues"]))
+    return swaps
+
+
+def run_item(
+    item: dict[str, Any],
+    client: ChatClient,
+    judge: Any,
+    config: dict[str, Any],
+    exemplars: dict[str, list[str]],
+    config_hash: str,
+    names: dict[str, Any],
+    limits: dict[str, tuple[int, int]] | None,
+    raw_log: AppendLog,
+) -> dict[str, Any]:
+    """
+    Up to judge.max_tries tries of one item (Task 4). Each try is written,
+    checked by the rules (finalise.check, without the keyword list) and, if it
+    passes them, by the judge model (judge.py). A try the judge fails because
+    a clue is only dropped in swaps that clue for a spare on the next try.
+    Every try's raw reply goes to the raw log; the row returned is the last
+    try, with the whole try_log, accepted True or False.
+    """
+    import finalise   # finalise imports this module
+
+    max_tries = int((config.get("judge") or {}).get("max_tries", 3))
+    work = copy.deepcopy(item)
+    try_log: list[dict[str, Any]] = []
+    clue_swaps: list[dict[str, str]] = []
+    record: dict[str, Any] = {}
+    for n in range(1, max_tries + 1):
+        seed = try_seed(item["item_id"], n)
+        messages = build_messages(work, config, exemplars)
+        content, metadata, attempts, api_error = None, {}, [], None
+        try:
+            content, metadata, attempts = call_with_backoff(client, messages, config, seed=seed)
+        except ApiError as exc:
+            api_error, attempts, metadata = str(exc), exc.attempt_log, {"http_status": exc.status}
+        # Rule 1: the raw response is on disk before anything reads it.
+        raw_log.write({**build_raw_entry(work, client, config_hash, messages, content,
+                                         metadata, attempts, api_error), "try": n, "seed": seed})
+        record, outcome = build_record(work, client.model, config_hash, content, metadata, api_error)
+
+        judgement = None
+        if outcome != "ok":
+            verdict = (outcome, str(record.get("error"))[:200])
+        else:
+            verdict = finalise.check(work, record["post_text"], names, None, limits)
+            if verdict is None and judge is not None:
+                judgement = judge.check(work, record["post_text"])
+                verdict = tuple(judgement["verdict"]) if judgement["verdict"] else None
+        try_log.append({"try": n, "seed": seed, "status": verdict[0] if verdict else "kept",
+                        "reason": verdict[1] if verdict else "",
+                        "clue_qids": [c["clue_qid"] for c in work["clues"]],
+                        "text": record.get("post_text")})
+        record["judge"] = judgement
+        if verdict is None:
+            break
+        if verdict[0] == "judge_decorative" and n < max_tries:
+            decorative = (judgement or {}).get("answer", {}).get("decorative_names") or []
+            for swap in swap_decorative(work, decorative):
+                clue_swaps.append({**swap, "before_try": n + 1})
+
+    record.update(
+        tries=len(try_log),
+        try_log=try_log,
+        accepted=try_log[-1]["status"] == "kept",
+        final_status=try_log[-1]["status"],
+        final_reason=try_log[-1]["reason"],
+        clue_swaps=clue_swaps,
+        clues_used=work["clues"] if clue_swaps else None,
+        judge_model=getattr(judge, "model", None),
+        swapped_from=item.get("swapped_from"),
+    )
+    return record
+
+
 def run_items(
     items: list[dict[str, Any]],
     client: ChatClient,
@@ -1132,46 +1367,99 @@ def run_items(
     out_log: AppendLog,
     raw_log: AppendLog,
     tally: Counter[str],
-) -> None:
+    judge: Any = None,
+) -> list[dict[str, Any]]:
     """
-    Send each item, log the raw response, then log the parsed row, counting
-    outcomes into tally. KeyboardInterrupt propagates; everything attempted so
-    far is already on disk.
+    Run each item through run_item and log its row, counting outcomes into
+    tally. Returns the rows. KeyboardInterrupt propagates; every finished
+    item is already on disk.
     """
+    import finalise   # finalise imports this module
+
     delay_between = float(gen_setting(config["generation"],
                                       "delay_between_calls_seconds"))
-
+    aliases = finalise.load_aliases(Path(config["paths"]["place_inputs"]))
+    limits = finalise.word_limits(config.get("finalise"))
+    rows = []
     for n, item in enumerate(items, start=1):
-        item_id = item["item_id"]
-        messages = build_messages(item, config, exemplars)
-        print(f"[{n}/{len(items)}] {item_id} {item['condition']:<9} "
-              f"{item['place_name']}", flush=True)
-
-        content: str | None = None
-        metadata: dict[str, Any] = {}
-        attempt_log: list[dict[str, Any]] = []
-        api_error: str | None = None
-
-        try:
-            content, metadata, attempt_log = call_with_backoff(
-                client, messages, config, seed=seed_for_item(item_id)
-            )
-        except ApiError as exc:
-            api_error = str(exc)
-            attempt_log = exc.attempt_log
-            metadata = {"http_status": exc.status}
-
-        # Rule 1: the raw response is on disk before anything reads it.
-        raw_log.write(build_raw_entry(item, client, config_hash, messages,
-                                      content, metadata, attempt_log, api_error))
-
-        record, outcome = build_record(item, client.model, config_hash,
-                                       content, metadata, api_error)
-        tally[outcome] += 1
+        names = aliases.get(item["place_qid"], {"forms": [], "country": [], "regions": []})
+        record = run_item(item, client, judge, config, exemplars, config_hash, names, limits, raw_log)
+        tally["accepted" if record["accepted"] else "failed"] += 1
+        tally[f"try_{record['tries']}" if record["accepted"] else "exhausted"] += 1
         out_log.write(record)
-
+        rows.append({**record, "_item": item})
+        steps = " > ".join(t["status"] for t in record["try_log"])
+        print(f"[{n}/{len(items)}] {item['condition']:<9} {item['place_name'][:28]:<28} {steps}",
+              flush=True)
         if delay_between and n < len(items):
             time.sleep(delay_between)
+    return rows
+
+
+A_SET, B_SET = ("A1", "A3", "NOISE_A1"), ("B", "NOISE_B")
+
+
+def condition_set(condition: str) -> tuple[str, ...] | None:
+    """The conditions a place is swapped in together (Task 4), or None (EXPLICIT)."""
+    return A_SET if condition in A_SET else B_SET if condition in B_SET else None
+
+
+def find_reserve(failed: dict[str, Any], plan: list[dict[str, Any]],
+                 used: set[str]) -> str | None:
+    """
+    The reserve place to swap in for a failed item's place: a reserve of the
+    same condition, continent, place type and bin (pbin for the A set, rbin
+    for the B set) not used yet. Candidates are taken in a fixed hashed order
+    of their QIDs, so a rerun picks the same one.
+    """
+    bin_key = "pbin" if failed["condition"] in A_SET else "rbin"
+    candidates = {i["place_qid"] for i in plan
+                  if i.get("pool") == "reserve" and i["condition"] == failed["condition"]
+                  and i["place_continent"] == failed["place_continent"]
+                  and i["place_type"] == failed["place_type"]
+                  and i.get(bin_key) == failed.get(bin_key) and i["place_qid"] not in used}
+    ordered = sorted(candidates, key=lambda q: hashlib.sha256(q.encode()).hexdigest())
+    return ordered[0] if ordered else None
+
+
+def plan_swaps(rows: list[dict[str, Any]], plan: list[dict[str, Any]], ran: list[dict[str, Any]],
+               swapped: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """
+    For every item that failed all its tries, swap its place out of the
+    item's condition set and a matched reserve in (Task 4: an A place leaves
+    A1, A3 and NOISE_A1 together, a B place B and NOISE_B). Returns the
+    reserve items to run - the set's conditions that ran for the failed
+    place, plus the reserve place's EXPLICIT - and the swap records.
+    A failed place with no matching reserve left is recorded with
+    replacement None.
+    """
+    by_place = defaultdict(list)
+    for i in plan:
+        by_place[i["place_qid"]].append(i)
+    ran_by = {(i["place_qid"], i["condition"]) for i in ran}
+    out_sets = {(s["place_qid"], s["set"]) for s in swapped}
+    used = {s["replacement_qid"] for s in swapped if s.get("replacement_qid")}
+    used |= {i["place_qid"] for i in plan if i.get("pool") == "plan"}
+    todo, swaps = [], []
+    for row in rows:
+        item = row["_item"]
+        cset = condition_set(item["condition"])
+        if row["accepted"] or cset is None or (item["place_qid"], cset[0]) in out_sets:
+            continue
+        out_sets.add((item["place_qid"], cset[0]))
+        new = find_reserve(item, plan, used)
+        conditions = [c for c in cset if (item["place_qid"], c) in ran_by]
+        swaps.append({"place_qid": item["place_qid"], "place_name": item["place_name"],
+                      "set": cset[0], "failed_condition": item["condition"],
+                      "failed_status": row["final_status"], "replacement_qid": new,
+                      "conditions": conditions, "swapped_utc": _utc_now()})
+        if new is None:
+            continue
+        used.add(new)
+        for r in by_place[new]:
+            if r["condition"] in conditions or (r["condition"] == "EXPLICIT" and r.get("pool") == "reserve"):
+                todo.append({**r, "swapped_from": item["place_qid"]})
+    return todo, swaps
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -1188,7 +1476,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     plan_path = args.plan or Path(paths["item_plan"])
     out_path = args.out or Path(paths["raw_generations"])
-    raw_log_path = Path(paths["raw_response_log"])
+    # --out (a pilot) keeps its raw log next to it, away from the dataset's.
+    raw_log_path = out_path.parent / "raw_responses.jsonl" if args.out else Path(paths["raw_response_log"])
     exemplar_path = Path(paths["style_exemplars"])
 
     plan = read_jsonl(plan_path)
@@ -1242,35 +1531,59 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     client = ChatClient(config)
+    judge = None
+    if not args.no_judge:
+        import judge as judge_module
+        judge = judge_module.Judge(config)
     print(f"model      {client.model} at {client.base_url}")
+    print(f"judge      {judge.model if judge else 'off'}")
     print(f"structured {client.structured_output}")
     print(f"config     {config_hash}\n")
 
     out_log = AppendLog(out_path)
     raw_log = AppendLog(raw_log_path)
+    swaps_path = out_path.parent / "swaps.jsonl"
+    swap_log = AppendLog(swaps_path)
     started = time.time()
     tally: Counter[str] = Counter()
+    by_id = {i["item_id"]: i for i in plan}
 
     try:
         run_items(items, client, config, exemplars, config_hash,
-                  out_log, raw_log, tally)
+                  out_log, raw_log, tally, judge)
+        # Task 4: a place whose item failed every try leaves its condition set
+        # and a matched reserve comes in; repeated while swapped-in places fail.
+        while not args.no_swap:
+            rows =[{**r, "_item": by_id[i]} for i, r in latest_rows(read_jsonl(out_path)).items()
+                    if i in by_id and "accepted" in r]
+            swapped = read_jsonl(swaps_path) if swaps_path.exists() else []
+            todo, swaps = plan_swaps(rows, plan, [r["_item"] for r in rows], swapped)
+            for s in swaps:
+                swap_log.write(s)
+                print(f"swap       {s['place_name']} out of the {s['set']} set "
+                      f"({s['failed_condition']}: {s['failed_status']}) -> "
+                      f"{s['replacement_qid'] or 'no matching reserve left'}")
+            todo = [t for t in todo if t["item_id"] not in {r["item_id"] for r in rows}]
+            if not todo:
+                break
+            run_items(todo, client, config, exemplars, config_hash,
+                      out_log, raw_log, tally, judge)
     except KeyboardInterrupt:
         print("\ninterrupted - everything attempted so far is on disk; "
               "re-run to continue", file=sys.stderr)
     finally:
         out_log.close()
         raw_log.close()
+        swap_log.close()
 
     elapsed = time.time() - started
-    print(f"\nattempted {sum(tally.values())} items in {elapsed / 60:.1f} min")
-    for kind in ("ok", "parse_error", "api_error"):
+    print(f"\nran {tally['accepted'] + tally['failed']} items in {elapsed / 60:.1f} min")
+    for kind in ("try_1", "try_2", "try_3", "exhausted"):
         if tally[kind]:
             print(f"  {kind:<12} {tally[kind]:>5}")
     print(f"\nrows      {out_path}")
     print(f"raw log   {raw_log_path}")
-    if tally["api_error"] or tally["parse_error"]:
-        print("\nfailed rows are in the output with an error field. "
-              "Re-attempt them with --retry-errors.")
+    print(f"swaps     {swaps_path}")
     return 0
 
 

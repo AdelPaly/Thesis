@@ -1,0 +1,2 @@
+﻿model,item_id,source_plan,condition,place_name,status,reason,text,words,latency_s,prompt_tokens,completion_tokens,cost,flags
+vse:qwen3.5:122b,5babb2e104c15q01,item_plan.jsonl,A1,Dodoma,kept,,That concrete plant near the Party of the Revolution offices is choking up this neighborhood with dust again.,18,1.74,1687,107,,

@@ -17,7 +17,7 @@ MIN_SL, MIN_POP, MAX_KM2 = 5, 2000, 5000     # size floor; area cap for islands 
 CLUE_MIN_SL, A_CLUES, A_FAMS = 3, 3, 2       # clue needs >=3 Wikipedia articles; A needs 3 clean clue entities from >=2 families
 CLUE_BLOCK = ['Q17537576']                   # creative works (albums, songs, films, books) are not clues
 EVENT = 'Q1190554'                           # 'event' clues must be occurrences; other things located in the place count as 'part'
-RIVAL_MIN_SL, B_MIN_KM = 3, 161              # namesake must be documented and more than 161 km away
+RIVAL_MIN_SL, B_MIN_KM = 3, 161              # namesake must be documented and more than 161 km away; B also needs a clue with no FAMILY/OUT link to it
 CAP, FLOOR_POP, MAX_WALK = .08, 2e6, 4000    # country cap (share of continent plan); floor for countries >2M; walk limit
 FLOOR_TRIES = 20                             # candidates checked per country for its floor place
 PBIN = lambda s: 'low' if s < 30 else 'mid' if s < 100 else 'high'
@@ -45,6 +45,7 @@ BLOCK_COUNTRIES = ['Q1246', 'Q865', 'Q219060', 'Q40362', 'Q6250', 'Q23334', 'Q23
 FAMILY = {'P19': 'people', 'P20': 'people', 'P551': 'people', 'P937': 'people', 'P159': 'org', 'P740': 'org',
           'P276': 'event', 'P131': 'part', 'P361': 'part', 'P706': 'part', 'P206': 'water', 'P885': 'water', 'P403': 'water'}  # clue -> place
 OUT = {'P200': 'water', 'P201': 'water', 'P4552': 'range', 'P6': 'politics'}                                  # place -> clue (P6: mayor/head)
+NOT_PART = []                                # classes a 'part' clue may not be (places inside the place); reclue.py fills this
 ROLE = {**{c: 'industry' for c in INFRA}, 'Q159719': 'industry', 'Q83405': 'industry', 'Q1248784': 'transport', 'Q12280': 'transport',
         'Q4830453': 'company', 'Q7278': 'party', **{c: 'nature' for c in NATURAL}, 'Q4022': 'nature', 'Q473972': 'nature',
         'Q2385804': 'education', 'Q33506': 'culture'}   # a hint for the writer only; it never changes which clue is picked
@@ -182,9 +183,11 @@ def gate(chunk, cache, countries):
     up = defaultdict(set)
     for r in batched(lambda b: f'SELECT ?i ?ul WHERE {{ VALUES ?i {{{V(b)}}} ?i wdt:P131 ?u. ?u rdfs:label ?ul FILTER(LANG(?ul) = "en") }}', ids, cache):
         up[r['i']].add(r['ul'].lower())
-    leak, by_id = {}, {p['i']: p for p in chunk}
+    leak, qual, by_id = {}, set(), {p['i']: p for p in chunk}
     for p in chunk:
         cn = countries.get(p['c'], {})
+        if ',' in p['label'] or any(re.search(rf'\b{re.escape(n)}\b', norm(p['label'])) for n in cn.get('names', ())):
+            qual.add(p['i'])                          # 'West End, Grand Bahama', 'Grenada': the name already narrows itself, so no B
         core = norm(GENERIC.sub(' ', norm(p['label'])))                                # 'lake ohrid' -> 'ohrid'
         leak[p['i']] = {t for t in {norm(p['label']), core, *names[p['i']], *cn.get('names', ()), *cn.get('dem', ()), *up[p['i']]} if len(t) > 2}
         p['top'] = defaultdict(list)                  # clean clues per family, best first; top 5 kept for the class check
@@ -217,17 +220,19 @@ def gate(chunk, cache, countries):
                 ?r {pred} ?l. ?r wdt:P625 ?rl; wdt:P17 ?rc; wikibase:sitelinks ?rs. FILTER(?r != ?i && ?rs >= {RIVAL_MIN_SL}) MINUS {{ ?r wdt:P31 wd:Q5 }} }}''', ids, cache):
             if pt(r['rl']) and r['r'] not in {q for q, _, _ in rivals[r['i']]}: rivals[r['i']].append((r['r'], int(r['rs']), pt(r['rl'])))
     isx = defaultdict(set)
-    for r in batched(lambda b: f'SELECT DISTINCT ?i ?x WHERE {{ VALUES ?i {{{V(b)}}} VALUES ?x {{{V(BLOCK_CLASSES + CLUE_BLOCK + list(ROLE) + NOT_COMPANY + [EVENT])}}} ?i wdt:P31/wdt:P279* ?x }}',
+    for r in batched(lambda b: f'SELECT DISTINCT ?i ?x WHERE {{ VALUES ?i {{{V(b)}}} VALUES ?x {{{V(BLOCK_CLASSES + CLUE_BLOCK + list(ROLE) + NOT_COMPANY + [EVENT] + NOT_PART)}}} ?i wdt:P31/wdt:P279* ?x }}',
                      sorted({e for p in chunk for v in p.get('top', {}).values() for e, _, _ in v}), cache):
         isx[r['i']].add(r['x'])
     bad = {e for e, xs in isx.items() if xs & set(BLOCK_CLASSES + CLUE_BLOCK)}
     role = {e: r for e, xs in isx.items() for r in [next((ROLE[x] for x in sorted(xs) if x in ROLE and not (ROLE[x] == 'company' and xs & set(NOT_COMPANY))), '')] if r}
     rank = lambda f, c: -c[2]                                                      # most documented clue first (A1 rule)
+    rows = []
     for p in chunk:
         if p['i'] in blocked: continue
         top = p.pop('top')
         top['part'] = top.get('part', []) + [c for c in top.get('event', []) if EVENT not in isx[c[0]]]
         top['event'] = [c for c in top.get('event', []) if EVENT in isx[c[0]]]
+        top['part'] = [c for c in top['part'] if not isx[c[0]] & set(NOT_PART)]
         top = {f: sorted((c for c in v if c[0] not in bad), key=lambda c: rank(f, c)) for f, v in top.items()}
         R = lambda f, e: 'politics' if f == 'politics' else role.get(e, '')
         best, used = [], set()                        # best clue of each family first, then the best of the rest; no entity twice
@@ -240,9 +245,23 @@ def gate(chunk, cache, countries):
         rv = max(far, key=lambda t: t[1], default=None)
         mx = max((c[3] for c in best), default=0); nf = len({c[0] for c in best})
         nrank = 1 + sum(sl > p['sl'] for _, sl, _ in far)                                 # place's rank among its namesakes by sitelinks
-        yield dict(p, rank=nrank if rv else '', n_names=len(far) + 1 if rv else '', hooks=';'.join(sorted({c[4] for c in best if c[4]})), clues=best, n_fam=nf, cbin=CBIN(mx), pbin=PBIN(p['sl']), a_ok=len(best) >= A_CLUES and nf >= A_FAMS, b_ok=bool(rv),
-                   rival=rv[0] if rv else '', rival_sl=rv[1] if rv else '', rival_km=rv[2] if rv else '',
-                   rbin=RBIN((p['sl'] + 1) / (rv[1] + 1)) if rv else '')
+        rows.append(dict(p, rank=nrank if rv else '', n_names=len(far) + 1 if rv else '', hooks=';'.join(sorted({c[4] for c in best if c[4]})), clues=best, n_fam=nf, cbin=CBIN(mx), pbin=PBIN(p['sl']), a_ok=len(best) >= A_CLUES and nf >= A_FAMS, b_ok=bool(rv) and p['i'] not in qual,
+                         rival=rv[0] if rv else '', rival_sl=rv[1] if rv else '', rival_km=rv[2] if rv else '',
+                         rbin=RBIN((p['sl'] + 1) / (rv[1] + 1)) if rv else ''))
+    tied = links([(c[1], r['rival']) for r in rows if r['rival'] for c in r['clues']], cache)
+    for r in rows:                                    # B needs a clue that cannot point at the rival as well
+        r['b_ok'] = r['b_ok'] and any((c[1], r['rival']) not in tied for c in r['clues'])
+        yield r
+
+def links(pairs, cache):
+    """The (x, y) pairs joined by a clue property (FAMILY or OUT), either way. One fixed predicate per query:
+    QLever times out on a variable predicate."""
+    out = set()
+    for prop in {**FAMILY, **OUT}:
+        q = lambda b: ('SELECT DISTINCT ?x ?y WHERE { VALUES (?x ?y) { ' + ' '.join(f'(wd:{x} wd:{y})' for x, y in b) +
+                       f' }} {{ ?x wdt:{prop} ?y }} UNION {{ ?y wdt:{prop} ?x }} }}')
+        out |= {(r['x'], r['y']) for r in batched(q, sorted(set(pairs)), cache, 200)}
+    return out
 
 # ---------------- selection ----------------
 def main():

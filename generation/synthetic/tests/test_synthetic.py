@@ -24,6 +24,7 @@ sys.path.insert(0, str(SYN))
 import build_exemplars as bex  # noqa: E402
 import finalise                # noqa: E402
 import generate as gen         # noqa: E402
+import judge                   # noqa: E402
 import plan                    # noqa: E402
 
 
@@ -224,11 +225,9 @@ class ContainsWordAndLabelLeak(unittest.TestCase):
         self.assertFalse(plan._is_qualified("Young", ["Uruguay"]))
 
     def test_distractor_clues_memoised_and_reset(self):
-        donor = plan.Place("Q2", "Donor", "city", "X", "Asia", 1, 1, 1,
-                           single_clues=[{"clue_label": "Foo Bar"},
-                                         {"clue_label": "Uruguay Post"}])
-        place = plan.Place("Q1", "Young", "town", "Uruguay", "South America", 1, 1, 1,
-                           name_forms=["Young"], country_forms=["Uruguay"])
+        donor = mk_place("Q2", "Donor", country="X", clues=[clue("Foo Bar", "QA"),
+                                                            clue("Uruguay Post", "QB")])
+        place = mk_place("Q1", "Young", country="Uruguay", country_forms=["Uruguay"])
         first = place.distractor_clues(donor)
         self.assertEqual([c["clue_label"] for c in first], ["Foo Bar"])
         self.assertIs(place.distractor_clues(donor), first)   # cached
@@ -237,192 +236,113 @@ class ContainsWordAndLabelLeak(unittest.TestCase):
         self.assertEqual(len(place.distractor_clues(donor)), 2)
 
 
+def clue(label="C", qid="Q9", toponym=False):
+    return {"clue_qid": qid, "clue_label": label, "property": "P19", "is_toponym": toponym,
+            "label_leak": None}
+
+
+def mk_place(qid, name=None, country="C", continent="EU", a="", b="", explicit=True,
+             clues=(), b_clues=None, rival=None, country_forms=()):
+    clues = list(clues)
+    return plan.Place(qid=qid, name=name or qid, place_type="settlement", sub="settlement",
+                      country=country, country_qid=f"C-{country}", continent=continent,
+                      a_pool=a, b_pool=b, explicit=explicit, clues=clues,
+                      b_clues=clues if b_clues is None else b_clues,
+                      rival=rival or {}, name_forms=[name or qid],
+                      country_forms=list(country_forms))
+
+
 class PlanHelpers(unittest.TestCase):
-    RULES = plan.ClueRules()
+    CONFIG = {"plan": {"conditions": ["A1", "A3", "B", "EXPLICIT", "NOISE_A1", "NOISE_B"]}}
+    RIVAL = {"qid": "QR", "label": "Young", "sitelinks": 80, "km": 900}
 
-    @staticmethod
-    def clue(label="C", toponym=False, label_leak=None, pa=1, qid="Q9"):
-        return {"clue_qid": qid, "clue_label": label, "property": "P1",
-                "is_toponym": toponym,
-                "label_leak": label_leak, "place_ambiguity": pa}
+    def test_conditions_follow_the_places_csv_pools(self):
+        three = [clue(f"C{i}", f"QC{i}") for i in range(3)]
+        places = {
+            "Q1": mk_place("Q1", a="plan", b="reserve", clues=three, rival=self.RIVAL),
+            "Q2": mk_place("Q2", country="D", a="reserve",
+                           clues=[clue(f"D{i}", f"QD{i}") for i in range(3)]),
+            "Q3": mk_place("Q3", country="E"),                       # EXPLICIT only (infra): nothing now
+            "Q4": mk_place("Q4", country="F"),                       # in no set: nothing
+        }
+        places["Q3"].place_type = "infra"
+        slate, rejections = plan.build_slate(places, self.CONFIG)
+        got = {(q, c): pool for q, c, pool in slate}
+        self.assertEqual(got[("Q1", "EXPLICIT")], "plan")
+        self.assertEqual(got[("Q2", "EXPLICIT")], "reserve")         # reserve place: reserve item
+        self.assertFalse([c for q, c in got if q == "Q4"])
+        self.assertEqual(got[("Q1", "A1")], "plan")
+        self.assertEqual(got[("Q1", "B")], "reserve")
+        self.assertEqual(got[("Q2", "A3")], "reserve")
+        self.assertNotIn(("Q2", "B"), got)
+        self.assertEqual([c for q, c in got if q == "Q3"], [])          # no A or B item to compare with
+        self.assertEqual(rejections, [])
 
-    def test_clue_excluded_because_table(self):
-        types = {"Q9": {"categories": ["village", "island"]}}
-        table = [
-            (self.clue(), None),
-            (self.clue(toponym=True), "is itself a place name (village, island)"),
-            (self.clue(label_leak="label contains X"), "label contains X"),
-        ]
-        for clue, expected in table:
-            with self.subTest(clue=clue):
-                self.assertEqual(plan.clue_excluded_because(clue, types, self.RULES), expected)
-        off = plan.ClueRules(exclude_toponyms=False, exclude_label_leaks=False)
-        self.assertIsNone(plan.clue_excluded_because(self.clue(toponym=True, label_leak="label contains X"), types, off))
+    def test_explicit_copies_the_draws_of_its_b_item(self):
+        class Cycle:                                   # a different answer every draw
+            position = 0
+            def pick(self, options): self.position += 1; return options[self.position % len(options)]
+            def below(self, n): self.position += 1; return self.position % n
+        config = plan.load_config(SYN / "config.yaml")
+        places = {"Q1": mk_place("Q1", a="plan", b="plan", clues=[clue("C0", "QC0")], rival=self.RIVAL),
+                  "Q2": mk_place("Q2", country="D", a="plan", clues=[clue(f"D{i}", f"QD{i}") for i in range(3)])}
+        for p in places.values():
+            p.env_themes, p.env_themes_positive = ["flooding", "drought", "smog"], ["a repair cafe", "bike lanes"]
+        items, _ = plan.plan_items(places, {**config, "plan": {**config["plan"], "conditions": ["A1", "B", "EXPLICIT"]}},
+                                   Cycle(), [(10, 1), (12, 1), (14, 1)])
+        by = {(i["place_qid"], i["condition"]): i for i in items}
+        keys = ("register", "target_len", "slots", "env_theme", "valence", "scale")
+        for qid, twin in (("Q1", "B"), ("Q2", "A1")):           # B when the place has one, else A1
+            explicit = by[qid, "EXPLICIT"]
+            self.assertEqual(explicit["paired_with"], by[qid, twin]["item_id"])
+            self.assertEqual({k: explicit[k] for k in keys}, {k: by[qid, twin][k] for k in keys})
+        self.assertNotEqual({k: by["Q1", "A1"][k] for k in keys}, {k: by["Q1", "B"][k] for k in keys})
 
-    def test_select_clues_skips_set_naming_one_entity_twice(self):
-        place = plan.Place(qid="Q1", name="X", place_type="town", country="C",
-                           continent="Europe", places_sharing_name=1, sitelinks=0,
-                           wikidata_links=0)
-        by_key = {(q, p): {**self.clue(label=q, qid=q), "property": p}
-                  for q, p in [("Q2", "P19"), ("Q3", "P19"), ("Q3", "P20"), ("Q4", "P19")]}
-        ref = lambda q, p: {"clue_qid": q, "property": p}  # noqa: E731
-        best_sets = [
-            {"resolves": True, "clues": [ref("Q2", "P19"), ref("Q3", "P19"), ref("Q3", "P20")]},
-            {"resolves": True, "clues": [ref("Q2", "P19"), ref("Q3", "P19"), ref("Q4", "P19")]},
-        ]
-        plan.select_clues("Q1", place, best_sets, by_key, {}, self.RULES)
-        self.assertEqual([s["source_set_index"] for s in place.triple_sets], [1])
+    def test_infeasible_pairs_are_logged_not_repaired(self):
+        rival = self.RIVAL
+        places = {
+            "Q1": mk_place("Q1", a="plan", clues=[clue()]),             # one clue: no A3
+            "Q2": mk_place("Q2", country="D", b="plan", clues=[clue("X", "QX")], b_clues=[],
+                           rival=rival),                              # clue linked to rival
+            "Q3": mk_place("Q3", "Las Cruces, NM", country="E", b="plan",
+                           clues=[clue("Y", "QY")], rival=rival),       # qualified name
+        }
+        slate, rejections = plan.build_slate(places, self.CONFIG)
+        why = {(r["place_qid"], r["condition"]): r["reason"] for r in rejections}
+        self.assertIn("needs 3", why[("Q1", "A3")])
+        self.assertIn("rival", why[("Q2", "B")])
+        self.assertIn("qualifier", why[("Q3", "B")])
+        self.assertIn(("Q1", "A1", "plan"), slate)
 
-    def test_target_slate_spreads_before_repeating(self):
-        def place(qid, continent):
-            return plan.Place(qid=qid, name=qid, place_type="town", country="C",
-                              continent=continent, places_sharing_name=1,
-                              sitelinks=0, wikidata_links=0)
-        places = {f"Q{i}": place(f"Q{i}", "Africa" if i < 6 else "Asia") for i in range(10)}
-        feasible = {"B": sorted(places), "A3": ["Q0", "Q1", "Q2"]}
-        stream = make_stream(range(1, 1001), 1, 1000)
-        slate = plan.target_slate(places, feasible, ["A3", "B"], 7, 6, stream)
-        per = lambda c: Counter(q for q, cond, _ in slate if cond == c)  # noqa: E731
-        # B: 10 places, 7 items -> 7 distinct places, split 4/3 over continents
-        self.assertEqual(sum(per("B").values()), 7)
-        self.assertEqual(max(per("B").values()), 1)
-        by_cont = Counter(places[q].continent for q in per("B"))
-        self.assertEqual(sorted(by_cont.values()), [3, 4])
-        # A3: 3 places, 7 items -> 3, 2, 2 (every place twice before any thrice)
-        self.assertEqual(sorted(per("A3").values()), [2, 2, 3])
-        # replicate indices are 0.. per place
-        self.assertEqual(sorted(r for q, c, r in slate if c == "A3" and q == "Q0")[0], 0)
+    def test_clue_choice_is_fixed(self):
+        clues = [clue(f"C{i}", f"QC{i}") for i in range(4)]
+        place = mk_place("Q1", clues=clues, b_clues=clues[2:])
+        self.assertEqual(plan.choose_clues(place, "A1"), clues[:1])
+        self.assertEqual(plan.choose_clues(place, "NOISE_A1"), clues[:1])
+        self.assertEqual(plan.choose_clues(place, "A3"), clues[:3])
+        self.assertEqual(plan.choose_clues(place, "B"), clues[2:3])
+        self.assertEqual(plan.choose_clues(place, "EXPLICIT"), [])
 
-    def test_target_slate_follows_type_targets(self):
-        def place(qid, place_type):
-            return plan.Place(qid=qid, name=qid, place_type=place_type, country="C",
-                              continent="Europe", places_sharing_name=1,
-                              sitelinks=0, wikidata_links=0)
-        places = {f"T{i}": place(f"T{i}", "town") for i in range(10)}
-        places |= {f"L{i}": place(f"L{i}", "lake") for i in range(4)}
-        places |= {f"B{i}": place(f"B{i}", "bay") for i in range(4)}
-        cfg = {"type_groups": {"bay": "coast"},
-               "type_targets": {"town": 0.5, "lake": 0.25, "coast": 0.25}}
-        stream = make_stream(range(1, 1001), 1, 1000)
-        groups = lambda slate: Counter(plan.type_group(places[q], cfg) for q, _, _ in slate)  # noqa: E731
-        slate = plan.target_slate(places, {"A1": sorted(places)}, ["A1"], 8, 1, stream, cfg)
-        self.assertEqual(groups(slate), Counter(town=4, lake=2, coast=2))
-        # 16 items but only 4 lakes and 4 bays: towns take the rest, not short
-        slate = plan.target_slate(places, {"A1": sorted(places)}, ["A1"], 16, 1, stream, cfg)
-        self.assertEqual(groups(slate), Counter(town=8, lake=4, coast=4))
-
-    def test_target_slate_takes_preferred_places_first(self):
-        places = {f"Q{i}": plan.Place(f"Q{i}", f"Q{i}", "town", "C", "Europe", 1, 50, 0)
-                  for i in range(10)}
-        prefer = {"Q2", "Q5", "Q7"}
-        slate = plan.target_slate(places, {"B": sorted(places)}, ["B"], 5, 1,
-                                  make_stream(range(1, 1001), 1, 1000), prefer=prefer)
-        chosen = {q for q, _, _ in slate}
-        self.assertEqual(len(chosen), 5)
-        self.assertTrue(prefer <= chosen)
-
-    def test_country_balance_spreads_over_countries(self):
-        places = {f"U{i}": plan.Place(f"U{i}", f"U{i}", "town", "UK", "Europe", 1, 50, 0)
-                  for i in range(10)}
-        places |= {f"B{i}": plan.Place(f"B{i}", f"B{i}", "town", "Belgium", "Europe", 1, 50, 0)
-                   for i in range(2)}
-        places["E0"] = plan.Place("E0", "E0", "town", "Estonia", "Europe", 1, 50, 0)
-        slate = plan.target_slate(places, {"A1": sorted(places)}, ["A1"], 5, 1,
-                                  make_stream(range(1, 1001), 1, 1000),
-                                  {"balance_countries": True})
-        got = Counter(places[q].country for q, _, _ in slate)
-        self.assertEqual(got, Counter(UK=2, Belgium=2, Estonia=1))
-        # With a cap of 3 per country, the lake group gives way to towns elsewhere
-        places |= {f"L{i}": plan.Place(f"L{i}", f"L{i}", "lake", "UK", "Europe", 1, 50, 0)
-                   for i in range(6)}
-        cfg = {"balance_countries": True, "max_places_per_country": 3,
-               "type_targets": {"town": 0.5, "lake": 0.5}}
-        slate = plan.target_slate(places, {"A1": sorted(places)}, ["A1"], 6, 1,
-                                  make_stream(range(1, 1001), 1, 1000), cfg)
-        got = Counter(places[q].country for q, _, _ in slate)
-        self.assertEqual(got, Counter(UK=3, Belgium=2, Estonia=1))
-
-    def test_group_quotas_hand_shortfall_on_by_target(self):
-        q = plan.group_quotas({"town": 100, "lake": 2, "park": 100},
-                              {"town": 0.5, "lake": 0.25, "park": 0.25}, 20)
-        self.assertEqual(q, {"town": 12, "lake": 2, "park": 6})
-
-    def test_core_conditions_share_the_same_places(self):
-        def mk(qid):
-            p = plan.Place(qid, qid, "town", f"C{qid}", "Europe", 1, 50, 0)
-            p.single_clues = [self.clue(label=f"C{qid}", qid=f"C{qid}")]
-            p.triple_sets = [{"source_set_index": 0, "clues": [self.clue()] * 3}]
-            p.label_form = {"text": qid, "kind": "exact"}
-            return p
-        places = {f"Q{i}": mk(f"Q{i}") for i in range(12)}
-        config = {"plan": {"replicates": {"A1": 1, "A3": 1, "EXPLICIT": 1},
-                           "cover_all_places": ["EXPLICIT"], "max_replicates_per_pair": 1,
-                           "core_conditions": ["A1", "A3"], "cover_used_places_only": True,
-                           "surplus_factor": 1.0},
-                  "finalise": {"per_condition": 5}}
-        slate, _ = plan.build_slate(places, config, make_stream(range(1, 1001), 1, 1000))
-        per = lambda c: {q for q, cond, _ in slate if cond == c}  # noqa: E731
-        self.assertEqual(len(per("A1")), 5)
-        self.assertEqual(per("A1"), per("A3"))
-        self.assertEqual(per("EXPLICIT"), per("A1"))
-
-    def test_b_only_place_is_feasible_wherever_its_clues_allow(self):
-        place = plan.Place(qid="Q1", name="London", place_type="town", country="Canada",
-                           continent="North America", places_sharing_name=9,
-                           sitelinks=86, wikidata_links=0, b_only=True)
-        place.surface_forms = [{"text": "London", "kind": "ambiguous_alias"},
-                               {"text": "London, Canada", "kind": "exact"}]
-        place.label_form = {"text": "London", "kind": "ambiguous_alias"}
-        ok_no_clue, reason_no_clue = plan.feasible(place, "B", {"Q1": place})
-        self.assertFalse(ok_no_clue)
-        self.assertIn("single-clue", reason_no_clue)
-        place.single_clues = [self.clue()]
-        ok_b, _ = plan.feasible(place, "B", {"Q1": place})
-        ok_explicit, _ = plan.feasible(place, "EXPLICIT", {"Q1": place})
-        ok_a1, _ = plan.feasible(place, "A1", {"Q1": place})
-        ok_a3, reason = plan.feasible(place, "A3", {"Q1": place})
-        self.assertTrue(ok_b)
-        self.assertTrue(ok_explicit)
-        self.assertTrue(ok_a1)
-        self.assertFalse(ok_a3)
-        self.assertIn("size-3", reason)
-
-    def test_min_sitelinks_floor_spares_older_places(self):
-        def mk(qid, sitelinks, added):
-            return plan.Place(qid, qid, "town", "C", "Europe", 1, sitelinks, 0, added=added)
-        places = {"Q1": mk("Q1", 10, ""), "Q2": mk("Q2", 10, "2026-10-27"),
-                  "Q3": mk("Q3", 45, "2026-10-27")}
-        cfg = {"min_sitelinks": 30, "min_sitelinks_from": "2026-10-27"}
-        dropped = plan.drop_little_known(places, cfg)
-        self.assertEqual([r["place_qid"] for r in dropped], ["Q2"])
-        self.assertEqual(sorted(places), ["Q1", "Q3"])
-        self.assertEqual(plan.drop_little_known(places, {}), [])
-        places["Q4"] = mk("Q4", 400, "")
-        dropped = plan.drop_little_known(places, {"max_sitelinks": 300})
-        self.assertEqual([r["place_qid"] for r in dropped], ["Q4"])
-
-    def test_unknown_clues_are_held_back(self):
-        place = plan.Place("Q1", "X", "town", "C", "Europe", 1, 50, 0)
-        known, unknown = self.clue(label="K", qid="QK"), self.clue(label="U", qid="QU")
-        place.single_clues = [known, unknown]
-        place.triple_sets = [{"source_set_index": 0, "clues": [unknown, known, unknown]},
-                             {"source_set_index": 1, "clues": [unknown] * 3}]
-        path = Path(tempfile.mkdtemp()) / "clues.jsonl"
-        path.write_text('{"clue_qid": "QK", "clue_wikipedia_articles": 3}\n'
-                        '{"clue_qid": "QU", "clue_wikipedia_articles": 0}\n', encoding="utf-8")
-        records = plan.drop_unknown_clues({"Q1": place}, path,
-                                          {"min_clue_wikipedia_articles": 1})
-        self.assertEqual([c["clue_qid"] for c in place.single_clues], ["QK"])
-        self.assertEqual([s["source_set_index"] for s in place.triple_sets], [0])
-        self.assertEqual(records[0]["three_clue_sets_held_back"], 1)
+    def test_surface_forms(self):
+        place = mk_place("Q1", "Lagos", rival={"qid": "Q2", "label": "Lagos", "sitelinks": 58, "km": 4000})
+        place.places_sharing_name = 24
+        for condition, kind in (("B", "ambiguous_alias"), ("EXPLICIT", "exact")):
+            form = plan.choose_surface_form(place, condition)
+            self.assertEqual((form["kind"], form["text"], form["name_ambiguous"], form["shared_by"]),
+                             (kind, "Lagos", True, 24))
+            self.assertEqual(form["top_namesake"]["sitelinks"], 58)
+        self.assertEqual(plan.choose_surface_form(place, "A1")["kind"], "none")
+        unique = mk_place("Q3", "Jask")
+        form = plan.choose_surface_form(unique, "EXPLICIT")
+        self.assertFalse(form["name_ambiguous"])
+        self.assertIsNone(form["top_namesake"])
 
     def test_noise_donor_is_any_other_place_outside_the_country(self):
         def mk(qid, continent, country):
-            p = plan.Place(qid, f"P{qid}", "town", country, continent, 1, 1, 1)
-            p.single_clues = [self.clue(label=f"C{qid}", qid=f"C{qid}")]
-            return p
-        a, same_country, same_continent, far = (mk("Q1", "Europe", "France"), mk("Q2", "Europe", "France"),
-                                                mk("Q3", "Europe", "Spain"), mk("Q4", "Asia", "Japan"))
+            return mk_place(qid, f"P{qid}", country=country, continent=continent,
+                            clues=[clue(f"C{qid}", f"C{qid}")])
+        a, same_country, same_continent, far = (mk("Q1", "EU", "France"), mk("Q2", "EU", "France"),
+                                                mk("Q3", "EU", "Spain"), mk("Q4", "AS", "Japan"))
         places = {p.qid: p for p in (a, same_country, same_continent, far)}
         self.assertEqual(sorted(plan.noise_donors(a, places)), ["Q3", "Q4"])   # never itself or its country
         self.assertEqual([plan.donor_relation(a, p) for p in (same_country, same_continent, far)],
@@ -431,52 +351,37 @@ class PlanHelpers(unittest.TestCase):
         a.reset_caches()
         self.assertEqual(sorted(plan.noise_donors(a, places)), ["Q4"])
 
-    def test_cover_all_places_plans_every_feasible_place(self):
-        places = {}
-        for qid, continent in (("Q1", "Europe"), ("Q2", "Europe"), ("Q3", "Asia")):
-            p = plan.Place(qid, qid, "town", "X", continent, 1, 1, 1)
-            p.label_form = {"text": qid, "kind": "exact"}
-            places[qid] = p
-        config = {"plan": {"replicates": {"EXPLICIT": 1}, "cover_all_places": ["EXPLICIT"],
-                           "surplus_factor": 1.0}, "finalise": {"per_condition": 2}}
-        slate, _ = plan.build_slate(places, config, None)
-        self.assertEqual(sorted(slate), [("Q1", "EXPLICIT", 0), ("Q2", "EXPLICIT", 0), ("Q3", "EXPLICIT", 0)])
-
     def test_b_conditions_carry_one_clue_and_explicit_none(self):
         specs = plan.CONDITION_SPECS
         self.assertEqual([specs[c]["n_clues"] for c in ("B", "NOISE_B", "EXPLICIT")], [1, 1, 0])
 
-    def test_per_condition_target(self):
-        cfg = {"plan": {"surplus_factor": 1.3}, "finalise": {"per_condition": 150}}
-        self.assertEqual(plan.per_condition_target(cfg), 195)
-        self.assertIsNone(plan.per_condition_target({"plan": {}, "finalise": {"per_condition": None}}))
-        self.assertIsNone(plan.per_condition_target({"plan": {}}))
-
-    def test_filter_forms(self):
-        place = plan.Place("Q1", "Young", "town", "Uruguay", "South America", 1, 1, 1)
-        forms = [
-            {"text": "Young", "kind": "exact", "source": "label"},
-            {"text": "Young, Rio Negro", "kind": "ambiguous_alias", "source": "alt"},
-            {"text": "Yg", "kind": "ambiguous_alias", "source": "alt", "shared_by": ["Q5"]},
-            {"text": "Younger", "kind": "exact", "source": "alt"},
-        ]
-        held = plan.filter_forms("Q1", place, forms, ["Uruguay"], self.RULES)
-        self.assertEqual([f["text"] for f in place.surface_forms], ["Young", "Yg", "Younger"])
-        self.assertEqual([h["text"] for h in held], ["Young, Rio Negro"])
-        self.assertTrue(all(h["record"] == "form_excluded" for h in held))
-        self.assertEqual(place.label_form["text"], "Young")
-
-    def test_explicit_uses_the_bare_label_and_records_ambiguity(self):
-        place = plan.Place("Q1", "Lagos", "town", "Nigeria", "Africa", 24, 189, 1)
-        stream = None   # EXPLICIT draws nothing
-        place.label_form = {"text": "Lagos", "kind": "ambiguous_alias", "shared_by": 24,
-                            "top_namesake": {"qid": "Q2", "sitelinks": 58}}
-        form = plan.choose_surface_form(place, "EXPLICIT", stream)
-        self.assertEqual((form["kind"], form["text"], form["name_ambiguous"]),
-                         ("exact", "Lagos", True))
-        self.assertEqual(form["top_namesake"]["sitelinks"], 58)
-        place.label_form = {"text": "Jask", "kind": "exact", "shared_by": 1}
-        self.assertFalse(plan.choose_surface_form(place, "EXPLICIT", stream)["name_ambiguous"])
+    def test_load_places_joins_csv_and_inputs(self):
+        tmp = Path(tempfile.mkdtemp())
+        (tmp / "places.csv").write_text(
+            "i,label,type,sub,c,continent,split,lat,lon,sl,pbin,n_fam,cbin,hooks,clues,old,"
+            "rival,rival_sl,rival_km,rbin,rank,n_names,A,B,EXPLICIT\n"
+            "Q1,Young,settlement,settlement,Q77,SA,dev,-32.7,-57.6,40,mid,2,>=10,,[],,"
+            "Q5,90,8000,rival_leads,2,3,plan,reserve,yes\n", encoding="utf-8")
+        rec = {"place_qid": "Q1", "name_forms": ["Young", "Young City"], "country": "Uruguay",
+               "country_forms": ["Uruguay", "Uruguayan"], "region_forms": ["Río Negro"],
+               "clues": [{"clue_qid": "QA", "clue_label": "Esteban Conde", "property": "P19",
+                          "family": "people", "sitelinks": 12, "is_human": True},
+                         {"clue_qid": "QB", "clue_label": "Club Young", "property": "P159",
+                          "family": "org", "sitelinks": 4}],
+               "b_clues": ["QB"], "rival_label": "Young", "env_themes": ["flooding"]}
+        (tmp / "inputs.jsonl").write_text(json.dumps(rec) + "\n", encoding="utf-8")
+        p = plan.load_places(tmp / "places.csv", tmp / "inputs.jsonl")["Q1"]
+        self.assertEqual((p.country, p.country_qid, p.split, p.a_pool, p.b_pool, p.explicit),
+                         ("Uruguay", "Q77", "dev", "plan", "reserve", True))
+        self.assertEqual(p.rival, {"qid": "Q5", "label": "Young", "sitelinks": 90, "km": 8000})
+        self.assertEqual(p.places_sharing_name, 3)
+        self.assertEqual([c["clue_qid"] for c in p.b_clues], ["QB"])
+        self.assertTrue(p.clues[0]["is_human"])
+        self.assertEqual(p.env_themes, ["flooding"])
+        rec["place_qid"] = "Q9"
+        (tmp / "inputs.jsonl").write_text(json.dumps(rec) + "\n", encoding="utf-8")
+        with self.assertRaises(SystemExit):
+            plan.load_places(tmp / "places.csv", tmp / "inputs.jsonl")
 
     def test_atomic_write_jsonl(self):
         path = Path(tempfile.mkdtemp()) / "sub" / "out.jsonl"
@@ -515,34 +420,43 @@ class PromptConstraint(unittest.TestCase):
         self.assertIn('no "Dead Sea", no "Israel", "Jordan" or "Palestine",', text)
         self.assertNotIn(";", text)
 
-    def test_scale_line_is_in_every_themed_prompt(self):
-        self.assertIn("never by name", self.PROMPT["scale_line"])
-        self.assertIn("abroad", self.PROMPT["scale_line"])
+    def test_every_scale_has_wording_and_global_names_no_place(self):
+        config = plan.load_config(SYN / "config.yaml")
+        self.assertEqual(set(config["plan"]["scales"]), set(self.PROMPT["scale_lines"]))
+        self.assertIn("do not name any other place", self.PROMPT["scale_lines"]["global"])
+        self.assertIn("never by name", self.PROMPT["claim_rules"])
+        self.assertIn("other", self.PROMPT["role_hints"])
 
-    def test_river_clue_name_is_allowed_only_when_present(self):
+    def test_place_name_clues_are_allowed_only_when_present(self):
         item = self.item("none", place="Oxford", country="United Kingdom")
         self.assertNotIn("exception", gen.build_constraint(item, self.PROMPT))
         item["clues"] = [{"clue_label": "River Cherwell", "is_toponym": True},
+                         {"clue_label": "Cherwell District", "is_toponym": True},
                          {"clue_label": "Ada Lovelace", "is_toponym": False}]
         text = gen.build_constraint(item, self.PROMPT)
-        self.assertIn('name the river "River Cherwell"', text)
+        self.assertIn('you may write "River Cherwell" or "Cherwell District"', text)
         self.assertNotIn("Ada Lovelace", text)
 
-    def test_only_river_toponyms_pass_the_clue_rules(self):
-        rules = plan.ClueRules(toponym_clue_categories=frozenset({"watercourse"}))
-        self.assertTrue(rules.allows_toponym(["watercourse"]))
-        self.assertTrue(rules.allows_toponym(["body_of_water", "watercourse"]))
-        self.assertFalse(rules.allows_toponym(["body_of_water"]))
-        self.assertFalse(rules.allows_toponym(["settlement", "watercourse"]))
-        self.assertFalse(plan.ClueRules().allows_toponym(["watercourse"]))
-
     def test_clue_line_uses_plain_relation_words(self):
-        clue = {"clue_label": "Ali Hassan Mwinyi", "property": "P19",
-                "property_label": "place of birth", "entity_type": "person"}
-        self.assertEqual(gen.describe_clue(clue, self.PROMPT).strip(),
-                         '- "Ali Hassan Mwinyi" (a person), born here')
+        clue = {"clue_label": "Lake Kivu", "property": "P206",
+                "property_label": "located next to body of water", "entity_type": "place_or_org"}
+        line = gen.describe_clue(clue, self.PROMPT).strip()
+        self.assertTrue(line.startswith('- "Lake Kivu" (a place or organisation). Its link to the place, for you '
+                                        'only, not for the post: lies on its shore or banks.'))
+        self.assertIn("The post must make clear that it is here", line)       # the anchor, on every clue
         unknown = {**clue, "property": "P9999", "property_label": "some property"}
         self.assertIn("some property", gen.describe_clue(unknown, self.PROMPT))
+
+    def test_people_come_with_what_they_are_known_for_not_their_link(self):
+        clue = {"clue_label": "Ali Hassan Mwinyi", "property": "P19", "entity_type": "person",
+                "is_human": True, "is_living": False, "description": "politician"}
+        line = gen.describe_clue(clue, self.PROMPT)
+        self.assertTrue(line.strip().startswith('- "Ali Hassan Mwinyi" (a person from history), known as: politician.'))
+        self.assertIn("acting on this place or its people", line)
+        self.assertNotIn("born", line)
+        # no description: the type note's wording stands in
+        self.assertIn("known as: a living person",
+                      gen.describe_clue({**clue, "is_living": True, "description": ""}, self.PROMPT))
 
     def test_untyped_property_gets_no_type_note(self):
         clue = {"clue_label": "Battle of X", "property": "P276",
@@ -713,11 +627,29 @@ class WordLimits(unittest.TestCase):
     NAMES = {"forms": [], "country": [], "regions": []}
 
     def test_limits_from_config(self):
-        self.assertEqual(finalise.word_limits({"min_words": 7, "max_words": 30}), (7, 30))
+        self.assertEqual(finalise.word_limits({"min_words": 7, "max_words": 30}), {"default": (7, 30)})
+        self.assertEqual(finalise.word_limits({"min_words": 7, "max_words": 30,
+                                               "words_by_condition": {"A3": [15, 43]}}),
+                         {"default": (7, 30), "A3": (15, 43)})
         self.assertIsNone(finalise.word_limits({"min_words": 7}))
         self.assertIsNone(finalise.word_limits(None))
         real = plan.load_config(SYN / "config.yaml")
-        self.assertEqual(finalise.word_limits(real["finalise"]), (7, 30))
+        dist = json.loads((SYN / real["paths"]["length_dist"]).read_text(encoding="utf-8"))
+        limits = finalise.word_limits(real["finalise"])
+        self.assertEqual(limits["default"], (dist["q1"], dist["q3"]))     # 8-28, the quartiles
+        self.assertEqual(limits["A3"], (dist["median"], dist["p90"]))     # 15-43, the longer posts
+        # the planner draws targets from the same ranges
+        self.assertEqual(plan.length_range(real, "A1"), limits["default"])
+        self.assertEqual(plan.length_range(real, "A3"), limits["A3"])
+
+    def test_condition_range_applies(self):
+        twenty_nine = " ".join(["word"] * 29)
+        limits = {"default": (8, 28), "A3": (15, 43)}
+        got = finalise.check({**self.ITEM, "condition": "A1", "surface_form": {}}, twenty_nine,
+                             self.NAMES, None, limits)
+        self.assertEqual(got[0], "length")
+        self.assertIsNone(finalise.check({**self.ITEM, "condition": "A3", "surface_form": {}},
+                                         twenty_nine, self.NAMES, None, limits))
 
     def test_word_count_check(self):
         six = "Young is so dry this week"
@@ -727,7 +659,7 @@ class WordLimits(unittest.TestCase):
         table = [(six, "length"), (seven, None), (thirty, None), (thirty_one, "length")]
         for text, expected in table:
             with self.subTest(words=len(text.split())):
-                got = finalise.check(self.ITEM, text, self.NAMES, None, (7, 30))
+                got = finalise.check(self.ITEM, text, self.NAMES, None, {"default": (7, 30)})
                 self.assertEqual(got[0] if got else None, expected)
         # off without limits
         self.assertIsNone(finalise.check(self.ITEM, six, self.NAMES, None, None))
@@ -736,45 +668,190 @@ class WordLimits(unittest.TestCase):
 class EnvironmentThemes(unittest.TestCase):
     CONFIG = plan.load_config(SYN / "config.yaml")
 
-    def test_places_read_their_themes(self):
-        tmp = Path(tempfile.mkdtemp()) / "places.csv"
-        tmp.write_text("place_name,type,country,continent,wikidata_id,env_themes\n"
-                       "Lake X,lake,Y,Europe,Q1,falling water levels; algal blooms\n"
-                       "Town Z,town,Y,Europe,Q2,\n", encoding="utf-8")
-        places = plan.load_places(tmp)
-        self.assertEqual(places["Q1"].env_themes, ["falling water levels", "algal blooms"])
-        self.assertEqual(places["Q2"].env_themes, [])
-
     def test_prompt_carries_the_theme_only_when_the_item_has_one(self):
-        item = {"item_id": "abc", "register": "personal_update", "length_band": "7_to_30_words",
+        item = {"item_id": "abc", "register": "personal_update", "target_len": 12,
                 "place_name": "Lake X", "place_country": "Y", "clues": [], "slots": {},
                 "surface_form": {"kind": "exact", "text": "Lake X"}}
         without = gen.build_messages(item, self.CONFIG, {})[-1]["content"]
         self.assertNotIn("What the post is about", without)
         with_theme = gen.build_messages({**item, "env_theme": "falling water levels"},
                                         self.CONFIG, {})[-1]["content"]
-        self.assertIn("What the post is about: falling water levels.", with_theme)
+        self.assertIn("What the post is about: start from falling water levels,", with_theme)
         # after the naming constraint, before the style block
         self.assertLess(with_theme.index("Name the place plainly"),
                         with_theme.index("What the post is about"))
         self.assertLess(with_theme.index("What the post is about"),
                         with_theme.index("Kind of post"))
 
-    def test_every_length_band_has_wording(self):
-        # The registers' bands (or the default) must all be defined in the prompt.
-        bands = self.CONFIG["prompt"]["length_bands"]
-        for reg in self.CONFIG["registers"]:
-            for band in reg.get("length_bands", plan.DEFAULT_LENGTH_BANDS):
-                self.assertIn(band, bands)
-        self.assertIn("7 and 30 words", bands["7_to_30_words"])
+    def test_length_line_uses_the_target_and_old_items_keep_their_band(self):
+        item = {"item_id": "abc", "register": "personal_update", "place_name": "Lake X",
+                "place_country": "Y", "clues": [], "slots": {},
+                "surface_form": {"kind": "exact", "text": "Lake X"}}
+        new = gen.build_messages({**item, "target_len": 12}, self.CONFIG, {})[-1]["content"]
+        self.assertIn("Length: about 12 words", new)
+        old = gen.build_messages({**item, "length_band": "7_to_30_words"}, self.CONFIG, {})[-1]["content"]
+        self.assertIn("between 7 and 30 words", old)
 
-    def test_item_id_depends_on_the_theme(self):
+    def test_scale_role_and_rules_follow_the_theme(self):
+        item = {"item_id": "abc", "register": "personal_update", "place_name": "X",
+                "place_country": "Y", "slots": {}, "target_len": 12, "env_theme": "flooding",
+                "scale": "local", "role": "company;other", "surface_form": {"kind": "none"},
+                "clues": [{"clue_label": "Acme", "property": "P159", "role": "company"},
+                          {"clue_label": "Ann Lee", "property": "P19", "role": "politician",
+                           "is_human": True}]}
+        text = gen.build_messages(item, self.CONFIG, {})[-1]["content"]
+        hints = self.CONFIG["prompt"]["role_hints"]
+        self.assertIn(self.CONFIG["prompt"]["scale_lines"]["local"].strip(), text)
+        self.assertIn(f'- "Acme": {hints["company"]}', text)          # one hint per name
+        self.assertIn(f'- "Ann Lee": {hints["politician"]}', text)
+        self.assertIn("Do not invent a specific accident", text)
+        self.assertLess(text.index("What the post is about"), text.index("Keep it local"))
+
+    def test_target_length_follows_the_counts(self):
+        class Fixed:
+            def __init__(self, draws): self.draws = iter(draws)
+            def below(self, n): return next(self.draws)
+        lengths = [(3, 2), (4, 5), (9, 1)]   # 8 posts: draws 0-1 -> 3, 2-6 -> 4, 7 -> 9
+        got = [plan.choose_target_len(lengths, Fixed([d])) for d in (0, 1, 2, 6, 7)]
+        self.assertEqual(got, [3, 3, 4, 4, 9])
+
+    def test_item_id_depends_on_the_theme_and_scale(self):
         payload = {"place_qid": "Q1", "condition": "EXPLICIT", "clues": [],
                    "surface_form": {"text": "X"}, "noise_entity": None,
-                   "register": "personal_update", "length_band": "short", "slots": {}}
+                   "register": "personal_update", "target_len": 12, "slots": {}}
         a = plan.make_item_id({**payload, "env_theme": "flooding"}, 0)
         b = plan.make_item_id({**payload, "env_theme": "drought"}, 0)
-        self.assertNotEqual(a, b)
+        c = plan.make_item_id({**payload, "env_theme": "drought", "scale": "global"}, 0)
+        d = plan.make_item_id({**payload, "env_theme": "drought", "scale": "global",
+                               "valence": "positive"}, 0)
+        self.assertEqual(len({a, b, c, d}), 4)
+
+    def test_every_valence_has_wording_and_follows_the_theme(self):
+        config = plan.load_config(SYN / "config.yaml")
+        self.assertEqual(set(config["plan"]["valences"]), set(self.CONFIG["prompt"]["valence_lines"]))
+        item = {"item_id": "abc", "register": "personal_update", "place_name": "X",
+                "place_country": "Y", "slots": {}, "target_len": 12, "clues": [],
+                "env_theme": "a repair cafe", "valence": "positive", "surface_form": {"kind": "none"}}
+        text = gen.build_messages(item, self.CONFIG, {})[-1]["content"]
+        line = self.CONFIG["prompt"]["valence_lines"]["positive"].strip()
+        self.assertIn(line, text)
+        self.assertLess(text.index("What the post is about"), text.index(line))
+
+    def test_registers_fit_the_valence(self):
+        class First:
+            def pick(self, options): return options[0]
+        config = {"registers": [{"name": "local_complaint", "valences": ["negative"]},
+                                {"name": "personal_update"}]}
+        self.assertEqual(plan.choose_register(config, First(), "positive")["name"], "personal_update")
+        self.assertEqual(plan.choose_register(config, First(), "negative")["name"], "local_complaint")
+        with self.assertRaises(SystemExit):
+            plan.choose_register({"registers": config["registers"][:1]}, First(), "positive")
+
+    def test_positive_items_take_the_positive_themes(self):
+        place = plan.Place(qid="Q1", name="X", place_type="settlement", sub="settlement", country="Y",
+                           country_qid="Q2", continent="EU", split="test", sitelinks=10, lat=0, lon=0,
+                           env_themes=["flooding"], env_themes_positive=["a repair cafe"])
+        self.assertEqual(plan.themes_for_valence(place, "positive"), ["a repair cafe"])
+        self.assertEqual(plan.themes_for_valence(place, "negative"), ["flooding"])
+        with self.assertRaises(SystemExit):
+            plan.themes_for_valence(plan.Place(qid="Q1", name="X", place_type="settlement", sub="settlement",
+                                               country="Y", country_qid="Q2", continent="EU"), "positive")
+
+
+class JudgeAndRetries(unittest.TestCase):
+    ITEM = {"item_id": "abc", "condition": "A3", "place_qid": "Q1", "place_name": "X",
+            "clues": [{"clue_qid": "Q10", "clue_label": "Ann Lee", "role": "politician"},
+                      {"clue_qid": "Q11", "clue_label": "Red River", "role": ""}],
+            "spare_clues": [{"clue_qid": "Q12", "clue_label": "Bo Kay", "role": "athlete"}],
+            "surface_form": {"kind": "none"}, "noise_entity": None}
+    OK = {"decorative_names": [], "imagined_reaction": False, "unlisted_people": [],
+          "unlisted_places": [], "environmental_claim": True, "coherent": True, "reason": "ok"}
+
+    def test_verdict_order_and_allowed_names(self):
+        self.assertIsNone(judge.verdict(self.ITEM, self.OK))
+        # a listed name reported as "unlisted" is ignored
+        self.assertIsNone(judge.verdict(self.ITEM, {**self.OK, "unlisted_places": ["Red River"]}))
+        both = {**self.OK, "unlisted_people": ["Jean Dupont"], "decorative_names": ["Ann Lee"]}
+        self.assertEqual(judge.verdict(self.ITEM, both)[0], "judge_person")   # leaks first
+        self.assertEqual(judge.verdict(self.ITEM, {**self.OK, "decorative_names": ["Ann Lee"]})[0],
+                         "judge_decorative")
+        self.assertEqual(judge.verdict(self.ITEM, {**self.OK, "environmental_claim": False})[0],
+                         "judge_no_environment")
+
+    def test_unanchored_counts_only_planned_clues(self):
+        self.assertEqual(judge.verdict(self.ITEM, {**self.OK, "unanchored_names": ["Ann Lee"]})[0],
+                         "judge_unanchored")
+        noisy = {**self.ITEM, "noise_entity": {"clue_qid": "Q99", "clue_label": "Far Corp"},
+                 "surface_form": {"kind": "ambiguous_alias", "text": "Young"}}
+        # the distractor and the place name need no anchor
+        self.assertIsNone(judge.verdict(noisy, {**self.OK, "unanchored_names": ["Far Corp", "Young"]}))
+        self.assertIn("unanchored_names", judge.JUDGE_SCHEMA["required"])
+
+    def test_invented_setting_is_a_leak(self):
+        both = {**self.OK, "invented_setting": ["concrete plant"], "decorative_names": ["Ann Lee"]}
+        self.assertEqual(judge.verdict(self.ITEM, both)[0], "judge_setting")      # before decorative
+        self.assertIsNone(judge.verdict(self.ITEM, {**self.OK, "invented_setting": [" "]}))
+        topic = judge.judge_messages({**self.ITEM, "env_theme": "falling water levels"}, "x",
+                                     plan.load_config(SYN / "config.yaml"))[-1]["content"]
+        self.assertIn("Topic the writer was given: falling water levels", topic)
+
+    def test_decorative_clue_is_swapped_for_the_next_spare(self):
+        work = json.loads(json.dumps(self.ITEM))
+        swaps = gen.swap_decorative(work, ["Ann Lee"])
+        self.assertEqual([c["clue_label"] for c in work["clues"]], ["Bo Kay", "Red River"])
+        self.assertEqual(swaps[0]["from_qid"], "Q10")
+        self.assertEqual(work["spare_clues"], [])
+        self.assertEqual(gen.swap_decorative(work, ["Red River"]), [])   # no spare left
+
+    def test_retry_seeds_differ_and_try_one_keeps_the_item_seed(self):
+        self.assertEqual(gen.try_seed("abcdef0123456789", 1), gen.seed_for_item("abcdef0123456789"))
+        self.assertEqual(len({gen.try_seed("abcdef0123456789", n) for n in (1, 2, 3)}), 3)
+
+    def test_reserve_matches_condition_continent_type_and_bin(self):
+        def it(q, pool, cont="EU", typ="natural", pbin="mid"):
+            return {"place_qid": q, "pool": pool, "condition": "A1", "place_continent": cont,
+                    "place_type": typ, "pbin": pbin}
+        plan_items = [it("Q1", "plan"), it("Q2", "reserve", cont="AS"), it("Q3", "reserve", pbin="low"),
+                      it("Q4", "reserve"), it("Q5", "reserve", typ="island")]
+        self.assertEqual(gen.find_reserve(it("Q1", "plan"), plan_items, set()), "Q4")
+        self.assertIsNone(gen.find_reserve(it("Q1", "plan"), plan_items, {"Q4"}))
+
+    def test_swap_takes_the_whole_set_and_the_reserve_explicit(self):
+        def it(q, cond, pool):
+            return {"item_id": f"{q}{cond}", "place_qid": q, "place_name": q, "condition": cond,
+                    "pool": pool, "place_continent": "EU", "place_type": "natural", "pbin": "mid"}
+        plan_items = [it("Q1", c, "plan") for c in ("A1", "A3", "NOISE_A1", "EXPLICIT")] + \
+                     [it("Q9", c, "reserve") for c in ("A1", "A3", "NOISE_A1", "EXPLICIT")]
+        rows = [{"accepted": False, "final_status": "judge_incoherent", "_item": plan_items[0]},
+                {"accepted": True, "_item": plan_items[1]}]
+        todo, swaps = gen.plan_swaps(rows, plan_items, [plan_items[0], plan_items[1]], [])
+        self.assertEqual(swaps[0]["replacement_qid"], "Q9")
+        self.assertEqual(swaps[0]["conditions"], ["A1", "A3"])          # only what ran for Q1
+        self.assertEqual(sorted(t["condition"] for t in todo), ["A1", "A3", "EXPLICIT"])
+        self.assertTrue(all(t["swapped_from"] == "Q1" for t in todo))
+        # already swapped: nothing more
+        self.assertEqual(gen.plan_swaps(rows, plan_items, [plan_items[0]], swaps)[1], [])
+
+    def test_spread_sample_covers_groups(self):
+        items = [{"item_id": f"{c}{k}", "condition": c, "place_continent": cont, "place_type": "x"}
+                 for c in ("A1", "B") for k, cont in enumerate(["EU"] * 5 + ["AS"] * 5)]
+        got = gen.spread_sample(items, 4)
+        self.assertEqual(len(got), 8)
+        self.assertEqual({i["place_continent"] for i in got if i["condition"] == "A1"}, {"EU", "AS"})
+
+    def test_spare_clues_follow_the_chosen_ones(self):
+        p = mk_place("Q1", clues=[clue(f"C{k}", qid=f"C{k}") for k in range(5)])
+        self.assertEqual([c["clue_qid"] for c in plan.spare_clues(p, "A1")], ["C1", "C2", "C3", "C4"])
+        self.assertEqual([c["clue_qid"] for c in plan.spare_clues(p, "A3")], ["C3", "C4"])
+        self.assertEqual(plan.spare_clues(p, "EXPLICIT"), [])
+
+    def test_failed_row_keeps_its_reason_and_swapped_clues_count(self):
+        item = {**self.ITEM, "condition": "EXPLICIT", "surface_form": {"text": "X"}, "clues": []}
+        row = {"accepted": False, "final_status": "judge_incoherent", "final_reason": "jump",
+               "post_text": "X is dry"}
+        self.assertEqual(finalise.verdict_for(item, row, {})[0], "judge_incoherent")
+        used = finalise.used_item(self.ITEM, {"clues_used": [{"clue_qid": "Q12", "clue_label": "Bo Kay"}]})
+        self.assertEqual(used["clues"][0]["clue_qid"], "Q12")
 
 
 class BuildExemplarsLogic(unittest.TestCase):

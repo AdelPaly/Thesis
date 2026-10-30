@@ -8,18 +8,15 @@
 # is passed.
 
 paths:
-  # Relative to this file. The place inputs are built by ../places/
-  # (see ../places/build_inputs.py); everything else lives here.
+  # Relative to this file. The place inputs are built in ../ by
+  # reform_places.py and then place_inputs.py; everything else lives here.
+  # The old v1 place set and its clue files are in ../places/archive_v1/.
 
   # inputs
-  # The old (v1) 737-place set, archived 2026-10-29. The current place set is
-  # ../out/places.csv (reform_places.py); the generator still needs switching to it.
-  places_csv:        ../places/archive_v1/env_places.csv
-  clue_sets:         ../places/archive_v1/05_clue_sets.jsonl
-  place_aliases:     ../places/archive_v1/04b_place_aliases.jsonl
-  clue_types:        ../places/archive_v1/05b_clue_types.jsonl
-  clue_prominence:   ../places/data/external/clues.jsonl  # finalise.py only
+  places_csv:        ../out/places.csv
+  place_inputs:      ../out/place_inputs.jsonl
   random_stream:     sampler/geo_random.txt
+  length_dist:       sampler/length_dist.json     # built by length_dist.py
   style_exemplars:   data/style_exemplars.jsonl   # built by build_exemplars.py
   bluesky_dump:      data/bluesky_en.jsonl        # source for build_exemplars.py
 
@@ -40,110 +37,27 @@ paths:
 # --------------------------------------------------------------------------- #
 
 plan:
-  # The conditions to plan. While finalise.per_condition is set (below), each
-  # condition is planned at per_condition x surplus_factor items (400 x 1.3 =
-  # 520), one per place (max_replicates_per_pair), and the numbers here are not
-  # used. With it unset they are the items per (place, condition) before the
-  # surplus pass. A place that cannot support a condition contributes nothing
-  # for it and is logged in output/plan_rejections.jsonl.
-  replicates:
-    A1: 2          # one entity clue, no place name
-    A3: 2          # three entity clues, no place name
-    B: 1           # ambiguous place name plus one A1-style clue that picks the namesake
-    EXPLICIT: 1    # the bare place name, no clue; rows record if the name is shared
-    NOISE_A1: 1    # A1 plus one entity from any other place
-    NOISE_B: 1     # B plus one entity from any other place
+  # The conditions to plan. Which places get which condition, and whether as
+  # plan or reserve, comes from out/places.csv (reform_places.py): the A set
+  # gets A1, A3 and NOISE_A1, the B set B and NOISE_B, and every A or B place
+  # EXPLICIT: the name stated outright, the reference each condition is read
+  # against (mostly B). EXPLICIT copies its B item's draws (else its A1 item's),
+  # so the pair differs by the clue only. Infrastructure-only places get nothing.
+  # One item per (place, condition). A place that cannot support a condition
+  # it was given is logged in output/plan_rejections.jsonl.
+  conditions: [A1, A3, B, EXPLICIT, NOISE_A1, NOISE_B]
 
-  # Conditions planned for every place that can support them, this many items
-  # per place, instead of per_condition x surplus_factor items spread evenly.
-  # EXPLICIT is meant to be usable on every place in the dataset, B-only places
-  # included, so it is not sized or balanced like the others (finalise.unbalanced).
-  cover_all_places: [EXPLICIT]
+  # How far the post's claim reaches, one drawn per item (prompt.scale_lines
+  # words each). Planned so it can be read against the results; the post
+  # itself never states it.
+  scales: [personal, local, regional, global]
 
-  # The model will sometimes name the place in a condition that forbids it.
-  # Those items are dropped in finalise.py, so the plan has to be larger than the
-  # target set, by this factor. 1.3 assumes a leak rate near 20 per cent with
-  # room to spare (a condition may lose 120 of its 520); measure it on a smoke
-  # run and set this from the measurement.
-  surplus_factor: 1.3
-
-  # No (place, condition) pair may exceed this. 1: a place is used at most once
-  # per condition (2026-10-27); a condition short of places is planned short
-  # and reported, never padded with repeats.
-  max_replicates_per_pair: 1
-
-  # The A conditions share one fixed set of places (the core), chosen once
-  # from the places feasible for all of them, so a difference between A1, A3
-  # and NOISE_A1 cannot come from different places (2026-10-27). B and NOISE_B
-  # need shared names and draw their own places.
-  core_conditions: [A1, A3, NOISE_A1]
-
-  # Type mix (2026-10-27, user: balanced, not dominated by towns and islands).
-  # Each place type belongs to a group; a condition's items (and the core) are
-  # split over the groups by these shares, continents balanced within each
-  # group. A group short of places hands its share to the others in proportion
-  # to their targets and a note is printed; B, short of shared-name nature
-  # places, ends up town-heavier, which the user accepted.
-  type_groups:
-    town: town
-    island: island
-    mountain: mountain
-    lake: lake
-    bay: coast
-    peninsula: coast
-    archipelago: coast
-    beach: coast
-    lagoon: coast
-    reef: coast
-    national park: park
-    protected area: park
-    desert: landscape
-    forest: landscape
-    glacier: landscape
-    wetland: landscape
-    canyon: landscape
-    waterfall: landscape
-    valley: landscape
-    plateau: landscape
-    heritage: heritage
-    manmade structure: heritage
-  type_targets:
-    town: 0.30
-    island: 0.15
-    mountain: 0.12
-    lake: 0.10
-    coast: 0.10
-    park: 0.10
-    landscape: 0.07
-    heritage: 0.06
-
-  # Within each type group and continent, draw each place from the countries
-  # used least so far in the condition, so no country piles up (2026-10-27,
-  # user: 31 UK and 50 Australian places against one or two for most
-  # countries). Countries with no eligible places cannot appear at all.
-  balance_countries: true
-  # And no country may have more places than this in one condition; a type
-  # group that cannot fill its share within the cap hands the rest to the other
-  # groups. null: no cap.
-  max_places_per_country: 12
-
-  # EXPLICIT (cover_all_places) covers only the places some other condition
-  # uses, not every place in the file.
-  cover_used_places_only: true
-
-  # Difficulty and relevance band. Places with fewer Wikimedia sitelinks than
-  # min_sitelinks are too obscure for anyone to care or to place; those with
-  # more than max_sitelinks are too easy (live count from the alias file).
-  # Applies to every place (2026-10-27; min_sitelinks_from null). Each place
-  # left out is logged in plan_rejections.
-  min_sitelinks: 30
-  max_sitelinks: 300
-  min_sitelinks_from: null
-
-  # A clue nobody could know makes a post unplaceable: a single clue needs at
-  # least this many Wikipedia articles (any language), and a three-clue set at
-  # least one member that has. Read from paths.clue_prominence. null: no check.
-  min_clue_wikipedia_articles: 1
+  # Whether the claim is about a problem or good news, one drawn per item
+  # (prompt.valence_lines words each; the theme comes from the place's
+  # env_themes or env_themes_positive). Drawn uniformly from this list, so
+  # [negative, positive] is 50/50; [negative, negative, positive] would be
+  # a third positive. 2026-10-30, user: the posts were always negative.
+  valences: [negative, positive]
 
   # The inclusive range the integers in sampler/geo_random.txt were generated
   # over (the range they were drawn from, not the min and max of the file).
@@ -153,47 +67,12 @@ plan:
   random_min: 1
   random_max: 1000000
 
-  # A1, NOISE_A1 and every NOISE distractor use one clue on its own. A
-  # clue that several places satisfy gives such an item no single correct
-  # answer, so only clues with place_ambiguity at or below this are drawn.
-  # It is a ceiling: raising it admits more, and more ambiguous, clues.
-  max_place_ambiguity_for_single_clue: 1
 
-  # A clue that is itself a place name (05b_clue_types.jsonl: a village,
-  # island, river, street, time zone...) forces a place name into a post whose
-  # prompt forbids one. When true,
-  # such clues are never drawn, a best set containing one is not used for A3,
-  # and each exclusion is logged. On 2026-10-01 this was 74 of 614 clue
-  # entities; A3 then fits 70 places rather than 87, A1 99 rather than 102.
-  exclude_toponym_clues: true
-
-  # Toponym categories that stay usable as clues all the same. A river can be
-  # named without giving the place away (2026-10-27, user), so a clue typed
-  # watercourse (with or without body_of_water) is kept; the prompt then gets
-  # prompt.river_clue_exception, which allows exactly that river's name.
-  toponym_clue_categories: [watercourse]
-
-  # A clue whose own label names the place or its country: any surface form
-  # of the place ("Rock-cut tombs of Qaw el-Kebir" for Tjebu, "USS Mount
-  # McKinley" for Denali), or the country's name or English demonym from
-  # 04b_place_aliases.jsonl ("Tuvalu Association of Sports", "MIAT Mongolian
-  # Airlines"), or the bare place name. 4 of 20 smoke posts on 2026-10-01
-  # leaked this way. When true, such clues are never drawn, a best set
-  # containing one is not used for A3, and each exclusion is logged.
-  exclude_label_leaks: true
-
-  # An ambiguous surface form that already carries a qualifier ("Las Cruces,
-  # NM") or contains the country's name ("Guatemala City", "Panama") cannot
-  # serve as the ambiguous toponym: the B constraint forbids exactly those
-  # additions. When true, such forms are held back from B and NOISE_B and
-  # logged. Exact forms are never filtered. EXPLICIT does not draw a form at
-  # all: it writes the bare label for every place, shared or not.
-  exclude_qualified_ambiguous_forms: true
-
-
-# Every register uses the one length band in prompt.length_bands (7 to 30
-# words), which plan.py applies when a register lists none. finalise.min_words
-# and max_words enforce it.
+# Post length is not a register setting: plan.py draws each item's target
+# length from the real Bluesky posts (paths.length_dist) within the range
+# finalise.py keeps: min_words to max_words (the quartiles, 8 to 28 words), or
+# the condition's own range in finalise.words_by_condition.
+# valences: the plan valences a register suits; a register without it suits all.
 registers:
   - name: personal_update
     description: >-
@@ -206,6 +85,7 @@ registers:
       Mild irritation about something local and mundane. Assumes the reader
       shares the surroundings.
     slots: [time_of_day, irritant, mood_marker]
+    valences: [negative]
 
   - name: event_mention
     description: >-
@@ -328,24 +208,32 @@ slots:
 
 finalise:
   # Posts kept per condition after the checks: 5 conditions x 400 = 2,000,
-  # plus EXPLICIT (unbalanced, one per place). It
-  # also sizes the plan: plan.py plans per_condition x plan.surplus_factor per
-  # condition, so the checks have spares to cut. If any condition ends below
-  # this, finalise.py stops with an error rather than write fewer. null cuts
-  # to the smallest condition instead (and plans by replicates).
-  # --per-condition overrides it here only, not in plan.py.
+  # plus EXPLICIT (unbalanced, one per place). reform_places.py sizes each
+  # condition's plan to this (FINAL) plus a reserve for failed posts. If any
+  # condition ends below this, finalise.py stops with an error rather than
+  # write fewer. null cuts to the smallest condition instead.
+  # --per-condition overrides it.
   per_condition: 400
 
   # Conditions left out of the cut to per_condition: every post that passes the
-  # checks is kept, whatever continent it is on. EXPLICIT, so it stays usable on
-  # every place (plan.cover_all_places).
+  # checks is kept, whatever continent it is on. EXPLICIT, so every A and B
+  # place keeps its reference post for the paired comparison.
   unbalanced: [EXPLICIT]
 
-  # Every post is between these many words, counted on whitespace
-  # (prompt.length_bands). A post outside is dropped as "length". Set either to
-  # null to turn the check off.
-  min_words: 7
-  max_words: 30
+  # Every post is between these many words, counted on whitespace: Q1 and Q3
+  # of the real Bluesky posts (data/bluesky_en_word_length_stats.csv;
+  # length_dist.py finds the same on 1,040,753 posts, 2026-10-29). A post
+  # outside is dropped as "length". Set either to null to turn the check off.
+  min_words: 8
+  max_words: 28
+
+  # Conditions with their own range, also the range plan.py draws their target
+  # lengths from. A3 carries three names: in 8-28 words that read as a burst of
+  # facts, not a story (2026-10-29, user), so it takes the longer real posts,
+  # median to 90th percentile (length_dist.py). A3 posts are therefore longer
+  # by design; the dataset records target_len and len for every post.
+  words_by_condition:
+    A3: [15, 43]
 
   # Every post must make an environmental claim (prompt.environment_line). This
   # is only a presence check: a post with none of these terms is dropped as
@@ -394,6 +282,10 @@ finalise:
     - plastic
     - litter
     - rubbish
+    - trash
+    - garbage
+    - dumping
+    - sul(ph|f)ur
     - waste
     - fracking
     - drilling
@@ -430,6 +322,24 @@ finalise:
     - dust
     - snowline
     - melt
+    # good news (plan.valences positive)
+    - compost
+    - refill
+    - reus
+    - repair caf
+    - rewild
+    - clean[- ]?up
+    - heat pump
+    - insulat
+    - electric (bus|ferr|car)
+    - bike lane
+    - wetland
+    - conservation
+    - deposit (return|scheme)
+    - tak(e|es|ing) back
+    - tree[- ]planting
+    - planting trees
+    - green ?spaces?
 
 
 # --------------------------------------------------------------------------- #
@@ -449,59 +359,53 @@ generation:
   # config_hash check also catches an edited model name). Paid model:
   # $0.02/M input, $0.396/M output, so a full pass over the 984-item plan is at
   # most about $0.32 even if every reply hits max_tokens.
-  base_url: https://openrouter.ai/api/v1
-  model: deepseek/deepseek-v4.1-flash
-  api_key_env: OPENROUTER_API_KEY
+  #
+  # 2026-10-29: the writer is qwen3.5:122b on the VSE LiteLLM gateway. The
+  # smoke runs (output/model_test/smoke2-4) passed 60-80% of its posts against
+  # DeepSeek's ~23%, which mostly forgot the topic and the distractor. Qwen is
+  # not among the evaluated systems. DeepSeek is now the judge (judge: below):
+  # a different model family checks the writer's posts. The settings below
+  # (reasoning, headers, timeout) are the gateway's; the DeepSeek settings are
+  # kept under providers.openrouter for compare_models.py.
+  base_url: https://litellm.vse.cz
+  model: qwen3.5:122b
+  api_key_env: VSE_API_KEY
 
-  # Optional. OpenRouter uses these for attribution and ignores them if absent.
-  extra_headers:
-    HTTP-Referer: https://vse.cz
-    X-Title: Thesis dataset generation
+  # Attribution headers are OpenRouter's; the gateway needs none.
+  extra_headers: {}
 
   # json_schema where the provider supports it, json_object as a fallback,
-  # none if it supports neither.
-  #
-  # deepseek-v4.1-flash lists both response_format and structured_outputs in
-  # its supported_parameters (checked 2026-09-30), so json_schema. If a smoke
-  # run returns HTTP 400 rows, the provider is rejecting the schema (the
-  # nullable naming_form_used is the usual culprit): set this to none. The
+  # none if it supports neither. LiteLLM passes the schema on as the model's
+  # output format; the smoke runs returned valid JSON on every reply. The
   # prompt states the schema either way, and the parser pulls the first
   # balanced JSON object out of whatever comes back.
-  #
-  # Earlier notes, kept for when the model changes: nemotron-3.5-lightning:free
-  # supports neither and must be none; nemotron-3-super-120b-a12b:free
-  # supports both.
   structured_output: json_schema
 
-  # The model accepts a seed. Sent per item, derived from item_id and masked to
-  # 31 bits. Providers treat it as best effort.
+  # Sent per item (and per try), derived from item_id and masked to 31 bits.
+  # Providers treat it as best effort.
   send_seed: true
 
-  # The model is reasoning-capable. Excluding reasoning keeps the content field
-  # clean, but only hides the thinking: it still counts against max_tokens.
-  exclude_reasoning: true
-
-  # low | medium | high, or null for the model's default. The smoke run on
-  # 2026-09-30 at the default effort with max_tokens 800 spent all 800 tokens
-  # reasoning on 2 of 3 items and returned empty content; the one that
-  # finished used 543. Low effort plus the larger budget below is the fix.
-  reasoning_effort: low
+  # Thinking off. No OpenRouter reasoning object on the gateway (effort null,
+  # exclude false, enabled true sends none); LiteLLM's own reasoning_effort:
+  # "none" goes in extra_body. Left on, qwen3.5:122b thought for 4000 tokens
+  # on every smoke item and returned no content.
+  exclude_reasoning: false
+  reasoning_effort: null
+  reasoning_enabled: true
+  extra_body:
+    reasoning_effort: none
 
   temperature: 1.0
   top_p: 1.0
-  # Reasoning and the JSON answer share this budget. At 2000, low effort still
-  # ran out on 3 of 10 smoke items (reasoning 792-1675 tokens on the 7 that
-  # finished). At $0.396/M output a full 984-item pass is at most about $1.55
-  # even if every reply used all 4000.
+  # With thinking off a post takes 100-150 output tokens; the budget only
+  # guards against a runaway reply.
   max_tokens: 4000
-  timeout_seconds: 120
+  timeout_seconds: 300   # a 122B model on a shared gateway is slower
 
   exemplars_per_prompt: 3
 
-  # The 20/minute and 1000/day limits apply to OpenRouter's :free models only,
-  # and this model is paid. A short pause stays polite; any 429 is caught by
-  # the backoff below, retried, and recorded. For a :free model go back to
-  # 3.5 seconds, which keeps under 20/minute.
+  # The gateway is shared with other students: a short pause stays polite, and
+  # any 429 is caught by the backoff below, retried, and recorded.
   delay_between_calls_seconds: 0.5
   max_attempts: 6
   backoff_base_seconds: 2.0
@@ -510,11 +414,130 @@ generation:
   error_body_head_chars: 400     # response body kept per failed attempt
 
 
+# Other OpenAI-compatible endpoints, for compare_models.py. A model written as
+# "<provider>:<model>" (openrouter:deepseek/deepseek-v4.1-flash) is sent to
+# that provider, with these settings over the generation: ones above; a model
+# with no known prefix goes to generation.base_url (the gateway). Keys come
+# from .env, like the one above.
+providers:
+  # OpenRouter, for DeepSeek (the judge's endpoint too). Thinking off through
+  # its reasoning object: at effort low the smoke run spent all 4000 tokens
+  # thinking on 16 of 30 items and returned nothing.
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: OPENROUTER_API_KEY
+    extra_headers:
+      HTTP-Referer: https://vse.cz
+      X-Title: Thesis dataset generation
+    reasoning_effort: null
+    exclude_reasoning: false
+    reasoning_enabled: false
+    extra_body: {}
+    timeout_seconds: 120
+
+  # The VSE LiteLLM gateway (course endpoint). It is not OpenRouter: no
+  # reasoning object, no attribution headers, no cost in the usage block. The
+  # schema is still asked for (LiteLLM passes it on as the model's output
+  # format); the prompt restates it either way.
+  vse:
+    base_url: https://litellm.vse.cz
+    api_key_env: VSE_API_KEY
+    extra_headers: {}
+    # No OpenRouter reasoning object here. Thinking is switched off through
+    # LiteLLM's own reasoning_effort: "none" (think: false also works).
+    # Left on, qwen3.5:122b thought for 4000 tokens (about 38 s) on every
+    # smoke item and returned no content.
+    reasoning_effort: null
+    exclude_reasoning: false
+    reasoning_enabled: true
+    extra_body:
+      reasoning_effort: none
+    timeout_seconds: 300   # a 122B model on a shared gateway is slower
+
+
+# --------------------------------------------------------------------------- #
+# judge.py (the model check, Task 5) and the retries (Task 4)
+# --------------------------------------------------------------------------- #
+
+# Every post that passes the rule checks is read by a second model from a
+# different family (2026-10-29, user: keep the checker apart from the writer).
+# It answers yes/no questions (judge.JUDGE_SCHEMA); judge.verdict turns them
+# into a drop reason. It replaces finalise.environment_keywords, which dropped
+# clear claims ("the water smells like diesel again") for want of a keyword.
+judge:
+  # Settings laid over generation: for the judge's calls.
+  model_settings:
+    base_url: https://openrouter.ai/api/v1
+    model: deepseek/deepseek-v4.1-flash
+    api_key_env: OPENROUTER_API_KEY
+    extra_headers:
+      HTTP-Referer: https://vse.cz
+      X-Title: Thesis dataset generation
+    reasoning_effort: null
+    exclude_reasoning: false
+    reasoning_enabled: false
+    extra_body: {}
+    send_seed: false
+    temperature: 0.0
+    max_tokens: 800
+    timeout_seconds: 120
+
+  system: >-
+    You check short social media posts for a research dataset. Judge only the
+    text you are given. Be strict but fair, and reply with JSON only.
+
+  task: >-
+    A writer was asked to produce an ordinary-sounding social media post that
+    makes some environmental claim and mentions the names listed below. Read
+    the post and answer each question about it.
+
+    A listed name takes part when it belongs to what happens or to the point:
+    the writer is somewhere linked to it, the person is doing or did something
+    relevant, the event or organisation is part of the story, or the named one
+    is acting on its own community while the writer looks on from elsewhere. It is only
+    dropped in when it could be deleted without changing anything else, or
+    when it is attached by a loose, unexplained jump. A person takes part only
+    when what the post says connects to them: their decisions, actions,
+    promises, work or legacy, or something of theirs that the problem
+    affects. Walking past a house, street or spot linked to a person while the
+    point is about something else is only dropping them in.
+
+    A listed name is tied to where the post is set when the writer is at it or
+    right by it (its offices, its ground, its event), or when it is shown
+    acting on its own home area or community ("their own city", "right outside
+    their offices", "the town they run"). Taking part is not enough, and
+    neither is the writer's own area alone: "the party keeps backing these
+    roadworks" or "the party is digging up half the neighbourhood" could be
+    anywhere in the country, so it is not tied. The place name itself and a
+    name described as belonging elsewhere need no tie.
+
+    The names are meant to be the only thing that points to where the post is
+    set. Report any invented detail of the setting that could narrow it down:
+    a landscape, a facility, a climate or season. What the topic itself needs
+    (water for a topic about falling water levels) is not invented.
+
+    For unlisted people and places, list only real proper names that appear
+    in the post. Roles ("the council", "the mayor", "a developer") are fine
+    and are not names. Count a street, square, school or building named after
+    someone as a place name.
+
+    The environmental claim can be small and need not be true, but it must be
+    a statement about an environmental problem, improvement or change, not
+    just a mood or an event. Good news counts as much as bad news.
+
+  # Tries per item before the place is swapped for a reserve (generate.py).
+  max_tries: 3
+
+
 # Everything the model reads is here. generate.py adds only the clue and slot
 # values from the plan, the exemplar posts, and the field names of the output
 # shape (taken from RESPONSE_SCHEMA). Placeholders in {braces} are filled by
 # str.format, so a literal brace in any template below must be doubled.
 prompt:
+  # No worked examples of whole phrases in the task: smoke6 (2026-10-29) copied
+  # one nearly word for word into three posts ("the bit about the old
+  # crossings got me, half are dry now").
+  #
   # "In English" is stated in both. The 2026-10-01 smoke run had no language
   # instruction, and an EXPLICIT item for Cîșlița-Prut came back in Romanian.
   system: >-
@@ -523,9 +546,10 @@ prompt:
     about what must not appear in the post. Reply with JSON only.
 
   task: >-
-    Write one social media post by someone who lives in, or is spending time
-    in, a particular place. They are not describing where they are. They are
-    just talking about their day. Someone who knows the area might work out
+    Write one social media post by someone who lives in, is spending time in,
+    or is following the news about a particular place. They are not
+    describing it. They are just talking about their day or about what is
+    happening there. Someone who knows the area might work out
     roughly where they are from what they mention, but the writer is not
     trying to make that easy or hard. Write in English, even when the names
     you are given are in another language, and keep those names as they are.
@@ -539,9 +563,41 @@ prompt:
     what it is: a person is a person, not a shop or a place. Refer to people
     the way others would in a post, usually by first name and surname, without
     middle names, titles or numbers like "III", but always with the surname.
-    Write everything else by the name given. There is no need to say how
-    anything is connected to the place, and it is usually better not to hint
-    at it.
+    Write everything else by the name given. You are not told how the people
+    are connected to the place, and the post must not say it either: nobody
+    was born, grew up, lived or died anywhere in it. Bring each person in
+    through what they are known for.
+
+    Tie every name to the place the post is about, without naming that place
+    or spelling out the formal link: either the writer is there (at it or
+    right by it: its offices, its ground, its event), or the named one is doing something to
+    its own community from wherever the writer is ("their own city", "the
+    town they run", "the region they are based in", "right on their
+    doorstep"). A name that could sit in a post about anywhere else in the
+    country does not point to the place.
+
+    Bring a person in the way people really come up in posts: as someone with
+    a hand in what the post is about (a mayor, a minister, a company boss, an
+    activist, an athlete who spoke up), or as part of where the writer is or
+    what they are doing. A living person is someone who could really be
+    around or in the news today; a person from history shows up through what
+    they left behind. Do not default to a statue or a memorial. Do not use
+    them as an imagined judge: no "X
+    would be furious", "X would not believe this", "X is turning in their
+    grave", "X would laugh" or "what would X say". If the person has nothing
+    to do with the issue, still name them, in passing, and let the claim
+    stand on its own.
+
+    Tell one small moment from the writer's day, and make every name earn its
+    place in it. Real people leave out anything that does not lead somewhere,
+    so a name is either where the post starts and the environmental point
+    grows out of it, or it is the thing the point is about. Let what each name
+    is decide how it turns up, and pick what fits that particular name rather
+    than the same device every time. Do not bring a
+    name in by reading, watching or hearing about it and then move on to
+    something else: that is a detail a real poster would cut. Each sentence
+    follows from the one before. First settle the one situation that ties
+    every name and the point together, then write the post from it.
 
   # How each clue's entity type is written in the prompt. The plan keeps
   # the places pipeline's property family codes; these are only the words the model sees.
@@ -549,6 +605,10 @@ prompt:
   # label already says it) and other (P495, P1435 - too mixed to name).
   entity_type_labels:
     person: a person
+    # People, by whether they are alive (place_inputs.py: no date of death and
+    # born after 1920). smoke7 gave living footballers and politicians statues.
+    person_living: a living person
+    person_historical: a person from history
     place_or_org: a place or organisation
     work_or_event: a work or event
 
@@ -561,23 +621,34 @@ prompt:
   # How each clue's link to the place is worded, by property, in place of the
   # Wikidata property label ("located in administrative entity"). A property
   # missing here falls back to that label.
+  # The properties are the ones reform_places.py links clues by (place_inputs.py
+  # records which one); clue -> place first, then place -> clue (P200 to P6).
   relation_phrases:
     P19: born here
     P20: died here
+    P551: lived here
     P937: worked here
-    P131: located here
     P159: headquartered here
+    P740: founded here
     P276: located or held here
-    P1071: made here
-    P138: named after this place
-    P495: comes from here
-    P1435: a heritage listing for this place
-    SPORTS: a club or team based here
-    EVENTS: held here
-    WORKS: set or filmed here
+    P131: located here
+    P361: part of this place
+    P706: located on or in it
+    P206: lies on its shore or banks
+    P885: rises here
+    P403: flows into it
+    P200: flows into it
+    P201: flows out of it
+    P4552: the mountain range it belongs to
+    P6: heads the local government here
 
   # How the style slots are labelled in the prompt, by slot name in the plan.
   # A slot missing here is shown as its name with underscores as spaces.
+  # false: the planned slots are not shown. With topic, scale and register
+  # also in the prompt they crowded out the clues and posts read like a
+  # checklist (2026-10-29 smoke runs); the register alone sets the tone.
+  show_slots: false
+
   slot_labels:
     time_of_day: Time of day
     time_reference: When
@@ -588,7 +659,7 @@ prompt:
     stance: Their take
     mood_marker: Mood
 
-  # Length bands, referenced by the plan. One band for every post.
+  # Length bands, kept for items planned before plan version 6.
   length_bands:
     7_to_30_words: between 7 and 30 words
 
@@ -596,30 +667,102 @@ prompt:
   # plan (one of the place's env_themes). {theme} is a short topic such as
   # "falling water levels". The claim only has to be plausible, not true.
   environment_line: >-
-    What the post is about: {theme}. The writer states a claim on this subject
+    What the post is about: start from {theme}, but choose the environmental
+    angle that lets the names take part in the story; if a different angle
+    fits them better, use it. The writer states a claim on this subject
     with some confidence, the way people post about it online. The claim can be
     about the place, about other people, about themselves or about anything
     else connected to it, and the writer does not have to be there. It can be a
-    complaint, a warning, a boast or a piece of news, and it does not have to
-    be true or sourced. Do not write the topic as a label or a headline. This
+    complaint, a warning, praise, a boast or a piece of news, and it does not
+    have to be true or sourced. Do not write the topic as a label or a headline. This
     does not change anything above about what may and may not be named.
 
-  # Added after environment_line for every post. How far a claim travels is a
-  # matter of the story, not of how famous the place is (2026-10-27, user): a
-  # village can have a row only its neighbours care about, and a little-known
-  # island can be news abroad because a developer or a famous family wants it.
-  # The model picks a plausible scale; it is not planned or measured. People
-  # and organisations are named by role only: a real name could give the
-  # country away, and the claims are not checked, so they must not be pinned
-  # on real people.
-  scale_line: >-
-    Pick whatever scale fits the claim. It can be small, something only locals
-    or regular visitors would care about, with a few people agreeing. It can be
-    national news. Or it can be the kind of story that puts a place in the news
-    abroad, even one few people had heard of, usually because an outside
-    developer, investor, government or well-known family is involved. Refer to
-    any person or organisation by role (the council, the minister, a foreign
-    developer, a former president's family), never by name.
+  # Added after environment_line, by the item's planned valence (plan.valences).
+  # The positive line keeps it a claim, not an advert: real good-news posts
+  # are as offhand as complaints.
+  valence_lines:
+    negative: >-
+      The writer is unhappy about it: a problem, a worry, a complaint or bad
+      news.
+    positive: >-
+      The writer is glad about it: good news, something that is working, a new
+      scheme, product or idea they like, a clean-up they joined, or cautious
+      hope. It is still a claim stated with some confidence, it does not have
+      to be true, and it should not read like an advert or a press release.
+
+  # Added after environment_line, by the item's planned scale (plan.scales).
+  # How far a claim travels is a matter of the story, not of how famous the
+  # place is (2026-10-27, user). The global line keeps clean posts clean: a
+  # world issue told through actors and the issue, never through another place
+  # ("the Amazon", "China"), which finalise.py checks.
+  scale_lines:
+    personal: >-
+      Keep it personal: something the writer sees, smells or does themselves,
+      like rubbish they keep finding, less snow than last winter or a refill
+      station they now use.
+    local: >-
+      Keep it local: the town or the area around it, a council decision, a
+      local company, something neighbours argue about or are proud of.
+    regional: >-
+      Make it regional: something bigger than one town, like a river, a
+      mountain range, a power plant or a whole coastline.
+    global: >-
+      Make it global: a world issue such as climate change, plastic or fossil
+      fuels, told from where the writer is. Be specific about who is doing what
+      (governments, big companies, airlines, tourists), but do not name any
+      other place, country or region to make the point.
+
+  # A hint for the angle, by the role of the planned clue (place_inputs.py,
+  # from reform_places.py's ROLE). One line per role the item's clues carry;
+  # "other" covers clues with no role (people, events, works).
+  role_hint_intro: >-
+    What each name suggests as an angle (a hint, not a rule):
+  role_hints:
+    politics: a mayor or council could be behind a decision about rubbish, traffic or green space
+    party: a party could be for or against a project such as a new road, a mine or drilling
+    company: a company could be blamed for pollution or logging, or praised for a clean-energy investment
+    industry: a plant, dam, mine or works could be affecting the air, the water or the wildlife, or cleaning up its act
+    transport: an airport, port or railway could bring noise, fumes or an expansion fight, or go electric
+    nature: a lake, river, glacier, forest or mountain could be visibly changing, for worse or for better
+    education: a university or school could be running a study, a protest or a green scheme
+    culture: a festival, museum or club could leave waste behind or go green
+    # People, by occupation (place_inputs.py OCCUPATION, from Wikidata P106).
+    politician: a politician's decisions, promises or record on the issue
+    athlete: a sports star's events, travel, sponsors or the grounds they played on
+    artist: an artist's work, venue, festival or fans
+    scientist: a scientist's field, findings or the institution they worked at
+    activist: what the activist campaigned for, and whether it lasted
+    business: a business figure's company, money or projects
+    military: a base, a battle site or what a war left behind
+    royal: a royal family's estates, wealth or patronage
+    religious: a church, pilgrimage or what a religious figure preached
+    person: link the person in a natural way through what they did there
+    other: link it in a natural way through what it is and does
+
+  # Added for every post. Claims are generated, not checked, so they must not
+  # read as reports of real incidents at real facilities.
+  claim_rules: >-
+    The claim must be plausible. It does not need to be true. Do not invent a
+    specific accident, spill or crime at a real named facility or company;
+    keep it general ("the plant", "they keep dumping stuff"). Praise works the
+    same way: no made-up figures, awards or launch dates for a real named
+    organisation. Do not invent a
+    quote from anyone you name, and do not accuse a named person of a specific
+    wrongdoing; the writer's own opinion of a public figure's record is fine.
+    Name no person who is not on the list of things to mention, and if there
+    is no such list, name no person at all: not a made-up neighbour, mayor or
+    activist either.
+    Do not invent anything about the setting that could help someone work out
+    where it is: no landscape (wetlands, a valley, the coast, mountains), no
+    facility (a concrete plant, a port, a mine) and no weather or season that
+    you were not given. Keep the setting ordinary (the street, the road, the
+    neighbourhood, a building site), so that only the names above point to
+    the place. What the topic itself needs is fine.
+    Make the environmental point plain enough that a reader knows what the
+    problem, improvement or change is, without turning it into a headline. Refer to any
+    person or organisation you are not asked to mention by role (the council,
+    the minister, a foreign developer), never by name, and never in a way that
+    names the place, like "the mayor of" followed by a place name.
 
   # Constraint templates. One is inserted per item depending on the condition.
   # Keep these blunt and specific: a hedged constraint is one the model
@@ -649,11 +792,13 @@ prompt:
     region. Do not write {other_names}. Mention nothing else that names or
     locates the place.
 
-  # Appended to the two constraints above only when the item's clue (or noise
-  # entity) is a river, the one kind of place name plan.py lets through.
-  river_clue_exception: >-
-    The one exception: you may name the river {rivers}, since it is one of the
-    things to mention.
+  # Appended to the two constraints above only when the item's clues (or noise
+  # entity) include place names: the part, water and range families (a
+  # municipality, a river, a mountain range). Those names, and only those,
+  # are allowed.
+  place_clue_exception: >-
+    The one exception: you may write {names}, since they are among the things
+    to mention.
 
 
   # Line templates for the entity block. {type_note} is " (a person)" and so
@@ -662,12 +807,36 @@ prompt:
   entities_header: >-
     Mention these by name:
 
+  # The relation is background for the model, not wording: the 2026-10-29
+  # smoke posts copied it ("Hristo Stoichkov was born here"). A first fix,
+  # '(background only, do not write this: born here)', was read as "do not
+  # write the entity" and clues went missing.
+  # The anchor sentence sits on every clue line (2026-10-30): as a general
+  # rule in the task the writer ignored it twice ("thanks Party of the
+  # Revolution" could be anywhere in the country).
   clue_line: >-
-    - "{label}"{type_note}, {relation}
+    - "{label}"{type_note}. Its link to the place, for you only, not for the
+    post: {relation}. The post must make clear that it is here, or acting on
+    its own home area ("their own city", "right outside their offices"),
+    without naming the place.
 
+  # People (is_human): what they are known for (their Wikidata description,
+  # without the place's country words), not how they are linked to the place.
+  # 85% of person clues are linked by birth or death; told "born here" (even
+  # as background), the writer kept writing it, and a birthplace rarely gives
+  # a reason to mention anyone (2026-10-29, user). {known_for} falls back to
+  # the type note's wording when a person has no description.
+  clue_line_person: >-
+    - "{label}"{type_note}, known as: {known_for}. The post must make clear
+    that they are acting on this place or its people ("the town they run",
+    "the club they play for here"), without naming the place.
+
+  # The smoke posts marked the distractor as foreign ("Henry Figueroa from
+  # elsewhere"), which gives it away.
   noise_entity: >-
     - "{label}"{type_note}, which belongs to a different place from the one
-    this post is about. Mention it, but do not link it to that place.
+    this post is about. Mention it like the other things, without linking it
+    to that place and without saying it is from somewhere else.
 
   surface_ambiguous: >-
     Place name to use: "{surface}"
@@ -689,6 +858,10 @@ prompt:
   length_line: >-
     Length: {length}
 
+  # {n} is the item's target_len, drawn from the real posts' lengths.
+  target_len_line: >-
+    Length: about {n} words
+
   register_notes_line: >-
     What that means: {notes}
 
@@ -705,7 +878,9 @@ prompt:
     Reply with one JSON object with these fields:
 
   output_fields:
+    situation: one sentence, the single situation that ties every name and the environmental point together
     post_text: the post
     entities_referenced: each named thing you mentioned, written exactly as it appears in the post
     naming_form_used: the place name exactly as you wrote it, or null if there is none
     register: the kind of post you wrote
+    angle: the environmental angle you chose, in a few words

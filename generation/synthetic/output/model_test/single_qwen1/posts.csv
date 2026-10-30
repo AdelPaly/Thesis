@@ -1,0 +1,2 @@
+﻿model,item_id,source_plan,condition,place_name,status,reason,text,words,latency_s,prompt_tokens,completion_tokens,cost,flags
+vse:qwen3.5:122b,5babb2e104c15v3,item_plan.jsonl,A1,Dodoma,no_environment,"no environmental wording (theme ""tree planting or a new green space"")",Saw the crew from the Party of the Revolution start the planters right outside their offices. Finally some real green space coming to our corner.,25,27.87,1686,125,,

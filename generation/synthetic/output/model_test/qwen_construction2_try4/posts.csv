@@ -1,0 +1,2 @@
+﻿model,item_id,source_plan,condition,place_name,status,reason,text,words,latency_s,prompt_tokens,completion_tokens,cost,flags
+vse:qwen3.5:122b,5babb2e104c15r04,item_plan.jsonl,A1,Dodoma,kept,,Party of the Revolution keeps widening the drains and now my street is underwater every single storm.,17,1.7,1805,106,,

@@ -1,0 +1,4 @@
+﻿model,item_id,source_plan,condition,place_name,status,reason,text,words,latency_s,prompt_tokens,completion_tokens,cost,flags
+openrouter:deepseek/deepseek-v4.1-flash,5babb2e104c15v1,item_plan.jsonl,A1,Dodoma,kept,,Stuck in fumes again. Party of the Revolution really wants more cars on their own streets.,16,1.19,1942,98,0.00031616,
+openrouter:deepseek/deepseek-v4.1-flash,5babb2e104c15v2,item_plan.jsonl,A1,Dodoma,kept,,"New bike lane by the Party of the Revolution offices. Gliding past traffic, honestly the best part of my week.",20,1.06,1940,105,0.000172994,
+openrouter:deepseek/deepseek-v4.1-flash,5babb2e104c15v3,item_plan.jsonl,A1,Dodoma,no_environment,"no environmental wording (theme ""tree planting or a new green space"")","Tree planting at the community field this Saturday, the Party of the Revolution is running it for their own city.",20,0.93,1933,94,0.000164934,

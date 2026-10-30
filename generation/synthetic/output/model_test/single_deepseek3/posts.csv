@@ -1,0 +1,2 @@
+﻿model,item_id,source_plan,condition,place_name,status,reason,text,words,latency_s,prompt_tokens,completion_tokens,cost,flags
+openrouter:deepseek/deepseek-v4.1-flash,5babb2e104c15cb5,item_plan.jsonl,A1,Dodoma,kept,,stuck in fumes again while the Party of the Revolution pushes another road through their own city. whole valley's hazy.,20,1.69,1908,100,0.00031304,

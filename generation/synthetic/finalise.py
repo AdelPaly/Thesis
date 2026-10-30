@@ -47,8 +47,8 @@ Conditions listed in finalise.unbalanced in config.yaml (EXPLICIT) are not cut:
 every post that passes the checks is kept, so the condition covers as many
 places as it can.
 
-Balancing: the plan is deliberately uneven (A1 and A3 get two posts per place,
-the others one) and oversized, so after the checks the conditions hold
+Balancing: the plan holds a reserve per condition (pool "reserve", generated
+only to replace failed posts), so after the checks the conditions hold
 different numbers of posts. Pooled and per-condition numbers are easier to
 compare when every condition has the same n, so each condition is cut to N
 posts: finalise.per_condition in config.yaml (150), or --per-condition, or the
@@ -104,19 +104,20 @@ PLACE_PROMINENCE_BINS = [(100, "high_100_plus"), (30, "mid_30_to_99"), (0, "low_
 RIVAL_RATIO = 2.0
 RIVAL_PROMINENCE_BINS = (f"place_leads_{RIVAL_RATIO:g}x", "close",
                          f"rival_leads_{RIVAL_RATIO:g}x")
-# clue_prominence (A1, A3, NOISE_A1), by the Wikipedia articles of the post's
+# clue_prominence (every condition with a clue), by the sitelinks of the post's
 # best-known clue (for A3, one recognisable clue is enough to start from):
-# none is "unknown", 1-9 "niche", 10+ "well_known".
+# none is "unknown", 1-9 "niche", 10+ "well_known" (reform_places.py cbin).
 CLUE_PROMINENCE_BINS = [(10, "well_known"), (1, "niche"), (0, "unknown")]
 
 DATASET_COLUMNS = ["text", "qid", "location_name", "country", "continent",
                    "signal_type", "latitude", "longitude",
                    "signal", "surface_form", "clue_qids", "clue_labels",
-                   "clue_forms", "noise_entity", "register", "length_band",
+                   "clue_forms", "noise_entity", "register", "target_len", "len",
                    "place_sitelinks", "rival_qid", "rival_sitelinks",
                    "name_ambiguous", "place_is_most_famous", "place_prominence",
-                   "rival_prominence", "clue_prominence", "env_theme",
-                   "item_id", "model"]
+                   "rival_prominence", "clue_prominence", "topic", "scale",
+                   "valence", "angle", "role", "tries", "clue_swapped", "swapped_from",
+                   "split", "pool", "item_id", "model"]
 REPORT_COLUMNS = ["item_id", "condition", "place_qid", "place_name", "status",
                   "reason", "text"]
 
@@ -168,21 +169,12 @@ def mentions(text: str, clue: dict[str, Any] | str) -> bool:
 
 
 def load_aliases(path: Path) -> dict[str, dict[str, Any]]:
-    out = {}
-    for record in gen.read_jsonl(path):
-        out[record["place_qid"]] = {
-            "forms": [f["text"] for f in record.get("surface_forms", [])
-                      if f.get("source") != "derived" and f.get("kind") != "unmatched"],
-            "country": [f["text"] for f in record.get("country_forms", [])],
-            "regions": [f["text"] for f in record.get("region_forms", [])],
-        }
-    return out
-
-
-def load_clue_articles(path: Path) -> dict[str, int]:
-    """Clue QID -> number of Wikipedia articles, from the external clues export."""
-    return {c["clue_qid"]: int(c.get("clue_wikipedia_articles") or 0)
-            for c in gen.read_jsonl(path)}
+    """Place QID -> its names, country names and demonyms, and regions, from
+    place_inputs.jsonl (../place_inputs.py)."""
+    return {record["place_qid"]: {"forms": record.get("name_forms") or [],
+                                  "country": record.get("country_forms") or [],
+                                  "regions": record.get("region_forms") or []}
+            for record in gen.read_jsonl(path)}
 
 
 def _bin(value: int, bins: list[tuple[int, str]]) -> str:
@@ -215,9 +207,9 @@ def name_ambiguous(surface: dict[str, Any]) -> str:
     return "" if flag is None else str(bool(flag)).lower()
 
 
-def clue_prominence(clues: list[dict[str, Any]], articles: dict[str, int]) -> str:
-    """The bin of the best-known clue; "" for posts without clues or unknown QIDs."""
-    known = [articles[c["clue_qid"]] for c in clues if c["clue_qid"] in articles]
+def clue_prominence(clues: list[dict[str, Any]]) -> str:
+    """The bin of the best-known clue by sitelinks; "" for posts without clues."""
+    known = [int(c["sitelinks"]) for c in clues if c.get("sitelinks") is not None]
     return _bin(max(known), CLUE_PROMINENCE_BINS) if known else ""
 
 
@@ -230,20 +222,24 @@ def environment_pattern(terms: list[str] | None) -> re.Pattern | None:
     return re.compile(r"\b(?:" + "|".join(f"(?:{t})" for t in terms) + ")", re.I)
 
 
-def word_limits(finalise_cfg: dict[str, Any] | None) -> tuple[int, int] | None:
-    """(min, max) words from finalise.min_words and max_words; None when either is unset."""
+def word_limits(finalise_cfg: dict[str, Any] | None) -> dict[str, tuple[int, int]] | None:
+    """{condition: (min, max) words}, "default" from finalise.min_words and
+    max_words, others from finalise.words_by_condition; None when either
+    default is unset. plan.py draws its target lengths from the same ranges."""
     cfg = finalise_cfg or {}
     if cfg.get("min_words") is None or cfg.get("max_words") is None:
         return None
-    return int(cfg["min_words"]), int(cfg["max_words"])
+    return {"default": (int(cfg["min_words"]), int(cfg["max_words"])),
+            **{c: (int(lo), int(hi)) for c, (lo, hi) in (cfg.get("words_by_condition") or {}).items()}}
 
 
 def check(item: dict[str, Any], text: str, names: dict[str, Any],
           env_pattern: re.Pattern | None = None,
-          limits: tuple[int, int] | None = None) -> tuple[str, str] | None:
+          limits: dict[str, tuple[int, int]] | None = None) -> tuple[str, str] | None:
     """(status, reason) when the post must be dropped, None when it passes.
     env_pattern, when given, drops a post with an env_theme and none of its terms.
-    limits, when given, drops a post with fewer or more words than (min, max)."""
+    limits, when given (word_limits), drops a post with fewer or more words
+    than its condition's (min, max)."""
     condition = item["condition"]
     place = item["place_name"]
     surface = (item.get("surface_form") or {}).get("text")
@@ -288,9 +284,10 @@ def check(item: dict[str, Any], text: str, names: dict[str, Any],
     if env_pattern is not None and item.get("env_theme") and not env_pattern.search(text):
         return "no_environment", f'no environmental wording (theme "{item["env_theme"]}")'
     if limits is not None:
+        lo, hi = limits.get(condition, limits["default"])
         words = len(text.split())
-        if not limits[0] <= words <= limits[1]:
-            return "length", f"{words} words, allowed {limits[0]} to {limits[1]}"
+        if not lo <= words <= hi:
+            return "length", f"{words} words, allowed {lo} to {hi}"
     return None
 
 
@@ -308,20 +305,35 @@ def repeated_clue(item: dict[str, Any]) -> str | None:
 def verdict_for(item: dict[str, Any], row: dict[str, Any] | None,
                 aliases: dict[str, dict[str, Any]],
                 env_pattern: re.Pattern | None = None,
-                limits: tuple[int, int] | None = None) -> tuple[str, str] | None:
-    """The drop (status, reason) for one planned item, or None when it is kept."""
+                limits: dict[str, tuple[int, int]] | None = None) -> tuple[str, str] | None:
+    """The drop (status, reason) for one planned item, or None when it is kept.
+    Rows from the tries loop (generate.run_item, with "accepted") were already
+    judged: a failed one keeps its last try's reason, a kept one is checked by
+    the rules again but not by the keyword list, which the judge replaced."""
     duplicate = repeated_clue(item)
     if duplicate:
         return "repeated_clue", f"clue {duplicate} appears more than once in the plan"
     text = ((row or {}).get("post_text") or "").strip()
     if row is None:
-        return "not_generated", ""
+        return ("reserve_unused", "") if item.get("pool") == "reserve" else ("not_generated", "")
+    if "accepted" in row:
+        if not row["accepted"]:
+            return row.get("final_status") or "failed", str(row.get("final_reason") or "")[:ERROR_REASON_CHARS]
+        env_pattern = None
     if row.get("error"):
         return "error", str(row["error"])[:ERROR_REASON_CHARS]
     if not text:
         return "empty", ""
     names = aliases.get(item["place_qid"], {"forms": [], "country": [], "regions": []})
-    return check(item, text, names, env_pattern, limits)
+    return check(used_item(item, row), text, names, env_pattern, limits)
+
+
+def used_item(item: dict[str, Any], row: dict[str, Any] | None) -> dict[str, Any]:
+    """The plan item with the clues the post was actually written with: a
+    retry may have swapped a clue for a spare (generate.swap_decorative)."""
+    if row and row.get("clues_used"):
+        return {**item, "clues": row["clues_used"]}
+    return item
 
 
 def coordinates(qids: list[str]) -> dict[str, tuple[float, float]]:
@@ -439,8 +451,7 @@ def write_csv(path: Path, columns: list[str], rows: list[dict[str, Any]]) -> Non
 
 
 def dataset_row(item: dict[str, Any], row: dict[str, Any], text: str,
-                coord: tuple[float, float],
-                clue_articles: dict[str, int] | None = None) -> dict[str, Any]:
+                coord: tuple[float, float]) -> dict[str, Any]:
     lat, lon = coord
     surface = item.get("surface_form") or {}
     namesake = surface.get("top_namesake") or {}
@@ -463,7 +474,8 @@ def dataset_row(item: dict[str, Any], row: dict[str, Any], text: str,
         "clue_forms": ";".join(mention_form(text, c) or "" for c in item.get("clues") or []),
         "noise_entity": (item.get("noise_entity") or {}).get("clue_label") or "",
         "register": item["register"],
-        "length_band": item["length_band"],
+        "target_len": item.get("target_len", ""),
+        "len": len(text.split()),
         "place_sitelinks": "" if place_links is None else place_links,
         "rival_qid": namesake.get("qid", ""),
         "rival_sitelinks": namesake.get("sitelinks", ""),
@@ -471,8 +483,17 @@ def dataset_row(item: dict[str, Any], row: dict[str, Any], text: str,
         "place_is_most_famous": most_famous,
         "place_prominence": place_prominence(place_links),
         "rival_prominence": rival_prominence(place_links, namesake),
-        "clue_prominence": clue_prominence(item.get("clues") or [], clue_articles or {}),
-        "env_theme": item.get("env_theme") or "",
+        "clue_prominence": clue_prominence(item.get("clues") or []),
+        "topic": item.get("env_theme") or "",
+        "scale": item.get("scale") or "",
+        "valence": item.get("valence") or "",
+        "angle": row.get("angle") or "",
+        "role": ";".join(dict.fromkeys(c.get("role") or "other" for c in item.get("clues") or [])),
+        "tries": row.get("tries") or 1,
+        "clue_swapped": ";".join(f'{s["from_qid"]}>{s["to_qid"]}' for s in row.get("clue_swaps") or []),
+        "swapped_from": row.get("swapped_from") or "",
+        "split": item.get("place_split") or "",
+        "pool": item.get("pool") or "",
         "item_id": item["item_id"],
         "model": row.get("model"),
     }
@@ -519,17 +540,26 @@ def main(argv: list[str] | None = None) -> int:
     if not items:
         raise SystemExit("no plan - run plan.py first")
     latest = gen.latest_rows(gen.read_jsonl(Path(paths["raw_generations"])))
-    aliases = load_aliases(Path(paths["place_aliases"]))
+    aliases = load_aliases(Path(paths["place_inputs"]))
     report_path = Path(paths["finalise_report"])
     dataset_path = Path(paths["dataset_csv"])
 
     env_pattern = environment_pattern((config.get("finalise") or {}).get("environment_keywords"))
     limits = word_limits(config.get("finalise"))
 
+    # Places swapped out of a condition set for a reserve (generate.py, Task 4):
+    # their rows in that set are dropped, whatever they say.
+    swaps_path = Path(paths["raw_generations"]).parent / "swaps.jsonl"
+    swapped_out = {(s["place_qid"], c) for s in (gen.read_jsonl(swaps_path) if swaps_path.exists() else [])
+                   for c in s.get("conditions") or []}
+
     report, kept = [], []
     for item in items:
         row = latest.get(item["item_id"])
         verdict = verdict_for(item, row, aliases, env_pattern, limits)
+        if verdict is None and (item["place_qid"], item["condition"]) in swapped_out:
+            verdict = ("swapped_out", "place swapped for a reserve after a failed item in its set")
+        item = used_item(item, row)
         text = ((row or {}).get("post_text") or "").strip()
         report.append({"item_id": item["item_id"], "condition": item["condition"],
                        "place_qid": item["place_qid"], "place_name": item["place_name"],
@@ -574,8 +604,7 @@ def main(argv: list[str] | None = None) -> int:
         apply_balanced_out(report, cut, balanced_n, args.seed)
         write_csv(report_path, REPORT_COLUMNS, report)
 
-    clue_articles = load_clue_articles(Path(paths["clue_prominence"]))
-    dataset = [dataset_row(item, row, text, coords[item["place_qid"]], clue_articles)
+    dataset = [dataset_row(item, row, text, coords[item["place_qid"]])
                for item, row, text in kept]
     write_csv(dataset_path, DATASET_COLUMNS, dataset)
 

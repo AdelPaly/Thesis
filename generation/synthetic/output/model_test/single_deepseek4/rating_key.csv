@@ -1,0 +1,4 @@
+﻿rating_id,model,item_id,auto_status
+1,openrouter:deepseek/deepseek-v4.1-flash,5babb2e104c15v3,no_environment
+2,openrouter:deepseek/deepseek-v4.1-flash,5babb2e104c15v1,kept
+3,openrouter:deepseek/deepseek-v4.1-flash,5babb2e104c15v2,kept
