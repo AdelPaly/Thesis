@@ -15,7 +15,8 @@ CONT_FLOOR = .10                             # continent share ~ sqrt(eligible s
 INFRA_PER_CONT = 25                          # EXPLICIT-only infrastructure places per continent (dams, power plants, refineries, mines, ports)
 MIN_SL, MIN_POP, MAX_KM2 = 5, 2000, 5000     # size floor; area cap for islands and natural areas
 CLUE_MIN_SL, A_CLUES, A_FAMS = 3, 3, 2       # clue needs >=3 Wikipedia articles; A needs 3 clean clue entities from >=2 families
-CLUE_BLOCK = ['Q17537576']                   # creative works (albums, songs, films, books) are not clues
+CLUE_BLOCK = ['Q17537576',                   # creative works (albums, songs, films, books) are not clues
+              'Q41397', 'Q3199915', 'Q2223653', 'Q178561', 'Q198']   # genocide, massacre, terror attack, battle, war: no such event as a clue
 EVENT = 'Q1190554'                           # 'event' clues must be occurrences; other things located in the place count as 'part'
 RIVAL_MIN_SL, B_MIN_KM = 3, 161              # namesake must be documented and more than 161 km away; B also needs a clue with no FAMILY/OUT link to it
 CAP, FLOOR_POP, MAX_WALK = .08, 2e6, 4000    # country cap (share of continent plan); floor for countries >2M; walk limit
@@ -42,16 +43,26 @@ BIG = ['Q1549591', 'Q5119', 'Q1637706']                      # big city, capital
 BIG_KM = 25                                  # ... if it is also within 25 km of that city (keeps towns in large Chinese prefectures)
 DEV = .20                                    # share of places in the dev split, fixed by place before generation
 BLOCK_COUNTRIES = ['Q1246', 'Q865', 'Q219060', 'Q40362', 'Q6250', 'Q23334', 'Q23427', 'Q907112', 'Q23681', 'Q34754']  # disputed: country label is contested
-FAMILY = {'P19': 'people', 'P20': 'people', 'P551': 'people', 'P937': 'people', 'P159': 'org', 'P740': 'org',
-          'P276': 'event', 'P131': 'part', 'P361': 'part', 'P706': 'part', 'P206': 'water', 'P885': 'water', 'P403': 'water'}  # clue -> place
-OUT = {'P200': 'water', 'P201': 'water', 'P4552': 'range', 'P6': 'politics'}                                  # place -> clue (P6: mayor/head)
-NOT_PART = []                                # classes a 'part' clue may not be (places inside the place); reclue.py fills this
+# 2026-11-01 (user): no born/died here (P19, P20: the person says nothing about the place), no water or range links (P206, P885,
+# P403, P200, P201, P4552: next to the place they all but name it). Added families that suit environmental posts instead.
+FAMILY = {'P551': 'people', 'P937': 'people', 'P7153': 'people', 'P159': 'org', 'P740': 'org', 'P2541': 'org',   # P7153: significant place; P2541: operating area
+          'P276': 'event', 'P131': 'part', 'P361': 'part', 'P706': 'part',
+          'P183': 'species', 'P2341': 'species', 'P291': 'media'}                     # clue -> place: endemic/native species, local paper or broadcaster
+ONLY = {'species': ['Q16521'],                                                         # P2341 also reaches cultures and peoples: taxa only
+        'media': ['Q11032', 'Q1153191', 'Q1616075', 'Q14350', 'Q15265344']}           # P291 mostly reaches books: newspapers, TV, radio, broadcasters only
+OUT = {'P6': 'politics', 'P793': 'event', 'P137': 'operator', 'P127': 'operator'}  # place -> clue: mayor/head, significant event, operator, owner
+LOCATION = ['Q56061', 'Q486972', 'Q1048835', 'Q82794', 'Q15642541', 'Q271669', 'Q15324', 'Q23442', 'Q473972', 'Q22698', 'Q123705', 'Q35145263']
+# no clue of any family may itself be a location: admin unit, settlement, political territory, region, human-geographic territory,
+# landform, body of water, island, protected area, park, neighbourhood, natural object. A thing inside the place may (club, company, festival).
 ROLE = {**{c: 'industry' for c in INFRA}, 'Q159719': 'industry', 'Q83405': 'industry', 'Q1248784': 'transport', 'Q12280': 'transport',
         'Q4830453': 'company', 'Q7278': 'party', **{c: 'nature' for c in NATURAL}, 'Q4022': 'nature', 'Q473972': 'nature',
-        'Q2385804': 'education', 'Q33506': 'culture'}   # a hint for the writer only; it never changes which clue is picked
+        'Q2385804': 'education', 'Q33506': 'culture', 'Q16521': 'nature'}   # a hint for the writer only; it never changes which clue is picked
 NOT_COMPANY = ['Q2385804', 'Q31855', 'Q16917', 'Q33506']    # Wikidata files universities, institutes, hospitals, museums under 'business'
 GENERIC = re.compile(r'\b(lake|loch|lac|lago|mount|mont|monte|mountain|mountains|national park|park|river|glacier|volcano|forest|reservoir|island|isle|valley|desert|bay|gulf)\b')
-norm = lambda s: ' '.join(s.lower().replace('-', ' ').split())
+ADMIN = re.compile(r'\b(municipality|county|province|region|district|department|prefecture|state|city|of|the|arrondissement|oblast|governorate|'
+                   r'commune|parish|borough|council|area|division)\b', re.I)   # stripped from area names above the place for the leak check
+COMPASS = {'central', 'north', 'south', 'east', 'west', 'northern', 'southern', 'eastern', 'western'}   # 'Central Region' is no name
+norm = lambda s:' '.join(s.lower().replace('-', ' ').split())
 KIND = {**{c: ('natural', s) for c, s in NATURAL.items()}, **{c: ('island', s) for c, s in ISLAND.items()},
         **{c: ('manmade', s) for c, s in MANMADE.items()}, **{c: ('infra', s) for c, s in INFRA.items()}}
 SL_RANGES = [(5, 8), (8, 15), (15, 30), (30, 100), (100, 10 ** 6)]   # big candidate queries run per sitelink range, each checked by COUNT
@@ -60,7 +71,7 @@ SL_RANGES = [(5, 8), (8, 15), (15, 30), (30, 100), (100, 10 ** 6)]   # big candi
 EP = 'https://qlever.dev/api/wikidata'
 PFX = ('PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> '
        'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX wikibase: <http://wikiba.se/ontology#> '
-       'PREFIX skos: <http://www.w3.org/2004/02/skos/core#> ')
+       'PREFIX skos: <http://www.w3.org/2004/02/skos/core#> PREFIX schema: <http://schema.org/> ')   # schema: place_inputs' person descriptions
 V = lambda ids: ' '.join('wd:' + i for i in ids)
 MAX_Q = 6000                                 # longest query sent; qlever.dev refuses URLs over ~8,000 characters (HTTP 414)
 
@@ -180,9 +191,12 @@ def gate(chunk, cache, countries):
     names = defaultdict(set)                         # every name of the place, all languages, for the leak check
     for r in batched(lambda b: f'SELECT ?i ?n WHERE {{ VALUES ?i {{{V(b)}}} ?i rdfs:label|skos:altLabel ?n }}', ids, cache):
         if len(r['n']) > 3: names[r['i']].add(norm(r['n']))
-    up = defaultdict(set)
+    up, area = defaultdict(set), defaultdict(set)
     for r in batched(lambda b: f'SELECT ?i ?ul WHERE {{ VALUES ?i {{{V(b)}}} ?i wdt:P131 ?u. ?u rdfs:label ?ul FILTER(LANG(?ul) = "en") }}', ids, cache):
         up[r['i']].add(r['ul'].lower())
+    for r in batched(lambda b: f'SELECT DISTINCT ?i ?ul WHERE {{ VALUES ?i {{{V(b)}}} ?i wdt:P131+ ?u. ?u rdfs:label ?ul FILTER(LANG(?ul) = "en") }}', ids, cache):
+        t = norm(ADMIN.sub(' ', r['ul']))           # every area above the place: 'Vermont' leaks Montpelier through 'Vermont State House'
+        if len(t) > 3 and t not in COMPASS: area[r['i']].add(t)
     leak, qual, by_id = {}, set(), {p['i']: p for p in chunk}
     for p in chunk:
         cn = countries.get(p['c'], {})
@@ -205,7 +219,8 @@ def gate(chunk, cache, countries):
 
     def keep(rows):
         for p, f, e, es, el in sorted(rows, key=lambda c: -c[3]):
-            if e != p['i'] and not any(t in norm(el) for t in leak[p['i']]) and len(p['top'][f]) < 10: p['top'][f].append((e, el, es))
+            if e != p['i'] and not any(t in norm(el) for t in leak[p['i']]) and not any(re.search(rf'\b{re.escape(t)}\b', norm(el)) for t in area[p['i']]) \
+                    and len(p['top'][f]) < 10: p['top'][f].append((e, el, es))
 
     allp = {**FAMILY, **OUT}
     keep(fetch({p: ids for p in allp}, 10, 10 ** 6))
@@ -219,11 +234,12 @@ def gate(chunk, cache, countries):
         for r in batched(lambda b: f'''SELECT DISTINCT ?i ?r ?rs ?rl WHERE {{ VALUES ?i {{{V(b)}}} ?i rdfs:label ?l FILTER(LANG(?l) = "en" || LANG(?l) = "mul")
                 ?r {pred} ?l. ?r wdt:P625 ?rl; wdt:P17 ?rc; wikibase:sitelinks ?rs. FILTER(?r != ?i && ?rs >= {RIVAL_MIN_SL}) MINUS {{ ?r wdt:P31 wd:Q5 }} }}''', ids, cache):
             if pt(r['rl']) and r['r'] not in {q for q, _, _ in rivals[r['i']]}: rivals[r['i']].append((r['r'], int(r['rs']), pt(r['rl'])))
-    isx = defaultdict(set)
-    for r in batched(lambda b: f'SELECT DISTINCT ?i ?x WHERE {{ VALUES ?i {{{V(b)}}} VALUES ?x {{{V(BLOCK_CLASSES + CLUE_BLOCK + list(ROLE) + NOT_COMPANY + [EVENT] + NOT_PART)}}} ?i wdt:P31/wdt:P279* ?x }}',
-                     sorted({e for p in chunk for v in p.get('top', {}).values() for e, _, _ in v}), cache):
+    isx, ents = defaultdict(set), sorted({e for p in chunk for v in p.get('top', {}).values() for e, _, _ in v})
+    for r in batched(lambda b: f'SELECT DISTINCT ?i ?x WHERE {{ VALUES ?i {{{V(b)}}} VALUES ?x {{{V(BLOCK_CLASSES + CLUE_BLOCK + list(ROLE) + NOT_COMPANY + [EVENT] + LOCATION + sum(ONLY.values(), []))}}} ?i wdt:P31/wdt:P279* ?x }}',
+                     ents, cache):
         isx[r['i']].add(r['x'])
-    bad = {e for e, xs in isx.items() if xs & set(BLOCK_CLASSES + CLUE_BLOCK)}
+    bad = {e for e, xs in isx.items() if xs & set(BLOCK_CLASSES + CLUE_BLOCK + LOCATION)}
+    bad |= {r['i'] for r in batched(lambda b: f'SELECT DISTINCT ?i WHERE {{ VALUES ?i {{{V(b)}}} ?i wdt:P279 [] }}', ents, cache)}   # a class ('incident'), not a thing
     role = {e: r for e, xs in isx.items() for r in [next((ROLE[x] for x in sorted(xs) if x in ROLE and not (ROLE[x] == 'company' and xs & set(NOT_COMPANY))), '')] if r}
     rank = lambda f, c: -c[2]                                                      # most documented clue first (A1 rule)
     rows = []
@@ -232,7 +248,7 @@ def gate(chunk, cache, countries):
         top = p.pop('top')
         top['part'] = top.get('part', []) + [c for c in top.get('event', []) if EVENT not in isx[c[0]]]
         top['event'] = [c for c in top.get('event', []) if EVENT in isx[c[0]]]
-        top['part'] = [c for c in top['part'] if not isx[c[0]] & set(NOT_PART)]
+        for f, cls in ONLY.items(): top[f] = [c for c in top.get(f, []) if isx[c[0]] & set(cls)]
         top = {f: sorted((c for c in v if c[0] not in bad), key=lambda c: rank(f, c)) for f, v in top.items()}
         R = lambda f, e: 'politics' if f == 'politics' else role.get(e, '')
         best, used = [], set()                        # best clue of each family first, then the best of the rest; no entity twice

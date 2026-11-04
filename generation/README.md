@@ -13,8 +13,7 @@ Two steps, used in this order:
 | `synthetic/` | Plans each post, has an LLM write it, checks it, writes the dataset CSV | Every time you generate |
 
 The current place set (939 places, `out/places.csv`, run of 2026-10-29) is
-already built, so to generate you only need `synthetic/`. The older v1 set and
-the pipeline that built it are in `places/` (data in `places/archive_v1/`).
+already built, so to generate you only need `synthetic/`.
 
 ## Generating the dataset
 
@@ -123,9 +122,6 @@ necessarily true) claim about its place's surroundings.
 reform_places.py       picks the place set (out/places.csv, out/report.md)
 place_inputs.py        names, clue relations, B clues, themes (out/place_inputs.jsonl)
 out/                   the place set, its run log and the query cache
-
-places/                the v1 pipeline (02_clues ... 05b_clue_types), kept for
-                       reference; archive_v1/ holds the v1 place set
 
 synthetic/
   config.yaml          everything configurable

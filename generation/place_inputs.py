@@ -14,9 +14,13 @@ PROP_LABEL = {'P19': 'place of birth', 'P20': 'place of death', 'P551': 'residen
               'P131': 'located in the administrative territorial entity', 'P361': 'part of',
               'P706': 'located in/on physical feature', 'P206': 'located in or next to body of water',
               'P885': 'origin of the watercourse', 'P403': 'mouth of the watercourse', 'P200': 'inflows',
-              'P201': 'lake outflow', 'P4552': 'mountain range', 'P6': 'head of government'}
+              'P201': 'lake outflow', 'P4552': 'mountain range', 'P6': 'head of government',
+              'P2541': 'operating area', 'P183': 'endemic to', 'P291': 'place of publication',
+              'P793': 'significant event', 'P137': 'operator', 'P127': 'owned by', 'P7153': 'significant place',
+              'P2341': 'indigenous to'}
 ENTITY_TYPE = {'people': 'person', 'politics': 'person', 'org': 'place_or_org', 'event': 'work_or_event',
-               'part': 'place_or_org', 'water': 'place_or_org', 'range': 'place_or_org'}
+               'part': 'place_or_org', 'water': 'place_or_org', 'range': 'place_or_org',
+               'species': 'species', 'media': 'media', 'operator': 'place_or_org'}
 # Occupation classes -> the kind of person, in order of precedence (politician first). Used only as a hint.
 OCCUPATION = {'Q82955': 'politician', 'Q116': 'royal', 'Q2304859': 'royal', 'Q43845': 'business',
               'Q131524': 'business', 'Q15253558': 'activist', 'Q2066131': 'athlete', 'Q901': 'scientist',
@@ -30,7 +34,7 @@ ENGLISH_2 = {'am', 'an', 'as', 'at', 'be', 'by', 'do', 'go', 'he', 'if', 'in', '
              'of', 'ok', 'on', 'or', 'so', 'to', 'up', 'us', 'we'}
 
 # ---------------- environmental themes ----------------
-# Theme lists by kind, carried over from places/scripts/build_env_places.py (the v1 set), plus heritage and
+# Theme lists by kind, carried over from the v1 place set, plus heritage and
 # industrial sites. Every place also gets WIDE_THEMES: how far a claim travels is left to the model.
 TROPICS = 27   # |latitude| up to this counts as warm enough for coral bleaching
 CORP = 'corporate environmental impact and greenwashing'
@@ -155,7 +159,13 @@ def strip_country(desc, country_forms):
     "Prime Minister of Cuba" -> "Prime Minister". The writer must not be handed the country."""
     for form in sorted((f for f in country_forms if len(f) > 2), key=len, reverse=True):
         desc = re.sub(rf'\s*\b(of|in|from)?\s*(the\s+)?{re.escape(form)}\b', '', desc, flags=re.I)
-    return re.sub(r'\s+', ' ', desc).strip(' ,-()')
+    # 2026-11-02: stripping '()' as well cut the closing bracket off "actor (born 1944)".
+    desc = re.sub(r'\(\s*\)', '', re.sub(r'\s+', ' ', desc)).strip(' ,-')
+    if desc.startswith('(') and desc.endswith(')'):
+        desc = desc[1:-1].strip()
+    elif desc.count('(') > desc.count(')'):
+        desc += ')'
+    return desc
 
 
 def themes_for(p):
@@ -226,12 +236,15 @@ def main():
         VALUES ?i {{{rp.V(b)}}} ?i wdt:P569 ?b }} GROUP BY ?i''', sorted(human), cache) if r.get('y')}
     living = {q for q in human - dead if born.get(q, 0) > 1920}
     # A person's kind, from their occupations, as the role hint for the writer (reform_places gives people none).
-    # The first kind in OCCUPATION order wins: a politician who also wrote books is a politician.
-    kinds = defaultdict(set)
-    for r in rp.batched(lambda b: f'''SELECT DISTINCT ?i ?c WHERE {{ VALUES ?i {{{rp.V(b)}}}
-            VALUES ?c {{{rp.V(list(OCCUPATION))}}} ?i wdt:P106/wdt:P279* ?c }}''', sorted(human), cache):
-        kinds[r['i']].add(OCCUPATION[r['c']])
-    person_role = {q: next(k for k in dict.fromkeys(OCCUPATION.values()) if k in ks) for q, ks in kinds.items()}
+    # The kind most of their occupations fall under wins, ties in OCCUPATION order (a politician who also wrote
+    # books is a politician). 2026-11-02: first-in-order alone made Sam Elliott (six acting occupations, one
+    # "film producer") a business figure, and the writer gave him a company buying water rights.
+    kinds = defaultdict(lambda: defaultdict(set))
+    for r in rp.batched(lambda b: f'''SELECT DISTINCT ?i ?o ?c WHERE {{ VALUES ?i {{{rp.V(b)}}}
+            VALUES ?c {{{rp.V(list(OCCUPATION))}}} ?i wdt:P106 ?o. ?o wdt:P279* ?c }}''', sorted(human), cache):
+        kinds[r['i']][OCCUPATION[r['c']]].add(r['o'])
+    order = list(dict.fromkeys(OCCUPATION.values()))
+    person_role = {q: min(ks, key=lambda k: (-len(ks[k]), order.index(k))) for q, ks in kinds.items()}
     # What a person is known for (the English description), shown to the writer instead of how they are linked
     # to the place: 85% of person clues are linked by birth or death, and given "born here" the writer kept
     # writing it (2026-10-29, user). The place's own country and demonym words are cut from it per place below.

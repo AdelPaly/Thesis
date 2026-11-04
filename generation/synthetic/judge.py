@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from typing import Any
 
 import generate as gen
@@ -63,6 +64,64 @@ JUDGE_SCHEMA: dict[str, Any] = {
             "description": "Place names in the post that are not on the list, including streets, "
                            "squares or buildings named after someone.",
         },
+        "evidence": {
+            "type": "array",
+            "description": "One entry per planned name from the list (not the distractor, not the place "
+                           "name): the exact words copied from the post that say where the name belongs "
+                           "(its link: 'in his home town', 'outside their offices', 'at their ground'), and "
+                           "the exact words that show the environmental point coming out of it ('the crowd "
+                           "left rubbish everywhere after the gig'). An empty string when the post has no "
+                           "such words. Empty array when there are no planned names.",
+            "items": {
+                "type": "object",
+                "properties": {"name": {"type": "string"}, "link_words": {"type": "string"},
+                               "connection_words": {"type": "string"}},
+                "required": ["name", "link_words", "connection_words"],
+                "additionalProperties": False,
+            },
+        },
+        "claim_follows_from_names": {
+            "type": "boolean",
+            "description": "The environmental point comes out of what the planned names (not the distractor) "
+                           "are doing where they belong, said through their link (their home town, their "
+                           "offices, their ground): caused by their event, site or work, or happening there "
+                           "because of it. False when a name and the point are only set side by side, or a "
+                           "name is tied by 'here' alone. True when there are no planned names.",
+        },
+        "claim_tied_to_place": {
+            "type": "boolean",
+            "description": "The environmental claim is clearly about the place the post is set in, the place "
+                           "the listed names belong to (seen there or reported from there). False when the "
+                           "claim is general, about somewhere else, or only sits next to the names.",
+        },
+        "listed_fragments": {
+            "type": "boolean",
+            "description": "The post sets unrelated pieces side by side (a name, then a separate claim, then "
+                           "another detail) instead of making one connected statement.",
+        },
+        "media_untied": {
+            "type": "boolean",
+            "description": "Something is brought in through a screen, song, article, broadcast or match, and "
+                           "the environmental claim is not tied to the place because of it.",
+        },
+        "misused_names": {
+            "type": "array", "items": {"type": "string"},
+            "description": "Listed names used as something they are not: a past event written as happening "
+                           "now, as a present venue or as the cause of today's problem; an organisation, "
+                           "building or thing doing what it could not do. Empty if none.",
+        },
+        "invented_person_claims": {
+            "type": "array", "items": {"type": "string"},
+            "description": "Listed real people to whom the post gives something that does not fit who they "
+                           "are and their link to the place (as given in the list): a role they do not have, a "
+                           "quote, a specific wrongdoing, or, for a person from history, anything they do, back "
+                           "or notice today. Empty if none.",
+        },
+        "on_theme": {
+            "type": "boolean",
+            "description": "The post is about the topic the writer was given (not a different environmental "
+                           "subject). True when no topic was given.",
+        },
         "environmental_claim": {
             "type": "boolean",
             "description": "The post makes a claim about an environmental problem, improvement or change.",
@@ -74,7 +133,8 @@ JUDGE_SCHEMA: dict[str, Any] = {
         "reason": {"type": "string", "description": "One short sentence on the main problem, or ok."},
     },
     "required": ["decorative_names", "unanchored_names", "invented_setting", "imagined_reaction", "unlisted_people", "unlisted_places",
-                 "environmental_claim", "coherent", "reason"],
+                 "evidence", "claim_follows_from_names", "claim_tied_to_place", "listed_fragments", "media_untied", "misused_names", "invented_person_claims",
+                 "on_theme", "environmental_claim", "coherent", "reason"],
     "additionalProperties": False,
 }
 
@@ -88,8 +148,13 @@ JUDGE_SCHEMA: dict[str, Any] = {
 # concrete plant", "the wetlands") is a clue nobody planned; a system can use
 # it, or be misled by it, and the gold label assumes the planned clues are the
 # only locating signal. It ranks with the leaks.
-ORDER = ("judge_place", "judge_person", "judge_setting", "judge_imagined", "judge_decorative",
-         "judge_unanchored", "judge_no_environment", "judge_incoherent")
+# 2026-11-02 (user, after smoke13): invented claims about real people, names
+# used against their type, a claim not tied to the place, listed fragments and
+# untied media framing fail as well. A post off the planned topic fails as
+# judge_off_theme, reported apart from judge_no_environment (no claim at all).
+ORDER = ("judge_place", "judge_person", "judge_setting", "judge_invented_person", "judge_misused",
+         "judge_untied_claim", "judge_unconnected", "judge_fragments", "judge_media", "judge_imagined", "judge_decorative",
+         "judge_unanchored", "judge_no_environment", "judge_off_theme", "judge_incoherent")
 
 
 def allowed_names(item: dict[str, Any]) -> list[str]:
@@ -103,10 +168,35 @@ def allowed_names(item: dict[str, Any]) -> list[str]:
     return names
 
 
+def relation(clue: dict[str, Any], config: dict[str, Any] | None) -> str:
+    """The clue's link to the place in the words the writer was given."""
+    phrases = ((config or {}).get("prompt") or {}).get("relation_phrases") or {}
+    return phrases.get(clue.get("property")) or clue.get("property_label") or "linked to it"
+
+
+def describe(item: dict[str, Any], name: str, config: dict[str, Any] | None = None) -> str:
+    """'- "name"' with what it is: for a person what they are known for, for
+    anything else its type; the distractor and the place name get a note."""
+    for c in item.get("clues") or []:
+        if c["clue_label"] == name:
+            if c.get("is_human"):
+                era = {True: "a living person", False: "a person from history, not alive today"}.get(
+                    c.get("is_living"), "a real person")
+                return (f'- "{name}" ({era}, known as: {c.get("description") or "a person"}; '
+                        f'link to the place: {relation(c, config)})')
+            kind = {"place_or_org": "a place or organisation", "work_or_event": "a work or event",
+                    "species": "a plant or animal species",
+                    "media": "a newspaper or broadcaster"}.get(c.get("entity_type"), "")
+            return f'- "{name}"' + (f" ({kind}; " if kind else " (") + f"link to the place: {relation(c, config)})"
+    if (item.get("noise_entity") or {}).get("clue_label") == name:
+        return f'- "{name}" (belongs to a different place; it need not be tied to where the post is set)'
+    return f'- "{name}" (the place name)'
+
+
 def judge_messages(item: dict[str, Any], text: str, config: dict[str, Any]) -> list[dict[str, str]]:
     cfg = config["judge"]
     names = allowed_names(item)
-    listed = "\n".join(f'- "{n}"' for n in names) or "- (none: the post should name no person or place)"
+    listed = "\n".join(describe(item, n, config) for n in names) or "- (none: the post should name no person or place)"
     fields = "\n".join(f"  {k}: {v['description']}" for k, v in JUDGE_SCHEMA["properties"].items())
     topic = f'\n\nTopic the writer was given: {item["env_theme"]}' if item.get("env_theme") else ""
     user = (cfg["task"].strip() + topic + "\n\nNames the post was asked to contain:\n" + listed
@@ -134,7 +224,42 @@ def _norm(name: str) -> str:
     return " ".join(name.lower().replace('"', "").split())
 
 
-def verdict(item: dict[str, Any], answer: dict[str, Any]) -> tuple[str, str] | None:
+BARE_LINK = {"here", "there", "around here", "near here", "nearby", "in town", "back", "locally", "local"}
+
+
+def missing_evidence(item: dict[str, Any], answer: dict[str, Any], text: str) -> list[str]:
+    """Planned names whose link or connection the judge could not quote from the
+    post: no entry, empty words, words that are not in the post, or a link that
+    is only "here" (2026-11-02, user: "say gig in his hometown"). The quotes are
+    checked against the text, so the judge cannot pass a post on a tie it
+    imagined."""
+    folded = " ".join(_norm(text).split())
+    given = {_norm(e.get("name") or ""): e for e in answer.get("evidence") or []}
+    out = []
+    for c in item.get("clues") or []:
+        e = given.get(_norm(c["clue_label"]))
+        if e is None:
+            out.append(f'{c["clue_label"]}: no evidence')
+            continue
+        for key, what in (("link_words", "link"), ("connection_words", "connection")):
+            words = " ".join(_norm(e.get(key) or "").strip(" .,!?").split())
+            if not words or words in BARE_LINK:
+                out.append(f'{c["clue_label"]}: no {what} stated')
+                break
+            # the judge shortens long quotes with "..."; each piece must be in the post, in order
+            pieces = [w.strip(" .,") for w in re.split(r"\.\.\.|…", words) if w.strip(" .,")]
+            at = 0
+            for piece in pieces:
+                at = folded.find(piece, at)
+                if at < 0:
+                    break
+            if not pieces or at < 0:
+                out.append(f'{c["clue_label"]}: {what} "{e.get(key)}" not in the post')
+                break
+    return out
+
+
+def verdict(item: dict[str, Any], answer: dict[str, Any], text: str | None = None) -> tuple[str, str] | None:
     """(status, reason) when the judge's answers fail the post, None when it passes.
     Names the judge lists that are in fact allowed (it sometimes lists the planned
     name) are ignored."""
@@ -143,13 +268,24 @@ def verdict(item: dict[str, Any], answer: dict[str, Any]) -> tuple[str, str] | N
     # field" or "the market" as a place name.
     extra = lambda key: [n for n in answer.get(key) or []  # noqa: E731
                          if _norm(n) not in allowed and n.strip() and any(ch.isupper() for ch in n)]
-    decorative = [n for n in answer.get("decorative_names") or [] if _norm(n) in allowed]
+    # The distractor is exempt: its job is to be there without belonging (2026-11-02: Qwen failed "a kid
+    # holding a Paul the Apostle banner in the crowd" as decorative). Listed fragments still fail.
+    noise_name = _norm((item.get("noise_entity") or {}).get("clue_label") or "")
+    decorative = [n for n in answer.get("decorative_names") or [] if _norm(n) in allowed and _norm(n) != noise_name]
     clue_names = {_norm(c["clue_label"]) for c in item.get("clues") or []}
     unanchored = [n for n in answer.get("unanchored_names") or [] if _norm(n) in clue_names]
     checks = {
         "judge_place": extra("unlisted_places"),
         "judge_person": extra("unlisted_people"),
         "judge_setting": [n for n in answer.get("invented_setting") or [] if n.strip()],
+        "judge_invented_person": [n for n in answer.get("invented_person_claims") or [] if _norm(n) in clue_names],
+        "judge_misused": [n for n in answer.get("misused_names") or [] if _norm(n) in clue_names],
+        "judge_untied_claim": answer.get("claim_tied_to_place") is False,
+        "judge_unconnected": (bool(item.get("clues")) and answer.get("claim_follows_from_names") is False)
+                             or (missing_evidence(item, answer, text) if text is not None else []),
+        "judge_fragments": answer.get("listed_fragments") is True,
+        "judge_media": answer.get("media_untied") is True,
+        "judge_off_theme": bool(item.get("env_theme")) and answer.get("on_theme") is False,
         "judge_imagined": answer.get("imagined_reaction") is True,
         "judge_decorative": decorative,
         "judge_unanchored": unanchored,
@@ -187,6 +323,6 @@ class Judge:
         if error:
             return {"answer": None, "verdict": ["judge_error", error], "error": error,
                     "raw": (content or "")[:500]}
-        v = verdict(item, answer)
+        v = verdict(item, answer, text)
         return {"answer": answer, "verdict": list(v) if v else None, "error": None,
                 "usage": (metadata or {}).get("usage")}

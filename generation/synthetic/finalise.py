@@ -35,11 +35,24 @@ A post is dropped when:
     clue_missing    a clue entity the plan asked for is not in the text, by its
                     label, a Wikidata alias or, for a person, the surname
     noise_missing   a NOISE item does not contain its distractor
+    too_many_anchors  the plan gives the post more than MAX_ANCHORS (2) clues
+    anchor_invalid  validate_anchors.py rejected a planned clue or distractor on
+                    Wikidata (filed under another place too, dissolved, a dated
+                    past event, a religious, military or atrocity entity, or a
+                    name that contains the place's)
+    format          a line break, an emoji or a hashtag
+    unplanned_entity  a capitalised name that belongs to no planned name (not
+                    counting the first word of a sentence)
+    (2026-11-02, user, after smoke13; the judge's own reasons are in judge.py)
     no_coordinates  the place's QID has no P625 coordinate on Wikidata, so the
                     row could not be scored
     repeated_clue   the plan lists the same clue entity twice, so the item
                     carries fewer distinct clues than its condition promises
                     (a planning-stage defect; checked before anything else)
+    no_explicit     an A1, NOISE_A1, B or NOISE_B post whose place has no kept
+                    EXPLICIT post, so it has no reference to be read against
+                    (2026-11-04, user: EXPLICIT covers every A and B place).
+                    Applied before balancing, so balancing fills from the rest.
     balanced_out    the post passed every check but was not selected when the
                     conditions were cut to the same size (see below)
 
@@ -94,7 +107,7 @@ ERROR_REASON_CHARS = 200   # how much of a generation error goes in the report
 # kept. All three go by Wikipedia counts.
 # place_prominence (every condition), by the place's own sitelinks (language
 # versions): under 30, 30 to 99, 100 or more (100+ is the "famous" tier of the
-# place selection). Over the 295 base places that is 87 / 112 / 96.
+# place selection). Over the 899 places that is 456 / 278 / 165.
 PLACE_PROMINENCE_BINS = [(100, "high_100_plus"), (30, "mid_30_to_99"), (0, "low_under_30")]
 # rival_prominence (B, NOISE_B, and EXPLICIT when other places share the name;
 # name_ambiguous says which): (place sitelinks + 1) / (sitelinks + 1 of the
@@ -106,8 +119,10 @@ RIVAL_PROMINENCE_BINS = (f"place_leads_{RIVAL_RATIO:g}x", "close",
                          f"rival_leads_{RIVAL_RATIO:g}x")
 # clue_prominence (every condition with a clue), by the sitelinks of the post's
 # best-known clue (for A3, one recognisable clue is enough to start from):
-# none is "unknown", 1-9 "niche", 10+ "well_known" (reform_places.py cbin).
-CLUE_PROMINENCE_BINS = [(10, "well_known"), (1, "niche"), (0, "unknown")]
+# under 10, 10 to 49, 50 or more. Clues need >= 3 sitelinks (reform_places.py
+# CLUE_MIN_SL), so the low bin is in practice 3 to 9; the 10 and 50 cuts sit
+# near the plan's median (14) and 75th percentile (36), so no bin is tiny.
+CLUE_PROMINENCE_BINS = [(50, "high_50_plus"), (10, "mid_10_to_49"), (0, "low_under_10")]
 
 DATASET_COLUMNS = ["text", "qid", "location_name", "country", "continent",
                    "signal_type", "latitude", "longitude",
@@ -233,6 +248,53 @@ def word_limits(finalise_cfg: dict[str, Any] | None) -> dict[str, tuple[int, int
             **{c: (int(lo), int(hi)) for c, (lo, hi) in (cfg.get("words_by_condition") or {}).items()}}
 
 
+MAX_ANCHORS = 2          # 2026-11-02 (user): at most two planned anchors per post
+EMOJI = re.compile("[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF️]")
+HASHTAG = re.compile(r"(?<!\w)#\w")
+CAPITALISED = re.compile(r"[A-Z][\w'’./&-]*")
+# Capitalised words that are not names: the pronoun, days, months, family
+# words and common abbreviations. Anything else capitalised that is not part
+# of a planned name, and not the first word of a sentence, is an unplanned
+# entity (2026-11-02, user: "Chris Smith got it moving" in an EXPLICIT post
+# that was given no person).
+NOT_NAMES = {plan.fold(w) for w in (
+    "I I'm I'd I've I'll Im Ive OK Ok TV EV EVs PM AM CO2 LOL Lol OMG Omg Mum Mom Dad God Sir "
+    "Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March April May June July "
+    "August September October November December Christmas Easter").split()}
+ANCHOR_CHECKS = HERE / "output" / "anchor_checks.jsonl"
+_anchor_verdicts: dict[tuple[str, str, bool], tuple[str, str]] | None = None
+
+
+def anchor_verdicts() -> dict[tuple[str, str, bool], tuple[str, str]]:
+    """(place QID, anchor QID, is distractor) -> (status, reason) for every anchor
+    validate_anchors.py rejected; empty when it has not been run."""
+    global _anchor_verdicts
+    if _anchor_verdicts is None:
+        rows = gen.read_jsonl(ANCHOR_CHECKS) if ANCHOR_CHECKS.exists() else []
+        _anchor_verdicts = {(r["place_qid"], r["clue_qid"], bool(r["noise"])): (r["status"], r["reason"])
+                            for r in rows if r["status"] != "ok"}
+    return _anchor_verdicts
+
+
+def _name_words(forms: Iterable[str]) -> set[str]:
+    return {plan.fold(w).strip(".,'’") for f in forms if f for w in re.split(r"[\s/]+", f)}
+
+
+def unplanned_names(text: str, allowed_forms: Iterable[str]) -> list[str]:
+    """Capitalised words in the post that belong to no planned name, leaving out
+    the first word of each sentence and NOT_NAMES."""
+    allowed = _name_words(allowed_forms)
+    found = []
+    for m in CAPITALISED.finditer(text):
+        before = text[:m.start()].rstrip(" \"'“‘(")
+        if not before or before[-1] in ".!?:;":
+            continue                                     # sentence start
+        word = plan.fold(re.sub(r"['’]s$", "", m.group())).strip(".,'’")
+        if word and word not in allowed and word not in NOT_NAMES and not word.isdigit():
+            found.append(m.group())
+    return found
+
+
 def check(item: dict[str, Any], text: str, names: dict[str, Any],
           env_pattern: re.Pattern | None = None,
           limits: dict[str, tuple[int, int]] | None = None) -> tuple[str, str] | None:
@@ -244,6 +306,21 @@ def check(item: dict[str, Any], text: str, names: dict[str, Any],
     place = item["place_name"]
     surface = (item.get("surface_form") or {}).get("text")
     contains = plan.contains_word
+
+    if len(item.get("clues") or []) > MAX_ANCHORS:
+        return "too_many_anchors", f'{len(item["clues"])} planned anchors, at most {MAX_ANCHORS}'
+    bad = anchor_verdicts()
+    for clue in item.get("clues") or []:
+        v = bad.get((item.get("place_qid"), clue.get("clue_qid"), False))
+        if v:
+            return "anchor_invalid", f'"{clue["clue_label"]}": {v[0]} ({v[1]})'
+    if item.get("noise_entity"):
+        v = bad.get((item.get("place_qid"), item["noise_entity"].get("clue_qid"), True))
+        if v:
+            return "anchor_invalid", f'distractor "{item["noise_entity"]["clue_label"]}": {v[0]} ({v[1]})'
+    if "\n" in text.strip() or EMOJI.search(text) or HASHTAG.search(text):
+        what = "a line break" if "\n" in text.strip() else "an emoji" if EMOJI.search(text) else "a hashtag"
+        return "format", f"has {what}; one line, no emoji, no hashtags"
 
     if condition in NO_NAME:
         for form in [place, *names["forms"]]:
@@ -281,6 +358,15 @@ def check(item: dict[str, Any], text: str, names: dict[str, Any],
     noise = item.get("noise_entity")
     if noise and not mentions(text, noise):
         return "noise_missing", f'"{noise["clue_label"]}" is missing'
+    planned = [*(c for clue in (item.get("clues") or []) + ([noise] if noise else [])
+                 for c in [clue["clue_label"], _bare(clue["clue_label"]), *(clue.get("aliases") or [])])]
+    if surface:
+        planned.append(surface)
+    if condition == "EXPLICIT":
+        planned.append(place)
+    extra = unplanned_names(text, planned)
+    if extra:
+        return "unplanned_entity", "names not on the list: " + ", ".join(f'"{e}"' for e in dict.fromkeys(extra))
     if env_pattern is not None and item.get("env_theme") and not env_pattern.search(text):
         return "no_environment", f'no environmental wording (theme "{item["env_theme"]}")'
     if limits is not None:
@@ -387,6 +473,26 @@ def _rank(seed: int, item_id: str) -> str:
 
 
 allocate_even = plan.allocate_even  # one implementation, shared with the planner
+
+
+PAIRED_WITH_EXPLICIT = {"A1", "NOISE_A1", "B", "NOISE_B"}
+
+
+def split_by_explicit(kept: list[Entry]) -> tuple[list[Entry], list[Entry]]:
+    """(kept, dropped): the PAIRED_WITH_EXPLICIT posts whose place has no kept
+    EXPLICIT post are dropped; every other post stays."""
+    covered = {item["place_qid"] for item, _, _ in kept if item["condition"] == "EXPLICIT"}
+    unpaired = lambda item: item["condition"] in PAIRED_WITH_EXPLICIT and item["place_qid"] not in covered  # noqa: E731
+    return [e for e in kept if not unpaired(e[0])], [e for e in kept if unpaired(e[0])]
+
+
+def apply_no_explicit(report: list[dict[str, Any]], dropped: list[Entry]) -> None:
+    """Mark the posts dropped by split_by_explicit() in the report, in place."""
+    ids = {item["item_id"] for item, _, _ in dropped}
+    for entry in report:
+        if entry["item_id"] in ids:
+            entry["status"] = "no_explicit"
+            entry["reason"] = f'{entry["place_qid"]} has no kept EXPLICIT post'
 
 
 def balance(kept: list[Entry], seed: int, per_condition: int | None = None,
@@ -586,6 +692,13 @@ def main(argv: list[str] | None = None) -> int:
         apply_no_coordinates(report, no_coords)
         write_csv(report_path, REPORT_COLUMNS, report)
 
+    no_explicit: list[Entry] = []
+    if "EXPLICIT" in {item["condition"] for item in items}:
+        kept, no_explicit = split_by_explicit(kept)
+        if no_explicit:
+            apply_no_explicit(report, no_explicit)
+            write_csv(report_path, REPORT_COLUMNS, report)
+
     balanced_n = None
     if not args.no_balance and kept:
         planned = {item["condition"] for item in items}
@@ -617,6 +730,8 @@ def main(argv: list[str] | None = None) -> int:
     if no_coords:
         print(f"\n! {len(no_coords)} posts dropped as no_coordinates "
               f"(QIDs: {', '.join(sorted({i['place_qid'] for i in no_coords}))})")
+    if no_explicit:
+        print(f"\n! {len(no_explicit)} posts dropped as no_explicit (their place has no kept EXPLICIT post)")
     print(f"\nwrote {dataset_path}")
     print(f"wrote {report_path}")
     return 0

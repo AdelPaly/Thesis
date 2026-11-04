@@ -758,9 +758,14 @@ def choose_noise_entity(
             f"feasible() should have rejected"
         )
 
-    donor_qid = stream.pick(candidate_qids)
-    donor = places[donor_qid]
-    donor_clue = stream.pick(place.distractor_clues(donor))
+    donor = places[stream.pick(candidate_qids)]
+    return noise_entity_from(place, donor, stream.pick(place.distractor_clues(donor)))
+
+
+def noise_entity_from(place: Place, donor: Place, donor_clue: dict[str, Any]) -> dict[str, Any]:
+    """The plan's noise_entity record for donor_clue, a clue of donor, used as
+    the distractor in a post about place (also used by validate_anchors.py when
+    it replaces a rejected distractor)."""
     return {
         "donor_relation": donor_relation(place, donor),
         "clue_qid": donor_clue["clue_qid"],
@@ -774,7 +779,7 @@ def choose_noise_entity(
         "label_leak": donor_clue.get("label_leak"),
         "is_human": donor_clue.get("is_human"),
         "aliases": donor_clue.get("aliases") or [],
-        "donor_place_qid": donor_qid,
+        "donor_place_qid": donor.qid,
         "donor_place_name": donor.name,
         "donor_continent": donor.continent,
     }

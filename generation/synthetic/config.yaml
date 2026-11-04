@@ -10,7 +10,6 @@
 paths:
   # Relative to this file. The place inputs are built in ../ by
   # reform_places.py and then place_inputs.py; everything else lives here.
-  # The old v1 place set and its clue files are in ../places/archive_v1/.
 
   # inputs
   places_csv:        ../out/places.csv
@@ -45,7 +44,8 @@ plan:
   # so the pair differs by the clue only. Infrastructure-only places get nothing.
   # One item per (place, condition). A place that cannot support a condition
   # it was given is logged in output/plan_rejections.jsonl.
-  conditions: [A1, A3, B, EXPLICIT, NOISE_A1, NOISE_B]
+  # A3 dropped 2026-11-02 (user): at most two anchors per post.
+  conditions: [A1, B, EXPLICIT, NOISE_A1, NOISE_B]
 
   # How far the post's claim reaches, one drawn per item (prompt.scale_lines
   # words each). Planned so it can be read against the results; the post
@@ -340,6 +340,18 @@ finalise:
     - tree[- ]planting
     - planting trees
     - green ?spaces?
+    # 2026-11-02: smoke13 dropped "bag ban actually holding, river cleaner",
+    # "cleaning the river" and "buses all electric now, cleaner"
+    - clean
+    - bans?\b
+    - bags?\b
+    - electric
+    - rivers?\b
+    - lakes?\b
+    - water
+    - air\b
+    - nature
+    - bins?\b
 
 
 # --------------------------------------------------------------------------- #
@@ -356,9 +368,10 @@ generation:
   # Pinned, not the ~deepseek/deepseek-flash-latest alias. On 2026-09-30 the
   # alias pointed at this model at the same price, but an alias can move, and
   # a run that spans the move would mix two generators in one dataset (the
-  # config_hash check also catches an edited model name). Paid model:
-  # $0.02/M input, $0.396/M output, so a full pass over the 984-item plan is at
-  # most about $0.32 even if every reply hits max_tokens.
+  # config_hash check also catches an edited model name). Paid model. The
+  # 2026-09-30 price was $0.02/M input, $0.396/M output; OpenRouter's usage
+  # block on 2026-11-02 billed $0.13/M input and $0.65/M output (smoke13), so
+  # compare_models.py reports usage.cost as billed, never a price from here.
   #
   # 2026-10-29: the writer is qwen3.5:122b on the VSE LiteLLM gateway. The
   # smoke runs (output/model_test/smoke2-4) passed 60-80% of its posts against
@@ -492,15 +505,42 @@ judge:
     the post and answer each question about it.
 
     A listed name takes part when it belongs to what happens or to the point:
-    the writer is somewhere linked to it, the person is doing or did something
-    relevant, the event or organisation is part of the story, or the named one
-    is acting on its own community while the writer looks on from elsewhere. It is only
-    dropped in when it could be deleted without changing anything else, or
-    when it is attached by a loose, unexplained jump. A person takes part only
-    when what the post says connects to them: their decisions, actions,
-    promises, work or legacy, or something of theirs that the problem
-    affects. Walking past a house, street or spot linked to a person while the
-    point is about something else is only dropping them in.
+    the writer is somewhere linked to it, the event or organisation is part
+    of the story as what it is, or a person appears as what they are known
+    for (given in the list) within the same situation as the claim. It is
+    only dropped in when it could be deleted without changing anything else,
+    or when it is attached by a loose, unexplained jump.
+
+    Real people may do something that fits who they are and their link to
+    the place (given in the list): an actor filming, a singer at a gig, a
+    politician opening something or visiting, anyone at an event. It is
+    invented when it turns them into something they are not (an actor's
+    company buying water rights), puts words in their mouth, or accuses them
+    of a specific wrongdoing. A person from history (marked so in the list)
+    shown doing, backing or noticing anything today is invented too; they
+    may appear only through what they left behind. The writer's own opinion
+    is not invented.
+
+    Names must be used as what they are. An event that is over (a past games,
+    a battle, an expedition) is not happening now, is not a venue today and
+    did not cause today's problem. An organisation or thing only does what
+    such a thing does.
+
+    The environmental point must come out of what the listed names are doing
+    where they belong: caused by their event, site or work, or happening
+    there because of it ("a singer's gig in his home town, and the crowd left
+    rubbish everywhere afterwards"). A name and a point that are only set
+    side by side ("X gig tonight and the take-back scheme is working here")
+    are not connected, and "here" alone does not tie a name to the place: the
+    post must say the name's link (their home town, their offices, their
+    ground).
+
+    The environmental claim must be about the place the names belong to:
+    seen there or reported from there. A claim that only sits next to the
+    names, a general claim, or pieces set side by side ("X on the screen, bag
+    ban holding, river cleaner") are not tied to the place. Something brought
+    in through a screen, a song or an article counts only when the claim is
+    still about the place.
 
     A listed name is tied to where the post is set when the writer is at it or
     right by it (its offices, its ground, its event), or when it is shown
@@ -526,6 +566,7 @@ judge:
     just a mood or an event. Good news counts as much as bad news.
 
   # Tries per item before the place is swapped for a reserve (generate.py).
+  # Tries 2 and later carry the last rejection (prompt.retry_feedback).
   max_tries: 3
 
 
@@ -545,59 +586,63 @@ prompt:
     people wrote them. Follow the instructions exactly, especially the ones
     about what must not appear in the post. Reply with JSON only.
 
+  # 2026-11-02 (user, after smoke13): the rules below replace the earlier
+  # "tie every name / bring a person in with a hand in it" wording, which led
+  # the writer to invent actions for real people ("Sam Elliott's company just
+  # bought up the water rights"), to use past events as present venues ("the
+  # 2000 Summer Olympics left this air") and to list unrelated fragments.
   task: >-
     Write one social media post by someone who lives in, is spending time in,
-    or is following the news about a particular place. They are not
-    describing it. They are just talking about their day or about what is
-    happening there. Someone who knows the area might work out
-    roughly where they are from what they mention, but the writer is not
-    trying to make that easy or hard. Write in English, even when the names
-    you are given are in another language, and keep those names as they are.
+    or is following the news about a particular place. The post is about that
+    place: its environmental claim is about what is happening there, seen
+    first-hand or heard about, and a reader must be able to tell that the
+    claim and the names belong to the same place. Write in English, even when
+    the names you are given are in another language, and keep those names as
+    they are.
 
-    Write the way people actually post: plain words, no neat ending or moral,
-    no hashtags. Do not use em or en dashes; use a comma, a full stop or a line
-    break instead. Only add an emoji if the example posts below use them, and
-    then just one.
+    Write the way people actually post: one line, plain words, no neat ending
+    or moral. No hashtags, no emoji, no line breaks. Do not use em or en
+    dashes; use a comma or a full stop instead.
 
-    Mention each thing in passing, the way a local who knows it would, and as
-    what it is: a person is a person, not a shop or a place. Refer to people
-    the way others would in a post, usually by first name and surname, without
-    middle names, titles or numbers like "III", but always with the surname.
-    Write everything else by the name given. You are not told how the people
-    are connected to the place, and the post must not say it either: nobody
-    was born, grew up, lived or died anywhere in it. Bring each person in
-    through what they are known for.
+    Write one statement, not a list. The names and the environmental point
+    belong to one situation and are woven into the same sentence or two;
+    never set unrelated pieces side by side ("X on the screen, bag ban
+    holding, river cleaner"). If you bring something in through a screen, a
+    song, an article or a match, the claim must still be about this place.
 
-    Tie every name to the place the post is about, without naming that place
-    or spelling out the formal link: either the writer is there (at it or
-    right by it: its offices, its ground, its event), or the named one is doing something to
-    its own community from wherever the writer is ("their own city", "the
-    town they run", "the region they are based in", "right on their
-    doorstep"). A name that could sit in a post about anywhere else in the
-    country does not point to the place.
+    Use only the names you are given, and each one as what it is. Name no
+    other person, place, organisation, event or brand, real or made up. An
+    event that is over is in the past: it is not happening now, it is not a
+    venue and it did not cause today's problem. An organisation only does
+    what such an organisation does: a football club plays and has a ground and
+    fans, a company makes and sells things, a bridge carries traffic.
 
-    Bring a person in the way people really come up in posts: as someone with
-    a hand in what the post is about (a mayor, a minister, a company boss, an
-    activist, an athlete who spoke up), or as part of where the writer is or
-    what they are doing. A living person is someone who could really be
-    around or in the news today; a person from history shows up through what
-    they left behind. Do not default to a statue or a memorial. Do not use
-    them as an imagined judge: no "X
-    would be furious", "X would not believe this", "X is turning in their
-    grave", "X would laugh" or "what would X say". If the person has nothing
-    to do with the issue, still name them, in passing, and let the claim
-    stand on its own.
+    Build the post in two steps (2026-11-02, user).
+    First, put each name where it belongs, saying its link in everyday words
+    and without naming the place: the company in front of its offices, the
+    club at its ground, a person in their home town or at their work, the
+    mayor at the council, the festival on its grounds. "Here" on its own does
+    not tie anything: say the link. Do not write the words born, grew up or
+    died.
+    Second, make the environmental point come out of that: something the
+    name's event, site or work does to the place, or that happens there
+    because of it or while it is going on. For example, a singer gives a gig
+    in his home town and the crowd leaves rubbish everywhere afterwards; a
+    company's trucks idle outside its offices all day; a club's ground floods
+    every winter now. The name and the point are one story. Never set a name
+    and an unrelated point side by side, joined by "and" or a comma.
 
-    Tell one small moment from the writer's day, and make every name earn its
-    place in it. Real people leave out anything that does not lead somewhere,
-    so a name is either where the post starts and the environmental point
-    grows out of it, or it is the thing the point is about. Let what each name
-    is decide how it turns up, and pick what fits that particular name rather
-    than the same device every time. Do not bring a
-    name in by reading, watching or hearing about it and then move on to
-    something else: that is a detail a real poster would cut. Each sentence
-    follows from the one before. First settle the one situation that ties
-    every name and the point together, then write the post from it.
+    Real people may do something that fits who they are and their link to
+    the place: an actor filming, a singer at a gig, an athlete training, a
+    politician opening something or making a visit, anyone turning up at an
+    event or a clean-up. Nothing that turns them into something they are not
+    (an actor's company buying up water rights), no quotes, and no
+    accusations of a specific wrongdoing. A person from history is not around
+    today: they appear only through what they left behind (their work, a
+    building, a street, a club, a prize named after them), never doing,
+    backing or noticing anything now. The writer's own opinion of a
+    public figure is fine. No "X would be furious", "X would not believe
+    this" or "what would X say".
 
   # How each clue's entity type is written in the prompt. The plan keeps
   # the places pipeline's property family codes; these are only the words the model sees.
@@ -611,6 +656,8 @@ prompt:
     person_historical: a person from history
     place_or_org: a place or organisation
     work_or_event: a work or event
+    species: a plant or animal species
+    media: a newspaper or broadcaster
 
   # Properties whose clues get no type note whatever their family. P276
   # (location) reaches paintings, battles, sports events and nature reserves
@@ -626,8 +673,8 @@ prompt:
   relation_phrases:
     P19: born here
     P20: died here
-    P551: lived here
-    P937: worked here
+    P551: lives or lived here, their home town
+    P937: works or worked here
     P159: headquartered here
     P740: founded here
     P276: located or held here
@@ -641,6 +688,15 @@ prompt:
     P201: flows out of it
     P4552: the mountain range it belongs to
     P6: heads the local government here
+    # Added 2026-11-01 with the reclue (born/died, water and range links dropped).
+    P2541: works in this area
+    P183: a species found only here
+    P291: published or broadcast here
+    P793: happened here
+    P137: runs it
+    P127: owns it
+    P7153: an important place in their life
+    P2341: native here
 
   # How the style slots are labelled in the prompt, by slot name in the plan.
   # A slot missing here is shown as its name with underscores as spaces.
@@ -667,15 +723,13 @@ prompt:
   # plan (one of the place's env_themes). {theme} is a short topic such as
   # "falling water levels". The claim only has to be plausible, not true.
   environment_line: >-
-    What the post is about: start from {theme}, but choose the environmental
-    angle that lets the names take part in the story; if a different angle
-    fits them better, use it. The writer states a claim on this subject
-    with some confidence, the way people post about it online. The claim can be
-    about the place, about other people, about themselves or about anything
-    else connected to it, and the writer does not have to be there. It can be a
-    complaint, a warning, praise, a boast or a piece of news, and it does not
-    have to be true or sourced. Do not write the topic as a label or a headline. This
-    does not change anything above about what may and may not be named.
+    What the post is about: {theme}. Stay on this topic; do not swap it for
+    another environmental subject. The writer states a claim about it with
+    some confidence, the way people post online: about this place, what it is
+    doing or what is happening to it. It can be a complaint, a warning,
+    praise or a piece of news, and it does not have to be true or sourced. Do
+    not write the topic as a label or a headline. This does not change
+    anything above about what may and may not be named.
 
   # Added after environment_line, by the item's planned valence (plan.valences).
   # The positive line keeps it a claim, not an advert: real good-news posts
@@ -704,11 +758,12 @@ prompt:
       Keep it local: the town or the area around it, a council decision, a
       local company, something neighbours argue about or are proud of.
     regional: >-
-      Make it regional: something bigger than one town, like a river, a
-      mountain range, a power plant or a whole coastline.
+      Make it regional: something that reaches beyond the town (the wider
+      area's air, water supply, energy or rubbish), still told from here,
+      without naming or describing any landscape.
     global: >-
       Make it global: a world issue such as climate change, plastic or fossil
-      fuels, told from where the writer is. Be specific about who is doing what
+      fuels, shown through what it does in this place. Be specific about who is doing what
       (governments, big companies, airlines, tourists), but do not name any
       other place, country or region to make the point.
 
@@ -727,17 +782,19 @@ prompt:
     education: a university or school could be running a study, a protest or a green scheme
     culture: a festival, museum or club could leave waste behind or go green
     # People, by occupation (place_inputs.py OCCUPATION, from Wikidata P106).
-    politician: a politician's decisions, promises or record on the issue
-    athlete: a sports star's events, travel, sponsors or the grounds they played on
-    artist: an artist's work, venue, festival or fans
-    scientist: a scientist's field, findings or the institution they worked at
-    activist: what the activist campaigned for, and whether it lasted
-    business: a business figure's company, money or projects
-    military: a base, a battle site or what a war left behind
-    royal: a royal family's estates, wealth or patronage
-    religious: a church, pilgrimage or what a religious figure preached
-    person: link the person in a natural way through what they did there
-    other: link it in a natural way through what it is and does
+    # 2026-11-02 (user): documented role only, so the hints no longer offer
+    # decisions, money or projects to invent.
+    politician: opening, visiting or deciding something in their own area, or the writer's view of their record
+    athlete: training, playing or turning up at their club or ground
+    artist: a gig, a shoot or a show where they belong, or their fans
+    scientist: their known field
+    activist: the cause they are known for
+    business: the company they are known for, as it is known
+    military: what they are known for, in the past tense
+    royal: the title they are known by
+    religious: what they are known for, in the past tense if they are from history
+    person: something that fits what they are known for, where they belong
+    other: use it as what it is and what it does today
 
   # Added for every post. Claims are generated, not checked, so they must not
   # read as reports of real incidents at real facilities.
@@ -815,34 +872,72 @@ prompt:
   # rule in the task the writer ignored it twice ("thanks Party of the
   # Revolution" could be anywhere in the country).
   clue_line: >-
-    - "{label}"{type_note}. Its link to the place, for you only, not for the
-    post: {relation}. The post must make clear that it is here, or acting on
-    its own home area ("their own city", "right outside their offices"),
-    without naming the place.
+    - "{label}"{type_note}. Its link to the place: {relation}. Say that link
+    in the post (it is there, at its offices, its ground, its site), and make
+    the environmental point something it does, causes or suffers there. Use
+    it as what it is, and do not name the place.
 
   # People (is_human): what they are known for (their Wikidata description,
-  # without the place's country words), not how they are linked to the place.
-  # 85% of person clues are linked by birth or death; told "born here" (even
-  # as background), the writer kept writing it, and a birthplace rarely gives
-  # a reason to mention anyone (2026-10-29, user). {known_for} falls back to
-  # the type note's wording when a person has no description.
+  # without the place's country words) and their link to the place, which
+  # ties them in (2026-11-02, user: "in front of their office or home town").
+  # {known_for} falls back to the type note's wording when a person has no
+  # description.
   clue_line_person: >-
-    - "{label}"{type_note}, known as: {known_for}. The post must make clear
-    that they are acting on this place or its people ("the town they run",
-    "the club they play for here"), without naming the place.
+    - "{label}"{type_note}, known as: {known_for}. Their link to the place:
+    {relation}. Say that link in the post (their home town, their work), show
+    them doing something that fits who they are, and make the environmental
+    point come out of that very thing. Do not name the place.
 
   # The smoke posts marked the distractor as foreign ("Henry Figueroa from
   # elsewhere"), which gives it away.
   noise_entity: >-
     - "{label}"{type_note}, which belongs to a different place from the one
-    this post is about. Mention it like the other things, without linking it
-    to that place and without saying it is from somewhere else.
+    this post is about. Weave it into the same scene as something that is
+    really there or going on (a band playing at the gig, a club's shirt in
+    the crowd, a brand in the bins), never as a comparison or a line tacked
+    on at the end, and without saying it is from somewhere else.
 
   surface_ambiguous: >-
     Place name to use: "{surface}"
 
   surface_exact: >-
     Place name to use: "{surface}"
+
+  # Added to the prompt on tries 2 and later (generate.run_item): what was
+  # wrong with the last try, so the writer can fix it (2026-11-02, user).
+  # {post} is the rejected post, {problem} the explanation below (by status)
+  # and {detail} the checker's own words.
+  retry_feedback: >-
+    Your last attempt was rejected. It was: "{post}". The problem: {problem}
+    ({detail}). Write a new post that fixes this and still follows every
+    instruction above.
+
+  rejection_explanations:
+    names_place: it named the place, its country or a region it is in
+    wrong_toponym: the place name was missing, changed or had something added to it
+    missing_name: the place name was missing
+    clue_missing: a name you were asked to mention is missing
+    noise_missing: a name you were asked to mention is missing
+    length: it was too short or too long
+    format: it must be one line with no emoji and no hashtags
+    unplanned_entity: it named something that was not on your list
+    no_environment: it made no clear environmental claim
+    judge_place: it named a place that was not on your list
+    judge_person: it named a person who was not on your list
+    judge_setting: it added a detail of the setting that could give away where it is
+    judge_invented_person: it made up something about a real person
+    judge_misused: it used a name as something it is not, such as a past event happening now
+    judge_untied_claim: the environmental claim was not clearly about this place
+    judge_unconnected: the environmental point did not come out of what the name was doing at its place; make it one story (the name's event, site or work causes it or it happens there), and say the link instead of just "here"
+    judge_fragments: it listed unrelated pieces instead of making one statement
+    judge_media: it brought in a screen, song or article without tying the claim to the place
+    judge_imagined: it used a person as an imagined judge
+    judge_decorative: a name was only dropped in and took no part
+    judge_unanchored: a name was not tied to the place
+    judge_no_environment: it made no clear environmental claim
+    judge_off_theme: it was not about the planned topic
+    judge_incoherent: the sentences did not follow from each other
+    parse_error: the reply was not the JSON object asked for
 
   # Introduces the real-post tone references. Keep "copy nothing".
   exemplar_intro: >-
@@ -875,10 +970,15 @@ prompt:
   # RESPONSE_SCHEMA in generate.py; this is the wording for each. A schema
   # field with no wording here is a load error.
   output_intro: >-
-    Reply with one JSON object with these fields:
+    Before you write, check the connection. For each name you must be able
+    to say: the name, its link (where it belongs), what it is doing there,
+    and how that causes or meets the environmental point. If the honest
+    answer is "and also", the post fails: rethink the situation until the
+    point comes out of what the name is doing. Then reply with one JSON object
+    with these fields:
 
   output_fields:
-    situation: one sentence, the single situation that ties every name and the environmental point together
+    situation: one sentence saying, for each name, its link to the place, what it is doing there and how that causes or meets the environmental point ("his gig in his home town leaves rubbish all over the streets")
     post_text: the post
     entities_referenced: each named thing you mentioned, written exactly as it appears in the post
     naming_form_used: the place name exactly as you wrote it, or null if there is none

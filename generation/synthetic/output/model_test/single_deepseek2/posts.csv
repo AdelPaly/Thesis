@@ -1,2 +1,0 @@
-﻿model,item_id,source_plan,condition,place_name,status,reason,text,words,latency_s,prompt_tokens,completion_tokens,cost,flags
-openrouter:deepseek/deepseek-v4.1-flash,5babb2e104c15cb5,item_plan.jsonl,A1,Dodoma,kept,,"Party of the Revolution wants another highway lane, and the fumes just keep getting worse.",15,2.34,1875,90,0.00018495,

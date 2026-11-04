@@ -1,2 +1,0 @@
-﻿model,item_id,source_plan,condition,place_name,status,reason,text,words,latency_s,prompt_tokens,completion_tokens,cost,flags
-openrouter:deepseek/deepseek-v4.1-flash,5babb2e104c15cb5,item_plan.jsonl,A1,Dodoma,kept,,"these fumes again, thanks Party of the Revolution",8,1.99,1875,84,0.00018387,

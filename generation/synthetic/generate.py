@@ -1266,6 +1266,17 @@ def try_seed(item_id: str, n: int) -> int:
     return seed_for_item(hashlib.sha256(f"{item_id}#{n}".encode()).hexdigest())
 
 
+def retry_feedback(last_try: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
+    """The prompt.retry_feedback block for the next try: the rejected post, the
+    plain-words explanation of its status and the checker's own reason
+    (2026-11-02, user: retry with the rejection reason before failing)."""
+    status = last_try["status"]
+    problem = (prompt_cfg.get("rejection_explanations") or {}).get(status, status.replace("_", " "))
+    return prompt_cfg["retry_feedback"].strip().format(
+        post=(last_try.get("text") or "").strip().replace("\n", " "), problem=problem,
+        detail=(last_try.get("reason") or "").strip() or status)
+
+
 def swap_decorative(item: dict[str, Any], names: list[str]) -> list[dict[str, str]]:
     """
     Replace each clue the judge found only dropped in (by label) with the
@@ -1314,6 +1325,8 @@ def run_item(
     for n in range(1, max_tries + 1):
         seed = try_seed(item["item_id"], n)
         messages = build_messages(work, config, exemplars)
+        if try_log and try_log[-1]["status"] != "kept":
+            messages[-1]["content"] += "\n\n" + retry_feedback(try_log[-1], config["prompt"])
         content, metadata, attempts, api_error = None, {}, [], None
         try:
             content, metadata, attempts = call_with_backoff(client, messages, config, seed=seed)
@@ -1335,7 +1348,10 @@ def run_item(
         try_log.append({"try": n, "seed": seed, "status": verdict[0] if verdict else "kept",
                         "reason": verdict[1] if verdict else "",
                         "clue_qids": [c["clue_qid"] for c in work["clues"]],
-                        "text": record.get("post_text")})
+                        "text": record.get("post_text"),
+                        # billed cost and tokens as the provider's usage block reports them
+                        "writer_usage": (metadata or {}).get("usage"),
+                        "judge_usage": (judgement or {}).get("usage")})
         record["judge"] = judgement
         if verdict is None:
             break

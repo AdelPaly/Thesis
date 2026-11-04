@@ -46,12 +46,12 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 
 import finalise          # noqa: E402  (check, environment_pattern, word_limits)
-import generate as gen   # noqa: E402  (client, prompts, records)
+import generate as gen   # noqa: E402  (client, prompts, records, run_item)
+import judge as judge_mod  # noqa: E402  (the model check)
 import plan              # noqa: E402  (fold, configure_stdout)
 
 SEED = 20261029            # which items are sampled, and the rating sheet order
-CONDITIONS = list(plan.CONDITION_SPECS)
-OLD_ALIASES = HERE.parent / "places" / "archive_v1" / "04b_place_aliases.jsonl"
+CONDITIONS = list(plan.CONDITION_SPECS)   # narrowed to config plan.conditions in main()
 NEAR_DUPLICATE = 0.5       # word-set Jaccard at or above this counts as a near-duplicate pair
 
 # Phrasing the checks do not drop but the smoke run showed (2026-10-29): a
@@ -130,40 +130,60 @@ def model_config(spec: str, config: dict[str, Any]) -> dict[str, Any]:
     return cfg
 
 
+def judge_config(config: dict[str, Any], spec: str | None) -> dict[str, Any]:
+    """The config with the judge model replaced by spec ("<provider>:<model>"
+    or an OpenRouter id), as model_config does for the writer; unchanged
+    when spec is None."""
+    if not spec:
+        return config
+    cfg = copy.deepcopy(config)
+    as_writer = model_config(spec, config)["generation"]
+    keep = {k: cfg["judge"]["model_settings"][k] for k in ("temperature", "send_seed")}
+    cfg["judge"]["model_settings"] = {**cfg["judge"]["model_settings"],
+                                      **{k: as_writer[k] for k in ("base_url", "model", "api_key_env",
+                                                                   "extra_headers", "reasoning_effort",
+                                                                   "exclude_reasoning", "reasoning_enabled",
+                                                                   "extra_body", "timeout_seconds")
+                                         if k in as_writer}, **keep, "max_tokens": 1500}
+    return cfg
+
+
 def run_model(model: str, items: list[dict[str, Any]], config: dict[str, Any],
-              exemplars: dict[str, list[str]], run: Path) -> None:
-    """Send every item not yet answered by this model. Rows are appended, so
-    an interrupted run resumes."""
+              exemplars: dict[str, list[str]], run: Path, use_judge: bool = True,
+              judge_spec: str | None = None) -> None:
+    """Send every item not yet answered by this model through generate.run_item,
+    the path generate.py takes: the rule checks, then the judge model, and up
+    to judge.max_tries tries, each later try told why the last one failed.
+    Rows are appended, so an interrupted run resumes."""
     cfg = model_config(model, config)
     out_path, raw_path = run / f"gen_{slug(model)}.jsonl", run / f"raw_{slug(model)}.jsonl"
     done = {r["item_id"] for r in gen.read_jsonl(out_path) if not r.get("error")} if out_path.exists() else set()
     todo = [i for i in items if i["item_id"] not in done]
-    print(f"\n{model}: {len(todo)} of {len(items)} to send")
+    print(f"\n{model}: {len(todo)} of {len(items)} to send"
+          + ("" if use_judge else " (no judge)"))
     if not todo:
         return
     client = gen.ChatClient(cfg)
+    judge = judge_mod.Judge(judge_config(config, judge_spec)) if use_judge else None
+    if judge and judge.model == cfg["generation"]["model"]:
+        # 2026-11-02 smoke17/18: DeepSeek judging its own posts passed side-by-side ties that Qwen failed
+        print(f"  ! {model} is judging its own posts; pass --judge with another family")
     config_hash = gen.config_fingerprint(cfg, use_exemplars=bool(exemplars))
     out_log, raw_log = gen.AppendLog(out_path), gen.AppendLog(raw_path)
     delay = float(gen.gen_setting(cfg["generation"], "delay_between_calls_seconds"))
+    aliases = finalise.load_aliases(Path(config["paths"]["place_inputs"]))
+    limits = finalise.word_limits(config.get("finalise"))
     try:
         for n, item in enumerate(todo, start=1):
-            messages = gen.build_messages(item, cfg, exemplars)
-            content, metadata, attempts, api_error = None, {}, [], None
+            names = aliases.get(item["place_qid"], {"forms": [], "country": [], "regions": []})
             started = time.perf_counter()
-            try:
-                content, metadata, attempts = gen.call_with_backoff(
-                    client, messages, cfg, seed=gen.seed_for_item(item["item_id"]))
-            except gen.ApiError as exc:
-                api_error, attempts, metadata = str(exc), exc.attempt_log, {"http_status": exc.status}
+            record = gen.run_item(item, client, judge, cfg, exemplars, config_hash, names, limits, raw_log)
             latency = time.perf_counter() - started
-            raw_log.write(gen.build_raw_entry(item, client, config_hash, messages, content,
-                                              metadata, attempts, api_error))
-            record, outcome = gen.build_record(item, model, config_hash, content, metadata, api_error)
-            record.update(latency_s=round(latency, 2), attempts=len(attempts) or 1,
-                          source_plan=item["source_plan"])
+            record.update(latency_s=round(latency, 2), source_plan=item["source_plan"])
             out_log.write(record)
-            print(f"  [{n}/{len(todo)}] {item['condition']:<9} {outcome:<11} {latency:5.1f}s  "
-                  f"{item['place_name']}", flush=True)
+            steps = " > ".join(t["status"] for t in record["try_log"])
+            print(f"  [{n}/{len(todo)}] {item['condition']:<9} {latency:5.1f}s  {item['place_name'][:26]:<26} {steps}",
+                  flush=True)
             if delay and n < len(todo):
                 time.sleep(delay)
     finally:
@@ -174,20 +194,6 @@ def run_model(model: str, items: list[dict[str, Any]], config: dict[str, Any],
 # --------------------------------------------------------------------------- #
 # checks and measures
 # --------------------------------------------------------------------------- #
-
-def load_names() -> dict[str, dict[str, Any]]:
-    """Place names for the checks: the new set from place_inputs.jsonl, and
-    the v1 set (old plans) from the archived alias file."""
-    names: dict[str, dict[str, Any]] = {}
-    if OLD_ALIASES.exists():
-        for r in gen.read_jsonl(OLD_ALIASES):
-            names[r["place_qid"]] = {
-                "forms": [f["text"] for f in r.get("surface_forms", [])
-                          if f.get("source") != "derived" and f.get("kind") != "unmatched"],
-                "country": [f["text"] for f in r.get("country_forms", [])],
-                "regions": [f["text"] for f in r.get("region_forms", [])]}
-    return names
-
 
 def words(text: str) -> list[str]:
     return re.findall(r"[a-z0-9']+", plan.fold(text))
@@ -214,18 +220,30 @@ def diversity(texts: list[str]) -> dict[str, Any]:
             "mean_words": statistics.mean(len(t) for t in toks)}
 
 
-def cost_of(row: dict[str, Any]) -> float | None:
-    usage = (row.get("response_metadata") or {}).get("usage") or {}
-    return usage.get("cost")
+def usages(row: dict[str, Any], who: str = "all") -> list[dict[str, Any]]:
+    """The usage blocks of every call made for the item: each writer try and
+    each judge call (who: "writer", "judge" or "all"). Rows from before the
+    tries loop carry only response_metadata."""
+    if not row.get("try_log"):
+        return [u for u in [(row.get("response_metadata") or {}).get("usage")] if u and who != "judge"]
+    keys = {"writer": ["writer_usage"], "judge": ["judge_usage"], "all": ["writer_usage", "judge_usage"]}[who]
+    return [t[k] for t in row["try_log"] for k in keys if t.get(k)]
 
 
-def tokens_of(row: dict[str, Any], key: str) -> int:
-    return int(((row.get("response_metadata") or {}).get("usage") or {}).get(key) or 0)
+def cost_of(row: dict[str, Any], who: str = "all") -> float | None:
+    """The billed cost (OpenRouter usage.cost, in USD) summed over every call
+    for the item; None when the provider reported no cost (the VSE gateway)."""
+    costs = [u.get("cost") for u in usages(row, who)]
+    return sum(costs) if costs and all(c is not None for c in costs) else None
+
+
+def tokens_of(row: dict[str, Any], key: str, who: str = "writer") -> int:
+    return sum(int(u.get(key) or 0) for u in usages(row, who))
 
 
 def evaluate(models: list[str], items: list[dict[str, Any]], config: dict[str, Any],
              run: Path) -> None:
-    names = load_names()
+    names: dict[str, dict[str, Any]] = {}
     for r in gen.read_jsonl(Path(config["paths"]["place_inputs"])):
         names[r["place_qid"]] = {"forms": r.get("name_forms") or [],
                                  "country": r.get("country_forms") or [],
@@ -249,8 +267,14 @@ def evaluate(models: list[str], items: list[dict[str, Any]], config: dict[str, A
                 "text": ((row or {}).get("post_text") or "").strip(),
                 "words": len(((row or {}).get("post_text") or "").split()),
                 "latency_s": (row or {}).get("latency_s"),
+                "tries": (row or {}).get("tries") or (1 if row else 0),
+                "try_statuses": " > ".join(t["status"] for t in (row or {}).get("try_log") or []),
+                "off_theme": any(t["status"] == "judge_off_theme" for t in (row or {}).get("try_log") or []),
                 "prompt_tokens": tokens_of(row or {}, "prompt_tokens"),
                 "completion_tokens": tokens_of(row or {}, "completion_tokens"),
+                "judge_tokens": tokens_of(row or {}, "total_tokens", "judge"),
+                "writer_cost": cost_of(row or {}, "writer"),
+                "judge_cost": cost_of(row or {}, "judge"),
                 "cost": cost_of(row or {}),
                 "flags": ";".join(k for k, rx in FLAGS.items()
                                   if rx.search((row or {}).get("post_text") or "")),
@@ -321,6 +345,18 @@ def report(models: list[str], posts: list[dict[str, Any]]) -> str:
                                  if p["model"] == m and p["status"] != "kept").most_common():
             out.append(f"| {m} | {status} | {n} |")
 
+    out += ["", "## Tries and theme", "",
+            "Tries: how many writer calls an item took (2 and 3 were told why the last try failed). "
+            "Off theme: items where the judge found a try off the planned topic, counted apart from "
+            "judge_no_environment (no environmental claim at all).", "",
+            "| model | kept on try 1 | kept on try 2 | kept on try 3 | failed all | off theme (any try) |",
+            "|---|---|---|---|---|---|"]
+    for m in models:
+        mine = [p for p in posts if p["model"] == m and p["tries"]]
+        kept_on = Counter(p["tries"] for p in mine if p["status"] == "kept")
+        out.append(f"| {m} | {kept_on[1]} | {kept_on[2]} | {kept_on[3]} | "
+                   f"{sum(p['status'] != 'kept' for p in mine)} | {sum(p['off_theme'] for p in mine)} |")
+
     out += ["", "## Phrasing flags", "",
             "Posts the checks keep or drop alike, but that read badly: a named person as an imagined "
             "judge (\"X would be furious\"), the clue's relation copied (\"born here\"), the distractor "
@@ -332,19 +368,22 @@ def report(models: list[str], posts: list[dict[str, Any]]) -> str:
             f"{sum(k in p['flags'].split(';') for p in mine)} of {len(mine)}" for k in FLAGS) + " |")
 
     out += ["", "## Cost and speed", "",
-            "| model | median latency s | p90 latency s | prompt tok / post | output tok / post | cost / post | cost / 1,000 posts |",
-            "|---|---|---|---|---|---|---|"]
+            "Cost is OpenRouter's billed usage.cost summed over every call for an item: each writer try "
+            "and each judge call. Tokens are the writer's, summed over its tries; latency covers the whole item.", "",
+            "| model | median latency s | p90 latency s | prompt tok / post | output tok / post | writer $ / post | judge $ / post | cost / post | cost / 1,000 posts |",
+            "|---|---|---|---|---|---|---|---|---|"]
     for m in models:
         mine = [p for p in posts if p["model"] == m and p["text"]]
         lat = sorted(p["latency_s"] for p in mine if p["latency_s"] is not None)
-        costs = [p["cost"] for p in mine if p["cost"] is not None]
-        mean_cost = statistics.mean(costs) if costs else None
+        mean = lambda k: statistics.mean(c) if (c := [p[k] for p in mine if p[k] is not None]) else None  # noqa: E731
+        money = lambda v: f"${v:.5f}" if v is not None else "not reported"  # noqa: E731
+        mean_cost = mean("cost")
         out.append(f"| {m} | {statistics.median(lat):.1f} | {lat[int(0.9 * (len(lat) - 1))]:.1f} | "
                    f"{statistics.mean(p['prompt_tokens'] for p in mine):.0f} | "
                    f"{statistics.mean(p['completion_tokens'] for p in mine):.0f} | "
-                   + (f"${mean_cost:.5f} | ${1000 * mean_cost:.2f} |" if mean_cost is not None
-                      else "not reported | - |")
-                   if lat else f"| {m} | - | - | - | - | - | - |")
+                   f"{money(mean('writer_cost'))} | {money(mean('judge_cost'))} | {money(mean_cost)} | "
+                   + (f"${1000 * mean_cost:.2f} |" if mean_cost is not None else "- |")
+                   if lat else f"| {m} | - | - | - | - | - | - | - | - |")
 
     out += ["", "## Diversity", "",
             "Distinct-n: unique share of all words / word pairs (higher is more varied). "
@@ -394,6 +433,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--config", type=Path, default=HERE / "config.yaml")
     ap.add_argument("--env-file", type=Path, default=HERE / ".env")
     ap.add_argument("--report-only", action="store_true", help="re-check and re-report, send nothing")
+    ap.add_argument("--no-judge", action="store_true", help="rule checks only, one try per item (the old smoke runs)")
+    ap.add_argument("--judge", help="judge model, <provider>:<model> or an OpenRouter id (default: config judge:)")
     ap.add_argument("--score-ratings", action="store_true", help="summarise the filled rating sheet")
     args = ap.parse_args(argv)
 
@@ -405,6 +446,7 @@ def main(argv: list[str] | None = None) -> int:
 
     gen.load_dotenv(args.env_file)
     config = gen.load_config(args.config)
+    CONDITIONS[:] = [c for c in CONDITIONS if c in config["plan"]["conditions"]]
     args.run.mkdir(parents=True, exist_ok=True)
     sample_path = args.run / "sample.jsonl"
     if sample_path.exists():
@@ -419,7 +461,8 @@ def main(argv: list[str] | None = None) -> int:
     if not args.report_only:
         exemplars = gen.load_exemplars(Path(config["paths"]["style_exemplars"]))
         for model in args.models:
-            run_model(model, items, config, exemplars, args.run)
+            run_model(model, items, config, exemplars, args.run, use_judge=not args.no_judge,
+                      judge_spec=args.judge)
     evaluate(args.models, items, config, args.run)
     return 0
 

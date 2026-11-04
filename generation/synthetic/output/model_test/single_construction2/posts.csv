@@ -1,3 +1,0 @@
-﻿model,item_id,source_plan,condition,place_name,status,reason,text,words,latency_s,prompt_tokens,completion_tokens,cost,flags
-openrouter:deepseek/deepseek-v4.1-flash,5babb2e104c15c02,item_plan.jsonl,A1,Dodoma,kept,,"Party of the Revolution keeps backing these roadworks, and the dust is everywhere.",13,1.13,1916,92,9.5888e-05,
-vse:qwen3.5:122b,5babb2e104c15c02,item_plan.jsonl,A1,Dodoma,kept,,That new industrial zone from the Party of the Revolution is already filling this whole area with dust.,18,1.78,1670,110,,
