@@ -1,0 +1,43 @@
+name: grounded_gemma
+tier: 5
+paradigm: grounded_llm
+description: >
+  Tier 5. Retrieval-augmented, not routed: dense retrieval supplies candidates,
+  the model selects one from the numbered list or declines.
+
+  The retriever is tier 3 itself, not a new one, so a comparison against tier 3
+  isolates the selection step. Abstention is a first-class answer -- declining
+  when the right place is absent is correct behaviour, not failure. A selection
+  that names anything outside the list is recorded as a violation in `error`,
+  so a grounded system ignoring its grounding is visible rather than scored as
+  an ordinary wrong guess.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  top_n: 10
+rerank:
+  model: null
+  enabled: false
+llm:
+  provider: google
+  model: gemma-4-31b-it
+  revision: null
+  temperature: 0.0
+  top_p: null
+  prompt_template: v1
+  run_date: null
+  cache_name: gemma4_31b
+dense:
+  encoder: shared          # configs/shared.yaml
+  pool: gold_plus_predicted
+  top_k: 10
+  index_fields: [label, description, aliases, country, continent]
+  query_prefix: shared
+  passage_prefix: shared
+grounded:
+  candidate_source: dense
+  top_k: 10

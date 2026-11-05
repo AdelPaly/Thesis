@@ -1,0 +1,27 @@
+name: majority_class
+tier: 0
+paradigm: baseline
+description: >
+  Majority baseline. Always predicts the most frequent gold place in the DEV
+  split of whichever dataset is being run, and ignores the text entirely. It
+  reads no input, so it measures exactly how much of a headline number the
+  label distribution carries on its own. Fitted on dev by construction: a
+  majority computed over test would be reading the answer sheet.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  provider: null
+  model: null
+baseline:
+  strategy: majority_dev_place
+  gazetteer: null
+  min_population: 0

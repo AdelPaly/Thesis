@@ -1,0 +1,152 @@
+  EU natural: gated 34, filled 0
+  EU natural: gated 300, filled 0
+  EU natural: gated 600, filled 11
+  EU natural: gated 900, filled 16
+  EU natural: gated 1200, filled 20
+  EU natural: gated 1500, filled 23
+  EU natural: gated 1800, filled 25
+  EU natural: gated 2100, filled 28
+  EU natural: gated 2247, filled 35
+  EU island: gated 109, filled 0
+  EU island: gated 300, filled 8
+  EU island: gated 355, filled 20
+  EU manmade: gated 50, filled 0
+  EU manmade: gated 300, filled 16
+  EU manmade: gated 315, filled 28
+  EU infra: gated 300, filled 0
+  EU settlement: gated 300, filled 11
+  EU settlement: gated 600, filled 99
+  EU settlement: gated 300, filled 107
+  EU settlement: gated 600, filled 152
+  EU settlement: gated 900, filled 165
+  EU settlement: gated 1200, filled 179
+  EU settlement: gated 1500, filled 183
+  EU settlement: gated 1800, filled 184
+  EU settlement: gated 2100, filled 186
+  EU settlement: gated 2400, filled 189
+  EU settlement: gated 2700, filled 190
+  EU settlement: gated 3000, filled 194
+  EU settlement: gated 3300, filled 197
+  EU settlement: gated 3600, filled 199
+  EU settlement: gated 3900, filled 203
+  EU settlement: gated 4200, filled 205
+  EU settlement: gated 300, filled 207
+EU A/island/high=5/5 A/island/low=5/5 A/island/mid=5/5 A/manmade/high=5/5 A/manmade/low=3/5 A/manmade/mid=5/5 A/natural/high=0/15 A/natural/low=6/15 A/natural/mid=9/15 A/settlement/high=40/40 A/settlement/low=36/36 A/settlement/mid=31/31 B/island/place_leads=2/2 B/island/rival_leads=2/2 B/island/similar=2/2 B/manmade/place_leads=5/5 B/manmade/rival_leads=5/5 B/manmade/similar=5/5 B/natural/place_leads=10/22 B/natural/rival_leads=3/22 B/natural/similar=9/22 B/settlement/place_leads=32/32 B/settlement/rival_leads=39/39 B/settlement/similar=33/33 X/infra/-=25/25
+  AS natural: gated 13, filled 0
+  AS natural: gated 300, filled 2
+  AS natural: gated 436, filled 14
+  AS island: gated 21, filled 0
+  AS island: gated 300, filled 4
+  AS manmade: gated 29, filled 0
+  AS manmade: gated 223, filled 8
+  AS infra: gated 300, filled 0
+  AS settlement: gated 300, filled 18
+  AS settlement: gated 600, filled 66
+  AS settlement: gated 300, filled 70
+  AS settlement: gated 600, filled 94
+  AS settlement: gated 900, filled 101
+  AS settlement: gated 1200, filled 112
+  AS settlement: gated 1500, filled 120
+  AS settlement: gated 1800, filled 127
+  AS settlement: gated 2100, filled 131
+  AS settlement: gated 2400, filled 133
+  AS settlement: gated 2700, filled 134
+  AS settlement: gated 2818, filled 134
+  AS settlement: gated 300, filled 134
+AS A/island/high=0/3 A/island/low=0/3 A/island/mid=3/3 A/manmade/high=3/3 A/manmade/low=0/3 A/manmade/mid=3/3 A/natural/high=1/9 A/natural/low=2/9 A/natural/mid=1/9 A/settlement/high=25/25 A/settlement/low=27/27 A/settlement/mid=22/22 B/island/place_leads=1/1 B/island/rival_leads=1/1 B/island/similar=1/1 B/manmade/place_leads=3/3 B/manmade/rival_leads=1/3 B/manmade/similar=3/3 B/natural/place_leads=7/13 B/natural/rival_leads=0/13 B/natural/similar=3/13 B/settlement/place_leads=17/17 B/settlement/rival_leads=26/26 B/settlement/similar=21/21 X/infra/-=25/25
+  AF natural: gated 2, filled 0
+  AF natural: gated 61, filled 0
+  AF island: gated 17, filled 0
+  AF island: gated 38, filled 4
+  AF manmade: gated 15, filled 0
+  AF manmade: gated 59, filled 4
+  AF infra: gated 300, filled 0
+  AF settlement: gated 146, filled 30
+  AF settlement: gated 300, filled 50
+  AF settlement: gated 492, filled 74
+  AF settlement: gated 34, filled 76
+AF A/island/high=1/1 A/island/low=1/1 A/island/mid=1/1 A/manmade/high=1/1 A/manmade/low=0/1 A/manmade/mid=1/1 A/natural/high=0/5 A/natural/low=0/5 A/natural/mid=0/5 A/settlement/high=13/13 A/settlement/low=14/14 A/settlement/mid=13/13 B/island/place_leads=1/1 B/island/rival_leads=1/1 B/island/similar=1/1 B/manmade/place_leads=1/1 B/manmade/rival_leads=1/1 B/manmade/similar=1/1 B/natural/place_leads=2/8 B/natural/rival_leads=0/8 B/natural/similar=1/8 B/settlement/place_leads=12/12 B/settlement/rival_leads=14/14 B/settlement/similar=13/13 X/infra/-=25/25
+  NA natural: gated 19, filled 0
+  NA natural: gated 300, filled 2
+  NA natural: gated 600, filled 17
+  NA natural: gated 877, filled 21
+  NA island: gated 10, filled 0
+  NA island: gated 230, filled 8
+  NA manmade: gated 1, filled 0
+  NA manmade: gated 61, filled 0
+  NA infra: gated 300, filled 0
+  NA settlement: gated 300, filled 2
+  NA settlement: gated 301, filled 72
+  NA settlement: gated 300, filled 72
+  wait 60s: HTTP Error 429: Too Many Requests
+  NA settlement: gated 508, filled 133
+  NA settlement: gated 300, filled 140
+  NA settlement: gated 600, filled 160
+  NA settlement: gated 900, filled 163
+  wait 60s: HTTP Error 429: Too Many Requests
+  NA settlement: gated 1200, filled 164
+  NA settlement: gated 1500, filled 166
+  NA settlement: gated 300, filled 177
+  NA settlement: gated 600, filled 190
+  NA settlement: gated 607, filled 196
+  NA settlement: gated 67, filled 200
+NA A/island/high=1/4 A/island/low=4/4 A/island/mid=4/4 A/manmade/high=0/4 A/manmade/low=0/4 A/manmade/mid=0/4 A/natural/high=0/12 A/natural/low=3/12 A/natural/mid=6/12 A/settlement/high=36/36 A/settlement/low=29/29 A/settlement/mid=37/37 B/island/place_leads=2/2 B/island/rival_leads=2/2 B/island/similar=2/2 B/manmade/place_leads=1/4 B/manmade/rival_leads=0/4 B/manmade/similar=0/4 B/natural/place_leads=8/19 B/natural/rival_leads=1/19 B/natural/similar=6/19 B/settlement/place_leads=30/30 B/settlement/rival_leads=38/38 B/settlement/similar=33/33 X/infra/-=25/25
+  SA natural: gated 288, filled 0
+  wait 60s: HTTP Error 429: Too Many Requests
+  SA island: gated 5, filled 0
+  SA island: gated 36, filled 4
+  SA manmade: gated 1, filled 0
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 120s: HTTP Error 429: Too Many Requests
+  wait 240s: HTTP Error 429: Too Many Requests
+  SA manmade: gated 20, filled 0
+  SA infra: gated 153, filled 0
+  wait 60s: HTTP Error 429: Too Many Requests
+  SA settlement: gated 300, filled 0
+  SA settlement: gated 300, filled 36
+  SA settlement: gated 600, filled 72
+  SA settlement: gated 804, filled 76
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  SA settlement: gated 300, filled 78
+SA A/island/high=1/1 A/island/low=0/1 A/island/mid=1/1 A/manmade/high=0/1 A/manmade/low=0/1 A/manmade/mid=0/1 A/natural/high=0/5 A/natural/low=1/5 A/natural/mid=0/5 A/settlement/high=15/15 A/settlement/low=15/15 A/settlement/mid=15/15 B/island/place_leads=1/1 B/island/rival_leads=1/1 B/island/similar=1/1 B/manmade/place_leads=0/1 B/manmade/rival_leads=0/1 B/manmade/similar=1/1 B/natural/place_leads=1/8 B/natural/rival_leads=1/8 B/natural/similar=0/8 B/settlement/place_leads=14/14 B/settlement/rival_leads=14/14 B/settlement/similar=14/14 X/infra/-=25/25
+  OC natural: gated 3, filled 0
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  OC natural: gated 191, filled 0
+  OC island: gated 3, filled 0
+  wait 60s: HTTP Error 429: Too Many Requests
+  OC island: gated 112, filled 0
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  OC infra: gated 87, filled 0
+  OC settlement: gated 31, filled 1
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 120s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 120s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 120s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 120s: HTTP Error 429: Too Many Requests
+  wait 240s: HTTP Error 429: Too Many Requests
+  wait 480s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 120s: HTTP Error 429: Too Many Requests
+  wait 240s: HTTP Error 429: Too Many Requests
+  wait 480s: HTTP Error 429: Too Many Requests
+  OC settlement: gated 300, filled 11
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 120s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 120s: HTTP Error 429: Too Many Requests
+  wait 60s: HTTP Error 429: Too Many Requests
+  wait 120s: HTTP Error 429: Too Many Requests
+  wait 240s: HTTP Error 429: Too Many Requests
+  OC settlement: gated 300, filled 30
+OC A/island/high=0/1 A/island/low=0/1 A/island/mid=1/1 A/manmade/high=0/1 A/manmade/low=0/1 A/manmade/mid=0/1 A/natural/high=0/5 A/natural/low=0/5 A/natural/mid=0/5 A/settlement/high=13/15 A/settlement/low=5/15 A/settlement/mid=12/14 B/island/place_leads=0/1 B/island/rival_leads=1/1 B/island/similar=1/1 B/manmade/place_leads=0/1 B/manmade/rival_leads=0/1 B/manmade/similar=0/1 B/natural/place_leads=1/8 B/natural/rival_leads=2/8 B/natural/similar=1/8 B/settlement/place_leads=12/15 B/settlement/rival_leads=4/13 B/settlement/similar=4/14 X/infra/-=14/25

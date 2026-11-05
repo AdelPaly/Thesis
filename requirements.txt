@@ -5,3 +5,16 @@ numpy==2.4.2
 pandas==2.2.3
 scikit-learn==1.8.0
 rdflib~=7.6.0
+requests>=2.32
+python-dotenv>=1.0
+datasets>=4.0
+langdetect>=1.0.9
+
+# Configuration files (configs/*.yaml) and statistics in the scorer.
+PyYAML>=6.0
+scipy>=1.14
+
+# Backends named by configurations. Each is only imported when a configuration
+# selects it, so a subset install runs the configurations it covers.
+refined>=1.0
+google-generativeai>=0.8

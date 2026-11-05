@@ -1,0 +1,43 @@
+name: geoparser_irchel
+tier: 1
+paradigm: geoparser
+description: >
+  Tier 1, an established geoparser run as published: the Irchel Geoparser
+  with its documented quick-start pipeline -- spaCy recognition (FAC, GPE,
+  LOC) and its sentence-transformer resolver over the GeoNames gazetteer.
+  Nothing of this repository's pipeline is used: no Flair, no linker, no
+  reranker.
+
+  It consumes toponyms only, so on posts whose signal is not a place name it
+  has nothing to resolve. That is the tier's point: it turns "a geoparser
+  scores zero on non-toponym signal" from an argument into a measurement.
+
+  Each resolved GeoNames entry is mapped to Wikidata through P1566 so that
+  exact match is computable; an entry with no Wikidata item is kept with its
+  GeoNames country. The prediction is the first resolved
+  toponym in reading order: the geoparser ranks nothing across toponyms, and
+  no ranking is added here.
+
+  geoparser 0.6 needs transformers>=5 and Flair needs transformers<5, so it
+  runs in its own environment (.venv-geoparser); see README.md.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  provider: null
+  model: null
+geoparser:
+  system: irchel
+  version: 0.6.1
+  recognizer: en_core_web_sm
+  entity_types: [FAC, GPE, LOC]
+  resolver: dguzh/geo-all-MiniLM-L6-v2
+  gazetteer: geonames

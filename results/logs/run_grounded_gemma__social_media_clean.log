@@ -1,0 +1,260 @@
+
+===== 2026-10-09T00:30:27 C:\Users\Adela\PycharmProjects\geo\src\runner.py --config grounded_gemma --dataset social_media_clean =====
+00:30:28 INFO dense index loaded: 4760 places, encoder=intfloat/multilingual-e5-base, pool=gold_plus_predicted
+00:30:34 INFO Use pytorch device_name: cpu
+00:30:34 INFO Load pretrained SentenceTransformer: intfloat/multilingual-e5-base
+config   : grounded_gemma (grounded_llm) hash=5747afeb954f
+dataset  : social_media_clean -> src/social_media_dataset.csv (144 items)
+output   : results\predictions\grounded_gemma__social_media_clean.jsonl
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  8.43it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  8.42it/s]
+C:\Users\Adela\PycharmProjects\geo\src\llm_common.py:160: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+00:30:40 WARNING retry 1/4 after InternalServerError
+00:31:43 WARNING retry 2/4 after InternalServerError
+00:32:27 INFO [1/144] ce11764b8bdeb186 -> Q856387
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.21it/s]
+00:33:22 INFO [2/144] 00598fcba940d826 -> Q1051147
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.67it/s]
+00:34:05 INFO [3/144] 098fb8402c195a11 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.81it/s]
+00:34:45 INFO [4/144] 803695a567edac83 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.14it/s]
+00:36:51 INFO [5/144] 96274430b5a658d5 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.59it/s]
+00:37:20 WARNING retry 1/4 after InternalServerError
+00:38:01 INFO [6/144] f44d089f66d32698 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.87it/s]
+00:38:53 INFO [7/144] 2181714311b8d808 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.02it/s]
+00:40:13 INFO [8/144] 738ae4cad4461869 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.87it/s]
+00:41:29 WARNING retry 1/4 after InternalServerError
+00:42:08 WARNING retry 2/4 after InternalServerError
+00:42:12 WARNING retry 3/4 after InternalServerError
+00:43:19 INFO [9/144] 2badacf7dd1a7714 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.37it/s]
+00:43:53 INFO [10/144] 74daba7ff2abb260 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.54it/s]
+00:44:06 INFO [11/144] a0b1572cf085f19e -> Q15254588
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.73it/s]
+00:45:43 INFO [12/144] c9abf049c66ecfb8 -> Q7170114
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.38it/s]
+00:46:04 WARNING retry 1/4 after InternalServerError
+00:46:51 INFO [13/144] 3227eb724869810e -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.25it/s]
+00:47:54 INFO [14/144] fd72d6a7714b29af -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.60it/s]
+00:48:37 INFO [15/144] 0e16ba5fb1a70fdf -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.42it/s]
+00:49:19 INFO [16/144] cc3e09910899ce21 -> Q806534
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.10it/s]
+00:49:59 INFO [17/144] f1a5bb32e0b1ed6f -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.76it/s]
+00:50:47 WARNING retry 1/4 after InternalServerError
+00:51:50 INFO [18/144] 45ef16baede33ab8 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.99it/s]
+00:52:34 INFO [19/144] 56ee32e78eadde28 -> Q601176
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.01it/s]
+00:53:43 INFO [20/144] adb5a48715a370ea -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.83it/s]
+00:54:11 INFO [21/144] 7e77f86e3613c85a -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.97it/s]
+00:55:48 INFO [22/144] 8347e09c2970bed2 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.38it/s]
+00:57:04 INFO [23/144] 9044581b853701a1 -> Q4329576
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.24it/s]
+00:58:24 INFO [24/144] 09a25544f2c08f4e -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.65it/s]
+00:58:25 WARNING retry 1/4 after InternalServerError
+00:58:27 WARNING retry 2/4 after InternalServerError
+00:58:32 WARNING retry 3/4 after InternalServerError
+00:59:18 INFO [25/144] df46d3f0ba8e0482 -> Q8050631
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.57it/s]
+01:00:30 INFO [26/144] 369d192100160b0e -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.22it/s]
+01:01:33 INFO [27/144] 4c332af84c3972ff -> Q5119798
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.62it/s]
+01:01:34 WARNING retry 1/4 after InternalServerError
+01:02:48 INFO [28/144] ba978c378680d6bf -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.75it/s]
+01:03:28 INFO [29/144] ec3d78ab7306fcdd -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.92it/s]
+01:04:33 INFO [30/144] 7e504d8ed18b42c0 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.60it/s]
+01:05:12 INFO [31/144] 27c62e21b81fc530 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.68it/s]
+01:05:13 WARNING retry 1/4 after InternalServerError
+01:07:12 INFO [32/144] 7f2c202b7130bf73 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.40it/s]
+01:08:56 INFO [33/144] 097a671e42881171 -> Q690649
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.66it/s]
+01:09:31 INFO [34/144] 7fd1a3f0517578ee -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.78it/s]
+01:09:31 WARNING retry 1/4 after InternalServerError
+01:11:16 INFO [35/144] 0d38de70c2e6a462 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.19it/s]
+01:11:16 WARNING retry 1/4 after InternalServerError
+01:12:36 INFO [36/144] 58f05891ebf83fa5 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.09it/s]
+01:14:47 INFO [37/144] cfc238d383ec4c7a -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.59it/s]
+01:14:48 WARNING retry 1/4 after InternalServerError
+01:14:51 WARNING retry 2/4 after InternalServerError
+01:15:40 INFO [38/144] b366221dd62df876 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.68it/s]
+01:15:41 WARNING retry 1/4 after InternalServerError
+01:15:43 WARNING retry 2/4 after InternalServerError
+01:15:48 WARNING retry 3/4 after InternalServerError
+01:16:39 INFO [39/144] 66ee03b43bc9e64d -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 23.51it/s]
+01:17:43 INFO [40/144] 1a405b7e75e96ff6 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.76it/s]
+01:18:39 INFO [41/144] 758b6038fca4ff22 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.44it/s]
+01:19:49 INFO [42/144] e782bbdce639fb37 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.65it/s]
+01:20:35 INFO [43/144] f36583a7294b5623 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.66it/s]
+01:21:23 INFO [44/144] ee95c922b0c2693b -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.17it/s]
+01:22:02 WARNING retry 1/4 after ResourceExhausted
+01:22:54 INFO [45/144] 8eadbbb98221ba73 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.62it/s]
+01:24:50 INFO [46/144] 27cab44a46b9311b -> Q20987466
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.30it/s]
+01:25:49 INFO [47/144] f9bd26de0a703be9 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.41it/s]
+01:26:11 WARNING retry 1/4 after InternalServerError
+01:26:38 WARNING retry 2/4 after InternalServerError
+01:27:25 INFO [48/144] 4dbcfe941d880ab3 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.91it/s]
+01:28:50 INFO [49/144] 751da4e6802fe931 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.02it/s]
+01:30:08 INFO [50/144] 3737c1c8be0508a5 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.03it/s]
+01:30:37 INFO [51/144] ddfdba8468e71db2 -> Q31741593
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.73it/s]
+01:32:03 INFO [52/144] be59fd7dacd1a10c -> Q225641
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.99it/s]
+01:32:39 INFO [53/144] e94d494cef21bbe7 -> Q152902
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.67it/s]
+01:33:18 INFO [54/144] d5da8513ce9d032f -> Q657072
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.87it/s]
+01:33:52 INFO [55/144] e9ea5edf55ba84e5 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.34it/s]
+01:34:20 INFO [56/144] b52e02eacad58bac -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.60it/s]
+01:35:12 INFO [57/144] 3e0d27f43e4eae7b -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.15it/s]
+01:35:35 INFO [58/144] 324abe337a078fad -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.54it/s]
+01:35:36 WARNING retry 1/4 after InternalServerError
+01:36:34 INFO [59/144] f74fe1708a2186b7 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 14.81it/s]
+01:37:10 INFO [60/144] 145422a1ec03c16d -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.14it/s]
+01:38:21 INFO [61/144] 9c3272310410f647 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.84it/s]
+01:39:24 INFO [62/144] 7e1866c3e4c6c270 -> Q55612779
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.59it/s]
+01:40:02 INFO [63/144] 5ea24ff4eae35e0e -> Q111387490
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.07it/s]
+01:40:02 WARNING retry 1/4 after InternalServerError
+01:40:05 WARNING retry 2/4 after InternalServerError
+01:41:20 INFO [64/144] 459a212766ea8f1a -> Q10769129
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.63it/s]
+01:41:53 WARNING retry 1/4 after InternalServerError
+01:41:55 WARNING retry 2/4 after InternalServerError
+01:42:51 INFO [65/144] e384c4a8bee82a2d -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.92it/s]
+01:43:23 INFO [66/144] c2925d3473db3da4 -> Q571423
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.86it/s]
+01:44:24 INFO [67/144] 0fbf26aaad577a3e -> Q2828567
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.47it/s]
+01:46:39 INFO [68/144] 5486c94b548365cc -> Q3344655
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.47it/s]
+01:47:03 WARNING retry 1/4 after InternalServerError
+01:49:00 INFO [69/144] 543cf5411b2e44b9 -> Q921772
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.46it/s]
+01:50:08 INFO [70/144] 18b7c59592a3ff17 -> Q26793
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.65it/s]
+01:50:51 INFO [71/144] 5c215870a693583d -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.98it/s]
+01:53:12 INFO [72/144] da6eafef6e0bae26 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 22.92it/s]
+01:53:13 WARNING retry 1/4 after InternalServerError
+01:53:15 WARNING retry 2/4 after InternalServerError
+01:53:20 WARNING retry 3/4 after InternalServerError
+01:53:56 INFO [73/144] 4454269c111b215a -> Q2123
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.26it/s]
+01:54:13 INFO [74/144] bdc0aaf8417962bc -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.21it/s]
+01:54:51 INFO [75/144] 0e1938a36b3be571 -> Q40347
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:01<00:00,  1.16s/it]Batches: 100%|##########| 1/1 [00:01<00:00,  1.16s/it]
+01:55:15 INFO [76/144] 556dbcb26f31535d -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  9.47it/s]Batches: 100%|##########| 1/1 [00:00<00:00,  9.45it/s]
+01:56:13 INFO [77/144] 19245ea4a721d813 -> Q1933824
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.29it/s]
+01:56:35 INFO [78/144] 7f865561a4c26904 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.00it/s]
+01:56:54 INFO [79/144] c82128930fb76648 -> Q3043
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 16.05it/s]
+01:58:39 WARNING retry 1/4 after InternalServerError
+01:58:42 WARNING retry 2/4 after InternalServerError
+01:59:23 INFO [80/144] 83434bb951209142 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.02it/s]
+01:59:24 WARNING retry 1/4 after InternalServerError
+01:59:26 WARNING retry 2/4 after InternalServerError
+01:59:31 WARNING retry 3/4 after InternalServerError
+02:00:21 INFO [81/144] a6e4612356ea8051 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.02it/s]
+02:00:21 WARNING retry 1/4 after InternalServerError
+02:01:25 INFO [82/144] 01ef62d754a537c9 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.48it/s]
+02:01:25 WARNING retry 1/4 after InternalServerError
+02:02:07 INFO [83/144] 83d286f25f716f72 -> Q111387209
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.09it/s]
+02:02:31 WARNING retry 1/4 after InternalServerError
+02:03:05 INFO [84/144] 28243aa8f86975ac -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.58it/s]
+02:03:22 INFO [85/144] 9407c263842d10a1 -> Q2907
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.54it/s]
+02:04:14 INFO [86/144] cd47b7af7d358b35 -> Q170362
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.85it/s]
+02:04:15 WARNING retry 1/4 after InternalServerError
+02:05:09 INFO [87/144] 74b929956b19e60c -> Q944697
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.51it/s]
+02:05:09 WARNING retry 1/4 after InternalServerError
+02:05:12 WARNING retry 2/4 after InternalServerError
+02:05:58 INFO [88/144] 926c719b6ee984c8 -> Q22060175
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.25it/s]
+02:07:02 INFO [89/144] 732f2a603ddb282a -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 20.85it/s]
+02:07:03 WARNING retry 1/4 after InternalServerError
+02:07:46 INFO [90/144] 9e726d246c333e9a -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.19it/s]
+02:08:40 WARNING retry 1/4 after InternalServerError
+02:09:51 INFO [91/144] b2e3e561018538f7 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 18.09it/s]
+02:11:04 INFO [92/144] c1623fe2e0f4168c -> Q24189368
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.09it/s]
+02:11:30 INFO [93/144] 9da04ef61bd81841 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.36it/s]
+02:12:55 INFO [94/144] 3d1f17733a5c9eb4 -> Q1150557
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 17.13it/s]
+02:13:29 INFO [95/144] 687e31b989b3830a -> Q36260
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 21.71it/s]
+02:14:35 INFO [96/144] 02d1a315796cbc7b -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 15.77it/s]
+02:14:36 WARNING retry 1/4 after InternalServerError
+02:15:36 INFO [97/144] 9cbc183eaf87def9 -> no-result
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|##########| 1/1 [00:00<00:00, 19.49it/s]
+02:15:37 WARNING retry 1/4 after InternalServerError
+02:16:12 WARNING retry 2/4 after InternalServerError

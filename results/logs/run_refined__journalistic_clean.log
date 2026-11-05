@@ -1,0 +1,96 @@
+config   : refined (ner_dependent) hash=5b0a50449401
+dataset  : journalistic_clean -> src/journalistic_dataset.csv (72 items)
+output   : results\predictions\refined__journalistic_clean.jsonl
+  Wikidata cache loaded: 8511 entities, 8399 labels, 1178 coord lookups, 289 searches
+2026-09-17 21:10:26,230 --------------------------------------------------------------------------------
+2026-09-17 21:10:26,230 ERROR: The key 'flair/ner-large' was neither found on the ModelHub nor is this a valid path to a file on your system!
+2026-09-17 21:10:26,230  -> Please check https://huggingface.co/models?filter=flair for all available models.
+2026-09-17 21:10:26,231  -> Alternatively, point to a model file on your local drive.
+2026-09-17 21:10:26,231 --------------------------------------------------------------------------------
+2026-09-17 21:10:36,781 SequenceTagger predicts: Dictionary with 20 tags: <unk>, O, S-ORG, S-MISC, B-PER, E-PER, S-LOC, B-ORG, E-ORG, I-PER, S-PER, B-MISC, I-MISC, E-MISC, I-ORG, B-LOC, E-LOC, I-LOC, <START>, <STOP>
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast():
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
+  super().__init__(
+[1/72] b03e1d1019708ccc -> Q217426
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\refined\inference\processor.py:293: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast():
+C:\Users\Adela\PycharmProjects\geo\.venv\Lib\site-packages\torch\cuda\amp\autocast_mode.py:54: UserWarning: CUDA is not available or torch_xla is imported. Disabling autocast.
+  super().__init__(
+[2/72] 22236d5ae27d10e7 -> Q182059
+[3/72] 3c1957ca9b07610b -> Q7903
+[4/72] d69845d576572b45 -> no-result
+[5/72] 818fb9be4c4300af -> Q876485
+[6/72] 2449ac6439379d19 -> Q822886
+[7/72] b82188cf34f25f48 -> Q7817
+[8/72] 732a96bd5812848a -> Q1354
+[9/72] 0de892ebdecc5f99 -> no-result
+[10/72] a2a9593672fa5554 -> Q129610
+[11/72] aeac854d4020ec65 -> no-result
+[12/72] 32b38d185cafd93e -> Q591133
+[13/72] b34fab6bb58d9644 -> Q29052
+[14/72] bbc260f7c553e986 -> Q160302
+[15/72] 05dd42008d66901a -> Q3070
+[16/72] 8dfda158fd49b773 -> Q3306
+[17/72] e87e6da16af79286 -> no-result
+[18/72] 153e9d23ea2094bd -> Q174
+[19/72] 4614908dc625623e -> no-result
+[20/72] ddcb7fdb788637c6 -> Q2841
+[21/72] 7226c107db9a71a0 -> Q37100
+[22/72] 16c6fee05afb50f5 -> Q34932
+[23/72] 736b5c60b608dd33 -> Q1088438
+[24/72] 7a8861aa69e2a51c -> Q1015773
+[25/72] 703b9b72d1d945d7 -> Q3940
+[26/72] 76af20a4b5c0a469 -> Q3579
+[27/72] 93001f22f2bcdaaf -> Q5468
+[28/72] 46275675ee733a02 -> Q844878
+[29/72] 631636566d137a4c -> Q1361
+[30/72] 8ade6b213aa26792 -> no-result
+[31/72] b81806a83b6a5148 -> Q36167
+[32/72] 95f4b339ff389e1c -> Q182394
+[33/72] 2aea0164708e4d10 -> Q22889
+[34/72] 48cb702319f8c88e -> Q36647
+[35/72] f21192ef94260d40 -> Q26793
+[36/72] 66ad01e966a0d801 -> Q1663
+[37/72] 350d21276d56b5b4 -> Q2123
+[38/72] 6e5e7f66b22b2a08 -> Q40347
+[39/72] 79731763c25de6ed -> Q128323
+[40/72] 56a095ce7748475d -> Q165204
+[41/72] 1d383333f371564d -> Q159232
+[42/72] 956effbde6082d13 -> Q52535
+[43/72] e3f173e6f68c60f8 -> Q8818
+[44/72] 3060187b48116cbe -> Q1880
+[45/72] b0d6902636efc2f9 -> Q200028
+[46/72] 70f714f15532d89c -> Q11568
+[47/72] 515fbe901c8a9dd9 -> Q206687
+[48/72] cb4b900aca19fe9c -> Q704371
+[49/72] cab16d507776675c -> no-result
+[50/72] e32e8eb42a16bff9 -> Q4093
+[51/72] 549496c1f32ab7d2 -> Q1007665
+[52/72] 23b46506445a21f5 -> Q3921
+[53/72] c52e10b3654190b0 -> Q80053
+[54/72] 05fea0b8a62d0547 -> Q18125
+[55/72] 92f68481181b94e6 -> Q23406
+[56/72] 95a74680da3386d2 -> Q3820
+[57/72] 6213a112ba516ce2 -> Q1085
+[58/72] 0b43808f68f9d920 -> Q597
+[59/72] 2931b8f2802e32be -> Q4093
+[60/72] edb965f3574da6a7 -> Q68646
+[61/72] 2a6d5ccc07d5b20c -> Q98
+[62/72] f49df61606e529b9 -> Q1646258
+[63/72] 86bc5c76c346dc4f -> no-result
+[64/72] 31c6e44273672dc7 -> no-result
+[65/72] 5b95e52d70ea0f4c -> Q3820
+[66/72] a78cb010db3eba1e -> Q1335
+[67/72] e2e350e2c48b2868 -> Q38251602
+[68/72] 71799e64479c81a2 -> Q62823
+[69/72] 99118255c24c29f3 -> no-result
+[70/72] a00bbfc846c4666a -> no-result
+[71/72] 917c51d599f845fc -> Q18125
+[72/72] 4aa78498b5768e2f -> Q243467
+
+wrote 72 record(s) to results\predictions\refined__journalistic_clean.jsonl
+  with a prediction : 61
+  no result         : 11
+  errors            : 0
+no metrics computed here -- run scripts/score.py

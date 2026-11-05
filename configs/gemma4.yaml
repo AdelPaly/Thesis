@@ -1,0 +1,32 @@
+name: gemma4
+tier: 4
+paradigm: ner_free
+description: >
+  Tier 4, LLM only, and the matched ungrounded control for tier 5: same model
+  as grounded_gemma, so the grounded-vs-ungrounded comparison measures the
+  grounding rather than a model change.
+
+  Google Gemma 4 31B (instruction tuned), reading the whole text in one pass.
+  No mention detection stage: the model is asked for city / country /
+  continent directly, and the answer is resolved against Wikidata. A
+  continent-only answer carries no coordinate.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  provider: google
+  model: gemma-4-31b-it
+  revision: null
+  temperature: 0.0
+  top_p: null
+  prompt_template: v1
+  run_date: null
+  cache_name: gemma4

@@ -1,0 +1,20 @@
+# Values several configurations must share. Not a configuration.
+#
+# A configuration takes a value from here by writing `shared` in its place:
+#   rerank.model, dense.encoder, dense.query_prefix, dense.passage_prefix
+# The loader substitutes the value before hashing, so config_hash covers the
+# encoder actually used.
+#
+# The encoder is shared on purpose. retrieve_rerank, refined and blink rerank
+# with it (tier 2), dense_retrieval retrieves with it (tier 3) and
+# grounded_gemma retrieves its candidates with it (tier 5). With one encoder,
+# a comparison between those tiers is not confounded by an encoder change.
+# Change it here, for all of them, or not at all.
+#
+# The prefixes are the encoder's query/passage instruction prefixes, applied by
+# dense retrieval only; the tier-2 reranker encodes raw text (see the NOTE in
+# configs/dense_retrieval.yaml).
+encoder:
+  model: intfloat/multilingual-e5-base
+  query_prefix: "query: "
+  passage_prefix: "passage: "

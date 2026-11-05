@@ -1,0 +1,23 @@
+name: retrieve_rerank
+tier: 2
+variant: a
+paradigm: ner_dependent
+description: >
+  Flair NER over every tag, Wikidata wbsearchentities top-10 retrieval per
+  mention pushed through the geographic property chain, E5 cross-candidate
+  rerank, top-1. No entity linker: disambiguation is done entirely by the
+  reranker over the retrieved candidate set.
+ner:
+  model: flair/ner-large
+  entity_types: null
+linking:
+  backend: wikidata_search
+  refined_model: null
+  refined_entity_set: null
+  top_n: 10
+rerank:
+  model: shared            # configs/shared.yaml
+  enabled: true
+llm:
+  provider: null
+  model: null

@@ -1,0 +1,38 @@
+name: char_ngram
+tier: 3
+paradigm: lexical_retrieval
+description: >
+  Tier 3, the lexical floor. Ranks the same candidate places, described by
+  the same indexed text, as dense_retrieval: a post and every place text are
+  turned into counts of character n-grams (lengths 2 to 5), weighted by each
+  n-gram's inverse document frequency over the place texts, and places are
+  ranked by the cosine of those vectors. Nothing is learned -- no training
+  texts, no encoder -- and there is no toponym input and no mention
+  detection.
+
+  Against dense_retrieval it separates what surface overlap between a post
+  and a place description carries from what a learned encoder adds. The pool
+  and index fields must stay equal to dense_retrieval's for that comparison to
+  hold.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  provider: null
+  model: null
+dense:
+  encoder: null
+  pool: gold_plus_predicted
+  top_k: 10
+  index_fields: [label, description, aliases, country, continent]
+lexical:
+  ngram_min: 2
+  ngram_max: 5
