@@ -91,7 +91,6 @@ from pathlib import Path
 from typing import Any, Iterable
 
 HERE = Path(__file__).resolve().parent
-PLACES_SCRIPTS = HERE.parent / "places" / "scripts"
 
 import generate as gen   # noqa: E402  (config, jsonl reading, latest_rows)
 import plan              # noqa: E402  (contains_word, atomic_write_text, ...)
@@ -100,7 +99,6 @@ NO_NAME = {"A1", "A3", "NOISE_A1"}
 AMBIGUOUS = {"B", "NOISE_B"}
 
 BALANCE_SEED = 20261004    # default --seed: which posts survive balancing
-SPARQL_BATCH = 50          # QIDs per VALUES clause
 ERROR_REASON_CHARS = 200   # how much of a generation error goes in the report
 
 # Prominence bins, for splitting results; they do not change which posts are
@@ -422,26 +420,19 @@ def used_item(item: dict[str, Any], row: dict[str, Any] | None) -> dict[str, Any
     return item
 
 
-def coordinates(qids: list[str]) -> dict[str, tuple[float, float]]:
+def coordinates(qids: list[str], places_csv: Path = HERE.parent / "out" / "places.csv"
+                ) -> dict[str, tuple[float, float]]:
     """
-    P625 (truthy) per QID, lowest-sorted value when several are best rank.
-    Makes live SPARQL calls; verify_places is imported here so the module
-    (and check()) can be used without it.
+    (lat, lon) per QID from out/places.csv, which reform_places.py filled from
+    Wikidata P625 when it built the place set. No network.
     """
-    if str(PLACES_SCRIPTS) not in sys.path:
-        sys.path.insert(0, str(PLACES_SCRIPTS))
-    import verify_places as vp  # noqa: E402  (SPARQL client)
-
-    found: dict[str, list[tuple[float, float]]] = {}
-    for i in range(0, len(qids), SPARQL_BATCH):
-        values = " ".join(f"wd:{q}" for q in qids[i:i + SPARQL_BATCH])
-        for row in vp.sparql(f"SELECT ?item ?coord WHERE {{ VALUES ?item {{ {values} }} "
-                             f"?item wdt:P625 ?coord }}"):
-            match = re.match(r"Point\(([-\d.eE]+) ([-\d.eE]+)\)", vp.value_of(row, "coord") or "")
-            if match:
-                lon, lat = float(match.group(1)), float(match.group(2))
-                found.setdefault(vp.qid_from_uri(vp.value_of(row, "item")), []).append((lat, lon))
-    return {q: sorted(v)[0] for q, v in found.items()}
+    wanted = set(qids)
+    found: dict[str, tuple[float, float]] = {}
+    with places_csv.open(encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            if row["i"] in wanted and row["lat"] and row["lon"]:
+                found[row["i"]] = (float(row["lat"]), float(row["lon"]))
+    return found
 
 
 def split_by_coordinates(
@@ -674,17 +665,16 @@ def main(argv: list[str] | None = None) -> int:
         if verdict is None:
             kept.append((item, row, text))
 
-    # The report needs no network, so it is written first: a Wikidata failure
-    # below cannot lose the per-item verdicts.
+    # Written first, so a failure below cannot lose the per-item verdicts.
     write_csv(report_path, REPORT_COLUMNS, report)
     print(f"wrote {report_path} (before the coordinate lookup)")
 
     try:
         coords = coordinates(sorted({item["place_qid"] for item, _, _ in kept}))
-    except Exception as exc:  # network, SPARQL or import failure: report stays
+    except Exception as exc:  # unreadable places.csv: report stays
         print(f"\n! coordinate lookup failed ({type(exc).__name__}: {exc}).\n"
               f"  {report_path} is written; {dataset_path} was NOT written. "
-              f"Re-run when Wikidata is reachable.", file=sys.stderr)
+              f"Check ../out/places.csv.", file=sys.stderr)
         return 1
 
     kept, no_coords = split_by_coordinates(kept, coords)

@@ -480,20 +480,20 @@ providers:
 judge:
   # Settings laid over generation: for the judge's calls.
   model_settings:
-    base_url: https://openrouter.ai/api/v1
-    model: deepseek/deepseek-v4.1-flash
-    api_key_env: OPENROUTER_API_KEY
-    extra_headers:
-      HTTP-Referer: https://vse.cz
-      X-Title: Thesis dataset generation
+    # 2026-11-04 (user): Qwen only, writer and judge.
+    base_url: https://litellm.vse.cz
+    model: qwen3.5:122b
+    api_key_env: VSE_API_KEY
+    extra_headers: {}
     reasoning_effort: null
     exclude_reasoning: false
-    reasoning_enabled: false
-    extra_body: {}
+    reasoning_enabled: true
+    extra_body:
+      reasoning_effort: none
     send_seed: false
     temperature: 0.0
     max_tokens: 800
-    timeout_seconds: 120
+    timeout_seconds: 300
 
   system: >-
     You check short social media posts for a research dataset. Judge only the
