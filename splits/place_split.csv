@@ -1,273 +1,956 @@
 place_key,place_qid,location_name,split,stratum,n_items,datasets,conditions
-Q100,Q100,nan,test,geocorpora|none,1,geocorpora,none
-Q1013717,Q1013717,nan,dev,geocorpora|none,1,geocorpora,none
-Q1025076,Q1025076,nan,dev,geocorpora|none,1,geocorpora,none
-Q1032,Q1032,nan,test,geocorpora|none,1,geocorpora,none
-Q1033,Q1033,nan,test,geocorpora|none,1,geocorpora,none
-Q1045,Q1045,nan,dev,geocorpora|none,1,geocorpora,none
-Q1070763,Q1070763,nan,dev,geocorpora|none,1,geocorpora,none
-Q108386,Q108386,nan,test,geocorpora|none,1,geocorpora,none
-Q11299,Q11299,nan,test,geocorpora|none,1,geocorpora,none
-Q1162,Q1162,nan,test,geocorpora|none,1,geocorpora,none
-Q1166,Q1166,nan,test,geocorpora|none,1,geocorpora,none
-Q1168,Q1168,nan,test,geocorpora|none,1,geocorpora,none
-Q118863,Q118863,nan,test,geocorpora|none,1,geocorpora,none
-Q1211,Q1211,nan,test,geocorpora|none,1,geocorpora,none
-Q123766,Q123766,nan,dev,geocorpora|none,1,geocorpora,none
-Q1261,Q1261,nan,dev,geocorpora|none,1,geocorpora,none
-Q126829,Q126829,nan,dev,geocorpora|none,1,geocorpora,none
-Q1268815,Q1268815,nan,test,geocorpora|none,1,geocorpora,none
-Q127877,Q127877,nan,test,geocorpora|none,1,geocorpora,none
-Q1339201,Q1339201,nan,test,geocorpora|none,1,geocorpora,none
-Q134907,Q134907,nan,test,geocorpora|none,1,geocorpora,none
-Q13752,Q13752,nan,test,geocorpora|none,1,geocorpora,none
-Q1376790,Q1376790,nan,test,geocorpora|none,1,geocorpora,none
-Q1415,Q1415,nan,test,geocorpora|none,1,geocorpora,none
-Q142,Q142,nan,dev,geocorpora|none,1,geocorpora,none
-Q1425428,Q1425428,nan,test,geocorpora|none,1,geocorpora,none
-Q1439,Q1439,nan,dev,geocorpora|none,1,geocorpora,none
-Q148,Q148,nan,test,geocorpora|none,1,geocorpora,none
-Q1498,Q1498,nan,dev,geocorpora|none,1,geocorpora,none
-Q151897,Q151897,nan,test,geocorpora|none,1,geocorpora,none
-Q156459,Q156459,nan,test,geocorpora|none,1,geocorpora,none
-Q1588,Q1588,nan,test,geocorpora|none,1,geocorpora,none
-Q163820,Q163820,nan,test,geocorpora|none,1,geocorpora,none
-Q165352,Q165352,nan,dev,geocorpora|none,1,geocorpora,none
-Q170462,Q170462,nan,dev,geocorpora|none,1,geocorpora,none
-Q17269,Q17269,nan,dev,geocorpora|none,1,geocorpora,none
-Q18013,Q18013,nan,test,geocorpora|none,1,geocorpora,none
-Q18094,Q18094,nan,test,geocorpora|none,1,geocorpora,none
-Q182591,Q182591,nan,test,geocorpora|none,1,geocorpora,none
-Q1827294,Q1827294,nan,dev,geocorpora|none,1,geocorpora,none
-Q183314,Q183314,nan,dev,geocorpora|none,1,geocorpora,none
-Q1879293,Q1879293,nan,test,geocorpora|none,1,geocorpora,none
-Q189,Q189,nan,dev,geocorpora|none,1,geocorpora,none
-Q189541,Q189541,nan,test,geocorpora|none,1,geocorpora,none
-Q20,Q20,nan,test,geocorpora|none,1,geocorpora,none
-Q2022913,Q2022913,nan,test,geocorpora|none,1,geocorpora,none
-Q212,Q212,nan,test,geocorpora|none,1,geocorpora,none
-Q21694674,Q21694674,nan,test,geocorpora|none,1,geocorpora,none
-Q217039,Q217039,nan,test,geocorpora|none,1,geocorpora,none
-Q218,Q218,nan,test,geocorpora|none,1,geocorpora,none
-Q219060,Q219060,nan,test,geocorpora|none,1,geocorpora,none
-Q219526,Q219526,nan,test,geocorpora|none,1,geocorpora,none
-Q22048,Q22048,nan,test,geocorpora|none,1,geocorpora,none
-Q2233544,Q2233544,nan,dev,geocorpora|none,1,geocorpora,none
-Q228,Q228,nan,test,geocorpora|none,1,geocorpora,none
-Q2280,Q2280,nan,dev,geocorpora|none,1,geocorpora,none
-Q230,Q230,nan,test,geocorpora|none,1,geocorpora,none
-Q23064,Q23064,nan,dev,geocorpora|none,1,geocorpora,none
-Q2347801,Q2347801,nan,test,geocorpora|none,1,geocorpora,none
-Q2411458,Q2411458,nan,test,geocorpora|none,1,geocorpora,none
-Q24826,Q24826,nan,test,geocorpora|none,1,geocorpora,none
-Q2570337,Q2570337,nan,test,geocorpora|none,1,geocorpora,none
-Q262,Q262,nan,test,geocorpora|none,1,geocorpora,none
-Q2631639,Q2631639,nan,test,geocorpora|none,1,geocorpora,none
-Q26339,Q26339,nan,test,geocorpora|none,1,geocorpora,none
-Q26777,Q26777,nan,test,geocorpora|none,1,geocorpora,none
-Q28515,Q28515,nan,dev,geocorpora|none,1,geocorpora,none
-Q31,Q31,nan,dev,geocorpora|none,1,geocorpora,none
-Q3109025,Q3109025,nan,test,geocorpora|none,1,geocorpora,none
-Q31422284,Q31422284,nan,dev,geocorpora|none,1,geocorpora,none
-Q3145253,Q3145253,nan,test,geocorpora|none,1,geocorpora,none
-Q330643,Q330643,nan,test,geocorpora|none,1,geocorpora,none
-Q33935,Q33935,nan,dev,geocorpora|none,1,geocorpora,none
-Q350,Q350,nan,dev,geocorpora|none,1,geocorpora,none
-Q3551781,Q3551781,nan,test,geocorpora|none,1,geocorpora,none
-Q36687,Q36687,nan,test,geocorpora|none,1,geocorpora,none
-Q3778560,Q3778560,nan,test,geocorpora|none,1,geocorpora,none
-Q378527,Q378527,nan,test,geocorpora|none,1,geocorpora,none
-Q38,Q38,nan,test,geocorpora|none,1,geocorpora,none
-Q408,Q408,nan,test,geocorpora|none,1,geocorpora,none
-Q4118375,Q4118375,nan,test,geocorpora|none,1,geocorpora,none
-Q414,Q414,nan,test,geocorpora|none,1,geocorpora,none
-Q41506,Q41506,nan,test,geocorpora|none,1,geocorpora,none
-Q41621,Q41621,nan,test,geocorpora|none,1,geocorpora,none
-Q41819,Q41819,nan,test,geocorpora|none,1,geocorpora,none
-Q424,Q424,nan,test,geocorpora|none,1,geocorpora,none
-Q429540,Q429540,nan,dev,geocorpora|none,1,geocorpora,none
-Q43,Q43,nan,test,geocorpora|none,1,geocorpora,none
-Q463679,Q463679,nan,test,geocorpora|none,1,geocorpora,none
-Q4746989,Q4746989,nan,dev,geocorpora|none,1,geocorpora,none
-Q484474,Q484474,nan,dev,geocorpora|none,1,geocorpora,none
-Q486306,Q486306,nan,test,geocorpora|none,1,geocorpora,none
-Q486439,Q486439,nan,dev,geocorpora|none,1,geocorpora,none
-Q488326,Q488326,nan,dev,geocorpora|none,1,geocorpora,none
-Q494616,Q494616,nan,test,geocorpora|none,1,geocorpora,none
-Q494624,Q494624,nan,test,geocorpora|none,1,geocorpora,none
-Q49502460,Q49502460,nan,test,geocorpora|none,1,geocorpora,none
-Q49664235,Q49664235,nan,test,geocorpora|none,1,geocorpora,none
-Q49786953,Q49786953,nan,test,geocorpora|none,1,geocorpora,none
-Q498034,Q498034,nan,dev,geocorpora|none,1,geocorpora,none
-Q502712,Q502712,nan,test,geocorpora|none,1,geocorpora,none
-Q503551,Q503551,nan,dev,geocorpora|none,1,geocorpora,none
-Q504114,Q504114,nan,test,geocorpora|none,1,geocorpora,none
-Q508209,Q508209,nan,dev,geocorpora|none,1,geocorpora,none
-Q54109,Q54109,nan,test,geocorpora|none,1,geocorpora,none
-Q581920,Q581920,nan,test,geocorpora|none,1,geocorpora,none
-Q6106,Q6106,nan,test,geocorpora|none,1,geocorpora,none
-Q6121208,Q6121208,nan,test,geocorpora|none,1,geocorpora,none
-Q6346,Q6346,nan,test,geocorpora|none,1,geocorpora,none
-Q645725,Q645725,nan,dev,geocorpora|none,1,geocorpora,none
-Q646225,Q646225,nan,test,geocorpora|none,1,geocorpora,none
-Q649,Q649,nan,dev,geocorpora|none,1,geocorpora,none
-Q651131,Q651131,nan,test,geocorpora|none,1,geocorpora,none
-Q668,Q668,nan,test,geocorpora|none,1,geocorpora,none
-Q6800173,Q6800173,nan,dev,geocorpora|none,1,geocorpora,none
-Q685,Q685,nan,test,geocorpora|none,1,geocorpora,none
-Q71699,Q71699,nan,test,geocorpora|none,1,geocorpora,none
-Q739,Q739,nan,test,geocorpora|none,1,geocorpora,none
-Q79,Q79,nan,test,geocorpora|none,1,geocorpora,none
-Q79867,Q79867,nan,test,geocorpora|none,1,geocorpora,none
-Q80389,Q80389,nan,dev,geocorpora|none,1,geocorpora,none
-Q83210,Q83210,nan,test,geocorpora|none,1,geocorpora,none
-Q83317,Q83317,nan,dev,geocorpora|none,1,geocorpora,none
-Q838787,Q838787,nan,test,geocorpora|none,1,geocorpora,none
-Q842939,Q842939,nan,test,geocorpora|none,1,geocorpora,none
-Q846,Q846,nan,dev,geocorpora|none,1,geocorpora,none
-Q85,Q85,nan,dev,geocorpora|none,1,geocorpora,none
-Q851,Q851,nan,test,geocorpora|none,1,geocorpora,none
-Q8660,Q8660,nan,test,geocorpora|none,1,geocorpora,none
-Q8673,Q8673,nan,test,geocorpora|none,1,geocorpora,none
-Q8977,Q8977,nan,test,geocorpora|none,1,geocorpora,none
-Q90,Q90,nan,dev,geocorpora|none,1,geocorpora,none
-Q912,Q912,nan,test,geocorpora|none,1,geocorpora,none
-Q94800,Q94800,nan,test,geocorpora|none,1,geocorpora,none
-Q953,Q953,nan,test,geocorpora|none,1,geocorpora,none
-Q96,Q96,nan,test,geocorpora|none,1,geocorpora,none
-Q986174,Q986174,nan,test,geocorpora|none,1,geocorpora,none
-Q988937,Q988937,nan,dev,geocorpora|none,1,geocorpora,none
-Q62823,Q62823,Barranquilla,test,journalistic_clean|C,1,journalistic_clean,C
-Q11751,Q11751,Nagoya,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q129610,Q129610,Galway,dev,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q1348,Q1348,Kolkata,dev,social_media_clean|A,6,geocorpora;journalistic_clean;social_media_clean;social_media_noisy,A;C;none
-Q1354,Q1354,Dhaka,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q1486,Q1486,Buenos Aires,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q1489,Q1489,Mexico City,dev,social_media_clean|A,4,geocorpora;journalistic_clean;social_media_clean;social_media_noisy,A;none
-Q1492,Q1492,Barcelona,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q1533,Q1533,Caracas,dev,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q174,Q174,São Paulo,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q1748,Q1748,Copenhagen,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q182059,Q182059,Kumasi,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q1858,Q1858,Hanoi,dev,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q1899,Q1899,Kyiv,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q1930,Q1930,Ottawa,test,social_media_clean|A,3,geocorpora;social_media_clean;social_media_noisy,A;none
-Q1960,Q1960,Dar es Salaam,test,social_media_clean|A,5,journalistic_clean;social_media_clean;social_media_noisy,A;C
-Q202162,Q202162,Aba,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q23197,Q23197,Nashville,test,social_media_clean|A,4,geocorpora;journalistic_clean;social_media_clean;social_media_noisy,A;none
-Q23482,Q23482,Marseille,dev,social_media_clean|A,4,geocorpora;journalistic_clean;social_media_clean;social_media_noisy,A;none
-Q23661,Q23661,Wellington,test,social_media_clean|A,6,journalistic_clean;social_media_clean;social_media_noisy,A;C
-Q270,Q270,Warsaw,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q2841,Q2841,Bogotá,dev,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q2868,Q2868,Lima,dev,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q2887,Q2887,Santiago,dev,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q2933,Q2933,Asunción,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q3070,Q3070,San José,dev,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q31026,Q31026,Yaren District,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q3306,Q3306,Panama City,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q34647,Q34647,Johannesburg,test,social_media_clean|A,6,journalistic_clean;social_media_clean;social_media_noisy,A;C
-Q34692,Q34692,Kingston,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q34932,Q34932,Brisbane,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q35765,Q35765,Osaka,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q3616,Q3616,Tehran,test,social_media_clean|A,5,journalistic_clean;social_media_clean;social_media_noisy,A;C
-Q36312,Q36312,Calgary,test,social_media_clean|A,5,journalistic_clean;social_media_clean;social_media_noisy,A;C
-Q36526,Q36526,Port Moresby,test,social_media_clean|A,6,journalistic_clean;social_media_clean;social_media_noisy,A;C
-Q3692,Q3692,Riyadh,dev,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q37100,Q37100,Auckland,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q3711,Q3711,Belgrade,test,social_media_clean|A,4,social_media_clean;social_media_noisy,A;C
-Q3718,Q3718,Dakar,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q3799,Q3799,Porto-Novo,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q38807,Q38807,Suva,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q3897,Q3897,Luanda,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q42053,Q42053,Isfahan,dev,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q43509,Q43509,Guayaquil,test,social_media_clean|A,4,social_media_clean;social_media_noisy,A;C
-Q49255,Q49255,Tampa,dev,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q495,Q495,Turin,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q5112,Q5112,Adelaide,test,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q7903,Q7903,Casablanca,test,social_media_clean|A,3,journalistic_clean;social_media_clean;social_media_noisy,A
-Q9733,Q9733,Nouméa,dev,social_media_clean|A,2,social_media_clean;social_media_noisy,A
-Q11568,Q11568,Darwin,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q13360574,Q13360574,Matara,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q1361,Q1361,Hyderabad,dev,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q14960,Q14960,Brno,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q152902,Q152902,Tanga,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q15847,Q15847,Manado,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q159457,Q159457,Faro,dev,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q165204,Q165204,Mérida,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q1663,Q1663,Split,dev,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q170688,Q170688,Santa Cruz de la Sierra,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q180215,Q180215,Macapá,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q182394,Q182394,Yazd,dev,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q1880,Q1880,Concepción,dev,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q200028,Q200028,Hamilton,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q2066,Q2066,Essen,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q206687,Q206687,Nelson,dev,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q208151,Q208151,León,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q2123,Q2123,Regina,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q225641,Q225641,Mombasa,dev,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q22889,Q22889,Bath,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q26793,Q26793,Bergen,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q2907,Q2907,Sucre,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q3043,Q3043,Belmopan,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q33959,Q33959,Nice,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q3579,Q3579,Tripoli,dev,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q36167,Q36167,Huế,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q36260,Q36260,Apia,dev,social_media_clean|B,4,social_media_clean;social_media_noisy,B;C
-Q36647,Q36647,Cork,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q37806,Q37806,Port Vila,dev,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q39178,Q39178,Port of Spain,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q3940,Q3940,Victoria,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q40236,Q40236,Manaus,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q40347,Q40347,Norman,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q4629,Q4629,Surat,dev,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q466046,Q466046,Salé,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q52535,Q52535,Rosario,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q5468,Q5468,Durban,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q54880,Q54880,Valencia,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q58422,Q58422,Tangshan,dev,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q597842,Q597842,Florence,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q61092,Q61092,George Town,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q612250,Q612250,Lae,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q61432,Q61432,Brandon,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q619443,Q619443,Nadi,dev,social_media_clean|B,4,social_media_clean;social_media_noisy,B;C
-Q657072,Q657072,Touba,test,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q704371,Q704371,Mackay,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q844878,Q844878,Bo,test,social_media_clean|B,3,journalistic_clean;social_media_clean;social_media_noisy,B
-Q944697,Q944697,Loja,dev,social_media_clean|B,2,social_media_clean;social_media_noisy,B
-Q1085,Q1085,Prague,dev,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q126269,Q126269,Wolverhampton,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q133116,Q133116,Hamilton,dev,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q1335,Q1335,Montevideo,dev,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q1491,Q1491,La Paz,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q157915,Q157915,Garoua,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q16567,Q16567,Columbus,dev,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q171617,Q171617,Campinas,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q1741,Q1741,Vienna,dev,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q1861,Q1861,Bangkok,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q187593,Q187593,Lubumbashi,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q203380,Q203380,Napier,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q212773,Q212773,Antigua Guatemala,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q23337,Q23337,Salt Lake City,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q24033501,Q24033501,Launceston,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q3110,Q3110,San Salvador,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q3141,Q3141,Melbourne,dev,social_media_clean|C,4,geocorpora;journalistic_clean;social_media_clean;social_media_noisy,C;none
-Q3238,Q3238,Tegucigalpa,dev,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q33986,Q33986,Valparaíso,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q34370,Q34370,Rotterdam,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q3572,Q3572,Tunis,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q3630,Q3630,Jakarta,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q374365,Q374365,Jeddah,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q3820,Q3820,Beirut,dev,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q3921,Q3921,Harare,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q4093,Q4093,Glasgow,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q43453,Q43453,Plzeň,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q465022,Q465022,Enugu,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q48344,Q48344,Recife,dev,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q51103,Q51103,Cali,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q5217,Q5217,Bacolod,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q5465,Q5465,Cape Town,dev,social_media_clean|C,2,social_media_clean;social_media_noisy,C
-Q597,Q597,Lisbon,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q753642,Q753642,Avellaneda,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q80053,Q80053,Tabriz,test,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q81033,Q81033,Monterrey,dev,social_media_clean|C,3,journalistic_clean;social_media_clean;social_media_noisy,C
-Q856662,Q856662,Lautoka,test,social_media_clean|C,2,social_media_clean;social_media_noisy,C
+Q1008777,Q1008777,Havre-Saint-Pierre,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1009276,Q1009276,Trelew,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1009474,Q1009474,Caldelas,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1010367,Q1010367,Valera,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1010639,Q1010639,Mount Barker,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1014010,Q1014010,Tarim,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1014394,Q1014394,Kahnawake,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1015681,Q1015681,Lower Hutt,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1015773,Q1015773,Porirua,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1019481,Q1019481,Nykøbing Mors,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1020261,Q1020261,Higüey,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1020277,Q1020277,Junín,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1021350,Q1021350,Woodbridge,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1023712,Q1023712,San Fernando,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q102397,Q102397,Miskolc,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1025654,Q1025654,Thohoyandou,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1030194,Q1030194,Campana,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q10363,Q10363,Bogor,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q10609,Q10609,Boyolali,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1061665,Q1061665,Asaba,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q10620,Q10620,Kudus,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1062602,Q1062602,Teshie,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q10717,Q10717,Georgetown,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q107393,Q107393,Isle of Skye,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q108223,Q108223,Belize City,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1113311,Q1113311,Peshawar,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1122701,Q1122701,Montjuïc,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q112817,Q112817,Jamshoro,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1144734,Q1144734,Genting Highlands,dev,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q11462,Q11462,Surabaya,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q1147163,Q1147163,Cyberjaya,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1158732,Q1158732,Damongo,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q117040,Q117040,Santiago de Cuba,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q1188560,Q1188560,Winneba,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1189982,Q1189982,Godoy Cruz,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1191195,Q1191195,Mold,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q119140,Q119140,Bagé,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1198892,Q1198892,Randalls Island,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1205954,Q1205954,Kaiyō-chō,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q121378,Q121378,Corfu,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1215658,Q1215658,Narvik Municipality,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q12197874,Q12197874,New Borg El Arab,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1223916,Q1223916,Masterton,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q122803,Q122803,Erzurum,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q125293,Q125293,Heroica Puebla de Zaragoza,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q1258901,Q1258901,Driebergen-Rijsenburg,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1272807,Q1272807,Džepčište,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q131243,Q131243,Oranjestad,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q131290,Q131290,Ganja,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q131323,Q131323,البيضاء,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q132830,Q132830,Douala,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1335,Q1335,Montevideo,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q13353,Q13353,Montserrat,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1346392,Q1346392,Ōji-chō,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q1347432,Q1347432,Murata,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1348760,Q1348760,Shiraoi,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1353,Q1353,Delhi,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1354,Q1354,Dhaka,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1354867,Q1354867,Naraha,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1354976,Q1354976,Kudoyama,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1365723,Q1365723,Pathum Thani,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1397223,Q1397223,Farum Municipality,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q140147,Q140147,Brest,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q141263,Q141263,Selebi-Phikwe,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q141711,Q141711,Vaudreuil-Dorion,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q141924,Q141924,Boucherville,dev,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q142069,Q142069,Chambly,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1436816,Q1436816,Tirupati,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q14460,Q14460,La Florida,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q14467,Q14467,La Serena,test,synthetic|A,5,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B
+Q1447266,Q1447266,Envigado,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q146695,Q146695,Phú Quốc,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1489,Q1489,Mexico City,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1492,Q1492,Barcelona,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q1496685,Q1496685,Gaziemir district,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q15121208,Q15121208,Ecatepec de Morelos Municipality,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1514540,Q1514540,Olkiluoto,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1519,Q1519,Abu Dhabi,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q152902,Q152902,Tanga,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1555,Q1555,Guatemala City,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q157053,Q157053,Chernihiv,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q15817,Q15817,Poso,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q158216,Q158216,Nassau,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q15826,Q15826,Palu,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q15847,Q15847,Manado,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q159273,Q159273,Arequipa,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q160687,Q160687,Valdivia,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1615344,Q1615344,Nederhorst den Berg,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q16520,Q16520,Busan,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q167305,Q167305,Andenes,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q16740,Q16740,Maple Ridge,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1677956,Q1677956,Maiquetía,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q168954,Q168954,Tripoli,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q169134,Q169134,Nara,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q16918,Q16918,Maipú,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q170322,Q170322,Qingdao,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q170482,Q170482,Avarua,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q170578,Q170578,Aracaju,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q170732,Q170732,Maun,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q171943,Q171943,Nanchang,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1725,Q1725,Lipa,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q173270,Q173270,Veracruz,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q174,Q174,São Paulo,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q174684,Q174684,Tuzla,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1748,Q1748,Copenhagen,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1759093,Q1759093,Pau dos Ferros,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1761,Q1761,Dublin,test,synthetic|A,5,synthetic,A;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1781,Q1781,Budapest,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1787188,Q1787188,Portsmouth,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q179249,Q179249,Zemst,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q180215,Q180215,Macapá,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q180921,Q180921,Omdurman,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1812809,Q1812809,Ulsteinvik,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q183298,Q183298,Ibadan,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1848,Q1848,San Marino,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1850,Q1850,Phnom Penh,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1851,Q1851,Arkhangelsk,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_B
+Q185156,Q185156,Guantánamo,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1853310,Q1853310,Ondo,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1860785,Q1860785,Villa Tunari,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q186234,Q186234,Kufa,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q1863,Q1863,Andorra la Vella,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1865,Q1865,Kuala Lumpur,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1866604,Q1866604,Livingstone,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q187838,Q187838,San Joaquín,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q187862,Q187862,San Miguel,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q188705,Q188705,Maui,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q190897,Q190897,Fier,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q191047,Q191047,Ilulissat,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q192534,Q192534,Fuerteventura,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1930,Q1930,Ottawa,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q193250,Q193250,Bulawayo,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q193452,Q193452,Armagh,dev,synthetic|A,5,synthetic,A;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q193486,Q193486,Dire Dawa,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q19520,Q19520,Podolsk,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1960,Q1960,Dar es Salaam,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q196694,Q196694,Troitsk,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q19689,Q19689,Tirana,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2000891,Q2000891,North Vancouver,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2004382,Q2004382,Palaio Psychiko,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q20146689,Q20146689,Huixquilucan de Degollado,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q205047,Q205047,Kurdistan Region of Iraq,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2055274,Q2055274,Mamak district,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q206687,Q206687,Nelson,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q207322,Q207322,Huambo,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q2076464,Q2076464,Ramos Mejía,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q208715,Q208715,Monastir,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q2096,Q2096,Edmonton,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q209626,Q209626,bois de Boulogne,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q210371,Q210371,Kangaroo Island,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q211590,Q211590,Santa Clara,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q2129610,Q2129610,Valentín Alsina,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q212984,Q212984,New Plymouth,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q2135,Q2135,Winnipeg,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2141,Q2141,Halifax,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q2145,Q2145,Quebec City,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2157253,Q2157253,San Martín Partido,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q216835,Q216835,Cap-Haïtien,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2203,Q2203,Arica,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q220383,Q220383,Stari Grad,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q223587,Q223587,Mansoura,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q223920,Q223920,Pointe-Noire,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q225641,Q225641,Mombasa,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q226,Q226,Nuuk,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2280,Q2280,Minsk,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q231399,Q231399,Zvishavane,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2321266,Q2321266,Sandbach,test,synthetic|A,5,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B
+Q232842,Q232842,Puno,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q23438,Q23438,Ashgabat,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2346838,Q2346838,City of Johannesburg Metropolitan Municipality,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q234783,Q234783,Shaki,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q23551,Q23551,Mérida,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q23564,Q23564,Podgorica,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q2359107,Q2359107,Florencio Varela,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2361658,Q2361658,Sangolquí,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2365352,Q2365352,Balcarce,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2401624,Q2401624,Telegrafenberg,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q24226,Q24226,Moengo,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2427117,Q2427117,Mníšek pod Brdy,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2448591,Q2448591,Blackrock,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q2449,Q2449,Mogadishu,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q2460416,Q2460416,Gazipur,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q25304,Q25304,Pichilemu,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2536593,Q2536593,Le Kram,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q25475,Q25475,Batumi,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q2602007,Q2602007,Couva,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q26040,Q26040,Borås,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q26087,Q26087,Tromsø Municipality,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q260911,Q260911,Chiclayo,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2656389,Q2656389,Mauritius Island,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q27001,Q27001,Martin,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q273779,Q273779,Saint-Louis,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q274584,Q274584,San Pedro Sula,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2843,Q2843,Lübeck,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q28520,Q28520,Abbeville,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2900,Q2900,Quito,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q2907,Q2907,Sucre,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2917260,Q2917260,Vicente López,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q2933,Q2933,Asunción,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3026080,Q3026080,Diamniadio,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3043,Q3043,Belmopan,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q30617,Q30617,Cartago,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3130,Q3130,Sydney,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3138,Q3138,Trier,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q316390,Q316390,Antigua,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q31805,Q31805,Invercargill,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q319836,Q319836,Pohnpei,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q320015,Q320015,Pasto,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3238,Q3238,Tegucigalpa,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3274,Q3274,Managua,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q328518,Q328518,Armenia,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3300920,Q3300920,Elmont,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3315989,Q3315989,Ciudad Evita,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q34497,Q34497,Saint Helena,test,synthetic|A,5,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q34692,Q34692,Kingston,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q34820,Q34820,Santo Domingo,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q34932,Q34932,Brisbane,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3619316,Q3619316,Grenaa,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q36214,Q36214,Puerto Montt,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q36262,Q36262,St. John's,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q365,Q365,Cologne,test,synthetic|A,5,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q36526,Q36526,Port Moresby,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3674,Q3674,Niamey,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3685,Q3685,Calama,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q37100,Q37100,Auckland,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q37104,Q37104,Alajuela,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q371354,Q371354,Castelar,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q371757,Q371757,Schieren,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3718,Q3718,Dakar,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3726,Q3726,Banjul,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3751,Q3751,Praia,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3766,Q3766,Damascus,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3777,Q3777,Ouagadougou,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q37806,Q37806,Port Vila,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q37836,Q37836,Milwaukee,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3787,Q3787,Abuja,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3832,Q3832,Bangui,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q384885,Q384885,Val Gardena,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3854,Q3854,Bujumbura,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q38545,Q38545,Adana,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3856,Q3856,Nicosia,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3859,Q3859,Kigali,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3860,Q3860,Concón,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3866,Q3866,Dodoma,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3876,Q3876,Lilongwe,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q387864,Q387864,Pravets,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q38807,Q38807,Suva,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q38834,Q38834,Nukuʻalofa,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3894,Q3894,Kampala,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3909,Q3909,Maseru,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q39178,Q39178,Port of Spain,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3921,Q3921,Harare,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q3932,Q3932,São Tomé,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q3948919,Q3948919,Santa Ana,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q40194,Q40194,Mazatlán,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q40921,Q40921,Honiara,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q41295,Q41295,Basseterre,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q41699,Q41699,Castries,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q42000,Q42000,Tahiti,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q42144,Q42144,Jinju,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q43512,Q43512,K2,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q4361,Q4361,Curitiba,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q44213,Q44213,Paraná,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q4539151,Q4539151,Yasamal raion,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q45604,Q45604,Kandahar,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q459,Q459,Plovdiv,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q464004,Q464004,Great Smoky Mountains National Park,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q47166,Q47166,Orsk,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q478207,Q478207,Kenitra,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q48278,Q48278,Medellín,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q48344,Q48344,Recife,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q495387,Q495387,Masan,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q497019,Q497019,Praia,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q50382,Q50382,Dongdaemun District,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q504215,Q504215,Ayacucho,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q50647,Q50647,Valley of Mexico,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q5092,Q5092,Baltimore,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q5094262,Q5094262,Cheung Sha Wan,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q51599,Q51599,Punta Arenas,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q518431,Q518431,Chimbote,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q518785,Q518785,Butembo,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q52028,Q52028,Chiang Mai,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q52535,Q52535,Rosario,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q5276,Q5276,Altena,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q56069,Q56069,Punta del Este,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q565568,Q565568,Tiaret,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q5736,Q5736,Amarna,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q5764,Q5764,Bukhara,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q5804,Q5804,Deli Serdang,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q583619,Q583619,Owerri,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q5869,Q5869,Lhasa,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q59698,Q59698,Swakopmund,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q60297275,Q60297275,Suðurnesjabær,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q604283,Q604283,Coffs Harbour,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q606169,Q606169,Armidale,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q606288,Q606288,Port Augusta,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q61092,Q61092,George Town,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q612,Q612,Dubai,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q6414,Q6414,Lake Garda,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q648749,Q648749,Yenegoa,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q65,Q65,Los Angeles,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q6540045,Q6540045,Liangjiang New Area,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q657461,Q657461,Cartagena,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q6616,Q6616,Poitiers,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q66568,Q66568,Kanpur,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q672458,Q672458,San Miguel,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q680964,Q680964,Barracas,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q685105,Q685105,Valtellina,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q685509,Q685509,Santiago de Veraguas,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q695387,Q695387,Sermersooq,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q706105,Q706105,Dubbo,dev,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q726143,Q726143,Tema,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q733005,Q733005,Guanare,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q735378,Q735378,Yumbo,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q744070,Q744070,"Pietà, Malta",test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q749224,Q749224,Villavicencio,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q75459,Q75459,Delphi,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q75938,Q75938,Santa Cruz,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q761,Q761,Białystok,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q768086,Q768086,Lambayeque,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q776965,Q776965,Klaipėda,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q7996166,Q7996166,Whitemarsh Township,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q81033,Q81033,Monterrey,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q811144,Q811144,Bauchi,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q82128,Q82128,Temuco,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q82859,Q82859,Socotra,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q832340,Q832340,Vrnjačka Banja,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q833016,Q833016,Tacuarembó,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q856003,Q856003,Klang,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q856662,Q856662,Lautoka,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q857788,Q857788,Campana Partido,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q860729,Q860729,Kara,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q8673,Q8673,Lagos,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q87,Q87,Alexandria,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q873835,Q873835,Tomioka,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q876557,Q876557,Luganville,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q8828,Q8828,Mallorca,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q887222,Q887222,Libertador Municipality,test,synthetic|A,3,synthetic,A;EXPLICIT;NOISE_A
+Q8969,Q8969,Cancun,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q909993,Q909993,Brentwood,test,synthetic|A,5,synthetic,A;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q916536,Q916536,La Ceiba,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q923130,Q923130,Slotsholmen,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q9248,Q9248,Baku,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q92615,Q92615,Strathspey,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q927933,Q927933,Tarapoto,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q9347,Q9347,Malé,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q936263,Q936263,Gosport,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q938739,Q938739,San Lorenzo,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q938835,Q938835,Guadalupe,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q946497,Q946497,Luque,dev,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q969396,Q969396,San Francisco Gotera,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q9733,Q9733,Nouméa,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q979922,Q979922,Lake St. John,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q984786,Q984786,Les Cayes,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q984888,Q984888,Steenokkerzeel,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q9863,Q9863,Salem,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q986803,Q986803,Miri,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q988413,Q988413,Luperon pto pta,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q990771,Q990771,Saltsjöbaden,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q992577,Q992577,Feilding,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q994,Q994,Tbilisi,dev,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q994114,Q994114,Yola,test,synthetic|A,6,synthetic,A;B;EXPLICIT;NOISE_A;NOISE_B;NOISE_EXPLICIT
+Q996851,Q996851,Bungoma,test,synthetic|A,4,synthetic,A;EXPLICIT;NOISE_A;NOISE_EXPLICIT
+Q1000336,Q1000336,Tandil,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1004103,Q1004103,Stratford,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q10076,Q10076,Middelburg,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1009253,Q1009253,Ipswich,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1015,Q1015,Koper,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1015690,Q1015690,Hastings,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q101583,Q101583,Thebes,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1020419,Q1020419,Madison,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q1022953,Q1022953,Wyoming,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1023364,Q1023364,Jutiapa,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1023703,Q1023703,Oyo,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1023707,Q1023707,Epe,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1023981,Q1023981,San Marcos,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1025649,Q1025649,Worcester,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1026284,Q1026284,Salinas,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1027134,Q1027134,Newport,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q1028261,Q1028261,Cambridge,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q105037,Q105037,Callao,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1093102,Q1093102,Chía,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q112031,Q112031,São Vicente,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1124139,Q1124139,Concordia,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1134454,Q1134454,Coro,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1184708,Q1184708,Kuma,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q11953,Q11953,Guadalajara,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1204671,Q1204671,Aga,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1236908,Q1236908,Gizo,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q128323,Q128323,Trinidad,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q12874663,Q12874663,Victoria,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q131818,Q131818,Oran,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q132189,Q132189,Saint-Marc,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q132679,Q132679,Willemstad,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q13360574,Q13360574,Matara,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1345571,Q1345571,Mori,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1349388,Q1349388,Noto,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1354319,Q1354319,Mori,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1354360,Q1354360,Niki,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1355642,Q1355642,Ribeira Grande,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1361,Q1361,Hyderabad,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1362879,Q1362879,Picton,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q13638,Q13638,Breda,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q13670,Q13670,Syracuse,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q13853,Q13853,Tona,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q140075,Q140075,Gold Coast,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1416753,Q1416753,Sitra,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q14206163,Q14206163,Bellingen,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q142156,Q142156,Sainte-Julie,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q142289,Q142289,Waterloo,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q14452,Q14452,Easter Island,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q14461,Q14461,La Granja,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1453033,Q1453033,Rena,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q146779,Q146779,Welling,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q149955,Q149955,Esmeraldas,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1533,Q1533,Caracas,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1544796,Q1544796,Mobile Bay,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1563,Q1563,Havana,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q157034,Q157034,Kruševo,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q157065,Q157065,Kerch,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q163490,Q163490,Sidon,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q1638374,Q1638374,Hura,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q165204,Q165204,Mérida,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1652751,Q1652751,Yenişehir,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q166523,Q166523,Utica,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q170688,Q170688,Santa Cruz de la Sierra,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q171714,Q171714,Kerman,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1774629,Q1774629,Irvine,dev,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q1786597,Q1786597,Pilar,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q180212,Q180212,Roman Forum,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q180717,Q180717,Sousse,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q181427,Q181427,Palenque,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q183124,Q183124,Cochabamba,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q185518,Q185518,Mandalay,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q187346,Q187346,Constantine,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q187807,Q187807,San Fernando,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q188693,Q188693,Blantyre,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q188731,Q188731,Rhodes,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q19151,Q19151,Ternate,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q192387,Q192387,Londrina,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q193409,Q193409,Tripoli,dev,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q1947,Q1947,Juba,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1963,Q1963,Khartoum,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1966384,Q1966384,Patos,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1968636,Q1968636,Omer,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q1994845,Q1994845,Santana,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q200028,Q200028,Hamilton,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q200441,Q200441,Antioch,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2015456,Q2015456,Offa,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q202162,Q202162,Aba,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q202973,Q202973,Kingston,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q203000,Q203000,Perth,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q204956,Q204956,Dundalk,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q205327,Q205327,Kananga,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q205648,Q205648,Granada,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2058593,Q2058593,Alexandra,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2066897,Q2066897,Playa,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q208345,Q208345,Tortuga,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2090609,Q2090609,Northwood,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q209126,Q209126,Wexford,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q209537,Q209537,East London,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q210003,Q210003,Halle,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q210161,Q210161,Ambato,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q211563,Q211563,Beira,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q211703,Q211703,Carlow,dev,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q214173,Q214173,Trujillo,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q214215,Q214215,La Paz,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2167,Q2167,Lund,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q219642,Q219642,Mahé,dev,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q2215106,Q2215106,Esquipulas,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2241864,Q2241864,San Fernando,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2256382,Q2256382,Sierra Negra,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2283773,Q2283773,Ocaña,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q23958347,Q23958347,Savar,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2417144,Q2417144,North Hampton,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2428683,Q2428683,Perth,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2463056,Q2463056,Komárov,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2467,Q2467,Nassau,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2522772,Q2522772,Victoria Island,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2536628,Q2536628,Harlingen,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q25409,Q25409,Košice,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2560244,Q2560244,Middleton,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2603112,Q2603112,El Brujo,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2608473,Q2608473,La Gomera,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2630835,Q2630835,Layou,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2654892,Q2654892,Saly,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q266438,Q266438,Aurora,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q26713,Q26713,Ba,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q267431,Q267431,Marsa,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q267663,Q267663,Hoboken,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2680952,Q2680952,Rotterdam,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q27026,Q27026,Central Valley,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q270734,Q270734,Broken Hill,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2721025,Q2721025,Boa Vista,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q272254,Q272254,São Vicente,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q272471,Q272471,Matanzas,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q272795,Q272795,Tacna,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q276534,Q276534,Wau,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q282908,Q282908,Moka,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2868,Q2868,Lima,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q288685,Q288685,Villarrica,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2887,Q2887,Santiago,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3014914,Q3014914,Mantua,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3070,Q3070,San José,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q30996,Q30996,El Alto,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3103735,Q3103735,Georgetown,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3141,Q3141,Melbourne,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3178685,Q3178685,Lake McDonald,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3183,Q3183,Perth,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q329266,Q329266,Crater Lake,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q329488,Q329488,Brusque,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q334738,Q334738,Margarita Island,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q335506,Q335506,Salto,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3366952,Q3366952,Alta,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q339527,Q339527,Launceston,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3397733,Q3397733,Pontiac,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q34986,Q34986,Trinidad,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q35001,Q35001,Lismore,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q35381,Q35381,Colombo,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q36168,Q36168,Bridgetown,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q36260,Q36260,Apia,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3656,Q3656,Buin,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3703,Q3703,Bamako,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3748,Q3748,Monrovia,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3755,Q3755,Cerrillos,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3780,Q3780,Freetown,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3816849,Q3816849,Kratovo,dev,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q3841,Q3841,Colina,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q39545,Q39545,Alaverdi,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q395919,Q395919,Anadia,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q40191,Q40191,Hobart,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q40508,Q40508,La Romana,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q41474,Q41474,Kingstown,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q4191,Q4191,Lucerne,dev,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q42120,Q42120,Anyang,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q42763,Q42763,Santiago de los Caballeros,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q43048,Q43048,Rhodes,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q44059,Q44059,La Plata,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q44210,Q44210,Córdoba,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q44214,Q44214,Formosa,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q44241,Q44241,San Juan,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_B
+Q44244,Q44244,Santa Fe,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q44381,Q44381,Rabat,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q47505,Q47505,Dolo,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q47916,Q47916,Lucknow,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q485583,Q485583,Anan,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q487689,Q487689,Manas,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q492533,Q492533,Andorra,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q495826,Q495826,Chita,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q500111,Q500111,Arua,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q50180,Q50180,Santiago,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q502991,Q502991,Neustadt,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q5112,Q5112,Adelaide,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q515536,Q515536,Lund Municipality,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q52591,Q52591,Colón,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q54766,Q54766,Falkenberg,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q54886,Q54886,Cuenca,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q5680,Q5680,Nineveh,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q57278,Q57278,Newcastle,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q5747,Q5747,Palmyra,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q5838,Q5838,Kabul,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q597,Q597,Lisbon,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q600734,Q600734,El Fraile Island,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q601897,Q601897,Bally,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q606162,Q606162,Rockhampton,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q613602,Q613602,Queenstown,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q618495,Q618495,Aphrodisias,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q619443,Q619443,Nadi,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q636188,Q636188,Ray,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q63954,Q63954,Arosa,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q649510,Q649510,Longchamps,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q658823,Q658823,Santa Cruz,dev,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q65914,Q65914,Stein,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q659450,Q659450,Santarém,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q668172,Q668172,Stans,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q669171,Q669171,Newtown,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q679383,Q679383,Flores,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q6807568,Q6807568,Emmen,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q68103,Q68103,Interlaken,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q69300,Q69300,Gland,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q694780,Q694780,Arnold,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q69726,Q69726,Langenthal,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q704978,Q704978,Bathurst,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q713127,Q713127,Santa Cruz Island,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q724815,Q724815,San Ignacio,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q724942,Q724942,Kapellen,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q726992,Q726992,Torquay,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q737270,Q737270,Sur,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q741169,Q741169,San José,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q743716,Q743716,Campos,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q754790,Q754790,Senec,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q774405,Q774405,La Chorrera,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q800122,Q800122,Bago,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q809009,Q809009,Barry,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q816024,Q816024,Bello,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q819314,Q819314,Limbe,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q820235,Q820235,San Cristóbal,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q82230,Q82230,Lake Geneva,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q826561,Q826561,Halifax,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q831326,Q831326,Bethlehem,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q832382,Q832382,Bettendorf,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q83247,Q83247,Braga,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q844878,Q844878,Bo,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q845851,Q845851,Kasama,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q846939,Q846939,Spanish Town,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q85,Q85,Cairo,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q850734,Q850734,Betzdorf,test,synthetic|B,3,synthetic,B;EXPLICIT;NOISE_EXPLICIT
+Q851838,Q851838,Delta,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q861610,Q861610,Tamana,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q867573,Q867573,Freeport,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q8678,Q8678,Rio de Janeiro,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q890879,Q890879,Long Island,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q9022,Q9022,Guadalajara,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q9022143,Q9022143,León Municipality,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q913390,Q913390,Resende,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q915773,Q915773,Ina,dev,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q930847,Q930847,Maghar,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q936166,Q936166,Bran,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q942590,Q942590,Tola,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q942696,Q942696,Kingston,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q956659,Q956659,Masaka,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q957700,Q957700,St. Andrews,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q965754,Q965754,San Felipe,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q967818,Q967818,Chiva,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q9822,Q9822,Breda,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q986207,Q986207,Carrefour,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q986526,Q986526,Cáceres,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q989812,Q989812,Dolores,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q989858,Q989858,Palmira,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q9899,Q9899,Amsterdam,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q9901,Q9901,Bergen,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q990738,Q990738,Manta,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q993904,Q993904,Orizaba,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q996581,Q996581,Buenaventura,test,synthetic|B,4,synthetic,B;EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1001440,Q1001440,Pétion-Ville,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1002144,Q1002144,Southport,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1005008,Q1005008,San Andrés,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1007665,Q1007665,Esperance,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q10121,Q10121,Pandeglang,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1013424,Q1013424,Villa General Belgrano,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1015672,Q1015672,Whanganui,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1016574,Q1016574,Timaru,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1017208,Q1017208,Burzaco,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1018448,Q1018448,Washington,test,synthetic|EXPLICIT,3,synthetic,EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q1024647,Q1024647,Ikeja,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1027830,Q1027830,Gotland,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1034159,Q1034159,Harstad,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q1054450,Q1054450,Centurion,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1062516,Q1062516,Española Island,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1064979,Q1064979,Charles Island,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1067452,Q1067452,Concepción,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1072131,Q1072131,San Vicente,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q10843,Q10843,Silla,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1085,Q1085,Prague,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1087187,Q1087187,Buren,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q109092,Q109092,Kilkenny,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1093182,Q1093182,Cajicá,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q10952,Q10952,Burbach,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1112176,Q1112176,Colts Neck,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q11186060,Q11186060,Eidsvoll,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q11225429,Q11225429,Thebes,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1137657,Q1137657,Great Basin National Park,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q11477,Q11477,Bantul,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q115403,Q115403,Manzanillo,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q11568,Q11568,Darwin,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q117676,Q117676,Viseu,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1185949,Q1185949,Kerikeri,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1186226,Q1186226,Lincoln,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1202616,Q1202616,Ōi-machi,dev,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q1203240,Q1203240,Minamimaki,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1223508,Q1223508,Ohrid,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1236511,Q1236511,Corfe Castle,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1240659,Q1240659,Alexandria,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q124739,Q124739,Tijuana,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q126084,Q126084,Acre,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q12825018,Q12825018,Colón City,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1296,Q1296,Ghent,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q129610,Q129610,Galway,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1309,Q1309,Maastricht,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1315822,Q1315822,Mount Desert Island,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q133073,Q133073,Dunedin,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1363130,Q1363130,Great Barrier Island,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1394912,Q1394912,False Bay,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q14108797,Q14108797,Desamparados,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q14174,Q14174,Kotabaru,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1418537,Q1418537,Mount Graham,dev,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q14372756,Q14372756,Chikan,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q14381,Q14381,Lake Lucerne,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q14407,Q14407,Lake Zurich,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q14502,Q14502,Lo Barnechea,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1471930,Q1471930,Serpentine,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q147402,Q147402,Zapopan,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q14773,Q14773,Macau,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1486,Q1486,Buenos Aires,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1491,Q1491,La Paz,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1515,Q1515,Abidjan,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1581002,Q1581002,Barak Valley,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q15812,Q15812,Banggai Islands,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q162933,Q162933,Amaliada,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1640079,Q1640079,Hyderabad,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q164481,Q164481,La Libertad,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1647665,Q1647665,San Fernando,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q1677361,Q1677361,Jackson Hole,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q168193,Q168193,Najaf,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q16869,Q16869,Constantinople,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1691479,Q1691479,Thames,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q170247,Q170247,Jinan,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1703681,Q1703681,Willamette Valley,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q17070,Q17070,Réunion,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1722,Q1722,Dubrovnik,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q173532,Q173532,Byblos,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1754,Q1754,Stockholm,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q17541,Q17541,Victoria Peak,dev,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q1757,Q1757,Helsinki,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q175741,Q175741,Andros,dev,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q1757764,Q1757764,Mount Royal,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1770,Q1770,Tallinn,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1770672,Q1770672,Ski,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1772825,Q1772825,Hisar,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q178405,Q178405,Larissa,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q17846423,Q17846423,Roxburgh Castle,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q17856,Q17856,Ballarat,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q17872,Q17872,Alice Springs,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1791724,Q1791724,Esmeraldas,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1798241,Q1798241,Santa Catarina,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1807660,Q1807660,Mandeville,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q182432,Q182432,Lanzarote,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q182984,Q182984,Kano,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q183303,Q183303,Jalalabad,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q18341,Q18341,Alba,test,synthetic|EXPLICIT,3,synthetic,EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q18405912,Q18405912,Yakutsk Urban Okrug,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q187471,Q187471,Ithaca,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1880,Q1880,Concepción,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q18808,Q18808,Pyongyang,dev,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q188904,Q188904,Gao,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q189133,Q189133,Cairns,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1898698,Q1898698,Wellington,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q190005,Q190005,Cienfuegos,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q192235,Q192235,Ciudad del Este,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1936178,Q1936178,Min Buri,dev,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q1974421,Q1974421,Velká nad Veličkou,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q1998325,Q1998325,Canton,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2001490,Q2001490,Rosmalen,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q201036,Q201036,Vitacura,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q201385,Q201385,Gulf of Naples,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q20289507,Q20289507,Ocampo,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q203380,Q203380,Napier,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q204412,Q204412,Terschelling,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q205119,Q205119,Cajamarca,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2054265,Q2054265,Lodi,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q207756,Q207756,Tauranga,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q208011,Q208011,Schiermonnikoog,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q208318,Q208318,Kaduna,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q208609,Q208609,Vorsha,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q208926,Q208926,Loch Lomond,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q208948,Q208948,Rotorua,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2105005,Q2105005,Campo Maior,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q210636,Q210636,Príncipe,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q21176,Q21176,Viborg,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q212289,Q212289,Palmerston North,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q213181,Q213181,Darlington,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2164117,Q2164117,San Isidro,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q216902,Q216902,Kabwe,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q217262,Q217262,Santa Maria Island,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q218768,Q218768,Rabaul,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2201876,Q2201876,Presidente Franco District,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q220445,Q220445,Kuching,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2215523,Q2215523,Saltspring Island,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2222550,Q2222550,Abington Township,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q222695,Q222695,Grand Teton National Park,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q223966,Q223966,Piura,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2245,Q2245,Vinje,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2262442,Q2262442,Zeeland,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2283725,Q2283725,La Paz,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2305766,Q2305766,Kingston,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q231765,Q231765,Geelong,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q233369,Q233369,Hanga Roa,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q233467,Q233467,Gisborne,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q23430,Q23430,Ulaanbaatar,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q23661,Q23661,Wellington,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2398901,Q2398901,Hawarden,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2536859,Q2536859,Stoughton,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q256454,Q256454,Fiemme Valley,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2604983,Q2604983,Hammel,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_B
+Q26175,Q26175,Trnava,test,synthetic|EXPLICIT,3,synthetic,EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q2628384,Q2628384,Pedernales,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q26426,Q26426,Montpelier,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q26772333,Q26772333,Stavanger,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q26906,Q26906,Ciudad Bolívar,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2706209,Q2706209,Färingsö,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q27263,Q27263,Le Bardo,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q275635,Q275635,Massawa,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q275662,Q275662,Mount Hood,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q279009,Q279009,David,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q28301,Q28301,Olinda,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2841,Q2841,Bogotá,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q2924158,Q2924158,Bray,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q29888,Q29888,Aswan,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3001,Q3001,Paramaribo,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q30340,Q30340,Zhengzhou,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q304448,Q304448,Shoham,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q30616,Q30616,Heredia,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q30620,Q30620,Limón,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q306201,Q306201,Devils Tower,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3078952,Q3078952,Gombe,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3110,Q3110,San Salvador,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q312759,Q312759,Biskra,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q3129772,Q3129772,Heligoland,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q31572,Q31572,Al-Karak,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3196979,Q3196979,Ishøj,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3215806,Q3215806,Lachen,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q323801,Q323801,Nampula,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3306,Q3306,Panama City,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q33443174,Q33443174,Haren,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3344653,Q3344653,Notre-Dame-du-Mont-Carmel,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q339535,Q339535,Hammamet,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q33986,Q33986,Valparaíso,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q34261,Q34261,Port-au-Prince,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3443238,Q3443238,Rougemont,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3452629,Q3452629,Briarcliff Manor,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q35045,Q35045,Potosí,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q35178,Q35178,Kuwait City,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3612,Q3612,Antofagasta,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3624,Q3624,Addis Ababa,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q36281,Q36281,Roseau,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q36399,Q36399,Huế,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3659,Q3659,N'Djamena,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3733,Q3733,Conakry,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q373567,Q373567,Glacier National Park,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q373759,Q373759,San Cristóbal,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3738335,Q3738335,Hamar,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3739,Q3739,Bissau,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3752,Q3752,Maykop,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3761,Q3761,Accra,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q376903,Q376903,Valledupar,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q378879,Q378879,Saidu Sharif,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3826,Q3826,Muscat,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3838,Q3838,Kinshasa,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q384,Q384,Skopje,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3844,Q3844,Brazzaville,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3861,Q3861,Doha,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3870,Q3870,Nairobi,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3889,Q3889,Maputo,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q39297398,Q39297398,Utrecht,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q3940,Q3940,Victoria,dev,synthetic|EXPLICIT,3,synthetic,EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q3947434,Q3947434,San Juan,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q4035,Q4035,Osasco,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q40738,Q40738,Bursa,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q41183,Q41183,Aleppo,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q4131,Q4131,Hamilton,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q41547,Q41547,St. George's,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q41997,Q41997,Talcahuano,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q42097,Q42097,Gyeongju,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q42117,Q42117,Ansan,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q42142,Q42142,Jeju,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q42651,Q42651,Wuxi,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q431990,Q431990,Bambous,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q43387,Q43387,Edirne,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q43463,Q43463,Fortaleza,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q43509,Q43509,Guayaquil,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q43595,Q43595,Cotonou,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q44238,Q44238,Posadas,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q45313,Q45313,Herat,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q46197,Q46197,Ascension Island,dev,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q46325,Q46325,Sfax,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q466054,Q466054,Mansoura,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q47062,Q47062,Fernando de la Mora,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q47138,Q47138,Encarnación,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q475953,Q475953,Wolfville,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q478302,Q478302,Toowoomba,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q47887,Q47887,Nijmegen,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q485176,Q485176,Pasadena,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q494924,Q494924,Russky Island,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q497764,Q497764,Rochefort,test,synthetic|EXPLICIT,3,synthetic,EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q51103,Q51103,Cali,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q513788,Q513788,Quadra Island,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q514165,Q514165,Kolonia,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q514390,Q514390,Simeiz,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q51679,Q51679,Saipan,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q5189414,Q5189414,Crown Mountain,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q52578,Q52578,Concordia,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q54880,Q54880,Valencia,dev,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q5582862,Q5582862,Cusco,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q5584396,Q5584396,Gorakhpur,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q580315,Q580315,Nazareth,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q5826,Q5826,Xi'an,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q5831,Q5831,Melilla,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q58401,Q58401,Shijiazhuang,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q59419,Q59419,Dar El Beïda,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q611919,Q611919,Shannon,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q612250,Q612250,Lae,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q615006,Q615006,Ho,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q62823,Q62823,Barranquilla,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q6343,Q6343,Carthage,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q637555,Q637555,Montego Bay,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q6454,Q6454,Calais,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q646498,Q646498,Rivera,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q646755,Q646755,Tateyama,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q656954,Q656954,Soli,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q673089,Q673089,Puerto Cortés,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q675178,Q675178,Vallée de Joux,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q675960,Q675960,Arlon,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q678018,Q678018,Bandon,dev,synthetic|EXPLICIT,3,synthetic,EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q680596,Q680596,San Pedro de Macorís,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q69783,Q69783,Münsingen,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_B
+Q698246,Q698246,Arona,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q723246,Q723246,Santa Tecla,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q72842,Q72842,Thorn,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q732094,Q732094,Durango,test,synthetic|EXPLICIT,3,synthetic,EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q732548,Q732548,Lagos,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q734317,Q734317,Val Camonica,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q740833,Q740833,Santa Maria,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q740974,Q740974,Koulikoro,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q743218,Q743218,Jonava,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q749283,Q749283,San Juan,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q753195,Q753195,Planica,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q763595,Q763595,Ilesa,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q779813,Q779813,Cardigan,test,synthetic|EXPLICIT,3,synthetic,EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q793809,Q793809,Huaraz,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q80678654,Q80678654,Ullensvang Municipality,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q80985,Q80985,Fez,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q813337,Q813337,Beau Bassin-Rose Hill,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q81398,Q81398,Acapulco de Juárez,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q816843,Q816843,San Fernando Valley,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q818804,Q818804,Berchem,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q82070,Q82070,Tyre,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q822196,Q822196,Bernal,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q828357,Q828357,Sunshine Coast,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q842877,Q842877,Furusund,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q851998,Q851998,Mosjøen,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q860689,Q860689,La Asunción,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q869571,Q869571,Rio Grande,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q8717,Q8717,Seville,test,synthetic|EXPLICIT,3,synthetic,EXPLICIT;NOISE_B;NOISE_EXPLICIT
+Q873405,Q873405,La Guaira,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q880529,Q880529,Black Rock Desert,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q883831,Q883831,Blenheim,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q891636,Q891636,Bolton,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q894564,Q894564,Boston Harbor,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q9050593,Q9050593,Nono,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q912106,Q912106,Merchtem,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q917865,Q917865,Kildare,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q925424,Q925424,Christchurch,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q9427,Q9427,Timbuktu,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q953088,Q953088,Essex County,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q953449,Q953449,Porlamar,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q956807,Q956807,Leeton,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q966660,Q966660,Scarborough,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q967746,Q967746,Morón,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q978805,Q978805,Suphan Buri,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q984379,Q984379,Summerland,test,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q985382,Q985382,Leudelange,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q989843,Q989843,Ravenna,dev,synthetic|EXPLICIT,1,synthetic,EXPLICIT
+Q992759,Q992759,Te Awamutu,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q994450,Q994450,Chiran,test,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT
+Q995439,Q995439,Tarkwa,dev,synthetic|EXPLICIT,2,synthetic,EXPLICIT;NOISE_EXPLICIT

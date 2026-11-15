@@ -3,7 +3,7 @@ time, and log each one.
 
     python scripts/run_all.py                       # every runnable config x dataset
     python scripts/run_all.py --configs refined gemma4
-    python scripts/run_all.py --datasets social_media_clean
+    python scripts/run_all.py --datasets synthetic
 
 Sequential on purpose. Two runner processes would contend for the Wikidata
 rate limiter, and each holds its cache in memory and writes the pickle on
@@ -35,11 +35,13 @@ LOG_DIR = REPO_ROOT / "results" / "logs"
 # first look at the numbers. Names absent from configs/ are skipped, and
 # configurations present in configs/ but missing here still run (appended), so
 # this is an ordering preference, not a registry.
+# The pool-based configurations go last: the dense pool (gold_plus_predicted)
+# is built from every other configuration's predictions, so it has to see them.
 ORDER = ["majority_class", "population_wikidata",
-         "gemma4",
-         "dense_retrieval",
-         "grounded_gemma", "grounded_gemma_linking",
-         "retrieve_rerank", "refined"]
+         "geoparser_irchel",
+         "retrieve_rerank", "refined", "blink",
+         "gemma4", "grounded_gemma_linking",
+         "dense_retrieval", "char_ngram", "grid_lm", "grounded_gemma"]
 
 
 def config_names() -> list[str]:
@@ -122,7 +124,7 @@ def main() -> int:
             t0 = time.perf_counter()
             with log.open("a", encoding="utf-8") as f:
                 f.write(f"\n===== {datetime.now().isoformat(timespec='seconds')} "
-                        f"{' '.join(cmd[1:])} =====\n")
+                        f"src/runner.py {' '.join(cmd[2:])} =====\n")
                 f.flush()
                 proc = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT,
                                       cwd=REPO_ROOT)

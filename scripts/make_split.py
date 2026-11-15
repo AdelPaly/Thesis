@@ -22,6 +22,10 @@ The assignment is:
   every place already in it keeps its side; only unseen places are assigned.
   Nothing ever moves, so thresholds fitted on dev stay valid.
 
+A dataset with its own `split` column (the synthetic set, split by place in
+generation/reform_places.py before any post was written) overrides all of
+the above for its places.
+
 Places with no gold QID are keyed by their normalised location name instead,
 so corpora with coordinates but no QIDs still split by place.
 """
@@ -91,7 +95,14 @@ def build(existing: dict[str, str] | None = None) -> tuple[list[dict], list[tupl
                 continue
             # NaN is truthy, so `or "none"` would yield the string "nan".
             condition = "none" if pd.isna(row.signal_type) else str(row.signal_type)
+            # A dataset that brings its own split (the synthetic set, assigned
+            # by place before generation) is used as is.
+            own = getattr(row, "split", None)
+            own = own if own in ("dev", "test") else None
             entry = places.get(key)
+            if entry is not None and own and entry["split"] != own:
+                raise SystemExit(f"{key}: {ds_name} puts it in {own}, but it is already "
+                                 f"{entry['split']} from {entry['stratum']}")
             if entry is None:
                 entry = places[key] = {
                     "place_key": key,
@@ -101,7 +112,7 @@ def build(existing: dict[str, str] | None = None) -> tuple[list[dict], list[tupl
                     "n_items": 0,
                     "datasets": set(),
                     "conditions": set(),
-                    "split": existing.get(key) or hash_side(key),
+                    "split": own or existing.get(key) or hash_side(key),
                 }
             entry["n_items"] += 1
             entry["datasets"].add(ds_name)

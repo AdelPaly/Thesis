@@ -2,6 +2,16 @@ name: refined
 tier: 2
 variant: b
 paradigm: ner_dependent
+question: >
+  does entity linking (ReFinED) beat the population floor, toponym-only geoparsing and
+  search + rerank
+design: >
+  NER(flair/ner-large, LOC/PER/ORG) → link(ReFinED wikipedia_model, constrained spans:
+  one QID per mention, top-10 linker candidates kept) → resolve(QID: P625, else property
+  chain P159 → P131 → P19 → P937 → P276, +1 P131 hop) → rerank(E5 cos(raw text, place
+  description)) across mentions → top-1. Only the linker's top QID per mention is
+  resolved. Output: no span, no link, or no linked QID with reachable coords → no
+  prediction.
 description: >
   Flair NER (LOC/PER/ORG) supplies the mentions; ReFinED in constrained-span
   mode links each one to a Wikidata QID; the shared property chain turns the

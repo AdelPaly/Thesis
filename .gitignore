@@ -3,68 +3,44 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 
-# Virtual env
+# Virtual environments (python install.py)
 .venv/
 .venv-geoparser/
 venv/
 
-# IDE
+# IDE and local tool state
 .idea/
 *.iml
-
-# Claude Code local state
 .claude/
-
-# On-disk caches (regenerated at runtime)
-src/.wikidata_cache/
-src/.llm_cache/
-
-# Eval run outputs (regenerated from code + datasets)
-src/log_*.txt
-src/eval_done*.marker
-results_runner*.log
-
-# Large local archive, not for the repo
-tests.zip
 
 # Secrets
 .env
 *.env
 
+# Archives and backups never belong in the repo
+*.zip
+*.bak
+*.bak-*
+*.bak[0-9]*
+
 # OS
 .DS_Store
 Thumbs.db
 
-# Local-only dataset
-src/geocorpora_144.csv
-
-
-# Bluesky English dump (~380 MB, regenerate with scripts/fetch_bluesky_en.py)
-generation/synthetic/data/bluesky_en.jsonl
-generation/synthetic/data/bluesky_en.parquet
-generation/synthetic/data/bluesky_en.jsonl.bak
-# old location, until the copy there is deleted
-src/bluesky_en.jsonl
+# Caches, rebuilt at run time
+src/.wikidata_cache/
+src/.llm_cache/
+src/.dense_index/
+src/.blink_cache/
+src/*.pkl
+generation/out/cache/
 
 # Runner checkpoint temporaries
 results/predictions/*.tmp
 
-# Dense retrieval index cache (embedding matrix)
-src/.dense_index/
+# Bluesky English dump (~380 MB, rebuild with scripts/fetch_bluesky_en.py)
+generation/synthetic/data/bluesky_en.*
+src/bluesky_en.jsonl
 
-# Backups and superseded snapshots: kept on disk, not in git (git history is the
-# backup). Scripts write these next to the data they rewrite.
-*.bak
-*.bak-*
-*.bak[0-9]*
-generation/places/data/*/
-# except the hand-edited external export the place set is built from
-!generation/places/data/external/
+# Superseded plans, written by plan.py and validate_anchors.py
 generation/synthetic/output/archive/
-
-# BLINK link cache
-src/.blink_cache/
-
-# Query caches (regenerated at runtime)
-src/*.pkl
-generation/out/cache/

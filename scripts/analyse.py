@@ -3,6 +3,7 @@
     python scripts/analyse.py failures --split test
     python scripts/analyse.py tables   --split test
     python scripts/analyse.py stats    --split test
+    python scripts/analyse.py layers   --split test   # scripts/error_layers.py
     python scripts/analyse.py all      --split test --out results/summary
 
 Reads results/predictions/*.jsonl and splits/item_split.csv, plus configs/*.yaml
@@ -748,7 +749,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command",
-                   choices=["failures", "tables", "stats", "grounding", "all"])
+                   choices=["failures", "tables", "stats", "grounding", "layers", "all"])
     p.add_argument("--split", default="test", choices=["all", "dev", "test"])
     p.add_argument("--configs", nargs="*", default=None)
     p.add_argument("--datasets", nargs="*", default=None)
@@ -792,6 +793,10 @@ def main() -> None:
         cmd_tables(scored, args, meta)
     if args.command in ("stats", "all"):
         cmd_stats(scored, args, meta)
+    if args.command in ("layers", "all"):
+        from error_layers import report     # imports this module, so not at the top
+        report([dict(r) for r in scored], meta, args.split,
+               Path(args.out) if args.out else None)
 
 
 if __name__ == "__main__":

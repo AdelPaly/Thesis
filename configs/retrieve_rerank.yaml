@@ -2,6 +2,15 @@ name: retrieve_rerank
 tier: 2
 variant: a
 paradigm: ner_dependent
+question: >
+  which disambiguation: Wikidata search + rerank with no linker, against ReFinED and
+  BLINK
+design: >
+  NER(flair/ner-large, all tags; MISC retrieves nothing) → per mention:
+  retrieve(Wikidata wbsearchentities top-10, trailing-word fallback; LOC: hits with
+  coords, PER (Q5): birthplace P19, ORG: headquarters P159) → pool all mentions →
+  rerank(E5 cos(raw text, place description)) → top-1. No linker. Output: no span or
+  nothing retrieved → no prediction.
 description: >
   Flair NER over every tag, Wikidata wbsearchentities top-10 retrieval per
   mention pushed through the geographic property chain, E5 cross-candidate

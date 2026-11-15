@@ -25,13 +25,13 @@ A post is dropped when:
     error           generation failed (re-run generate.py --retry-errors)
     not_generated   the item has no row yet (generate.py has not reached it)
     empty           the model returned no text
-    names_place     a no-place-name condition (A1, A3, NOISE_A1) wrote the
+    names_place     a no-place-name condition (A, NOISE_A) wrote the
                     place, another of its names, its country or a demonym, or
                     a region it sits in
-    wrong_toponym   B, NOISE_B or EXPLICIT also wrote the country, a region or
+    wrong_toponym   B, NOISE_B or an explicit condition also wrote the country, a region or
                     another name of the place that gives it away, or B or
                     NOISE_B did not write the planned ambiguous name
-    missing_name    EXPLICIT did not write the place name
+    missing_name    EXPLICIT or NOISE_EXPLICIT did not write the place name
     clue_missing    a clue entity the plan asked for is not in the text, by its
                     label, a Wikidata alias or, for a person, the surname
     noise_missing   a NOISE item does not contain its distractor
@@ -49,14 +49,15 @@ A post is dropped when:
     repeated_clue   the plan lists the same clue entity twice, so the item
                     carries fewer distinct clues than its condition promises
                     (a planning-stage defect; checked before anything else)
-    no_explicit     an A1, NOISE_A1, B or NOISE_B post whose place has no kept
+    no_explicit     an A, NOISE_A, B, NOISE_B or NOISE_EXPLICIT post whose place has no kept
                     EXPLICIT post, so it has no reference to be read against
                     (2026-11-04, user: EXPLICIT covers every A and B place).
                     Applied before balancing, so balancing fills from the rest.
     balanced_out    the post passed every check but was not selected when the
                     conditions were cut to the same size (see below)
 
-Conditions listed in finalise.unbalanced in config.yaml (EXPLICIT) are not cut:
+Conditions listed in finalise.unbalanced in config.yaml (EXPLICIT,
+NOISE_EXPLICIT) are not cut:
 every post that passes the checks is kept, so the condition covers as many
 places as it can.
 
@@ -73,8 +74,8 @@ way stays in finalise_report.csv as balanced_out. --no-balance keeps them all.
 Name matching is whole-word and ignores case and accents, the same test the
 planner uses to keep leaking clues out.
 
-signal_type is the plan's condition (A1, A3, B, EXPLICIT, NOISE_A1,
-NOISE_B), so `scripts/score.py --by condition` reports each one separately.
+signal_type is the plan's condition (A, B, EXPLICIT, NOISE_A, NOISE_B,
+NOISE_EXPLICIT), so `scripts/score.py --by condition` reports each one separately.
 Gold coordinates come from Wikidata P625 (truthy), the same property the
 other datasets were built from.
 """
@@ -86,6 +87,7 @@ import hashlib
 import io
 import re
 import sys
+import unicodedata
 from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
@@ -95,8 +97,9 @@ HERE = Path(__file__).resolve().parent
 import generate as gen   # noqa: E402  (config, jsonl reading, latest_rows)
 import plan              # noqa: E402  (contains_word, atomic_write_text, ...)
 
-NO_NAME = {"A1", "A3", "NOISE_A1"}
+NO_NAME = {"A", "NOISE_A"}
 AMBIGUOUS = {"B", "NOISE_B"}
+EXPLICIT = plan.EXPLICIT_CONDITIONS
 
 BALANCE_SEED = 20261004    # default --seed: which posts survive balancing
 ERROR_REASON_CHARS = 200   # how much of a generation error goes in the report
@@ -116,7 +119,7 @@ RIVAL_RATIO = 2.0
 RIVAL_PROMINENCE_BINS = (f"place_leads_{RIVAL_RATIO:g}x", "close",
                          f"rival_leads_{RIVAL_RATIO:g}x")
 # clue_prominence (every condition with a clue), by the sitelinks of the post's
-# best-known clue (for A3, one recognisable clue is enough to start from):
+# best-known clue:
 # under 10, 10 to 49, 50 or more. Clues need >= 3 sitelinks (reform_places.py
 # CLUE_MIN_SL), so the low bin is in practice 3 to 9; the 10 and 50 cuts sit
 # near the plan's median (14) and 75th percentile (36), so no bin is tiny.
@@ -124,8 +127,8 @@ CLUE_PROMINENCE_BINS = [(50, "high_50_plus"), (10, "mid_10_to_49"), (0, "low_und
 
 DATASET_COLUMNS = ["text", "qid", "location_name", "country", "continent",
                    "signal_type", "latitude", "longitude",
-                   "signal", "surface_form", "clue_qids", "clue_labels",
-                   "clue_forms", "noise_entity", "register", "target_len", "len",
+                   "signal", "surface_form", "clue_qids", "clue_labels", "clue_name_shared", "clue_link_elsewhere",
+                   "clue_forms", "noise_entity", "noise_kind", "noise_donor_qid", "noise_donor_place", "noise_donor_country_qid", "register", "target_len", "len",
                    "place_sitelinks", "rival_qid", "rival_sitelinks",
                    "name_ambiguous", "place_is_most_famous", "place_prominence",
                    "rival_prominence", "clue_prominence", "topic", "scale",
@@ -167,11 +170,12 @@ def mention_form(text: str, clue: dict[str, Any] | str) -> str | None:
         clue = {"clue_label": clue}
     label = clue["clue_label"]
     for form in [label, _bare(label), *(clue.get("aliases") or [])]:
-        if form and plan.contains_word(text, form):
+        # also the possessive without an apostrophe, as people type it ("manuel uribes statue")
+        if form and (plan.contains_word(text, form) or plan.contains_word(text, form + "s")):
             return form
     if clue.get("is_human"):
         last = surname(label)
-        if len(plan.fold(last)) >= 2 and plan.contains_word(text, last):
+        if len(plan.fold(last)) >= 2 and (plan.contains_word(text, last) or plan.contains_word(text, last + "s")):
             return last
     return None
 
@@ -215,7 +219,7 @@ def rival_prominence(sitelinks: int | None, rival: dict[str, Any]) -> str:
 def name_ambiguous(surface: dict[str, Any]) -> str:
     """"true" when other places share the name the post uses, "false" when none
     does, "" for a post that names no place. B and NOISE_B are always "true";
-    EXPLICIT is either, and then carries rival_prominence like B."""
+    EXPLICIT and NOISE_EXPLICIT are either, and then carries rival_prominence like B."""
     flag = surface.get("name_ambiguous")
     return "" if flag is None else str(bool(flag)).lower()
 
@@ -235,15 +239,18 @@ def environment_pattern(terms: list[str] | None) -> re.Pattern | None:
     return re.compile(r"\b(?:" + "|".join(f"(?:{t})" for t in terms) + ")", re.I)
 
 
-def word_limits(finalise_cfg: dict[str, Any] | None) -> dict[str, tuple[int, int]] | None:
-    """{condition: (min, max) words}, "default" from finalise.min_words and
-    max_words, others from finalise.words_by_condition; None when either
-    default is unset. plan.py draws its target lengths from the same ranges."""
-    cfg = finalise_cfg or {}
-    if cfg.get("min_words") is None or cfg.get("max_words") is None:
-        return None
-    return {"default": (int(cfg["min_words"]), int(cfg["max_words"])),
-            **{c: (int(lo), int(hi)) for c, (lo, hi) in (cfg.get("words_by_condition") or {}).items()}}
+def char_limit(finalise_cfg: dict[str, Any] | None) -> int | None:
+    """The hard length limit in characters (finalise.max_chars), None when
+    unset. The word range (min_words to max_words) is only the target plan.py
+    draws from; a post that misses its target is kept if it fits this limit."""
+    limit = (finalise_cfg or {}).get("max_chars")
+    return None if limit is None else int(limit)
+
+
+def char_count(text: str) -> int:
+    """Characters as Bluesky counts them, near enough: NFC code points of the
+    stripped text (emoji, the main multi-point graphemes, are dropped anyway)."""
+    return len(unicodedata.normalize("NFC", text.strip()))
 
 
 MAX_ANCHORS = 2          # 2026-11-02 (user): at most two planned anchors per post
@@ -258,7 +265,11 @@ CAPITALISED = re.compile(r"[A-Z][\w'’./&-]*")
 NOT_NAMES = {plan.fold(w) for w in (
     "I I'm I'd I've I'll Im Ive OK Ok TV EV EVs PM AM CO2 LOL Lol OMG Omg Mum Mom Dad God Sir "
     "Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March April May June July "
-    "August September October November December Christmas Easter").split()}
+    "August September October November December Christmas Easter "
+    # titles and roles written before or instead of a name (2026-11-12: "President Alexander
+    # Lukashenka", "a DJ set" were dropped as unplanned names)
+    "DJ MC CEO MP MPs President Presidents Prime Minister Ministers Mayor Governor Senator King Queen "
+    "Prince Princess Pope Dr Mr Mrs Ms Professor Prof Sheikh Emir Chancellor Councillor").split()}
 ANCHOR_CHECKS = HERE / "output" / "anchor_checks.jsonl"
 _anchor_verdicts: dict[tuple[str, str, bool], tuple[str, str]] | None = None
 
@@ -295,11 +306,11 @@ def unplanned_names(text: str, allowed_forms: Iterable[str]) -> list[str]:
 
 def check(item: dict[str, Any], text: str, names: dict[str, Any],
           env_pattern: re.Pattern | None = None,
-          limits: dict[str, tuple[int, int]] | None = None) -> tuple[str, str] | None:
+          limits: int | None = None) -> tuple[str, str] | None:
     """(status, reason) when the post must be dropped, None when it passes.
     env_pattern, when given, drops a post with an env_theme and none of its terms.
-    limits, when given (word_limits), drops a post with fewer or more words
-    than its condition's (min, max)."""
+    limits, when given (char_limit), drops a post longer than that many
+    characters."""
     condition = item["condition"]
     place = item["place_name"]
     surface = (item.get("surface_form") or {}).get("text")
@@ -310,7 +321,7 @@ def check(item: dict[str, Any], text: str, names: dict[str, Any],
     bad = anchor_verdicts()
     for clue in item.get("clues") or []:
         v = bad.get((item.get("place_qid"), clue.get("clue_qid"), False))
-        if v:
+        if v and not (v[0] == "shared_name" and item.get("condition") in plan.NAME_SHARED_OK):
             return "anchor_invalid", f'"{clue["clue_label"]}": {v[0]} ({v[1]})'
     if item.get("noise_entity"):
         v = bad.get((item.get("place_qid"), item["noise_entity"].get("clue_qid"), True))
@@ -331,11 +342,11 @@ def check(item: dict[str, Any], text: str, names: dict[str, Any],
             if contains(text, form):
                 return "names_place", f'wrote the region "{form}"'
 
-    elif condition in AMBIGUOUS or condition == "EXPLICIT":
+    elif condition in AMBIGUOUS or condition in EXPLICIT:
         # The bare planned name and nothing that would add context to it.
         # EXPLICIT's planned name is the place's label.
-        status = "missing_name" if condition == "EXPLICIT" else "wrong_toponym"
-        surface = surface or (place if condition == "EXPLICIT" else None)
+        status = "missing_name" if condition in EXPLICIT else "wrong_toponym"
+        surface = surface or (place if condition in EXPLICIT else None)
         if not surface or not contains(text, surface):
             return status, f'planned name "{surface}" is missing'
         for form in [place, *names["forms"]]:
@@ -360,18 +371,15 @@ def check(item: dict[str, Any], text: str, names: dict[str, Any],
                  for c in [clue["clue_label"], _bare(clue["clue_label"]), *(clue.get("aliases") or [])])]
     if surface:
         planned.append(surface)
-    if condition == "EXPLICIT":
+    if condition in EXPLICIT:
         planned.append(place)
     extra = unplanned_names(text, planned)
     if extra:
         return "unplanned_entity", "names not on the list: " + ", ".join(f'"{e}"' for e in dict.fromkeys(extra))
     if env_pattern is not None and item.get("env_theme") and not env_pattern.search(text):
         return "no_environment", f'no environmental wording (theme "{item["env_theme"]}")'
-    if limits is not None:
-        lo, hi = limits.get(condition, limits["default"])
-        words = len(text.split())
-        if not lo <= words <= hi:
-            return "length", f"{words} words, allowed {lo} to {hi}"
+    if limits is not None and char_count(text) > limits:
+        return "length", f"{char_count(text)} characters, at most {limits}"
     return None
 
 
@@ -389,7 +397,7 @@ def repeated_clue(item: dict[str, Any]) -> str | None:
 def verdict_for(item: dict[str, Any], row: dict[str, Any] | None,
                 aliases: dict[str, dict[str, Any]],
                 env_pattern: re.Pattern | None = None,
-                limits: dict[str, tuple[int, int]] | None = None) -> tuple[str, str] | None:
+                limits: int | None = None) -> tuple[str, str] | None:
     """The drop (status, reason) for one planned item, or None when it is kept.
     Rows from the tries loop (generate.run_item, with "accepted") were already
     judged: a failed one keeps its last try's reason, a kept one is checked by
@@ -466,7 +474,7 @@ def _rank(seed: int, item_id: str) -> str:
 allocate_even = plan.allocate_even  # one implementation, shared with the planner
 
 
-PAIRED_WITH_EXPLICIT = {"A1", "NOISE_A1", "B", "NOISE_B"}
+PAIRED_WITH_EXPLICIT = {"A", "NOISE_A", "B", "NOISE_B", "NOISE_EXPLICIT"}
 
 
 def split_by_explicit(kept: list[Entry]) -> tuple[list[Entry], list[Entry]]:
@@ -568,8 +576,18 @@ def dataset_row(item: dict[str, Any], row: dict[str, Any], text: str,
         "surface_form": (item.get("surface_form") or {}).get("text") or "",
         "clue_qids": ";".join(c["clue_qid"] for c in item.get("clues") or []),
         "clue_labels": ";".join(c["clue_label"] for c in item.get("clues") or []),
+        # B keeps a clue whose name other things share too (validate_anchors shared_name)
+        "clue_name_shared": int(any(c.get("name_shared") for c in item.get("clues") or [])),
+        # other places a person clue is tied to by the same link, for checking by hand
+        "clue_link_elsewhere": "; ".join(x for c in item.get("clues") or [] for x in c.get("link_elsewhere") or []),
         "clue_forms": ";".join(mention_form(text, c) or "" for c in item.get("clues") or []),
         "noise_entity": (item.get("noise_entity") or {}).get("clue_label") or "",
+        # entity or demonym (plan.noise_kinds); "" for posts without a distractor
+        "noise_kind": ((item.get("noise_entity") or {}).get("kind") or "entity") if item.get("noise_entity") else "",
+        # the place the distractor comes from, to see whether a system was pulled towards it
+        "noise_donor_qid": (item.get("noise_entity") or {}).get("donor_place_qid") or "",
+        "noise_donor_place": (item.get("noise_entity") or {}).get("donor_place_name") or "",
+        "noise_donor_country_qid": (item.get("noise_entity") or {}).get("donor_country_qid") or "",
         "register": item["register"],
         "target_len": item.get("target_len", ""),
         "len": len(text.split()),
@@ -610,6 +628,68 @@ def print_summary(items: list[dict[str, Any]], report: list[dict[str, Any]],
         print(f"  {condition:<10} {n:>5}")
 
 
+REPO = HERE.parent.parent
+
+
+def _sha256(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _rel(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(REPO).as_posix()
+    except ValueError:
+        return path.name
+
+
+def _git(*args: str) -> str | None:
+    import subprocess
+    try:
+        out = subprocess.run(["git", *args], cwd=REPO, capture_output=True,
+                             text=True, check=True)
+        return out.stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def write_release(path: Path, name: str, dataset_path: Path, report_path: Path,
+                  plan_path: Path, rows: list[dict | None], dataset: list[dict],
+                  balanced_n: int | None, seed: int) -> None:
+    """Name the release the results are claims about: what the dataset file
+    is (hash), what made it (plan, models, config hashes, code revision) and
+    when. A regenerated dataset is a different release."""
+    import datetime
+    import json
+    rows = [r for r in rows if r]
+    stamps = sorted(r["generated_utc"] for r in rows if r.get("generated_utc"))
+    files = {"dataset": dataset_path, "finalise_report": report_path, "item_plan": plan_path,
+             "place_split": REPO / "splits" / "place_split.csv"}
+    release = {
+        "release": name,
+        "created_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "rows": len(dataset),
+        "rows_by_condition": dict(sorted(Counter(d["signal_type"] for d in dataset).items())),
+        "balance": {"per_condition": balanced_n, "seed": seed},
+        "files": {k: {"path": _rel(p), "sha256": _sha256(p)} for k, p in files.items()},
+        "plan_version": sorted({str(r.get("plan_version")) for r in rows}),
+        "generator_version": sorted({str(r.get("generator_version")) for r in rows}),
+        "config_hash": dict(Counter(r.get("config_hash") for r in rows)),
+        "writer_model": dict(Counter(r.get("model") for r in rows)),
+        "judge_model": dict(Counter(r.get("judge_model") for r in rows)),
+        "generated_utc": {"first": stamps[0] if stamps else None,
+                          "last": stamps[-1] if stamps else None},
+        "code_rev": _git("rev-parse", "HEAD"),
+        "code_dirty": bool(_git("status", "--porcelain", "--", "generation", "src")),
+    }
+    plan.atomic_write_text(path, json.dumps(release, indent=2, ensure_ascii=False) + "\n")
+
+
 def main(argv: list[str] | None = None) -> int:
     plan.configure_stdout()
 
@@ -623,6 +703,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="posts to keep per condition (default: finalise."
                              "per_condition in the config, else the size of the "
                              "smallest condition)")
+    parser.add_argument("--release", default="synthetic-v1",
+                        help="name of the dataset release written to release.json "
+                             "(default synthetic-v1); a regenerated dataset is a "
+                             "new release, so give it a new name")
     parser.add_argument("--seed", type=int, default=BALANCE_SEED,
                         help="decides which posts survive balancing "
                              f"(default {BALANCE_SEED})")
@@ -642,7 +726,7 @@ def main(argv: list[str] | None = None) -> int:
     dataset_path = Path(paths["dataset_csv"])
 
     env_pattern = environment_pattern((config.get("finalise") or {}).get("environment_keywords"))
-    limits = word_limits(config.get("finalise"))
+    limits = char_limit(config.get("finalise"))
 
     # Places swapped out of a condition set for a reserve (generate.py, Task 4):
     # their rows in that set are dropped, whatever they say.
@@ -722,8 +806,13 @@ def main(argv: list[str] | None = None) -> int:
               f"(QIDs: {', '.join(sorted({i['place_qid'] for i in no_coords}))})")
     if no_explicit:
         print(f"\n! {len(no_explicit)} posts dropped as no_explicit (their place has no kept EXPLICIT post)")
+    release_path = dataset_path.with_name("release.json")
+    write_release(release_path, args.release, dataset_path, report_path,
+                  Path(paths["item_plan"]), [row for _, row, _ in kept], dataset,
+                  balanced_n, args.seed)
     print(f"\nwrote {dataset_path}")
     print(f"wrote {report_path}")
+    print(f"wrote {release_path} ({args.release})")
     return 0
 
 

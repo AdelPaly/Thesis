@@ -10,8 +10,8 @@ indexed text of every candidate place that falls in it. The candidate places
 and their texts are dense retrieval's own (src/dense_index.py,
 build_catalogue). The dev texts are what the method learns from; the place
 texts are what lets a cell exist wherever a candidate place is. With dev
-texts alone, a 1-degree cell holds a test place for 1 of 94 test places in
-social_media_clean, so almost no test place could ever be predicted.
+texts alone, a test place sits in a cell with dev texts only by chance (the
+split is by place), so almost no test place could ever be predicted.
 
 A cell is a region and the evaluation is by place, so a winning cell is
 resolved to its candidate places, each ranked by the KL divergence from the

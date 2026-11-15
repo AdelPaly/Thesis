@@ -154,6 +154,27 @@ FRACKING = {'Q30', 'Q16', 'Q145', 'Q414', 'Q408', 'Q148', 'Q36', 'Q262', 'Q96', 
             'Q1016', 'Q664', 'Q739'}   # countries where fracking is done or fought over (v1 list)
 
 
+# Countries with no English demonym on Wikidata (checked 2026-11-06).
+DEMONYM_FILL = {'Q851': ['Saudi', 'Saudi Arabian'], 'Q189': ['Icelandic', 'Icelander'], 'Q212': ['Ukrainian']}
+# The rule below picks a rarer form for these; the usual English adjective instead (2026-11-06).
+DEMONYM_PICK = {'Q878': 'Emirati', 'Q1037': 'Rwandan', 'Q1045': 'Somali', 'Q763': 'Kittitian', 'Q928': 'Filipino',
+                'Q227': 'Azerbaijani', 'Q851': 'Saudi', 'Q1011': 'Cape Verdean'}
+ADJ_ENDINGS = ('ish', 'ian', 'ese', 'an', 'i', 'ic', 'ch', 'ese', 'ine', 'ois', 'ino', 'é', 'è', 'e')
+
+
+def demonym_adjective(forms, country_label):
+    """The demonym the writer is given, as an adjective ("Danish", not "Dane"): Wikidata lists nouns, plurals and
+    adjectives in no fixed order. Drops plurals of another form and forms that are the country's own name
+    ("New Zealand"), prefers an adjective ending (-ish before -ian before -an ...), then the shorter, then A-Z."""
+    forms = sorted(set(forms))
+    keep = [f for f in forms if not (f.endswith('s') and f[:-1] in forms) and f != country_label
+            and not f.endswith('er') and f not in ('Dane', 'Finn', 'Briton', 'Spaniard', 'Swede', 'Pole', 'Turk', 'Scot')]
+    if not keep:                                     # only a noun and the name itself: "New Zealand" reads as an adjective
+        keep = [country_label] if country_label in forms else forms
+    rank = lambda f: (next((k for k, e in enumerate(ADJ_ENDINGS) if f.endswith(e)), len(ADJ_ENDINGS)), len(f), f)
+    return min(keep, key=rank) if keep else ''
+
+
 def strip_country(desc, country_forms):
     """A person's description without the place's country or demonym words: "Jamaican sprinter" -> "sprinter",
     "Prime Minister of Cuba" -> "Prime Minister". The writer must not be handed the country."""
@@ -222,6 +243,12 @@ def main():
                   and f[4:] not in forms]
     clabel = {r['i']: r['n'] for r in rp.batched(lambda b: f'''SELECT ?i ?n WHERE {{ VALUES ?i {{{rp.V(b)}}}
         ?i rdfs:label ?n FILTER(LANG(?n) = "en") }}''', countries, cache)}
+    # Demonyms for the demonym distractor ("French tourists"): Wikidata's English P1549 forms, with the few
+    # countries that have none filled in by hand.
+    dems = by_id(rp.batched(lambda b: f'''SELECT ?i ?n WHERE {{ VALUES ?i {{{rp.V(b)}}} ?i wdt:P1549 ?n
+        FILTER(LANG(?n) = "en") }}''', countries, cache), 'i', 'n')
+    for c, forms in DEMONYM_FILL.items():
+        dems.setdefault(c, list(forms))
     rlabel = {r['i']: r['n'] for r in rp.batched(lambda b: f'''SELECT ?i ?n WHERE {{ VALUES ?i {{{rp.V(b)}}}
         ?i rdfs:label ?n FILTER(LANG(?n) = "en" || LANG(?n) = "mul") }}''', rivals, cache)}
     caliases = by_id(rp.batched(lambda b: f'''SELECT ?i ?n WHERE {{ VALUES ?i {{{rp.V(b)}}} ?i skos:altLabel ?n
@@ -278,6 +305,8 @@ def main():
                         country_forms=[n for n in cnames.get(p['c'], []) if len(n) > 2 or
                                        (len(n) == 2 and n.lower() not in ENGLISH_2)],
                         region_forms=regions.get(p['i'], []), clues=clues, b_clues=b_clues,
+                        country_demonyms=sorted(set(dems.get(p['c'], []))),
+                        country_adjective=DEMONYM_PICK.get(p['c']) or demonym_adjective(dems.get(p['c'], []), clabel.get(p['c'], '')),
                         rival_label=rlabel.get(p['rival'], ''), env_themes=themes_for(p),
                         env_themes_positive=positive_themes_for(p)))
 

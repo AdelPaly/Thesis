@@ -68,7 +68,7 @@ USAGE
     python generate.py --dry-run --limit 5     # see the prompts, send nothing
     python generate.py --limit 20              # a paid smoke test
     python generate.py                         # the full pass
-    python generate.py --only-condition A3
+    python generate.py --only-condition NOISE_EXPLICIT
     python generate.py --retry-errors          # re-attempt failed rows only
     python generate.py --force-mixed           # resume although existing rows
                                                # came from a different config
@@ -346,13 +346,23 @@ def describe_clue(clue: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     phrases = prompt_cfg.get("relation_phrases") or {}
     relation = (phrases.get(clue.get("property"))
                 or clue.get("property_label") or clue.get("property"))
-    template = (prompt_cfg.get("clue_line_person") if clue.get("is_human") else None) \
+    # 2026-11-12 pilot: people from history were shown alive ("Napoleon came back to open the
+    # new road", 38 failed tries in B and NOISE_B), so they get their own line.
+    key = "clue_line"
+    if clue.get("is_human"):
+        key = "clue_line_person_past" if clue.get("is_living") is False else "clue_line_person"
+    template = prompt_cfg.get(key) or (prompt_cfg.get("clue_line_person") if clue.get("is_human") else None) \
         or prompt_cfg["clue_line"]
     note = type_note(clue, prompt_cfg)
-    return template.format(
+    line = template.format(
         label=clue["clue_label"], type_note=note, relation=relation,
         known_for=clue.get("description") or note.strip(" ()") or "a person",
     )
+    # 2026-11-12, user: a person tied the same way to other places too (validate_anchors
+    # link_elsewhere) is narrowed down in the context where the writer can.
+    if clue.get("link_elsewhere") and prompt_cfg.get("clue_link_elsewhere"):
+        line += " " + prompt_cfg["clue_link_elsewhere"].strip()
+    return line
 
 
 def type_note(clue: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
@@ -398,7 +408,11 @@ def build_messages(
     if clues:
         mentions.append(prompt_cfg["entities_header"].strip())
         mentions.extend(describe_clue(c, prompt_cfg) for c in clues)
-    if noise:
+    if noise and noise.get("kind") == "demonym":
+        others = [f for f in noise.get("aliases") or [] if f != noise["clue_label"]]
+        mentions.append(prompt_cfg["noise_demonym"].strip().format(
+            label=noise["clue_label"], forms=f" (or {quoted_list(others)})" if others else ""))
+    elif noise:
         mentions.append(prompt_cfg["noise_entity"].strip().format(
             label=noise["clue_label"], type_note=type_note(noise, prompt_cfg)))
     if surface.get("text"):
@@ -447,7 +461,10 @@ def build_messages(
     slot_labels = prompt_cfg.get("slot_labels") or {}
     detail: list[str] = [
         prompt_cfg["register_line"].strip().format(register=register.replace("_", " ")),
-        prompt_cfg["target_len_line"].strip().format(n=item["target_len"]) if "target_len" in item
+        prompt_cfg["target_len_line"].strip().format(
+            n=item["target_len"], lo=(config.get("finalise") or {}).get("min_words", 8),
+            hi=(config.get("finalise") or {}).get("max_words", 28),
+            chars=(config.get("finalise") or {}).get("max_chars") or 300) if "target_len" in item
         else prompt_cfg["length_line"].strip().format(
             length=prompt_cfg["length_bands"][item["length_band"]]),
     ]
@@ -465,6 +482,14 @@ def build_messages(
 
     # 6. output shape, generated from RESPONSE_SCHEMA so the two cannot drift
     parts.append(build_output_shape(prompt_cfg))
+
+    # 7. last check (2026-11-12): Haiku left the distractor out of 9 in 15
+    # first tries with it only in the list of names.
+    names = [c["clue_label"] for c in clues] + ([noise["clue_label"]] if noise else [])
+    if names and prompt_cfg.get("final_check"):
+        quoted = [f'"{n}"' for n in names]
+        joined = quoted[0] if len(quoted) == 1 else ", ".join(quoted[:-1]) + " and " + quoted[-1]
+        parts.append(prompt_cfg["final_check"].strip().format(names=joined))
 
     user_content = "\n\n".join(parts)
     system_content = prompt_cfg.get("system", "").strip()
@@ -524,6 +549,12 @@ def build_constraint(item: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
                 if c.get("is_toponym")]
     river_line = (" " + prompt_cfg["place_clue_exception"].format(names=quoted_list(toponyms))
                   if toponyms else "")
+    # 2026-11-12: Haiku dropped the demonym on every first try (6/6), reading
+    # "leave out words made from place names" as banning it. The distractor is
+    # named as the exception.
+    noise = item.get("noise_entity") or {}
+    if noise.get("clue_label") and prompt_cfg.get("noise_exception"):
+        river_line += " " + prompt_cfg["noise_exception"].strip().format(label=noise["clue_label"])
     if surface["kind"] == "none":
         banned = prompt_cfg["forbidden_toponym"]
         return banned.format(
@@ -537,14 +568,14 @@ def build_constraint(item: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
             surface=surface["text"],
             other_names=quoted_list(others + countries),
         ) + river_line
-    # EXPLICIT: the bare name, with nothing added. A country that is part of
-    # the name itself ("Guatemala City") is not banned.
+    # EXPLICIT and NOISE_EXPLICIT: the bare name, with nothing added. A country
+    # that is part of the name itself ("Guatemala City") is not banned.
     others = [c for c in countries if not plan.contains_word(surface["text"], c)]
     return prompt_cfg["exact_toponym"].format(
         surface=surface["text"],
         place_name=item["place_name"],
         other_names=quoted_list(others) or "any country or region",
-    )
+    ) + river_line
 
 
 # --------------------------------------------------------------------------- #
@@ -1281,7 +1312,7 @@ def swap_decorative(item: dict[str, Any], names: list[str]) -> list[dict[str, st
     """
     Replace each clue the judge found only dropped in (by label) with the
     item's next spare clue, in place. Returns the swaps made; none when the
-    item has no spare left (A3 mostly, B places with one clean clue).
+    item has no spare left (B places with one clean clue, mostly).
     """
     swaps = []
     wanted = {n.strip().lower() for n in names}
@@ -1395,7 +1426,7 @@ def run_items(
     delay_between = float(gen_setting(config["generation"],
                                       "delay_between_calls_seconds"))
     aliases = finalise.load_aliases(Path(config["paths"]["place_inputs"]))
-    limits = finalise.word_limits(config.get("finalise"))
+    limits = finalise.char_limit(config.get("finalise"))
     rows = []
     for n, item in enumerate(items, start=1):
         names = aliases.get(item["place_qid"], {"forms": [], "country": [], "regions": []})
@@ -1412,11 +1443,12 @@ def run_items(
     return rows
 
 
-A_SET, B_SET = ("A1", "A3", "NOISE_A1"), ("B", "NOISE_B")
+A_SET, B_SET = ("A", "NOISE_A"), ("B", "NOISE_B")
+EXPLICIT_SET = frozenset(plan.EXPLICIT_CONDITIONS)   # plan_swaps' own `plan` argument hides the module
 
 
 def condition_set(condition: str) -> tuple[str, ...] | None:
-    """The conditions a place is swapped in together (Task 4), or None (EXPLICIT)."""
+    """The conditions a place is swapped in together (Task 4), or None (EXPLICIT, NOISE_EXPLICIT)."""
     return A_SET if condition in A_SET else B_SET if condition in B_SET else None
 
 
@@ -1424,11 +1456,13 @@ def find_reserve(failed: dict[str, Any], plan: list[dict[str, Any]],
                  used: set[str]) -> str | None:
     """
     The reserve place to swap in for a failed item's place: a reserve of the
-    same condition, continent, place type and bin (pbin for the A set, rbin
+    same condition, continent, place type and bin (pbin for the A set, sbin
     for the B set) not used yet. Candidates are taken in a fixed hashed order
     of their QIDs, so a rerun picks the same one.
     """
-    bin_key = "pbin" if failed["condition"] in A_SET else "rbin"
+    # sbin, not rbin: a rank-1 reserve must not replace a place that trails its rival.
+    # Plans made before sbin existed fall back to rbin.
+    bin_key = "pbin" if failed["condition"] in A_SET else "sbin" if failed.get("sbin") else "rbin"
     candidates = {i["place_qid"] for i in plan
                   if i.get("pool") == "reserve" and i["condition"] == failed["condition"]
                   and i["place_continent"] == failed["place_continent"]
@@ -1443,9 +1477,9 @@ def plan_swaps(rows: list[dict[str, Any]], plan: list[dict[str, Any]], ran: list
     """
     For every item that failed all its tries, swap its place out of the
     item's condition set and a matched reserve in (Task 4: an A place leaves
-    A1, A3 and NOISE_A1 together, a B place B and NOISE_B). Returns the
-    reserve items to run - the set's conditions that ran for the failed
-    place, plus the reserve place's EXPLICIT - and the swap records.
+    A and NOISE_A together, a B place B and NOISE_B). Returns the reserve
+    items to run - the set's conditions that ran for the failed place, plus
+    the reserve place's EXPLICIT and NOISE_EXPLICIT - and the swap records.
     A failed place with no matching reserve left is recorded with
     replacement None.
     """
@@ -1473,7 +1507,7 @@ def plan_swaps(rows: list[dict[str, Any]], plan: list[dict[str, Any]], ran: list
             continue
         used.add(new)
         for r in by_place[new]:
-            if r["condition"] in conditions or (r["condition"] == "EXPLICIT" and r.get("pool") == "reserve"):
+            if r["condition"] in conditions or (r["condition"] in EXPLICIT_SET and r.get("pool") == "reserve"):
                 todo.append({**r, "swapped_from": item["place_qid"]})
     return todo, swaps
 

@@ -1,6 +1,15 @@
 name: dense_retrieval
 tier: 3
 paradigm: dense_retrieval
+question: >
+  without mention detection, does retrieval over place texts match entity linking and
+  the LLM
+design: >
+  embed(post with 'query: ', E5 multilingual-e5-base) → cosine kNN over the place index
+  (pool gold_plus_predicted: every dataset gold QID + every QID any config proposed;
+  text = label, description, aliases, country, continent with 'passage: ') → top-10 →
+  top-1. No NER, no linker, no LLM. Output: always predicts (no score threshold, never
+  abstains).
 description: >
   Tier 3. No mention detection, no entity linking, no LLM: embed the post,
   embed a text description of every candidate place, take nearest neighbours.

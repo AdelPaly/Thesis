@@ -15,14 +15,25 @@ CONT_FLOOR = .10                             # continent share ~ sqrt(eligible s
 INFRA_PER_CONT = 25                          # EXPLICIT-only infrastructure places per continent (dams, power plants, refineries, mines, ports)
 MIN_SL, MIN_POP, MAX_KM2 = 5, 2000, 5000     # size floor; area cap for islands and natural areas
 CLUE_MIN_SL, A_CLUES, A_FAMS = 3, 3, 2       # clue needs >=3 Wikipedia articles; A needs 3 clean clue entities from >=2 families
+B_CLUES = 2                                  # B needs 2 clues with no link to the rival: one used, one spare for the decorative-clue swap
 CLUE_BLOCK = ['Q17537576',                   # creative works (albums, songs, films, books) are not clues
               'Q41397', 'Q3199915', 'Q2223653', 'Q178561', 'Q198']   # genocide, massacre, terror attack, battle, war: no such event as a clue
 EVENT = 'Q1190554'                           # 'event' clues must be occurrences; other things located in the place count as 'part'
 RIVAL_MIN_SL, B_MIN_KM = 3, 161              # namesake must be documented and more than 161 km away; B also needs a clue with no FAMILY/OUT link to it
-CAP, FLOOR_POP, MAX_WALK = .08, 2e6, 4000    # country cap (share of continent plan); floor for countries >2M; walk limit
-FLOOR_TRIES = 20                             # candidates checked per country for its floor place
+                                             # and the best-known such namesake must be in another country (scoring is place / country / continent)
+CAP, FLOOR_POP = .08, 2e6                    # country cap (share of continent plan); floor for countries >2M
+FULL = set()                                  # continents searched in full (4000 per walk, 20 floor tries); the rest cheaply
+ENV = {'on': False}                          # --env (2026-11-10 top-up, user): environment first - more natural places, they are searched in full,
+ENV_SHARE = {'A': {'settlement': .35, 'natural': .45, 'island': .10, 'manmade': .10},     # and towns with species/operator clues are tried first
+             'B': {'settlement': .30, 'natural': .55, 'island': .05, 'manmade': .10}}
+ENV_FAMS = {'species', 'operator'}
+OUTFILE = 'places.csv'
+MAX_WALK = lambda ct, t='': 4000 if ct in FULL or (ENV['on'] and t != 'settlement') else 600
+FLOOR_TRIES = lambda ct: 20 if ct in FULL else 10
 PBIN = lambda s: 'low' if s < 30 else 'mid' if s < 100 else 'high'
 RBIN = lambda r: 'rival_leads' if r <= .5 else 'place_leads' if r >= 2 else 'similar'
+B_WT = (1 / 3, 1 / 6, 1 / 6, 1 / 3)          # B slots: rival_leads, similar_behind, similar_ahead, place_leads ('similar' split by rank)
+TOP1 = {'similar_ahead', 'place_leads'}      # bins of places that lead all their namesakes: capped at half of B, gaps never move into them
 CBIN = lambda s: '0' if s == 0 else '1-9' if s < 10 else '>=10'
 CONT = {'Q46': 'EU', 'Q48': 'AS', 'Q15': 'AF', 'Q49': 'NA', 'Q18': 'SA', 'Q538': 'OC', 'Q55643': 'OC', 'Q3960': 'OC'}
 MAINCONT = {'Q43': 'AS', 'Q232': 'AS', 'Q79': 'AF', 'Q230': 'AS', 'Q227': 'AS', 'Q252': 'AS', 'Q804': 'NA', 'Q399': 'AS', 'Q229': 'EU'}
@@ -115,7 +126,7 @@ def sparql(q, cache):
             if total is not None and int(total) != len(b): raise ConnectionError(f'reply has {len(b)} of {total} rows')
             rows = [{k: v['value'].rsplit('/', 1)[-1] if v['type'] == 'uri' else v['value'] for k, v in r.items()} for r in b]
             with open(f + '.tmp', 'w', encoding='utf-8') as fh: json.dump(rows, fh)
-            os.replace(f + '.tmp', f); time.sleep(.5); return rows        # whole file or none, so a stopped run resumes cleanly; pause: shared endpoint
+            os.replace(f + ".tmp", f); time.sleep(1.5); return rows        # whole file or none, so a stopped run resumes cleanly; pause: shared endpoint
         except Exception as e:
             body = getattr(e, 'read', lambda: b'')()[:300].decode('utf-8', 'replace')
             if 'exception' in body or getattr(e, 'code', None) == 414: raise TooBig(body or str(e))   # QLever's own timeout (429 + JSON body); URL too long
@@ -138,6 +149,8 @@ def batched(make, ids, cache, n=300):
 def pt(w):                                       # WKT point -> (lat, lon); None for unknown value or another globe
     if '(' not in w or 'entity/' in w: return None
     lon, lat = map(float, w[w.index('(') + 1:-1].split()); return lat, lon
+def cont_of(c, latlon, countries):               # a namesake's continent from its country; Russia split at 60 E as in pool()
+    return ('AS' if latlon[1] > 60 else 'EU') if c == 'Q159' else MAINCONT.get(c) or countries.get(c, {}).get('cont') or ''
 def km(a, b):
     (la1, lo1), (la2, lo2) = [tuple(map(math.radians, p)) for p in (a, b)]
     h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
@@ -229,11 +242,11 @@ def gate(chunk, cache, countries):
         for prop, f in allp.items():
             if f in p.get('raw', {f}) and len(p['top'][f]) < A_CLUES: miss[prop].append(p['i'])
     keep(fetch(miss, CLUE_MIN_SL, 9))
-    rivals = defaultdict(list)
+    rivals = defaultdict(dict)                        # place -> {namesake: [sitelinks, latlon, countries]}
     for pred in ('rdfs:label', 'skos:altLabel'):     # namesakes by name or by alias, two light queries
-        for r in batched(lambda b: f'''SELECT DISTINCT ?i ?r ?rs ?rl WHERE {{ VALUES ?i {{{V(b)}}} ?i rdfs:label ?l FILTER(LANG(?l) = "en" || LANG(?l) = "mul")
+        for r in batched(lambda b: f'''SELECT DISTINCT ?i ?r ?rs ?rl ?rc WHERE {{ VALUES ?i {{{V(b)}}} ?i rdfs:label ?l FILTER(LANG(?l) = "en" || LANG(?l) = "mul")
                 ?r {pred} ?l. ?r wdt:P625 ?rl; wdt:P17 ?rc; wikibase:sitelinks ?rs. FILTER(?r != ?i && ?rs >= {RIVAL_MIN_SL}) MINUS {{ ?r wdt:P31 wd:Q5 }} }}''', ids, cache):
-            if pt(r['rl']) and r['r'] not in {q for q, _, _ in rivals[r['i']]}: rivals[r['i']].append((r['r'], int(r['rs']), pt(r['rl'])))
+            if pt(r['rl']): rivals[r['i']].setdefault(r['r'], [int(r['rs']), pt(r['rl']), set()])[2].add(r['rc'])
     isx, ents = defaultdict(set), sorted({e for p in chunk for v in p.get('top', {}).values() for e, _, _ in v})
     for r in batched(lambda b: f'SELECT DISTINCT ?i ?x WHERE {{ VALUES ?i {{{V(b)}}} VALUES ?x {{{V(BLOCK_CLASSES + CLUE_BLOCK + list(ROLE) + NOT_COMPANY + [EVENT] + LOCATION + sum(ONLY.values(), []))}}} ?i wdt:P31/wdt:P279* ?x }}',
                      ents, cache):
@@ -241,7 +254,7 @@ def gate(chunk, cache, countries):
     bad = {e for e, xs in isx.items() if xs & set(BLOCK_CLASSES + CLUE_BLOCK + LOCATION)}
     bad |= {r['i'] for r in batched(lambda b: f'SELECT DISTINCT ?i WHERE {{ VALUES ?i {{{V(b)}}} ?i wdt:P279 [] }}', ents, cache)}   # a class ('incident'), not a thing
     role = {e: r for e, xs in isx.items() for r in [next((ROLE[x] for x in sorted(xs) if x in ROLE and not (ROLE[x] == 'company' and xs & set(NOT_COMPANY))), '')] if r}
-    rank = lambda f, c: -c[2]                                                      # most documented clue first (A1 rule)
+    rank = lambda f, c: -c[2]                                                      # most documented clue first (A rule)
     rows = []
     for p in chunk:
         if p['i'] in blocked: continue
@@ -257,16 +270,22 @@ def gate(chunk, cache, countries):
         for f, c in sorted(((f, c) for f, v in top.items() for c in v if c[0] not in used), key=lambda fc: rank(*fc)):
             if len(best) < A_CLUES and c[0] not in used and norm(c[1]) not in used: best.append([f, *c, R(f, c[0])]); used |= {c[0], norm(c[1])}
         best = sorted(best, key=lambda c: -c[3])[:max(A_CLUES, len({c[0] for c in best}))]
-        far = [(q, s, round(km(p['latlon'], ll))) for q, s, ll in rivals[p['i']] if km(p['latlon'], ll) > B_MIN_KM]
-        rv = max(far, key=lambda t: t[1], default=None)
+        far = sorted(((q, s, round(km(p['latlon'], ll)), cs) for q, (s, ll, cs) in rivals[p['i']].items() if km(p['latlon'], ll) > B_MIN_KM),
+                     key=lambda t: (-t[1], t[0]))
+        rv = far[0] if far else None                  # the best-known namesake, any country
+        foreign = bool(rv) and p['c'] not in rv[3]    # B: that namesake must lie in another country, so a wrong pick loses the country tier
         mx = max((c[3] for c in best), default=0); nf = len({c[0] for c in best})
-        nrank = 1 + sum(sl > p['sl'] for _, sl, _ in far)                                 # place's rank among its namesakes by sitelinks
-        rows.append(dict(p, rank=nrank if rv else '', n_names=len(far) + 1 if rv else '', hooks=';'.join(sorted({c[4] for c in best if c[4]})), clues=best, n_fam=nf, cbin=CBIN(mx), pbin=PBIN(p['sl']), a_ok=len(best) >= A_CLUES and nf >= A_FAMS, b_ok=bool(rv) and p['i'] not in qual,
+        nrank = 1 + sum(sl > p['sl'] for _, sl, _, _ in far)                              # place's rank among its namesakes by sitelinks
+        rb = RBIN((p['sl'] + 1) / (rv[1] + 1)) if rv else ''
+        rc = sorted(rv[3])[0] if rv else ''
+        rows.append(dict(p, rank=nrank if rv else '', n_names=len(far) + 1 if rv else '', hooks=';'.join(sorted({c[4] for c in best if c[4]})), clues=best, n_fam=nf, cbin=CBIN(mx), pbin=PBIN(p['sl']), a_ok=len(best) >= A_CLUES and nf >= A_FAMS, b_ok=foreign and p['i'] not in qual,
                          rival=rv[0] if rv else '', rival_sl=rv[1] if rv else '', rival_km=rv[2] if rv else '',
-                         rbin=RBIN((p['sl'] + 1) / (rv[1] + 1)) if rv else ''))
+                         rival_c=rc, rival_cont=cont_of(rc, rivals[p['i']][rv[0]][1], countries) if rv else '',
+                         n_dom=sum(p['c'] in cs for *_, cs in far),
+                         rbin=rb, sbin=rb if rb != 'similar' else 'similar_ahead' if nrank == 1 else 'similar_behind'))
     tied = links([(c[1], r['rival']) for r in rows if r['rival'] for c in r['clues']], cache)
     for r in rows:                                    # B needs a clue that cannot point at the rival as well
-        r['b_ok'] = r['b_ok'] and any((c[1], r['rival']) not in tied for c in r['clues'])
+        r['b_ok'] = r['b_ok'] and sum((c[1], r['rival']) not in tied for c in r['clues']) >= B_CLUES
         yield r
 
 def links(pairs, cache):
@@ -284,7 +303,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--seed', required=True); ap.add_argument('--exclude'); ap.add_argument('--prefer', help='old QIDs to try first, one per line'); ap.add_argument('--out', default='out')
     ap.add_argument('--conts', default='EU,AS,AF,NA,SA,OC'); ap.add_argument('--final', type=int, default=FINAL)
+    ap.add_argument('--alloc', help='fixed plan size per continent, e.g. AS=95,AF=95 (else the sqrt-supply split of --final)')
+    ap.add_argument('--env', action='store_true', help='environment first: ENV_SHARE, full search of non-town types, species/operator towns first')
+    ap.add_argument('--file', default='places.csv', help='output file in --out; the report is written next to it as report*.md')
     a = ap.parse_args(); cache = os.path.join(a.out, 'cache'); os.makedirs(cache, exist_ok=True)
+    ENV['on'] = a.env; share = ENV_SHARE if a.env else SHARE
+    global OUTFILE; OUTFILE = a.file
     block = set(open(a.exclude).read().split()) if a.exclude else set()
     prefer = set(open(a.prefer).read().split()) if a.prefer else set()
     U = lambda s: (int(hashlib.sha256(f'{a.seed}:{s}'.encode()).hexdigest(), 16) + 1) / (16 ** 64 + 2)   # uniform in (0,1), one per QID
@@ -301,15 +325,17 @@ def main():
     places = [dict(p, old='yes' if p['i'] in prefer else '') for p in pool(cache, countries) if p['i'] not in block and p['c'] not in BLOCK_COUNTRIES]
     plan = math.ceil(a.final * OVER); conts = a.conts.split(','); sel, log, memo = [], [], {}
     if prefer: log.append(f'old places in the candidate pool: {sum(1 for p in places if p["old"])} of {len(prefer)}')
-    BINS = {'A': ('low', 'mid', 'high'), 'B': ('rival_leads', 'similar', 'place_leads')}
+    BINS = {'A': ('low', 'mid', 'high'), 'B': ('rival_leads', 'similar_behind', 'similar_ahead', 'place_leads')}
+    WT = {'A': dict.fromkeys(BINS['A'], 1 / 3), 'B': dict(zip(BINS['B'], B_WT))}
     sup = {ct: math.sqrt(sum(1 for p in places if p['continent'] == ct and (len(p.get('raw', ())) >= A_FAMS or p.get('ns')))) for ct in conts}
     w = {ct: max(CONT_FLOOR, sup[ct] / sum(sup.values())) for ct in conts}
     alloc = {ct: round(plan * w[ct] / sum(w.values())) for ct in conts}
     alloc[max(alloc, key=alloc.get)] += plan - sum(alloc.values())                # rounding rest to the largest
+    if a.alloc: alloc = {ct: int(n) for ct, n in (x.split('=') for x in a.alloc.split(','))}; conts = list(alloc); log.append('continent plan fixed by --alloc: ' + a.alloc)
     log.append('continent plan: ' + ', '.join(f'{ct}={n}' for ct, n in alloc.items()))
     for ct in conts:
         pc = alloc[ct]; rc = math.ceil(pc * RES); cap = math.ceil(CAP * (pc + rc))
-        need = {(cond, t, b): [round(pc * s / 3), round(rc * s / 3)] for cond, bins in BINS.items() for t, s in SHARE[cond].items() for b in bins}
+        need = {(cond, t, b): [round(pc * s * WT[cond][b]), round(rc * s * WT[cond][b])] for cond, bins in BINS.items() for t, s in share[cond].items() for b in bins}
         need['X', 'infra', '-'] = [INFRA_PER_CONT, 0]
         got, per_c, taken = defaultdict(list), Counter(), {}
         open_ = lambda k: len(got[k]) < sum(need[k])
@@ -321,7 +347,7 @@ def main():
                 g = memo[p['i']]
                 if not g: return False
                 a = 'A' not in had and g['a_ok'] and open_(('A', t, g['pbin'])) and per_c['A', g['c']] < cap
-                b = 'B' not in had and g['b_ok'] and open_(('B', t, g['rbin'])) and per_c['B', g['c']] < cap
+                b = 'B' not in had and g['b_ok'] and open_(('B', t, g['sbin'])) and per_c['B', g['c']] < cap
             else:
                 a = len(p.get('raw', ())) >= A_FAMS and open_(('A', t, PBIN(p['sl']))) and per_c['A', p['c']] < cap
                 b = p.get('ns') and any(open_(('B', t, x)) for x in BINS['B']) and per_c['B', p['c']] < cap
@@ -333,7 +359,7 @@ def main():
                 if both and shared[0] >= sh: break
                 if not useful(p, t, both): continue
                 if p['i'] not in memo:                # gate the next 100 useful places in one go
-                    if gated >= MAX_WALK: break
+                    if gated >= MAX_WALK(ct, t): break
                     batch = [q for q in order[n:] if q['i'] not in memo and useful(q, t, both)][:300]
                     memo.update((q['i'], None) for q in batch)
                     memo.update((g['i'], g) for g in gate(batch, cache, countries)); gated += len(batch)
@@ -341,7 +367,7 @@ def main():
                 g = memo[p['i']]
                 if not g or (both and not useful(g, t, True)): continue
                 if both: shared[0] += 1
-                slots = [('X', 'infra', '-')] if t == 'infra' else [k for k, ok in ((('A', t, g['pbin']), g['a_ok']), (('B', t, g['rbin']), g['b_ok'])) if ok]
+                slots = [('X', 'infra', '-')] if t == 'infra' else [k for k, ok in ((('A', t, g['pbin']), g['a_ok']), (('B', t, g['sbin']), g['b_ok'])) if ok]
                 for k in slots:
                     if open_(k) and per_c[k[0], g['c']] < cap and k[0] not in taken.get(g['i'], {}).get('cond', {}):
                         got[k].append(g['i']); per_c[k[0], g['c']] += 1
@@ -356,17 +382,18 @@ def main():
             cand.sort(key=lambda p: -math.log(U(p['i'])) * n_c[p['c']] / math.sqrt(countries.get(p['c'], {}).get('pop') or 1))
             first = {}
             for p in cand: first.setdefault(p['c'], p)
-            order, dry = list({p['i']: p for p in [p for p in cand if p['i'] in prefer] + cand}.values()), set()
+            env = [p for p in cand if a.env and set(p.get('raw', ())) & ENV_FAMS]
+            order, dry = list({p['i']: p for p in [p for p in cand if p['i'] in prefer] + env + cand}.values()), set()
             big = [c for c in sorted(first, key=U) if t == 'settlement' and countries.get(c, {}).get('pop', 0) >= FLOOR_POP]
-            lists = {c: [p for p in order if p['c'] == c][:FLOOR_TRIES] for c in big}
+            lists = {c: [p for p in order if p['c'] == c][:FLOOR_TRIES(ct)] for c in big}
             has = lambda c: any(q['c'] == c for q in taken.values())
-            for r0 in range(0, FLOOR_TRIES, 5):                                         # floor: 5 candidates of every country gated together
+            for r0 in range(0, FLOOR_TRIES(ct), 5):                                         # floor: 5 candidates of every country gated together
                 batch = [p for c in big if not has(c) for p in lists[c][r0:r0 + 5] if p['i'] not in memo and useful(p, t)]
                 for i in range(0, len(batch), 300):
                     memo.update((q['i'], None) for q in batch[i:i + 300]); memo.update((g['i'], g) for g in gate(batch[i:i + 300], cache, countries))
                 for c in big:
                     if not has(c): walk(t, lists[c][:r0 + 5], one=True)
-            log += [f'{ct}: no qualifying place for {c} in {FLOOR_TRIES} tries' for c in big if not has(c)]
+            log += [f'{ct}: no qualifying place for {c} in {FLOOR_TRIES(ct)} tries' for c in big if not has(c)]
             if t != 'infra': walk(t, order, both=True)                                 # shared places first
             for attempt in range(6):
                 walk(t, order)
@@ -375,7 +402,8 @@ def main():
                 if attempt < 2: cap = math.ceil(cap * 1.5); log.append(f'{ct}: country cap raised to {cap} per condition'); continue
                 dry |= set(short)                                                          # a short bin passes its gap to the other bins
                 for k, v in short.items():
-                    to = [o for o in ((k[0], t, b) for b in BINS[k[0]]) if o not in dry]
+                    to = [o for o in ((k[0], t, b) for b in BINS[k[0]]) if o not in dry
+                          and not (k[0] == 'B' and k[2] not in TOP1 and o[2] in TOP1)]   # a gap never makes B lean on rank-1 places
                     if not to: continue
                     gap = [max(0, v[0] - len(got[k])), sum(v) - max(len(got[k]), v[0])]
                     v[:] = [min(v[0], len(got[k])), max(0, len(got[k]) - v[0])]
@@ -394,8 +422,8 @@ def main():
 
 def write(out, sel, log, seed):
     cols = ['i', 'label', 'type', 'sub', 'c', 'continent', 'split', 'lat', 'lon', 'sl', 'pbin', 'n_fam', 'cbin', 'hooks', 'clues', 'old',
-            'rival', 'rival_sl', 'rival_km', 'rbin', 'rank', 'n_names', 'A', 'B', 'EXPLICIT']
-    with open(os.path.join(out, 'places.csv'), 'w', newline='', encoding='utf-8') as f:
+            'rival', 'rival_sl', 'rival_km', 'rival_c', 'rival_cont', 'n_dom', 'rbin', 'sbin', 'rank', 'n_names', 'A', 'B', 'EXPLICIT']
+    with open(os.path.join(out, OUTFILE), 'w', newline='', encoding='utf-8') as f:
         w = csv.DictWriter(f, cols, extrasaction='ignore'); w.writeheader()
         for p in sel:
             c = p['cond']
@@ -405,7 +433,7 @@ def write(out, sel, log, seed):
                             EXPLICIT='yes'))
     tab = Counter((p['continent'], k, s) for p in sel for k, s in p['cond'].items())
     ov = sum(1 for p in sel if p['cond'].get('A') == p['cond'].get('B') == 'plan')
-    with open(os.path.join(out, 'report.md'), 'w', encoding='utf-8') as f:
+    with open(os.path.join(out, OUTFILE.replace('places', 'report').replace('.csv', '.md')), 'w', encoding='utf-8') as f:
         try: idx = json.loads(urllib.request.urlopen(EP + '?cmd=stats', timeout=30).read()).get('name-index', '?')
         except Exception: idx = 'unknown'
         sha = hashlib.sha256(open(__file__, 'rb').read()).hexdigest()[:16]
@@ -415,7 +443,10 @@ def write(out, sel, log, seed):
         f.write(f'\nA and B on the same place (plan): {ov}\n\n')
         town = sum(p['type'] == 'settlement' for p in sel) / max(len(sel), 1)
         f.write(f'Settlement share of all places: {town:.0%}' + (f' - ABOVE the {MAX_TOWN:.0%} limit\n\n' if town > MAX_TOWN else '\n\n'))
-        for col in ('type', 'pbin', 'rbin', 'cbin'):
+        bp = [p for p in sel if p['cond'].get('B') == 'plan']
+        if bp: f.write(f"B plan: rank 1 among namesakes {sum(p['rank'] == 1 for p in bp)} of {len(bp)}; rival on the same continent {sum(p['rival_cont'] == p['continent'] for p in bp)}; "
+                       f"weaker domestic namesake present {sum(p['n_dom'] > 0 for p in bp)}\n\n")
+        for col in ('type', 'pbin', 'rbin', 'sbin', 'cbin'):
             f.write(f'{col}: ' + ', '.join(f'{k or "-"}={n}' for k, n in sorted(Counter(p[col] for p in sel).items())) + '\n\n')
         f.write('Countries: ' + ', '.join(f'{c}={n}' for c, n in Counter(p['c'] for p in sel).most_common()) + '\n\nShortfalls:\n')
         f.write('\n'.join('- ' + l for l in log) or '- none'); f.write('\n')

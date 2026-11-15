@@ -25,6 +25,14 @@ An anchor is rejected when (2026-11-02, user, after smoke13):
     alias_leak     one of its names (label or alias; for people the label only)
                    contains a name of the place or a region it lies in
                    ("Sydney 2000")
+    shared_name    (2026-11-12, user) another documented item (3+ sitelinks)
+                   has its English name as label or alias and is neither inside
+                   the place nor around it: "Applied Science University" is a
+                   university in Sitra and a team in Amman, and Wikipedia has a
+                   disambiguation page for it. Namesakes must be people or
+                   located things not linked to the clue; name items and
+                   creative works do not count. For a person only another
+                   person about as well known counts (half the sitelinks).
 
 People and species are not checked for "elsewhere": people live in many places
 and species range widely; the planner already linked them to the place.
@@ -76,6 +84,12 @@ MILITARY = ["Q831663", "Q645883", "Q180684", "Q350604", "Q124734", "Q10931", "Q1
 BLOCKED = sorted(set(rp.BLOCK_CLASSES + rp.ATROCITY + rp.CLUE_BLOCK + MILITARY))
 NOT_LOCATED = {"person", "species"}                    # entity types skipped for "elsewhere"
 CHECKS_PATH = HERE / "output" / "anchor_checks.jsonl"
+# Items that share a name without being a second thing in a second place:
+# disambiguation page, Wikimedia category, family name, given name, creative work.
+NOT_NAMESAKE = ["Q4167410", "Q4167836", "Q101352", "Q202444", "Q17537576"]
+LINKS = ["P138", "P361", "P527", "P127", "P1830", "P749", "P355"]
+MANY = 20
+PERSON_LINKS = ["P551", "P937"]   # residence, work location
 
 
 def contains(text: str, form: str) -> bool:
@@ -84,7 +98,44 @@ def contains(text: str, form: str) -> bool:
 
 def wikidata_facts(qids: list[str]) -> dict[str, dict[str, Any]]:
     facts: dict[str, dict[str, Any]] = {q: {"classes": set(), "dated": False, "dissolved": False,
-                                            "located": set(), "occurrence": False} for q in qids}
+                                            "located": set(), "occurrence": False, "namesakes": set(), "disambiguation": False,
+                                            "links": {}} for q in qids}
+    # Namesakes in three cheap steps (one query with every filter timed out on the shared endpoint):
+    # same English label or alias, then what each namesake is, then links between clue and namesake.
+    found: dict[str, dict[str, str]] = {}
+    for r in rp.batched(lambda b: f"SELECT DISTINCT ?i ?r ?rd WHERE {{ VALUES ?i {{{rp.V(b)}}} "
+                                  f'?i rdfs:label ?l FILTER(LANG(?l) = "en") ?r rdfs:label|skos:altLabel ?l. '
+                                  f"FILTER(?r != ?i) ?r wikibase:sitelinks ?rs FILTER(?rs >= {rp.RIVAL_MIN_SL}) "
+                                  f"MINUS {{ ?r wdt:P31/wdt:P279* ?n VALUES ?n {{{rp.V(NOT_NAMESAKE)}}} }} "
+                                  f'OPTIONAL {{ ?r schema:description ?rd FILTER(LANG(?rd) = "en") }} }}', qids, CACHE):
+        found.setdefault(r["i"], {})[r["r"]] = r.get("rd") or r["r"]
+    others = sorted({r for rs in found.values() for r in rs})
+    sl = {r["r"]: int(r["s"]) for r in rp.batched(
+        lambda b: f"SELECT ?r ?s WHERE {{ VALUES ?r {{{rp.V(b)}}} ?r wikibase:sitelinks ?s }}", others, CACHE)}
+    human = {r["r"] for r in rp.batched(
+        lambda b: f"SELECT DISTINCT ?r WHERE {{ VALUES ?r {{{rp.V(b)}}} ?r wdt:P31 wd:Q5 }}", others, CACHE)}
+    located = {r["r"] for r in rp.batched(
+        lambda b: f"SELECT DISTINCT ?r WHERE {{ VALUES ?r {{{rp.V(b)}}} ?r wdt:P17|wdt:P131|wdt:P159|wdt:P625 [] }}",
+        others, CACHE)}
+    # Links that make a namesake part of the clue rather than a rival: named after, part of / has
+    # part, owned by / owns, parent / subsidiary. A clue with more than MANY namesakes is plainly
+    # ambiguous and is not checked pair by pair (one first name had hundreds).
+    pairs = sorted(f"{i}|{r}" for i, rs in found.items() if len(rs) <= MANY for r in rs)
+    link = "|".join(f"wdt:{p}" for p in LINKS)
+    linked = {(r["i"], r["r"]) for r in rp.batched(
+        lambda b: "SELECT DISTINCT ?i ?r WHERE { VALUES (?i ?r) { " + " ".join(
+            f"(wd:{p.split('|')[0]} wd:{p.split('|')[1]})" for p in b) + f" }} {{ ?r {link} ?i }} UNION {{ ?i {link} ?r }} }}",
+        pairs, CACHE)}
+    for i, rs in found.items():
+        for r, d in rs.items():
+            # a person or a located thing, not linked to the clue (a rose named after Pissarro, a women's team)
+            if (r in human or r in located) and (i, r) not in linked:
+                facts[i]["namesakes"].add((r, d, sl.get(r, 0), r in human))
+    # A Wikipedia disambiguation page under the same name: editors already found it ambiguous.
+    for r in rp.batched(lambda b: f"SELECT DISTINCT ?i WHERE {{ VALUES ?i {{{rp.V(b)}}} "
+                                  f'?i rdfs:label ?l FILTER(LANG(?l) = "en") ?d rdfs:label ?l; wdt:P31 wd:Q4167410 }}',
+                        qids, CACHE):
+        facts[r["i"]]["disambiguation"] = True
     for r in rp.batched(lambda b: f"SELECT DISTINCT ?i ?x WHERE {{ VALUES ?i {{{rp.V(b)}}} "
                                   f"VALUES ?x {{{rp.V(BLOCKED + [OCCURRENCE])}}} ?i wdt:P31/wdt:P279* ?x }}", qids, CACHE):
         if r["x"] == OCCURRENCE:
@@ -96,6 +147,11 @@ def wikidata_facts(qids: list[str]) -> dict[str, dict[str, Any]]:
         facts[r["i"]]["dated"] = True
     for r in rp.batched(lambda b: f"SELECT DISTINCT ?i WHERE {{ VALUES ?i {{{rp.V(b)}}} ?i wdt:P576 [] }}", qids, CACHE):
         facts[r["i"]]["dissolved"] = True
+    # A person's places by the links clues use (residence, work location): link_elsewhere.
+    for prop in PERSON_LINKS:
+        for r in rp.batched(lambda b: f"SELECT DISTINCT ?i ?x ?xl WHERE {{ VALUES ?i {{{rp.V(b)}}} ?i wdt:P31 wd:Q5; wdt:{prop} ?x. "
+                                      f'OPTIONAL {{ ?x rdfs:label ?xl FILTER(LANG(?xl) = "en") }} }}', qids, CACHE):
+            facts[r["i"]]["links"].setdefault(prop, set()).add((r["x"], r.get("xl") or r["x"]))
     for prop in LOCATING:
         for r in rp.batched(lambda b: f"SELECT DISTINCT ?i ?x ?xl WHERE {{ VALUES ?i {{{rp.V(b)}}} ?i wdt:{prop} ?x. "
                                       f'OPTIONAL {{ ?x rdfs:label ?xl FILTER(LANG(?xl) = "en") }} }}', qids, CACHE):
@@ -167,6 +223,16 @@ def judge_anchor(clue: dict[str, Any], place_qid: str, facts: dict[str, Any], ne
             return "names_other_place", f'"{clue["clue_label"]}" contains the place name "{other[0]}"'
     if noise:
         return None
+    # People: the post says what they do, which tells namesakes apart, so only a namesake about as
+    # well known (half the sitelinks or more) counts. Anything else: any namesake, or a disambiguation page.
+    own = clue.get("sitelinks") or 0
+    namesakes = sorted(d for r, d, sl, human in f.get("namesakes", ())
+                       if r != place_qid and (r, place_qid) not in near
+                       and (not clue.get("is_human") or (human and sl * 2 >= own)))
+    if not clue.get("is_human") and f.get("disambiguation"):
+        namesakes = namesakes or ["a Wikipedia disambiguation page of that name"]
+    if namesakes:
+        return "shared_name", f'"{clue["clue_label"]}" is also: ' + "; ".join(namesakes[:3])
     kind = "person" if clue.get("is_human") else clue.get("entity_type")
     if kind not in NOT_LOCATED:
         other = sorted(label for x, label in f["located"] if x != place_qid and (x, place_qid) not in near)
@@ -200,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
     anchors: list[tuple[str, dict[str, Any], bool]] = []   # (place the post is about, anchor, is noise)
     for i in items:
         anchors += [(i["place_qid"], c, False) for c in i["clues"] + (i.get("spare_clues") or [])]
-        if i.get("noise_entity"):
+        if i.get("noise_entity") and i["noise_entity"].get("kind") != "demonym":   # a demonym is no Wikidata anchor
             n = i["noise_entity"]
             anchors.append((i["place_qid"], n, True))
             anchors += [(i["place_qid"], {**c, "donor_place_qid": n["donor_place_qid"]}, True)
@@ -213,7 +279,9 @@ def main(argv: list[str] | None = None) -> int:
     in_labels = names_in_labels(sorted(set(labels.values())), name_index)
     for q, label in labels.items():
         facts[q]["place_names"] = in_labels.get(label, [])
-    near = related([(x, p) for p, c, noise in anchors if not noise for x, _ in facts[c["clue_qid"]]["located"]])
+    near = related([(x, p) for p, c, noise in anchors if not noise
+                    for x in {x for x, *_ in facts[c["clue_qid"]]["located"] | facts[c["clue_qid"]]["namesakes"]}
+                    | {x for x, _ in facts[c["clue_qid"]]["links"].get(c.get("property"), ())}])
 
     verdicts: dict[tuple[str, str, bool], tuple[str, str] | None] = {}
     place_name = {i["place_qid"]: i["place_name"] for i in items}
@@ -225,8 +293,8 @@ def main(argv: list[str] | None = None) -> int:
 
     bad = lambda p, c, noise=False: verdicts.get((p, c["clue_qid"], noise))  # noqa: E731
 
-    # Distractor repair draws on other donor places (2026-11-04, user: NOISE_A1 and
-    # NOISE_B must cover the same places as A1 and B). Their clues are judged here,
+    # Distractor repair draws on other donor places (2026-11-04, user: each NOISE
+    # condition must cover the same places as its clean one). Their clues are judged here,
     # with the same rules, when first needed.
     places = plan.load_places(Path(config["paths"]["places_csv"]), Path(config["paths"]["place_inputs"]))
 
@@ -301,14 +369,26 @@ def main(argv: list[str] | None = None) -> int:
                              "reason": "condition_dropped", "detail": "not in config plan.conditions"})
             changes["condition_dropped"] += 1
             continue
-        spares = [c for c in item.get("spare_clues") or [] if not bad(p, c)]
+        # B keeps a clue whose name is shared and records it; A swaps it (2026-11-12, user).
+        shared_ok = item["condition"] in plan.NAME_SHARED_OK
+        usable = lambda v: v is None or (shared_ok and v[0] == "shared_name")  # noqa: E731
+        def mark(c: dict[str, Any], v: tuple[str, str] | None) -> dict[str, Any]:
+            c = {**c, "name_shared": v[1]} if v else c
+            # 2026-11-12, user: a person tied the same way to other places is kept; the writer
+            # narrows it down in context and the places are listed for checking by hand.
+            if c.get("is_human"):
+                other = sorted({lbl for x, lbl in facts.get(c["clue_qid"], {}).get("links", {}).get(c.get("property"), ())
+                                if x != p and (x, p) not in near})
+                c = {**c, "link_elsewhere": other} if other else {k: w for k, w in c.items() if k != "link_elsewhere"}
+            return c
+        spares = [mark(c, bad(p, c)) for c in item.get("spare_clues") or [] if usable(bad(p, c))]
         if item["condition"] in ("B", "NOISE_B"):
             spares = [c for c in spares if not c.get("linked_to_rival")]
         clues, swaps, failed = [], [], None
         for c in item["clues"]:
             v = bad(p, c)
-            if v is None:
-                clues.append(c)
+            if usable(v):
+                clues.append(mark(c, v))
                 continue
             new = next((s for s in spares if s["clue_qid"] not in {x["clue_qid"] for x in clues + item["clues"]}), None)
             if new is None:
@@ -335,8 +415,10 @@ def main(argv: list[str] | None = None) -> int:
                              "reason": "anchor_" + failed[0], "detail": failed[1]})
             changes["dropped_" + failed[0]] += 1
             continue
-        if swaps:
-            changes["repaired"] += 1
+        changes["b_clue_name_shared"] += any(c.get("name_shared") for c in clues)
+        changes["person_link_elsewhere"] += any(c.get("link_elsewhere") for c in clues)
+        if swaps or clues != item["clues"]:
+            changes["repaired"] += bool(swaps)
             item = {**item, "clues": clues, "spare_clues": spares, "noise_entity": noise,
                     "anchor_swaps": item.get("anchor_swaps", []) + swaps,
                     "role": ";".join(dict.fromkeys(c.get("role") or "other" for c in clues)) if clues else item.get("role")}

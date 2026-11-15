@@ -18,9 +18,6 @@ comparisons:
   - [blink, retrieve_rerank, "published retrieve-then-rerank vs the hand-built one"]
   # tier 1 against tier 2: what the geoparser lacks
   - [refined, geoparser_irchel, "entity linking vs toponym-only geoparsing"]
-  # tier 3: mechanism
-  - [dense_retrieval, char_ngram, "learned encoder vs surface n-gram overlap"]
-  - [dense_retrieval, grid_lm, "dense retrieval vs grid language model"]
   # mention detection vs not, and parametric knowledge
   - [dense_retrieval, refined, "dense retrieval vs entity linking"]
   - [refined, gemma4, "mention detection vs parametric knowledge"]

@@ -1,6 +1,15 @@
 name: geoparser_irchel
 tier: 1
 paradigm: geoparser
+question: >
+  does an established toponym-only geoparser beat the population floor, and what does it
+  lack against entity linking
+design: >
+  geoparser(Irchel 0.6.1 as published: recognise spaCy en_core_web_sm FAC/GPE/LOC →
+  resolve dguzh/geo-all-MiniLM-L6-v2 to one GeoNames entry per toponym) → GeoNames id →
+  QID (P1566) → resolve(property chain); entry without QID: GeoNames coords + country,
+  qid null → first resolved toponym in reading order → top-1. No rerank across toponyms.
+  Output: no toponym, or none resolved → no prediction.
 description: >
   Tier 1, an established geoparser run as published: the Irchel Geoparser
   with its documented quick-start pipeline -- spaCy recognition (FAC, GPE,

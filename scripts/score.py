@@ -1,7 +1,7 @@
 """Scorer. Reads prediction records, computes every metric, loads no model.
 
     python scripts/score.py                                   # everything
-    python scripts/score.py --config refined --dataset geocorpora
+    python scripts/score.py --config refined --dataset synthetic
     python scripts/score.py --by condition
     python scripts/score.py --by place_prominence      # also rival_prominence,
                                                        # clue_prominence, env_theme
@@ -53,7 +53,7 @@ ITEM_SPLIT_PATH = REPO_ROOT / "splits" / "item_split.csv"
 # Prominence bins and the environmental theme, written by generation/synthetic/
 # finalise.py and copied onto each record by src/runner.py (its BIN_COLUMNS).
 # Records from datasets without them fall in one "(none)" group.
-BIN_COLUMNS = ["place_prominence", "rival_prominence", "clue_prominence", "env_theme"]
+BIN_COLUMNS = ["place_prominence", "rival_prominence", "clue_prominence", "env_theme", "noise_kind"]
 
 LABEL_WIDTH = 34
 CSV_FIELDS = ["group", "n", "n_gold_qid", "exact", "country", "continent",

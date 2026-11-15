@@ -8,3 +8,4 @@ batch,first_line,last_line,count,fetched_utc,source
 7,132001,182000,50000,2026-10-27T19:37:15Z,"Python random.randint(1, 1000000) (Mersenne Twister, unseeded)"
 8,182001,232000,50000,2026-10-27T21:56:32Z,"Python random.randint(1, 1000000) (Mersenne Twister, unseeded)"
 9,232001,282000,50000,2026-10-27T22:04:14Z,"Python random.randint(1, 1000000) (Mersenne Twister, unseeded)"
+10,282001,382000,100000,2026-11-10T20:52:14Z,"Python secrets.randbelow(1000000)+1 (OS CSPRNG)"

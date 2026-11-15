@@ -1,6 +1,15 @@
 name: grounded_gemma_linking
 tier: 5
 paradigm: grounded_llm
+question: >
+  does grounding help because of the LLM or because of the retriever (linking vs dense
+  candidates)
+design: >
+  NER(flair/ner-large, LOC/PER/ORG) → link(ReFinED, as refined) → resolve(property
+  chain) → distinct place QIDs by linker confidence, top-10 (no rerank) → [gate:
+  candidates?] no: abstain (selection.no_candidates, no LLM call) / yes: LLM
+  select(gemma-4-31b-it, as grounded_gemma) → chosen candidate. Output: as
+  grounded_gemma.
 description: >
   Tier 5, second variant. Identical to grounded_gemma except that the
   candidates come from entity linking (tier 2b) instead of dense retrieval

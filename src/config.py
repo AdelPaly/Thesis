@@ -174,6 +174,12 @@ class PipelineConfig:
     tier: int | None = None
     variant: str | None = None
     description: str = ""
+    # Documentation only, excluded from config_hash like `description`:
+    # `design` is the component chain as the code runs it (stage -> stage ->
+    # output policy), `question` the one question this configuration answers
+    # in the comparison ladder.
+    design: str = ""
+    question: str = ""
     config_hash: str = ""
     source_path: str = ""
 
@@ -182,8 +188,8 @@ class PipelineConfig:
         `description` and `source_path` are excluded: documentation and file
         location must not move the hash."""
         d = asdict(self)
-        for presentation_only in ("tier", "variant", "description", "config_hash",
-                                  "source_path"):
+        for presentation_only in ("tier", "variant", "description", "design",
+                                  "question", "config_hash", "source_path"):
             d.pop(presentation_only, None)
         d["llm"].pop("run_date")
         # Hash-stability shim: GroundedConfig.allow_abstention was removed (it
@@ -333,6 +339,8 @@ def from_dict(raw: dict, source_path: str = "",
         tier=raw.get("tier"),
         variant=raw.get("variant"),
         description=raw.get("description", "") or "",
+        design=" ".join(str(raw.get("design") or "").split()),
+        question=" ".join(str(raw.get("question") or "").split()),
         source_path=source_path,
         **built,
     )

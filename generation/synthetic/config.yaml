@@ -38,14 +38,15 @@ paths:
 plan:
   # The conditions to plan. Which places get which condition, and whether as
   # plan or reserve, comes from out/places.csv (reform_places.py): the A set
-  # gets A1, A3 and NOISE_A1, the B set B and NOISE_B, and every A or B place
+  # gets A and NOISE_A, the B set B and NOISE_B, and every A or B place
   # EXPLICIT: the name stated outright, the reference each condition is read
-  # against (mostly B). EXPLICIT copies its B item's draws (else its A1 item's),
-  # so the pair differs by the clue only. Infrastructure-only places get nothing.
+  # against (mostly B), and NOISE_EXPLICIT: EXPLICIT plus a distractor. Both
+  # copy the place's B item's draws (else its A item's), so EXPLICIT differs
+  # from it by the clue only and NOISE_EXPLICIT from EXPLICIT by the distractor
+  # only. Infrastructure-only places get nothing.
   # One item per (place, condition). A place that cannot support a condition
   # it was given is logged in output/plan_rejections.jsonl.
-  # A3 dropped 2026-11-02 (user): at most two anchors per post.
-  conditions: [A1, B, EXPLICIT, NOISE_A1, NOISE_B]
+  conditions: [A, B, EXPLICIT, NOISE_A, NOISE_B, NOISE_EXPLICIT]
 
   # How far the post's claim reaches, one drawn per item (prompt.scale_lines
   # words each). Planned so it can be read against the results; the post
@@ -59,6 +60,14 @@ plan:
   # a third positive. 2026-10-30, user: the posts were always negative.
   valences: [negative, positive]
 
+  # The kind of distractor in the NOISE conditions, one drawn per item, uniformly:
+  # entity is a real clue of a place in another country (a band, a club),
+  # demonym that country's adjective ("French tourists", "British music").
+  # Both come from the same donor places (never the post's own country or its
+  # rival's), so the two kinds differ only in what is taken from the donor.
+  # 2026-11-06 (user): half and half, to compare the two kinds of noise.
+  noise_kinds: [entity, demonym]
+
   # The inclusive range the integers in sampler/geo_random.txt were generated
   # over (the range they were drawn from, not the min and max of the file).
   # Draws use rejection sampling against this range, so they are exactly
@@ -69,9 +78,10 @@ plan:
 
 
 # Post length is not a register setting: plan.py draws each item's target
-# length from the real Bluesky posts (paths.length_dist) within the range
-# finalise.py keeps: min_words to max_words (the quartiles, 8 to 28 words), or
-# the condition's own range in finalise.words_by_condition.
+# length from the real Bluesky posts (paths.length_dist) within
+# finalise.min_words to max_words (the quartiles, 8 to 28 words), or the
+# condition's own range in finalise.words_by_condition. That is a target, not
+# a check: finalise.py drops only posts over finalise.max_chars.
 # valences: the plan valences a register suits; a register without it suits all.
 registers:
   - name: personal_update
@@ -208,32 +218,35 @@ slots:
 
 finalise:
   # Posts kept per condition after the checks: 5 conditions x 400 = 2,000,
-  # plus EXPLICIT (unbalanced, one per place). reform_places.py sizes each
+  # plus EXPLICIT and NOISE_EXPLICIT (unbalanced, one per place). reform_places.py sizes each
   # condition's plan to this (FINAL) plus a reserve for failed posts. If any
   # condition ends below this, finalise.py stops with an error rather than
   # write fewer. null cuts to the smallest condition instead.
   # --per-condition overrides it.
-  per_condition: 400
+  per_condition: 363   # 400 unreachable: reserves used up (2026-11-14)
 
   # Conditions left out of the cut to per_condition: every post that passes the
   # checks is kept, whatever continent it is on. EXPLICIT, so every A and B
-  # place keeps its reference post for the paired comparison.
-  unbalanced: [EXPLICIT]
+  # place keeps its reference post for the paired comparison, and
+  # NOISE_EXPLICIT, which is paired with it.
+  unbalanced: [EXPLICIT, NOISE_EXPLICIT]
 
-  # Every post is between these many words, counted on whitespace: Q1 and Q3
-  # of the real Bluesky posts (data/bluesky_en_word_length_stats.csv;
-  # length_dist.py finds the same on 1,040,753 posts, 2026-10-29). A post
-  # outside is dropped as "length". Set either to null to turn the check off.
+  # The recommended length: plan.py draws each post's target word count from
+  # the real Bluesky posts within this range, Q1 and Q3 (data/
+  # bluesky_en_word_length_stats.csv; length_dist.py finds the same on
+  # 1,040,753 posts, 2026-10-29). Not a check: a post that misses its target
+  # is kept if it fits max_chars.
   min_words: 8
   max_words: 28
 
-  # Conditions with their own range, also the range plan.py draws their target
-  # lengths from. A3 carries three names: in 8-28 words that read as a burst of
-  # facts, not a story (2026-10-29, user), so it takes the longer real posts,
-  # median to 90th percentile (length_dist.py). A3 posts are therefore longer
-  # by design; the dataset records target_len and len for every post.
-  words_by_condition:
-    A3: [15, 43]
+  # The hard limit: a post longer than this many characters is dropped as
+  # "length". Bluesky's own post limit (2026-11-07, user: the 8-28 word check
+  # dropped mostly noise posts of 29-35 words). null turns the check off.
+  max_chars: 300
+
+  # Conditions with their own target range, as {condition: [min, max]}.
+  # None at present.
+  words_by_condition: {}
 
   # Every post must make an environmental claim (prompt.environment_line). This
   # is only a presence check: a post with none of these terms is dropped as
@@ -376,16 +389,21 @@ generation:
   # 2026-10-29: the writer is qwen3.5:122b on the VSE LiteLLM gateway. The
   # smoke runs (output/model_test/smoke2-4) passed 60-80% of its posts against
   # DeepSeek's ~23%, which mostly forgot the topic and the distractor. Qwen is
-  # not among the evaluated systems. DeepSeek is now the judge (judge: below):
+  # not among the evaluated systems. (Superseded 2026-11-12, see below.) DeepSeek was then the judge:
   # a different model family checks the writer's posts. The settings below
   # (reasoning, headers, timeout) are the gateway's; the DeepSeek settings are
   # kept under providers.openrouter for compare_models.py.
-  base_url: https://litellm.vse.cz
-  model: qwen3.5:122b
-  api_key_env: VSE_API_KEY
+  #
+  # 2026-11-12 (user): the writer is Claude Haiku 5.5 through OpenRouter, in
+  # place of DeepSeek; qwen3.5:122b is no longer on the VSE gateway. Haiku is
+  # not among the evaluated systems. Pinned slug, not ~anthropic/claude-haiku-latest.
+  base_url: https://openrouter.ai/api/v1
+  model: anthropic/claude-haiku-5.5
+  api_key_env: OPENROUTER_API_KEY
 
-  # Attribution headers are OpenRouter's; the gateway needs none.
-  extra_headers: {}
+  extra_headers:
+    HTTP-Referer: https://vse.cz
+    X-Title: Thesis dataset generation
 
   # json_schema where the provider supports it, json_object as a fallback,
   # none if it supports neither. LiteLLM passes the schema on as the model's
@@ -398,22 +416,19 @@ generation:
   # Providers treat it as best effort.
   send_seed: true
 
-  # Thinking off. No OpenRouter reasoning object on the gateway (effort null,
-  # exclude false, enabled true sends none); LiteLLM's own reasoning_effort:
-  # "none" goes in extra_body. Left on, qwen3.5:122b thought for 4000 tokens
-  # on every smoke item and returned no content.
+  # Thinking off through OpenRouter's reasoning object (Haiku 5.5 thinks by
+  # default; disabling is allowed at its default effort).
   exclude_reasoning: false
   reasoning_effort: null
-  reasoning_enabled: true
-  extra_body:
-    reasoning_effort: none
+  reasoning_enabled: false
+  extra_body: {}
 
   temperature: 1.0
   top_p: 1.0
   # With thinking off a post takes 100-150 output tokens; the budget only
   # guards against a runaway reply.
   max_tokens: 4000
-  timeout_seconds: 300   # a 122B model on a shared gateway is slower
+  timeout_seconds: 120
 
   exemplars_per_prompt: 3
 
@@ -480,20 +495,27 @@ providers:
 judge:
   # Settings laid over generation: for the judge's calls.
   model_settings:
-    # 2026-11-04 (user): Qwen only, writer and judge.
-    base_url: https://litellm.vse.cz
-    model: qwen3.5:122b
-    api_key_env: VSE_API_KEY
-    extra_headers: {}
+    # 2026-11-12 (user): Haiku writes, a Qwen on the VSE gateway judges
+    # (qwen3.5:122b is gone; this is the largest Qwen left there).
+    # Later the same day (smoke23, user asked for the most appropriate judge):
+    # DeepSeek v4.1 through OpenRouter. A different family from the Haiku
+    # writer, and the strictest of the three judges tried: it alone failed
+    # posts whose claim was not tied to the place. The VSE copy
+    # (deepseek-v4-flash) returns 403 "Model is blocked".
+    base_url: https://openrouter.ai/api/v1
+    model: deepseek/deepseek-v4.1-flash
+    api_key_env: OPENROUTER_API_KEY
+    extra_headers:
+      HTTP-Referer: https://vse.cz
+      X-Title: Thesis dataset generation
     reasoning_effort: null
     exclude_reasoning: false
-    reasoning_enabled: true
-    extra_body:
-      reasoning_effort: none
+    reasoning_enabled: false
+    extra_body: {}
     send_seed: false
     temperature: 0.0
     max_tokens: 800
-    timeout_seconds: 300
+    timeout_seconds: 120
 
   system: >-
     You check short social media posts for a research dataset. Judge only the
@@ -511,15 +533,14 @@ judge:
     only dropped in when it could be deleted without changing anything else,
     or when it is attached by a loose, unexplained jump.
 
-    Real people may do something that fits who they are and their link to
-    the place (given in the list): an actor filming, a singer at a gig, a
-    politician opening something or visiting, anyone at an event. It is
-    invented when it turns them into something they are not (an actor's
-    company buying water rights), puts words in their mouth, or accuses them
-    of a specific wrongdoing. A person from history (marked so in the list)
-    shown doing, backing or noticing anything today is invented too; they
-    may appear only through what they left behind. The writer's own opinion
-    is not invented.
+    What the post says about real people does not need to be true, only
+    plausible: a role, a quote, a project or a complaint about them is fine.
+    It is a false lead when it ties a listed person to a different place
+    than their link in the list (their home town moved to another city, a
+    gig or office said to be somewhere else), so that a reader would look
+    elsewhere. A person from history (marked so in the list) shown doing,
+    backing or noticing anything today is not plausible; they may appear
+    only through what they left behind.
 
     Names must be used as what they are. An event that is over (a past games,
     a battle, an expedition) is not happening now, is not a venue today and
@@ -550,6 +571,27 @@ judge:
     roadworks" or "the party is digging up half the neighbourhood" could be
     anywhere in the country, so it is not tied. The place name itself and a
     name described as belonging elsewhere need no tie.
+
+    A person, a band, a team or anything else that travels is tied only when
+    the post states a lasting tie to this place that a reader could look up:
+    it is their home town, they live here, they work or hold office here,
+    they formed or play their home games here, they made their best-known
+    work here. Being seen, met, filming, performing, visiting, or being "on
+    our street" or "in town" is not a tie: they could be doing that anywhere
+    in the world. A reader who knows who they are should not have to guess
+    which of the places in their life is meant. Something named after them
+    there (a street, a statue, a museum) is a tie. When the post itself names
+    the place, none of this applies: a person shown there (visiting,
+    performing, training) is tied enough.
+
+    Some posts also contain a distractor: a name marked in the list as
+    belonging to a different place, or the adjective for another country. It
+    is there to mislead a machine, not a careful reader. It must still make
+    sense in the scene ("a coach of Mexican tourists came for the festival
+    and left the field covered in bottles"), and a careful reader must still be
+    able to tell from the other names where the post is set. It fails when it
+    is thrown in with no sense, or when it makes the post read as set in its
+    own place.
 
     The names are meant to be the only thing that points to where the post is
     set. Report any invented detail of the setting that could narrow it down:
@@ -836,6 +878,17 @@ prompt:
     everyday detail. If a sentence needs a place name, write about something
     smaller instead.
 
+  # The last line of the prompt, when the item has names (generate.build_messages).
+  final_check: >-
+    Before you reply, check that the post uses every one of these: {names}.
+    If one is missing, rewrite the post; a shorter post that leaves one out
+    is rejected.
+
+  # Appended to the constraint for NOISE items (generate.build_constraint).
+  noise_exception: >-
+    The one exception is "{label}" from the list above: it is not covered by
+    this ban, and the post must use it.
+
   ambiguous_toponym: >-
     The only place name in the post is "{surface}", written exactly like that,
     with nothing added after it: no country, state or region. Do not write
@@ -873,7 +926,9 @@ prompt:
   # Revolution" could be anywhere in the country).
   clue_line: >-
     - "{label}"{type_note}. Its link to the place: {relation}. Say that link
-    in the post (it is there, at its offices, its ground, its site), and make
+    in the post (it is there, at its offices, its ground, its site). If it
+    can travel (a band, a team, a touring show), being here is not the link:
+    say the link itself (the band formed here, the club's home ground). Make
     the environmental point something it does, causes or suffers there. Use
     it as what it is, and do not name the place.
 
@@ -884,9 +939,32 @@ prompt:
   # description.
   clue_line_person: >-
     - "{label}"{type_note}, known as: {known_for}. Their link to the place:
-    {relation}. Say that link in the post (their home town, their work), show
-    them doing something that fits who they are, and make the environmental
-    point come out of that very thing. Do not name the place.
+    {relation}. A person can travel anywhere, so seeing them, meeting them or
+    watching them perform here is not a link: say the link given above, and
+    not another one, in words a reader can check ("lives or lived here":
+    their home town, where they live; "works or worked here": their office,
+    their job, their seat here). Then show them
+    doing something that fits who they are, and make the environmental point
+    come out of that very thing. Do not name the place.
+
+  # People from history (is_living false): only what they left behind, never alive today.
+  clue_line_person_past: >-
+    - "{label}"{type_note}, known as: {known_for}. Their link to the place:
+    {relation}. They are from history and are not alive today: never show them
+    doing, attending, opening or noticing anything. Bring them in only through
+    what they left behind here (their tomb, statue, house, studio, church, a
+    street or school named after them, their work), and say that link in the
+    post. Make the environmental point come out of that thing: what happens at
+    it, around it or because of it. Do not name the place.
+
+  # Added to a person's line when Wikidata ties them the same way to other places
+  # as well (validate_anchors link_elsewhere; Paul the Apostle lived in 25).
+  clue_link_elsewhere: >-
+    They are linked to other places in the same way too, so make clear which
+    one this is: tie them to it through something they are known for here
+    (what they built, wrote, led, played or did here), if you know it. If you
+    are not sure, say the link plainly; never invent a tie or name the other
+    places.
 
   # The smoke posts marked the distractor as foreign ("Henry Figueroa from
   # elsewhere"), which gives it away.
@@ -896,6 +974,16 @@ prompt:
     really there or going on (a band playing at the gig, a club's shirt in
     the crowd, a brand in the bins), never as a comparison or a line tacked
     on at the end, and without saying it is from somewhere else.
+
+  # The demonym distractor (plan.noise_kinds). {label} is the country
+  # adjective; {forms} its other accepted forms.
+  noise_demonym: >-
+    - the word "{label}"{forms}, for people or things in the scene that come
+    from that country: {label} tourists, {label} music, {label} companies,
+    {label} beer. Weave it into the same scene as something that is really
+    there or going on, never as a comparison or a line tacked on at the end.
+    Use the word itself, not the country's name, and do not suggest the post
+    is set in that country.
 
   surface_ambiguous: >-
     Place name to use: "{surface}"
@@ -918,16 +1006,17 @@ prompt:
     missing_name: the place name was missing
     clue_missing: a name you were asked to mention is missing
     noise_missing: a name you were asked to mention is missing
-    length: it was too short or too long
+    length: it was longer than 300 characters
     format: it must be one line with no emoji and no hashtags
     unplanned_entity: it named something that was not on your list
     no_environment: it made no clear environmental claim
     judge_place: it named a place that was not on your list
     judge_person: it named a person who was not on your list
     judge_setting: it added a detail of the setting that could give away where it is
-    judge_invented_person: it made up something about a real person
+    judge_invented_person: it tied a named person to a different place than their link, or showed a person from history acting today
     judge_misused: it used a name as something it is not, such as a past event happening now
     judge_untied_claim: the environmental claim was not clearly about this place
+    judge_no_tie: it did not say how the person belongs to this place; being seen, filming, training or performing here could be anywhere. Say their link from the list (their home town, where they live, their office or work here), in their own words, not the writer's home town
     judge_unconnected: the environmental point did not come out of what the name was doing at its place; make it one story (the name's event, site or work causes it or it happens there), and say the link instead of just "here"
     judge_fragments: it listed unrelated pieces instead of making one statement
     judge_media: it brought in a screen, song or article without tying the claim to the place
@@ -936,6 +1025,7 @@ prompt:
     judge_unanchored: a name was not tied to the place
     judge_no_environment: it made no clear environmental claim
     judge_off_theme: it was not about the planned topic
+    judge_noise_nonsense: the name from a different place made no sense in the scene, or made the post read as set there
     judge_incoherent: the sentences did not follow from each other
     parse_error: the reply was not the JSON object asked for
 
@@ -954,8 +1044,11 @@ prompt:
     Length: {length}
 
   # {n} is the item's target_len, drawn from the real posts' lengths.
+  # 2026-11-12 (user): only Bluesky's limit is enforced; the middle quartiles of
+  # real posts are a recommendation (Haiku wrote 2.3 times the target in smoke28).
   target_len_line: >-
-    Length: about {n} words
+    Length: about {n} words. Most real posts are {lo} to {hi} words, so stay in
+    that range if you can; never more than {chars} characters.
 
   register_notes_line: >-
     What that means: {notes}
@@ -978,7 +1071,7 @@ prompt:
     with these fields:
 
   output_fields:
-    situation: one sentence saying, for each name, its link to the place, what it is doing there and how that causes or meets the environmental point ("his gig in his home town leaves rubbish all over the streets")
+    situation: one sentence saying, for each name, its link to the place, what it is doing there and how that causes or meets the environmental point ("his gig in his home town leaves rubbish all over the streets"); if you were given a name or word from a different place, also say where it shows up in that scene
     post_text: the post
     entities_referenced: each named thing you mentioned, written exactly as it appears in the post
     naming_form_used: the place name exactly as you wrote it, or null if there is none

@@ -1,6 +1,13 @@
 name: majority_class
 tier: 0
 paradigm: baseline
+question: >
+  does the label distribution alone carry the headline number
+design: >
+  [no input read] constant = most frequent gold QID on the dev split of the dataset →
+  resolve(Wikidata P625, else property chain P159 → P131 → P19 → P937 → P276) → top-1,
+  the same place for every item. Output: always that place; no prediction only if dev
+  has no gold QID or it does not resolve. No ner_spans, no candidate_places.
 description: >
   Majority baseline. Always predicts the most frequent gold place in the DEV
   split of whichever dataset is being run, and ignores the text entirely. It

@@ -2,6 +2,14 @@ name: blink
 tier: 2
 variant: c
 paradigm: ner_dependent
+question: >
+  does the published retrieve-then-rerank linker (BLINK) beat the hand-built one
+design: >
+  NER(flair/ner-large, all tags) → link(BLINK: bi-encoder top-10 of 5.9M Wikipedia
+  entities → cross-encoder picks 1) → enwiki title → QID (sitelink) → resolve(property
+  chain, as refined) → rerank(E5) across mentions → top-1. Only the cross-encoder's top
+  entity per mention is resolved. Output: no span, no QID, or no reachable coords → no
+  prediction.
 description: >
   BLINK, the published form of the pattern retrieve_rerank builds by hand: a
   bi-encoder retrieves the top-10 of BLINK's 5.9M Wikipedia entities for each

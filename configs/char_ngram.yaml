@@ -1,6 +1,12 @@
 name: char_ngram
 tier: 3
 paradigm: lexical_retrieval
+question: >
+  how much of dense retrieval is surface character overlap rather than a learned encoder
+design: >
+  char n-grams(2-5) TF-IDF of post vs the same place texts and pool as dense_retrieval →
+  cosine → top-10 → top-1. Nothing learned, no NER. Output: no n-gram shared with any
+  place text → no prediction; otherwise always predicts.
 description: >
   Tier 3, the lexical floor. Ranks the same candidate places, described by
   the same indexed text, as dense_retrieval: a post and every place text are

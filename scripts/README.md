@@ -6,33 +6,21 @@ it runs.
 Scripts are standalone (`python scripts/<name>.py`) and resolve paths relative
 to the repository root.
 
-For dataset provenance see [`../DATASETS.md`](../DATASETS.md). For the
-decisions behind the numbers — the split, the tiers, the failure taxonomy — see
-[`../METHODOLOGY.md`](../METHODOLOGY.md).
+Setup is in the [top-level README](../README.md). How the dataset was made is
+in [`../generation/README.md`](../generation/README.md).
 
 ---
 
-## 0. Corpus acquisition
+## 1. Corpus for the style references
 
-These build and clean the Bluesky dump: ~380 MB, not committed, and
-regenerable only from here. No configured dataset consumes it *yet* -- it is
-intended as the source of style exemplars for the next dataset, so treat it as
-on the path rather than as a leftover.
+These build and clean the Bluesky dump (~380 MB, not committed) that
+`generation/synthetic/build_exemplars.py` picks tone references from. Only
+needed to build those references again.
 
 | Script | Purpose |
 |--------|---------|
 | `fetch_bluesky_en.py` | Filters the 2.1M-post Bluesky dump down to its English entries (~1.04M rows) with `langdetect`, since the dataset has no language field. |
 | `filter_adult_spam.py` | Strips solicitation spam from that dump using a two-tier vocabulary: unambiguous terms drop a post alone, ambiguous ones only alongside the "follow me / dm me / link in bio" grammar. Ordinary profanity is deliberately kept. |
-
-## 1. Dataset construction
-
-| Script | Purpose |
-|--------|---------|
-| `dataset_qids.py validate \| repair` | Checks each row's `qid` against Wikidata (item exists, English label matches, `P17` country agrees) and optionally repairs it by searching for a candidate whose country matches. Either action runs on any dataset. |
-| `dataset_coords.py add \| verify` | Fills `latitude`/`longitude` from Wikidata `P625` for each row's `qid`, or checks the stored values still match (~1.1 km tolerance). |
-
-Both use the one coordinate client, `src/wikidata.coords_for_qids`, and the one
-shared cache in `src/.wikidata_cache/`.
 
 ## 2. The dev/test split
 
@@ -81,6 +69,9 @@ python scripts/score.py --by condition
 |--------|---------|
 | `analyse.py` | Failure attribution, the grounded-selection report, paired statistics and the report tables. Subcommands `failures`, `grounding`, `tables`, `stats`, `all`. Groups configurations by the `paradigm` on their records, orders rows by the `tier` in `configs/*.yaml`, and Holm-adjusts the by-place McNemar p-values over the `COMPARISONS` family. |
 | `stats.py` | Statistical primitives, all clustered by place: McNemar, Holm adjustment, cluster bootstrap, paired effect intervals. |
+| `error_layers.py` | Gives every item one layer of its configuration's chain where it was lost (no mention, gold not among the candidates, wrong selection, ...). Also `analyse.py layers`. |
+| `simulate_designs.py` | Exploratory: cascades, gates and fallbacks built item by item from the saved predictions of two configurations. Not part of the planned comparisons. |
+| `check_rescore.py` | Re-runs scoring and analysis into a temporary folder and compares with the tables in `results/summary/`, and with a second fresh run. |
 
 ```bash
 python scripts/analyse.py all --split test --out results/summary
@@ -104,3 +95,34 @@ statistics, bootstrap and grounding tables as CSV, with `n_boot` and `seed`.
 No script here contains a key, and the Wikidata endpoints are public. The LLM
 configurations need `GOOGLE_API_KEY`, read from a git-ignored `src/.env`. The
 synthetic dataset is generated in `../generation/`, which reads its own key.
+
+## Environment
+
+- **Python 3.13.3** (CPython, Windows 11 x64). `requirements.lock` (repo root)
+  is the exact `pip freeze` of the environment; `requirements.txt` is the
+  short list. `python install.py` creates `.venv` and installs the lock.
+  The lock pins ReFinED to a git commit and `en_core_web_md` to its release
+  wheel. torch is the CPU build. Scoring and analysis (`score.py`,
+  `analyse.py`, `check_rescore.py`) need only PyYAML, numpy and scipy.
+- **Irchel Geoparser** (`geoparser_irchel`) runs in a second venv,
+  `.venv-geoparser` (or `GEOPARSER_PYTHON`), with `geoparser==0.6.1`
+  (`python install.py --geoparser`). It needs transformers>=5, which conflicts
+  with Flair, so it is not in the lock.
+
+Large external files, none committed (sizes as on the original machine):
+
+| What | Used by | Where it comes from | Size |
+|------|---------|---------------------|------|
+| BLINK models + entity encodings (`biencoder_wiki_large.*`, `crossencoder_wiki_large.*`, `all_entities_large.t7`, `entity.jsonl`) | `blink` | BLINK's `download_blink_models.sh`, into `.venv/src/blink/models` (or `BLINK_MODELS`); see the top-level README | ~30 GB |
+| ReFinED `wikipedia_model` + `wikipedia_data` + `roberta-base` | `refined`, `grounded_gemma_linking` | downloaded by ReFinED on first use to `~/.cache/refined` | ~8.6 GB |
+| Flair `flair/ner-large` (ner-english-large) | every config with Flair NER | Hugging Face hub, auto-download to `~/.flair` | ~6.3 GB |
+| `intfloat/multilingual-e5-base` | rerank and dense retrieval (`configs/shared.yaml`) | Hugging Face hub, auto-download | ~2.2 GB |
+| GeoNames gazetteer `geonames.db` | `geoparser_irchel` | built by the geoparser's gazetteer setup, in `%LOCALAPPDATA%/geoparser/gazetteers` | ~9.6 GB |
+| `dguzh/geo-all-MiniLM-L6-v2`, spaCy `en_core_web_sm` | `geoparser_irchel` | Hugging Face hub / spaCy, in `.venv-geoparser` | ~0.1 GB |
+| Wikidata response cache `src/.wikidata_cache/` | linkers, gazetteer, dense index | built by the runner from public Wikidata endpoints | ~0.6 GB |
+| Bluesky English dump (`generation/synthetic/data/bluesky_en.jsonl`) | synthetic-data generation only | `scripts/fetch_bluesky_en.py` from the HF dataset `alpindale/two-million-bluesky-posts` | ~0.4 GB |
+
+Gemma configurations (`grounded_gemma`, `gemma4`) call the Google API
+(`GOOGLE_API_KEY`) and replay from `src/.llm_cache/` where a response is cached.
+None of the above is needed to rescore: `python scripts/check_rescore.py`
+reads only `results/predictions/`, `splits/` and `configs/`.

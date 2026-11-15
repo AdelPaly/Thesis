@@ -39,8 +39,11 @@ JUDGE_SCHEMA: dict[str, Any] = {
             "description": "Names from the list that the post does not tie to where it is set: the "
                            "writer is not at it or right by it, and it is not shown acting on its own "
                            "home area or community. A name whose part could happen anywhere in its "
-                           "country, the writer's own neighbourhood included, is not tied. Empty if "
-                           "all are tied.",
+                           "country, the writer's own neighbourhood included, is not tied. A person, "
+                           "band, team or anything that travels is tied only by a stated lasting tie to this "
+                           "place (home town, lives, works or holds office, formed, home ground, best-known "
+                           "work made here); being seen, performing, filming or visiting here is not a tie. "
+                           "Empty if all are tied.",
         },
         "invented_setting": {
             "type": "array", "items": {"type": "string"},
@@ -68,7 +71,9 @@ JUDGE_SCHEMA: dict[str, Any] = {
             "type": "array",
             "description": "One entry per planned name from the list (not the distractor, not the place "
                            "name): the exact words copied from the post that say where the name belongs "
-                           "(its link: 'in his home town', 'outside their offices', 'at their ground'), and "
+                           "(its link: 'in his home town', 'outside their offices', 'at their ground'; for a "
+                           "person or anything that travels, a lasting tie, not 'here', 'on our street' or "
+                           "'playing a gig'), and "
                            "the exact words that show the environmental point coming out of it ('the crowd "
                            "left rubbish everywhere after the gig'). An empty string when the post has no "
                            "such words. Empty array when there are no planned names.",
@@ -112,10 +117,10 @@ JUDGE_SCHEMA: dict[str, Any] = {
         },
         "invented_person_claims": {
             "type": "array", "items": {"type": "string"},
-            "description": "Listed real people to whom the post gives something that does not fit who they "
-                           "are and their link to the place (as given in the list): a role they do not have, a "
-                           "quote, a specific wrongdoing, or, for a person from history, anything they do, back "
-                           "or notice today. Empty if none.",
+            "description": "Listed real people the post ties to a different place than their link in the "
+                           "list (a false lead elsewhere), or, for a person from history, shows doing, backing "
+                           "or noticing anything today. Untrue but plausible roles, quotes or wrongdoing do not "
+                           "count. Empty if none.",
         },
         "on_theme": {
             "type": "boolean",
@@ -126,6 +131,12 @@ JUDGE_SCHEMA: dict[str, Any] = {
             "type": "boolean",
             "description": "The post makes a claim about an environmental problem, improvement or change.",
         },
+        "distractor_makes_sense": {
+            "type": "boolean",
+            "description": "The name marked as belonging to a different place (or the other country's "
+                           "adjective) plays a sensible part in the scene, and a careful reader can still tell "
+                           "from the other names where the post is set. True when there is no such name.",
+        },
         "coherent": {
             "type": "boolean",
             "description": "Each sentence follows from the one before; no unexplained jump.",
@@ -134,7 +145,7 @@ JUDGE_SCHEMA: dict[str, Any] = {
     },
     "required": ["decorative_names", "unanchored_names", "invented_setting", "imagined_reaction", "unlisted_people", "unlisted_places",
                  "evidence", "claim_follows_from_names", "claim_tied_to_place", "listed_fragments", "media_untied", "misused_names", "invented_person_claims",
-                 "on_theme", "environmental_claim", "coherent", "reason"],
+                 "on_theme", "environmental_claim", "distractor_makes_sense", "coherent", "reason"],
     "additionalProperties": False,
 }
 
@@ -153,8 +164,8 @@ JUDGE_SCHEMA: dict[str, Any] = {
 # untied media framing fail as well. A post off the planned topic fails as
 # judge_off_theme, reported apart from judge_no_environment (no claim at all).
 ORDER = ("judge_place", "judge_person", "judge_setting", "judge_invented_person", "judge_misused",
-         "judge_untied_claim", "judge_unconnected", "judge_fragments", "judge_media", "judge_imagined", "judge_decorative",
-         "judge_unanchored", "judge_no_environment", "judge_off_theme", "judge_incoherent")
+         "judge_untied_claim", "judge_no_tie", "judge_unconnected", "judge_fragments", "judge_media", "judge_imagined", "judge_decorative",
+         "judge_noise_nonsense", "judge_unanchored", "judge_no_environment", "judge_off_theme", "judge_incoherent")
 
 
 def allowed_names(item: dict[str, Any]) -> list[str]:
@@ -162,6 +173,8 @@ def allowed_names(item: dict[str, Any]) -> list[str]:
     names = [c["clue_label"] for c in item.get("clues") or []]
     if item.get("noise_entity"):
         names.append(item["noise_entity"]["clue_label"])
+        if item["noise_entity"].get("kind") == "demonym":   # "Americans" for "American"
+            names += item["noise_entity"].get("aliases") or []
     surface = (item.get("surface_form") or {}).get("text")
     if surface:
         names.append(surface)
@@ -189,6 +202,9 @@ def describe(item: dict[str, Any], name: str, config: dict[str, Any] | None = No
                     "media": "a newspaper or broadcaster"}.get(c.get("entity_type"), "")
             return f'- "{name}"' + (f" ({kind}; " if kind else " (") + f"link to the place: {relation(c, config)})"
     if (item.get("noise_entity") or {}).get("clue_label") == name:
+        if item["noise_entity"].get("kind") == "demonym":
+            return (f'- "{name}" (the adjective for another country, for people or things from there; '
+                    f'any of its forms may be used, and it need not be tied to where the post is set)')
         return f'- "{name}" (belongs to a different place; it need not be tied to where the post is set)'
     return f'- "{name}" (the place name)'
 
@@ -224,6 +240,34 @@ def _norm(name: str) -> str:
     return " ".join(name.lower().replace('"', "").split())
 
 
+# A person's link must name a lasting tie (2026-11-12, user: "it must be clear how
+# the entity that can walk and move around the earth is tied to the place").
+# Being seen, filming or training here could happen anywhere.
+TIE_WORDS = re.compile(r"\b(home|homes|hometown|lives?|lived|living|born|grew up|raised|from|"
+                       r"house|flat|office|offices|works?|worked|working|job|seat|studio|founded|formed|"
+                       r"based|resident|native|local lad|local girl|residency|"
+                       # what a person left behind, named after them (a person from history appears only so)
+                       r"street|streets|road|statue|museum|grave|tomb|monument|memorial|plaque|square|school|"
+                       r"named after|named for|where (?:he|she|they) (?:lives?|lived|works?|worked))\b")
+
+WRITERS = {"my", "our", "me", "we", "i"}
+PERSON = {"his", "her", "their", "he", "she", "they", "where"}
+
+
+def person_tie(words: str) -> bool:
+    """A tie word that is not the writer's own: "outside my office", "near my home town" and
+    "our street" tie the writer, not the person (2026-11-12 pilot: Kaja Kallas, Gauguin)."""
+    for m in TIE_WORDS.finditer(words):
+        before = set(words[:m.start()].split()[-2:])
+        if m.group().startswith("where") or before & PERSON or not before & WRITERS:
+            return True
+    return False
+
+
+# Conditions that name the place: the toponym says where, the clue only which one, so a person
+# shown there is tied enough (2026-11-12, user: "drop it from B completely").
+NAMED_PLACE = {"B", "NOISE_B"}
+
 BARE_LINK = {"here", "there", "around here", "near here", "nearby", "in town", "back", "locally", "local"}
 
 
@@ -256,6 +300,10 @@ def missing_evidence(item: dict[str, Any], answer: dict[str, Any], text: str) ->
             if not pieces or at < 0:
                 out.append(f'{c["clue_label"]}: {what} "{e.get(key)}" not in the post')
                 break
+            if (key == "link_words" and c.get("is_human") and item.get("condition") not in NAMED_PLACE
+                    and not person_tie(words)):
+                out.append(f'{c["clue_label"]}: link "{e.get(key)}" names no lasting tie (home town, lives, works)')
+                break
     return out
 
 
@@ -274,6 +322,7 @@ def verdict(item: dict[str, Any], answer: dict[str, Any], text: str | None = Non
     decorative = [n for n in answer.get("decorative_names") or [] if _norm(n) in allowed and _norm(n) != noise_name]
     clue_names = {_norm(c["clue_label"]) for c in item.get("clues") or []}
     unanchored = [n for n in answer.get("unanchored_names") or [] if _norm(n) in clue_names]
+    evidence = missing_evidence(item, answer, text) if text is not None else []
     checks = {
         "judge_place": extra("unlisted_places"),
         "judge_person": extra("unlisted_people"),
@@ -281,13 +330,17 @@ def verdict(item: dict[str, Any], answer: dict[str, Any], text: str | None = Non
         "judge_invented_person": [n for n in answer.get("invented_person_claims") or [] if _norm(n) in clue_names],
         "judge_misused": [n for n in answer.get("misused_names") or [] if _norm(n) in clue_names],
         "judge_untied_claim": answer.get("claim_tied_to_place") is False,
+        # A person's link with no lasting tie gets its own reason, so the retry says what is wrong.
+        "judge_no_tie": [m for m in evidence if "names no lasting tie" in m],
         "judge_unconnected": (bool(item.get("clues")) and answer.get("claim_follows_from_names") is False)
-                             or (missing_evidence(item, answer, text) if text is not None else []),
+                             or [m for m in evidence if "names no lasting tie" not in m],
         "judge_fragments": answer.get("listed_fragments") is True,
         "judge_media": answer.get("media_untied") is True,
         "judge_off_theme": bool(item.get("env_theme")) and answer.get("on_theme") is False,
         "judge_imagined": answer.get("imagined_reaction") is True,
         "judge_decorative": decorative,
+        # 2026-11-12 (user): the distractor misleads machines, not a careful reader.
+        "judge_noise_nonsense": bool(item.get("noise_entity")) and answer.get("distractor_makes_sense") is False,
         "judge_unanchored": unanchored,
         "judge_no_environment": answer.get("environmental_claim") is False,
         "judge_incoherent": answer.get("coherent") is False,
@@ -313,13 +366,18 @@ class Judge:
     def check(self, item: dict[str, Any], text: str) -> dict[str, Any]:
         """{"answer", "verdict", "error", "usage"}; a failed call is recorded, not raised."""
         messages = judge_messages(item, text, self.config)
-        try:
-            content, metadata, _ = gen.call_with_backoff(
-                self.client, messages, self.config, seed=None,
-                schema=(JUDGE_SCHEMA, "post_check"))
-        except gen.ApiError as exc:
-            return {"answer": None, "verdict": ["judge_error", str(exc)[:200]], "error": str(exc)}
-        answer, error = parse(content)
+        # A reply with no JSON is asked again once (2026-11-12: DeepSeek returned none on 3 of
+        # about 60 calls, and each cost the writer a try).
+        for attempt in range(2):
+            try:
+                content, metadata, _ = gen.call_with_backoff(
+                    self.client, messages, self.config, seed=None,
+                    schema=(JUDGE_SCHEMA, "post_check"))
+            except gen.ApiError as exc:
+                return {"answer": None, "verdict": ["judge_error", str(exc)[:200]], "error": str(exc)}
+            answer, error = parse(content)
+            if not error:
+                break
         if error:
             return {"answer": None, "verdict": ["judge_error", error], "error": error,
                     "raw": (content or "")[:500]}

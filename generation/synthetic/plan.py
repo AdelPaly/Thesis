@@ -68,9 +68,8 @@ RANDOMNESS
 NOTE ON CLUE SELECTION
     reform_places.py picks each place's clues (clean of the place's names,
     country and region; from at least two families for A) and orders them by
-    sitelinks. No draw is made here: A1 and NOISE_A1 use the first clue, A3
-    the first three, B and NOISE_B the first clue with no clue relation to
-    the rival namesake (place_inputs.py checks that, so the clue cannot point
+    sitelinks. No draw is made here: A and NOISE_A use the first clue, B and
+    NOISE_B the first clue with no clue relation to the rival namesake (place_inputs.py checks that, so the clue cannot point
     at both places). Only the NOISE distractor is drawn from the stream.
 
     Clues of the part, water and range families are themselves place names
@@ -79,8 +78,8 @@ NOTE ON CLUE SELECTION
 
 NOTE ON SURFACE FORMS
     Entity names (people, organisations, works) are always written in full,
-    recognisable form. B, NOISE_B and EXPLICIT write the place's English
-    label; for B that label is shared with the rival namesake, and the
+    recognisable form. B, NOISE_B, EXPLICIT and NOISE_EXPLICIT write the
+    place's English label; for B that label is shared with the rival namesake, and the
     surrounding context is what disambiguates it.
 
 USAGE
@@ -123,7 +122,7 @@ except ImportError:  # pragma: no cover
 
 HERE = Path(__file__).resolve().parent
 
-PLAN_VERSION = "8"   # 2: items carry env_theme; 3: B/NOISE_B carry a clue, EXPLICIT is the bare label; 4: fixed core, type groups; 5: reform_places.py set, plan/reserve pools; 6: scale, role, target_len from the Bluesky lengths; 7: spare clues, per-condition lengths, living/occupation on people; 8: valence (negative/positive claim), registers limited by valence, EXPLICIT paired with B/A1 and not planned for infrastructure-only places
+PLAN_VERSION = "10"  # 2: items carry env_theme; 3: B/NOISE_B carry a clue, EXPLICIT is the bare label; 4: fixed core, type groups; 5: reform_places.py set, plan/reserve pools; 6: scale, role, target_len from the Bluesky lengths; 7: spare clues, per-condition lengths, living/occupation on people; 8: valence (negative/positive claim), registers limited by valence, EXPLICIT paired with B/A and not planned for infrastructure-only places; 9: sbin (B slot bin, rank-1 cap), foreign rival, 2+ B clues; 10: A3 dropped, NOISE_EXPLICIT (EXPLICIT plus a distractor, same draws)
 
 # The clue fields a plan item carries, for its clues and its spare clues.
 CLUE_KEYS = ("clue_qid", "clue_label", "property", "property_label", "family", "entity_type",
@@ -134,19 +133,30 @@ CLUE_KEYS = ("clue_qid", "clue_label", "property", "property_label", "family", "
 # n_clues        how many entity clues appear in the text
 # needs_toponym  "ambiguous" -> the label, shared with a namesake 161+ km away
 #                "label"     -> the place's bare label, whether or not other
-#                               places share it (EXPLICIT; the row records which)
+#                               places share it (EXPLICIT, NOISE_EXPLICIT; the
+#                               row records which)
 #                None        -> no place name may appear at all
 # noise          whether a distractor entity from another place is added
-# B and NOISE_B carry one A1-style clue: a name shared by several places has no
+# B and NOISE_B carry one A-style clue: a name shared by several places has no
 # single answer without something to pick the namesake.
 CONDITION_SPECS: dict[str, dict[str, Any]] = {
-    "A1":       {"n_clues": 1, "needs_toponym": None,        "noise": False},
-    "A3":       {"n_clues": 3, "needs_toponym": None,        "noise": False},
-    "B":        {"n_clues": 1, "needs_toponym": "ambiguous", "noise": False},
-    "EXPLICIT": {"n_clues": 0, "needs_toponym": "label",     "noise": False},
-    "NOISE_A1": {"n_clues": 1, "needs_toponym": None,        "noise": True},
-    "NOISE_B":  {"n_clues": 1, "needs_toponym": "ambiguous", "noise": True},
+    "A":              {"n_clues": 1, "needs_toponym": None,        "noise": False},
+    "B":              {"n_clues": 1, "needs_toponym": "ambiguous", "noise": False},
+    "EXPLICIT":       {"n_clues": 0, "needs_toponym": "label",     "noise": False},
+    "NOISE_A":        {"n_clues": 1, "needs_toponym": None,        "noise": True},
+    "NOISE_B":        {"n_clues": 1, "needs_toponym": "ambiguous", "noise": True},
+    "NOISE_EXPLICIT": {"n_clues": 0, "needs_toponym": "label",     "noise": True},
 }
+
+# Conditions whose clue may share its name with something elsewhere (validate_anchors
+# "shared_name"). 2026-11-12, user: in A such a clue is swapped for a spare; in B the
+# place name is already ambiguous, so the clue is kept and the ambiguity recorded on it
+# (clue["name_shared"]).
+NAME_SHARED_OK = {"B", "NOISE_B"}
+
+# The explicit conditions: the bare name, planned on every A or B place and
+# copying the draws of that place's B item (else its A item).
+EXPLICIT_CONDITIONS = {c for c, s in CONDITION_SPECS.items() if s["needs_toponym"] == "label"}
 
 
 # --------------------------------------------------------------------------- #
@@ -261,7 +271,7 @@ class RandomStream:
             json.dumps(
                 {
                     "position": self.position,
-                    "stream_file": str(self.path),
+                    "stream_file": self.path.name,
                     "stream_length": len(self.values),
                     "updated_utc": utc_now(),
                 },
@@ -358,6 +368,9 @@ class Place:
     # reform_places.py bins, carried into every item for analysis.
     pbin: str = ""
     rbin: str = ""
+    # B slot bin: rbin with "similar" split by rank (similar_ahead / similar_behind);
+    # reserve swaps match on it so B keeps its cap on rank-1 places.
+    sbin: str = ""
     cbin: str = ""
     # The best-known namesake more than 161 km away (qid, label, sitelinks,
     # km) and how many places share the name, this one included. {} and 1
@@ -376,6 +389,10 @@ class Place:
     name_forms: list[str] = field(default_factory=list)
     country_forms: list[str] = field(default_factory=list)
     region_forms: list[str] = field(default_factory=list)
+    # The country's demonym forms and the adjective the demonym distractor uses
+    # ("Danish"), from place_inputs.py. "" when the country has none.
+    country_adjective: str = ""
+    country_demonyms: list[str] = field(default_factory=list)
     # distractor_clues() memoised per donor qid; see reset_caches().
     _distractors: dict[str, list[dict[str, Any]]] = field(
         default_factory=dict, repr=False, compare=False)
@@ -483,7 +500,8 @@ def load_places(path: Path, inputs_path: Path) -> dict[str, Place]:
             b_ok = set(rec.get("b_clues") or [])
             rival = ({"qid": row["rival"], "label": rec.get("rival_label") or "",
                       "sitelinks": _as_int(row.get("rival_sl"), 0),
-                      "km": _as_int(row.get("rival_km"), 0)} if row.get("rival") else {})
+                      "km": _as_int(row.get("rival_km"), 0),
+                      "country_qid": (row.get("rival_c") or "").strip()} if row.get("rival") else {})
             places[qid] = Place(
                 qid=qid,
                 name=row["label"].strip(),
@@ -501,6 +519,7 @@ def load_places(path: Path, inputs_path: Path) -> dict[str, Place]:
                 explicit=row["EXPLICIT"].strip() == "yes",
                 pbin=row.get("pbin", ""),
                 rbin=row.get("rbin", ""),
+                sbin=row.get("sbin", ""),
                 cbin=row.get("cbin", ""),
                 rival=rival,
                 places_sharing_name=_as_int(row.get("n_names"), 1),
@@ -511,6 +530,8 @@ def load_places(path: Path, inputs_path: Path) -> dict[str, Place]:
                 name_forms=names,
                 country_forms=countries,
                 region_forms=regions,
+                country_adjective=rec.get("country_adjective") or "",
+                country_demonyms=list(rec.get("country_demonyms") or []),
             )
     if not places:
         raise SystemExit(f"{path} yielded no places")
@@ -617,8 +638,9 @@ def noise_donors(place: Place, places: dict[str, Place]) -> list[str]:
     """
     Places that can supply a distractor for this place: any other place with
     at least one clue to draw from. It may be on the same continent or on
-    another, but not in the same country as the post's place. Memoised on the
-    place (reset_caches clears it).
+    another, but not in the same country as the post's place, nor in the
+    country of its rival namesake (so a NOISE_B distractor never points at the
+    namesake). Memoised on the place (reset_caches clears it).
     """
     # A distractor whose label names THIS place ("2013 South American
     # Championships" carries "American" into a United States item) would put a
@@ -630,6 +652,7 @@ def noise_donors(place: Place, places: dict[str, Place]) -> list[str]:
             for qid, other in places.items()
             if qid != place.qid
             and donor_relation(place, other) != "same_country"
+            and other.country_qid != place.rival.get("country_qid")
             and place.distractor_clues(other)
         ]
     return place._donors
@@ -646,7 +669,8 @@ def donor_relation(place: Place, donor: Place) -> str:
 
 
 def feasible(
-    place: Place, condition: str, places: dict[str, Place]
+    place: Place, condition: str, places: dict[str, Place],
+    noise_kinds: Sequence[str] = ("entity",),
 ) -> tuple[bool, str]:
     """
     Can this place support this condition? Returns (ok, reason_if_not).
@@ -660,6 +684,8 @@ def feasible(
 
     if spec["noise"] and not noise_donors(place, places):
         return False, "no other place has an eligible clue to donate"
+    if spec["noise"] and "demonym" in noise_kinds and not demonym_donors(place, places):
+        return False, "no other place has a country demonym to donate"
 
     toponym = spec["needs_toponym"]
     if toponym == "ambiguous":
@@ -684,9 +710,8 @@ def feasible(
 def choose_clues(place: Place, condition: str) -> list[dict[str, Any]]:
     """
     The clues are fixed by reform_places.py, most documented first, so no draw
-    is made: A1 and NOISE_A1 use the first clue (the most documented, its A1
-    rule), A3 the first three (always from at least two families), B and
-    NOISE_B the first clue with no link to the rival.
+    is made: A and NOISE_A use the first clue (the most documented, its A
+    rule), B and NOISE_B the first clue with no link to the rival.
     """
     n = CONDITION_SPECS[condition]["n_clues"]
     if n == 0:
@@ -713,7 +738,8 @@ def spare_clues(place: Place, condition: str) -> list[dict[str, Any]]:
 
 def choose_surface_form(place: Place, condition: str) -> dict[str, Any]:
     """
-    No draw: B, NOISE_B and EXPLICIT all write the place's English label.
+    No draw: B, NOISE_B, EXPLICIT and NOISE_EXPLICIT all write the place's
+    English label.
     top_namesake is the best-known other place 161+ km away with the same
     name, so results can be split by whether the intended place is the obvious
     reading (compare its sitelinks with the item's place_sitelinks).
@@ -730,36 +756,83 @@ def choose_surface_form(place: Place, condition: str) -> dict[str, Any]:
     }
 
 
+def demonym_donors(place: Place, places: dict[str, Place]) -> list[str]:
+    """
+    The noise donors (noise_donors) whose country has a demonym adjective and
+    no demonym form that names this place, its country or its regions ("Dominican"
+    for a place in the Dominican Republic when the donor is in Dominica). The
+    same donors as the entity distractor, so the two noise kinds differ only in
+    what is taken from the donor.
+    """
+    def clean(donor: Place) -> bool:
+        forms = [donor.country_adjective, *donor.country_demonyms]
+        return bool(donor.country_adjective) and all(
+            label_leak(f, place.name_forms, place.country_forms, place.region_forms) is None for f in forms)
+    return [q for q in noise_donors(place, places) if clean(places[q])]
+
+
 def choose_noise_entity(
     place: Place,
     condition: str,
     places: dict[str, Place],
     stream: RandomStream,
+    noise_kinds: Sequence[str] = ("entity",),
 ) -> dict[str, Any] | None:
     """
-    For the noise conditions, add one entity associated with another place.
-    The other place can be anywhere except the post's own country
+    For the noise conditions, add one distractor associated with another
+    place, anywhere except the post's own country and its rival's country
     (donor_relation records whether it is on the same or another continent).
+    Its kind is drawn from plan.noise_kinds:
 
-    The distractor is a real clue for a real other place, which is what makes
-    it a useful distractor: a system that follows the wrong association lands
-    somewhere specific and wrong, rather than nowhere.
+    entity   a real clue of the other place (a band, a club, a company). A
+             system that follows the wrong association lands somewhere
+             specific and wrong, rather than nowhere.
+    demonym  the other place's country adjective ("French", "British"), as in
+             "French tourists". It points at a country, not a place.
     """
     if not CONDITION_SPECS[condition]["noise"]:
         return None
 
-    candidate_qids = noise_donors(place, places)
+    kind = stream.pick(list(noise_kinds))
+    candidate_qids = demonym_donors(place, places) if kind == "demonym" else noise_donors(place, places)
     if not candidate_qids:
         # feasible() rejects this pair before it reaches the slate, so this
         # means the two have drifted apart. Never plan a noise item without
         # its noise.
         raise SystemExit(
-            f"no distractor donor for {place.qid} under {condition}, which "
+            f"no {kind} distractor donor for {place.qid} under {condition}, which "
             f"feasible() should have rejected"
         )
 
     donor = places[stream.pick(candidate_qids)]
+    if kind == "demonym":
+        return noise_demonym_from(place, donor)
     return noise_entity_from(place, donor, stream.pick(place.distractor_clues(donor)))
+
+
+def noise_demonym_from(place: Place, donor: Place) -> dict[str, Any]:
+    """The plan's noise_entity record for the demonym of donor's country. It has
+    the entity record's fields, so the checks that look for clue_label and its
+    aliases in the post work unchanged; clue_qid is the country's QID."""
+    return {
+        "kind": "demonym",
+        "donor_relation": donor_relation(place, donor),
+        "clue_qid": donor.country_qid,
+        "clue_label": donor.country_adjective,
+        "property": "P1549",
+        "property_label": "demonym",
+        "family": "demonym",
+        "entity_type": "demonym",
+        "sitelinks": None,
+        "is_toponym": False,
+        "label_leak": None,
+        "is_human": False,
+        "aliases": [f for f in donor.country_demonyms if f != donor.country_adjective],
+        "donor_place_qid": donor.qid,
+        "donor_place_name": donor.name,
+        "donor_continent": donor.continent,
+        "donor_country_qid": donor.country_qid,
+    }
 
 
 def noise_entity_from(place: Place, donor: Place, donor_clue: dict[str, Any]) -> dict[str, Any]:
@@ -767,6 +840,7 @@ def noise_entity_from(place: Place, donor: Place, donor_clue: dict[str, Any]) ->
     the distractor in a post about place (also used by validate_anchors.py when
     it replaces a rejected distractor)."""
     return {
+        "kind": "entity",
         "donor_relation": donor_relation(place, donor),
         "clue_qid": donor_clue["clue_qid"],
         "clue_label": donor_clue["clue_label"],
@@ -782,6 +856,7 @@ def noise_entity_from(place: Place, donor: Place, donor_clue: dict[str, Any]) ->
         "donor_place_qid": donor.qid,
         "donor_place_name": donor.name,
         "donor_continent": donor.continent,
+        "donor_country_qid": donor.country_qid,
     }
 
 
@@ -894,7 +969,7 @@ def conditions_for(place: Place, conditions: Iterable[str]) -> list[tuple[str, s
     """
     (condition, pool) for every condition places.csv puts this place in: the A
     set (A column) gets the A conditions, the B set the B conditions. EXPLICIT
-    is the reference the other conditions are read against (the name stated
+    (and NOISE_EXPLICIT, the same post with a distractor) is the reference the other conditions are read against (the name stated
     outright), so it is planned only for places in the A or B plan; a reserve
     place gets it as a reserve item, generated only if the place is swapped in.
     The EXPLICIT-only infrastructure places in places.csv get nothing: they
@@ -905,7 +980,7 @@ def conditions_for(place: Place, conditions: Iterable[str]) -> list[tuple[str, s
     in_plan = "plan" in (place.a_pool, place.b_pool)
     for condition in conditions:
         spec = CONDITION_SPECS[condition]
-        if condition == "EXPLICIT":
+        if condition in EXPLICIT_CONDITIONS:
             pool = ("" if not place.explicit else "plan" if in_plan
                     else "reserve" if place.a_pool or place.b_pool else "")
         elif spec["needs_toponym"] == "ambiguous":
@@ -928,6 +1003,7 @@ def build_slate(
     plan and reserve, so nothing is drawn or topped up here.
     """
     conditions = list(config["plan"]["conditions"])
+    noise_kinds = list(config["plan"].get("noise_kinds") or ["entity"])
     unknown = set(conditions) - set(CONDITION_SPECS)
     if unknown:
         raise SystemExit(f"config names unknown conditions: {sorted(unknown)}")
@@ -937,7 +1013,7 @@ def build_slate(
     for qid in sorted(places):
         place = places[qid]
         for condition, pool in conditions_for(place, sorted(conditions)):
-            ok, reason = feasible(place, condition, places)
+            ok, reason = feasible(place, condition, places, noise_kinds)
             if not ok:
                 rejections.append({
                     "record": "pair_rejected",
@@ -969,8 +1045,9 @@ def load_lengths(path: Path) -> list[tuple[int, int]]:
 
 
 def length_range(config: dict[str, Any], condition: str) -> tuple[int, int]:
-    """The words a post of this condition may have: finalise.words_by_condition,
-    else finalise.min_words to max_words. The same range finalise.py keeps."""
+    """The target word range for a post of this condition: finalise.words_by_condition,
+    else finalise.min_words to max_words. A target only; finalise.py checks
+    finalise.max_chars."""
     fin = config.get("finalise") or {}
     lo, hi = (fin.get("words_by_condition") or {}).get(
         condition, (fin.get("min_words"), fin.get("max_words")))
@@ -1002,13 +1079,17 @@ def plan_items(
     slate, rejections = build_slate(places, config)
     scales = list(config["plan"]["scales"])
     valences = list(config["plan"]["valences"])
+    # entity / demonym distractor, drawn uniformly (2026-11-06, user: half and half)
+    noise_kinds = list(config["plan"].get("noise_kinds") or ["entity"])
 
     items: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
     replicate = 0   # one item per (place, condition); kept in the id hash
-    # EXPLICIT is read against the place's B item (else its A1 item): it takes
+    # EXPLICIT is read against the place's B item (else its A item): it takes
     # that item's style and topic draws, so the two posts differ by the clue,
-    # not by the writing. The slate is sorted by condition, so A1 and B come first.
+    # not by the writing. NOISE_EXPLICIT takes the same draws, so it differs
+    # from EXPLICIT by the distractor only. The slate is sorted by condition,
+    # so A and B come first.
     siblings: dict[str, dict[str, Any]] = {}
 
     for qid, condition, pool in slate:
@@ -1017,8 +1098,8 @@ def plan_items(
 
         clues = choose_clues(place, condition)
         surface_form = choose_surface_form(place, condition)
-        noise_entity = choose_noise_entity(place, condition, places, stream)
-        twin = siblings.get(qid) if condition == "EXPLICIT" else None
+        noise_entity = choose_noise_entity(place, condition, places, stream, noise_kinds)
+        twin = siblings.get(qid) if condition in EXPLICIT_CONDITIONS else None
         if twin:
             register = next(r for r in config["registers"] if r["name"] == twin["register"])
             valence, target_len, slots = twin["valence"], twin["target_len"], dict(twin["slots"])
@@ -1048,6 +1129,7 @@ def plan_items(
             "places_sharing_name": place.places_sharing_name,
             "pbin": place.pbin,
             "rbin": place.rbin,
+            "sbin": place.sbin,
             "cbin": place.cbin,
             "condition": condition,
             "pool": pool,
@@ -1067,7 +1149,7 @@ def plan_items(
             "valence": valence,
             # The planned clues' roles, a hint to the writer (prompt.role_hints).
             "role": ";".join(dict.fromkeys(c.get("role") or "other" for c in clues)),
-            # The B or A1 item this EXPLICIT item copies its draws from.
+            # The B or A item this EXPLICIT or NOISE_EXPLICIT item copies its draws from.
             "paired_with": twin["item_id"] if twin else None,
             "replicate": replicate,
         }
@@ -1086,7 +1168,7 @@ def plan_items(
         payload["planned_utc"] = utc_now()
         items.append(payload)
         # same pool only: a reserve EXPLICIT item pairs with the reserve B item
-        if condition == "B" or (condition == "A1" and qid not in siblings):
+        if condition == "B" or (condition == "A" and qid not in siblings):
             if pool == ("plan" if "plan" in (place.a_pool, place.b_pool) else "reserve"):
                 siblings[qid] = payload
 
@@ -1100,7 +1182,7 @@ def _signal_label(condition: str) -> str:
     toponym disambiguated by context.
     """
     spec = CONDITION_SPECS[condition]
-    if condition == "EXPLICIT":
+    if condition in EXPLICIT_CONDITIONS:
         return "explicit"
     has_a = spec["n_clues"] > 0
     has_b = spec["needs_toponym"] == "ambiguous"
@@ -1277,7 +1359,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     print(f"loaded {len(places)} places, "
           f"{sum(1 for p in places.values() if p.clues)} with at least one clue, "
-          f"{sum(1 for p in places.values() if len(p.clues) >= 3)} with three, "
           f"{sum(1 for p in places.values() if p.b_pool and p.b_clues)} of "
           f"{sum(1 for p in places.values() if p.b_pool)} B places with a clue "
           f"not linked to the rival")

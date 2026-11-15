@@ -1,6 +1,6 @@
 """Inference runner. Computes no metrics.
 
-    python src/runner.py --config refined --dataset social_media_clean
+    python src/runner.py --config refined --dataset synthetic
 
 Runs one configuration over one dataset and writes one JSON object per item to
 results/predictions/<config_name>__<dataset>.jsonl. Every item produces a
@@ -56,7 +56,7 @@ CODE_PATHS = ("src", "configs")
 # Optional dataset columns copied onto each prediction record so scripts/score.py
 # can split results by them (--by). Written by generation/synthetic/finalise.py;
 # datasets without them just get None. Keep in step with BIN_COLUMNS in score.py.
-BIN_COLUMNS = ("place_prominence", "rival_prominence", "clue_prominence", "env_theme")
+BIN_COLUMNS = ("place_prominence", "rival_prominence", "clue_prominence", "env_theme", "noise_kind")
 
 
 @functools.lru_cache(maxsize=1)
@@ -126,6 +126,8 @@ def build_record(cfg: PipelineConfig, dataset: str, row, out) -> dict:
         "place_qid": _clean(row.get("qid")),
         "condition": _clean(row.get("signal_type")),
         **{column: _clean(row.get(column)) for column in BIN_COLUMNS},
+        # The synthetic generator names the theme column `topic`.
+        "env_theme": _clean(row.get("env_theme")) or _clean(row.get("topic")),
         "gold_latlon": _latlon(row),
         "gold_country": _clean(row.get("country")),
         "gold_continent": _clean(row.get("continent")),

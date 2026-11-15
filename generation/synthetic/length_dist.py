@@ -4,9 +4,9 @@ Word-count distribution of the real Bluesky posts, for the post lengths.
 
     python length_dist.py
 
-plan.py draws each item's target length from this distribution within the
-condition's range in plan.length_ranges (Q1 to Q3, the middle half of real
-posts, for most), and finalise.py drops a post outside that range. Reads
+plan.py draws each item's target length from this distribution within
+finalise.min_words to max_words (Q1 to Q3, the middle half of real posts).
+That range is a target; finalise.py only drops posts over finalise.max_chars. Reads
 paths.bluesky_dump and writes paths.length_dist (sampler/length_dist.json):
 the percentiles and the count of posts at every length.
 
@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from pathlib import Path
 from collections import Counter
 
 import plan
@@ -50,7 +51,7 @@ def main() -> int:
                 counts[n] += 1
     marks = {"p5": 0.05, "p10": 0.1, "q1": 0.25, "median": 0.5, "q3": 0.75, "p90": 0.9, "p95": 0.95}
     record = {
-        "source": config["paths"]["bluesky_dump"],
+        "source": Path(config["paths"]["bluesky_dump"]).name,
         "posts": sum(counts.values()),
         **{name: percentile(counts, q) for name, q in marks.items()},
         "counts": {str(n): k for n, k in sorted(counts.items())},

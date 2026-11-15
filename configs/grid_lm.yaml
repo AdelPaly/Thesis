@@ -1,6 +1,14 @@
 name: grid_lm
 tier: 3
 paradigm: grid_lm
+question: >
+  can a classic word-distribution grid model locate a post without mention detection or
+  a gazetteer at query time
+design: >
+  unigram LM per 1° lat/lon cell (dev texts whose gold falls in the cell + place texts
+  of the dense_retrieval pool; Good-Turing unseen mass) → cells by KL(post || cell) →
+  within each cell its places by KL(post || place text) → top-10 → top-1. Output: no
+  tokens → no prediction; otherwise always predicts.
 description: >
   Tier 3, retrieval without mention detection, done the way it was first done
   for documents: a unigram language model per cell of a 1-degree latitude /
@@ -12,7 +20,8 @@ description: >
   from the indexed text of every candidate place in it. The candidate places
   and their texts are dense_retrieval's own (same pool, same index fields).
   With dev texts alone almost no test place would sit in a cell that has a
-  model (at 1 degree, 1 of 94 test places in social_media_clean), so the place
+  model (the split is by place, so a test place's own cell has dev texts only
+  by chance), so the place
   texts are what make every candidate place reachable; the dev texts are what
   the method learns from.
 

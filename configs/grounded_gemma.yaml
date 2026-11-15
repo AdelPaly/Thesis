@@ -1,6 +1,15 @@
 name: grounded_gemma
 tier: 5
 paradigm: grounded_llm
+question: >
+  does grounding the same LLM in retrieved candidates help, over the ungrounded LLM and
+  over its retriever alone
+design: >
+  retrieve(dense_retrieval as configured, top-10) → [gate: candidates?] no: abstain
+  (selection.no_candidates, no LLM call) / yes: LLM select(gemma-4-31b-it, numbered list
+  → index or refuse) → chosen candidate. Output: refused → no prediction,
+  selection.abstained; unparseable / out-of-list → no prediction, violation in selection
+  and error.
 description: >
   Tier 5. Retrieval-augmented, not routed: dense retrieval supplies candidates,
   the model selects one from the numbered list or declines.

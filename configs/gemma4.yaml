@@ -1,6 +1,15 @@
 name: gemma4
 tier: 4
 paradigm: ner_free
+question: >
+  does parametric knowledge (LLM alone, whole text) beat mention detection and
+  retrieval; matched control for grounded_gemma
+design: >
+  LLM(gemma-4-31b-it, Google, temperature 0, prompt v1 → JSON
+  city/country/continent/refused) → resolve: city, else country (Wikidata search
+  limit=1, first hit with coords) → else continent string only (no QID, no coords) →
+  prediction. No candidate list. Output: refused, unparseable or unresolvable → no
+  prediction; the reason is only in llm_raw_response.
 description: >
   Tier 4, LLM only, and the matched ungrounded control for tier 5: same model
   as grounded_gemma, so the grounded-vs-ungrounded comparison measures the

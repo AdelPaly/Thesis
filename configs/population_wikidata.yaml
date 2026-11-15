@@ -1,6 +1,13 @@
 name: population_wikidata
 tier: 0
 paradigm: baseline
+question: >
+  the floor: does a system beat NER + most-populous-candidate
+design: >
+  NER(flair/ner-large, keep LOC) → per span: gazetteer(Wikidata wbsearchentities top-10,
+  keep hits with P625 coords) → pool hits of all spans → sort by population P1082 (ties:
+  sitelinks) → top-1. No linker, no rerank. Output: no LOC span or no hit with
+  coordinates → no prediction (not flagged as abstention).
 description: >
   Population baseline. The existing Flair NER extracts toponyms (LOC only),
   each is looked up in the gazetteer, and the most populous candidate always
