@@ -56,7 +56,7 @@ import stats  # noqa: E402
 
 FAMILY = "exploratory-2026-11-14"
 DEFAULT_OUT = HERE.parent / "results" / "summary"
-N_BOOT = 2000
+N_BOOT = stats.DEFAULT_N_BOOT
 
 # (name, kind, A, B, question)
 DESIGNS = [

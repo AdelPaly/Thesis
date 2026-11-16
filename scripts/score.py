@@ -3,8 +3,8 @@
     python scripts/score.py                                   # everything
     python scripts/score.py --config refined --dataset synthetic
     python scripts/score.py --by condition
-    python scripts/score.py --by place_prominence      # also rival_prominence,
-                                                       # clue_prominence, env_theme
+    python scripts/score.py --by place_prominence      # or any other name in
+                                                       # BIN_COLUMNS below
 
 It touches no model, makes no network call, and needs no API key: it only reads
 results/predictions/*.jsonl and splits/item_split.csv (the one src/ import is
@@ -50,10 +50,12 @@ PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
 CONFIG_DIR = REPO_ROOT / "configs"
 ITEM_SPLIT_PATH = REPO_ROOT / "splits" / "item_split.csv"
 
-# Prominence bins and the environmental theme, written by generation/synthetic/
+# Prominence bins, the environmental theme, name ambiguity, register and scale,
+# written by generation/synthetic/
 # finalise.py and copied onto each record by src/runner.py (its BIN_COLUMNS).
 # Records from datasets without them fall in one "(none)" group.
-BIN_COLUMNS = ["place_prominence", "rival_prominence", "clue_prominence", "env_theme", "noise_kind"]
+BIN_COLUMNS = ["place_prominence", "rival_prominence", "clue_prominence", "env_theme", "noise_kind",
+               "name_ambiguous", "place_is_most_famous", "register", "scale"]
 
 LABEL_WIDTH = 34
 CSV_FIELDS = ["group", "n", "n_gold_qid", "exact", "country", "continent",
@@ -148,6 +150,27 @@ def _norm(value) -> str | None:
     return value.strip().casefold() if isinstance(value, str) and value.strip() else None
 
 
+# Gold continents are two-letter codes (the synthetic dataset), predicted ones
+# are Wikidata labels or an LLM's wording. Both sides are mapped to the code
+# before they are compared; a value not listed here is compared as written.
+CONTINENT_CODES = {
+    "af": "AF", "africa": "AF",
+    "as": "AS", "asia": "AS",
+    "eu": "EU", "europe": "EU",
+    "na": "NA", "north america": "NA", "northern america": "NA",
+    "central america": "NA", "caribbean": "NA",
+    "sa": "SA", "south america": "SA",
+    "oc": "OC", "oceania": "OC", "insular oceania": "OC", "australia": "OC",
+    "australian continent": "OC", "australia (continent)": "OC", "australasia": "OC",
+    "an": "AN", "antarctica": "AN",
+}
+
+
+def _norm_continent(value) -> str | None:
+    key = _norm(value)
+    return CONTINENT_CODES.get(key, key) if key else None
+
+
 def score_record(rec: dict) -> dict:
     """Per-item scoring. Returns the record plus derived fields; the stored
     record itself is never mutated with metric booleans."""
@@ -164,7 +187,8 @@ def score_record(rec: dict) -> dict:
     gold_countries = {c.strip() for c in gold_country.split(";")} if gold_country else set()
     country = exact or bool(pred_country and pred_country in gold_countries)
 
-    gold_cont, pred_cont = _norm(rec.get("gold_continent")), _norm(rec.get("predicted_continent"))
+    gold_cont = _norm_continent(rec.get("gold_continent"))
+    pred_cont = _norm_continent(rec.get("predicted_continent"))
     continent = country or bool(gold_cont and pred_cont and gold_cont == pred_cont)
 
     return {

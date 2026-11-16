@@ -220,8 +220,7 @@ def build_catalogue(d, pool=None, gold=None) -> Catalogue:
     """Fetch the pool's places and build their index texts.
 
     Shared by every configuration that ranks the same candidate places from
-    the same descriptions -- dense retrieval, the character n-gram floor and
-    the grid language model -- so that none of them sees a different pool."""
+    the same descriptions, so that none of them sees a different pool."""
     if pool is None:
         pool = build_pool(d.pool)
     if gold is None:

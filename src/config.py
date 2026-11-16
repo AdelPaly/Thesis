@@ -41,7 +41,7 @@ SHARED_ENCODER_FIELDS = {
 }
 
 PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
-             "grounded_llm", "geoparser", "grid_lm", "lexical_retrieval"}
+             "grounded_llm", "geoparser"}
 LINKING_BACKENDS = {"refined", "blink", "wikidata_search", "none"}
 LLM_PROVIDERS = {None, "google", "openrouter"}
 PROMPT_TEMPLATES = {"v1"}
@@ -140,19 +140,6 @@ class GeoparserConfig:
 
 
 @dataclass(frozen=True)
-class LexicalConfig:
-    """Tier 3 lexical floor: character n-grams, lengths inclusive."""
-    ngram_min: int | None = None
-    ngram_max: int | None = None
-
-
-@dataclass(frozen=True)
-class GridConfig:
-    """Tier 3: a language model per cell of a latitude/longitude grid."""
-    cell_degrees: float | None = None
-
-
-@dataclass(frozen=True)
 class PipelineConfig:
     name: str
     paradigm: str
@@ -164,8 +151,6 @@ class PipelineConfig:
     dense: DenseConfig = field(default_factory=DenseConfig)
     grounded: GroundedConfig = field(default_factory=GroundedConfig)
     geoparser: GeoparserConfig = field(default_factory=GeoparserConfig)
-    grid: GridConfig = field(default_factory=GridConfig)
-    lexical: LexicalConfig = field(default_factory=LexicalConfig)
     # Presentation metadata: which tier of the evaluation this configuration
     # belongs to (0-5, by what kind of signal it can consume), and a variant
     # letter for configurations that share a tier. Excluded from config_hash
@@ -214,8 +199,6 @@ class PipelineConfig:
 # existing configuration's hash.
 _LATE_SECTIONS = {
     "geoparser": GeoparserConfig,
-    "grid": GridConfig,
-    "lexical": LexicalConfig,
 }
 
 
@@ -318,8 +301,6 @@ def from_dict(raw: dict, source_path: str = "",
         "dense": (DenseConfig, _section(raw, "dense")),
         "grounded": (GroundedConfig, _section(raw, "grounded")),
         "geoparser": (GeoparserConfig, _section(raw, "geoparser")),
-        "grid": (GridConfig, _section(raw, "grid")),
-        "lexical": (LexicalConfig, _section(raw, "lexical")),
     }
     built = {}
     for key, (cls, sub) in sections.items():
@@ -508,36 +489,6 @@ def _validate_geoparser(cfg: PipelineConfig) -> None:
                           "not set ner.model, llm.provider or linking.backend")
 
 
-def _require_place_index(cfg: PipelineConfig, paradigm: str) -> None:
-    """Configurations that rank dense retrieval's candidate places by their
-    indexed text, without an encoder and without a mention-detection stage."""
-    if not cfg.dense.index_fields:
-        raise ConfigError(f"paradigm '{paradigm}' requires dense.index_fields -- it "
-                          "ranks the same place texts dense retrieval indexes")
-    if cfg.dense.encoder:
-        raise ConfigError(f"paradigm '{paradigm}' must not set dense.encoder")
-    if cfg.ner.model or cfg.llm.provider or cfg.linking.backend != "none":
-        raise ConfigError(f"paradigm '{paradigm}' must not set ner.model, "
-                          "llm.provider or linking.backend")
-
-
-def _validate_grid_lm(cfg: PipelineConfig) -> None:
-    degrees = cfg.grid.cell_degrees
-    if isinstance(degrees, bool) or not isinstance(degrees, (int, float)) or degrees <= 0:
-        raise ConfigError("paradigm 'grid_lm' requires grid.cell_degrees > 0")
-    _require_place_index(cfg, "grid_lm")
-
-
-def _validate_lexical_retrieval(cfg: PipelineConfig) -> None:
-    lx = cfg.lexical
-    for key in ("ngram_min", "ngram_max"):
-        _require_type(f"lexical.{key}", getattr(lx, key), int)
-    if not 1 <= lx.ngram_min <= lx.ngram_max:
-        raise ConfigError("lexical.ngram_min / ngram_max must satisfy "
-                          "1 <= ngram_min <= ngram_max")
-    _require_place_index(cfg, "lexical_retrieval")
-
-
 _PARADIGM_VALIDATORS = {
     "ner_dependent": _validate_ner_dependent,
     "ner_free": _validate_ner_free,
@@ -545,8 +496,6 @@ _PARADIGM_VALIDATORS = {
     "dense_retrieval": _validate_dense_retrieval,
     "grounded_llm": _validate_grounded_llm,
     "geoparser": _validate_geoparser,
-    "grid_lm": _validate_grid_lm,
-    "lexical_retrieval": _validate_lexical_retrieval,
 }
 
 

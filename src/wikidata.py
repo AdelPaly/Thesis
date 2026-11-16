@@ -511,6 +511,11 @@ def coords_for_qids(qids) -> dict[str, tuple[float, float] | None]:
     return {q: get_coords_of(entities.get(q, {})) for q in wanted}
 
 
+# The continents a place may carry. Wikidata gives some places a wider region
+# instead (P30 = Americas, Eurasia, ...); those take their country's continent.
+CONTINENT_QIDS = {"Q15", "Q48", "Q46", "Q49", "Q18", "Q538", "Q55643", "Q3960", "Q51"}
+
+
 def _resolve_cc(entities_dict: dict[str, dict]) -> tuple[dict[str, tuple[str, str]], bool]:
     """As resolve_country_continent, plus a flag that is False if any
     entity or label lookup failed (the result may then have blank labels)."""
@@ -518,14 +523,21 @@ def _resolve_cc(entities_dict: dict[str, dict]) -> tuple[dict[str, tuple[str, st
     continent_of = {qid: _claim_id(ent, "P30") for qid, ent in entities_dict.items()}
     complete = True
 
-    # Places without a direct continent inherit their country's continent.
-    need_country = {c for qid, c in country_of.items() if c and not continent_of[qid]}
+    # Places without a direct continent, or with a wider region in its place
+    # (Americas), inherit their country's continent. A region is kept when the
+    # country has nothing better.
+    def lacks(qid):
+        return continent_of[qid] not in CONTINENT_QIDS
+
+    need_country = {c for qid, c in country_of.items() if c and lacks(qid)}
     if need_country:
         country_ents, complete = _fetch_entities_status(list(need_country))
         country_continent = {cq: _claim_id(ent, "P30") for cq, ent in country_ents.items()}
         for qid, c in country_of.items():
-            if c and not continent_of[qid]:
-                continent_of[qid] = country_continent.get(c)
+            if c and lacks(qid):
+                inherited = country_continent.get(c)
+                if inherited in CONTINENT_QIDS or not continent_of[qid]:
+                    continent_of[qid] = inherited
 
     label_qids = {q for q in (*country_of.values(), *continent_of.values()) if q}
     labels: dict[str, str] = {}

@@ -63,8 +63,6 @@ One YAML file in `configs/` per method. Adding a file adds a method.
 | 2 | `refined` | ReFinED entity linking | nothing (8.6 GB download on first use) |
 | 2 | `blink` | BLINK entity linking | BLINK checkout and models, see below |
 | 3 | `dense_retrieval` | dense retrieval over place texts | nothing |
-| 3 | `char_ngram` | character n-gram overlap | nothing |
-| 3 | `grid_lm` | language model per grid cell | nothing |
 | 4 | `gemma4` | LLM on the whole text | `GOOGLE_API_KEY` |
 | 5 | `grounded_gemma` | LLM choosing among dense candidates | `GOOGLE_API_KEY` |
 | 5 | `grounded_gemma_linking` | LLM choosing among linked candidates | `GOOGLE_API_KEY` |

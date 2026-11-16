@@ -126,9 +126,7 @@ class Pipeline:
         self._llm = None
         self._grounded = None
         self._majority = _UNSET
-        self._lexical = None
         self._geoparser = None
-        self._grid_lm = None
         self._ner_memo: dict[str, list[dict]] = {}
         self._dense_index = None
         self._ner_fn = ner_fn
@@ -142,8 +140,6 @@ class Pipeline:
             "grounded_llm": self._run_grounded_path,
             "baseline": self._run_baseline,
             "geoparser": self._run_geoparser_path,
-            "grid_lm": self._run_grid_lm_path,
-            "lexical_retrieval": self._run_lexical_path,
         }
 
     # ---------------------------------------------------------------- stages
@@ -304,7 +300,8 @@ class Pipeline:
         with open(REPO_ROOT.joinpath(*SPLIT_FILE), encoding="utf-8") as f:
             side = {r["place_key"]: r["split"] for r in csv.DictReader(f)}
 
-        df = pd.read_csv(load_datasets()[self.dataset].resolved_path())
+        df = pd.read_csv(load_datasets()[self.dataset].resolved_path(),
+                         keep_default_na=False, na_values=[""])   # "NA" is a continent
         if "qid" not in df:
             return []
         rows = []
@@ -438,46 +435,6 @@ class Pipeline:
             # grounded system ignoring its grounding has to be visible.
             out.error = f"selection violation: {selection['violation']}"
         out.prediction = chosen
-
-    # ----------------------------------- tier 3: lexical and grid language model
-    #
-    # Both rank dense retrieval's own candidate places, described by the same
-    # indexed text (dense_index.build_catalogue), so the three tier-3
-    # mechanisms differ in the mechanism only.
-
-    def _catalogue(self):
-        from dense_index import get_catalogue
-        return get_catalogue(self.cfg.dense)
-
-    def _run_lexical_path(self, text, out):
-        """Character n-gram overlap between the post and each place's indexed
-        text. Nothing learned: no training texts, no encoder."""
-        cat = self._catalogue()
-        if self._lexical is None:
-            from char_ngram import CharNgramIndex
-            lx = self.cfg.lexical
-            self._lexical = CharNgramIndex(cat.texts, lx.ngram_min, lx.ngram_max)
-        candidates = [{**cat.places[cat.qids[i]], "score": score}
-                      for i, score in self._lexical.rank(text, self.cfg.dense.top_k)]
-        out.candidate_places = [_candidate_record(c) for c in candidates]
-        out.prediction = candidates[0] if candidates else None
-
-    def _run_grid_lm_path(self, text, out):
-        """Words in, cell out: the grid cells whose language models are closest
-        to the post, each resolved to its candidate places. Cell models are
-        learned from dev texts and the places' indexed texts; no gazetteer at
-        query time, no mention detection, no LLM."""
-        cat = self._catalogue()
-        if self._grid_lm is None:
-            from grid_lm import GridLM
-            self._grid_lm = GridLM(self._dev_rows(), cat.places,
-                                   dict(zip(cat.qids, cat.texts)),
-                                   self.cfg.grid.cell_degrees)
-        ranked = self._grid_lm.rank(text, item_id=item_id(text),
-                                    top_k=self.cfg.dense.top_k)
-        candidates = [{**cat.places[qid], "score": score} for qid, score in ranked]
-        out.candidate_places = [_candidate_record(c) for c in candidates]
-        out.prediction = candidates[0] if candidates else None
 
     # ------------------------------------------------- tier 1: geoparsers
 

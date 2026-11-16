@@ -56,7 +56,8 @@ CODE_PATHS = ("src", "configs")
 # Optional dataset columns copied onto each prediction record so scripts/score.py
 # can split results by them (--by). Written by generation/synthetic/finalise.py;
 # datasets without them just get None. Keep in step with BIN_COLUMNS in score.py.
-BIN_COLUMNS = ("place_prominence", "rival_prominence", "clue_prominence", "env_theme", "noise_kind")
+BIN_COLUMNS = ("place_prominence", "rival_prominence", "clue_prominence", "env_theme", "noise_kind",
+               "name_ambiguous", "place_is_most_famous", "register", "scale")
 
 
 @functools.lru_cache(maxsize=1)
@@ -225,7 +226,9 @@ def run(config_name: str, dataset_name: str, limit: int | None = None,
                          f"known: {sorted(datasets)}")
     spec = datasets[dataset_name]
 
-    df = pd.read_csv(spec.resolved_path())
+    # keep_default_na=False: pandas would otherwise read the continent code
+    # "NA" (North America) as a missing value. Empty cells are still missing.
+    df = pd.read_csv(spec.resolved_path(), keep_default_na=False, na_values=[""])
     if split:
         df = _split_filter(df, dataset_name, split)
     if limit is not None:

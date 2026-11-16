@@ -67,7 +67,7 @@ python scripts/score.py --by condition
 
 | Script | Purpose |
 |--------|---------|
-| `analyse.py` | Failure attribution, the grounded-selection report, paired statistics and the report tables. Subcommands `failures`, `grounding`, `tables`, `stats`, `all`. Groups configurations by the `paradigm` on their records, orders rows by the `tier` in `configs/*.yaml`, and Holm-adjusts the by-place McNemar p-values over the `COMPARISONS` family. |
+| `analyse.py` | Failure attribution, the grounded-selection report, paired statistics and the report tables. Subcommands `failures`, `grounding`, `tables`, `stats`, `layers`, `bins`, `all`. `bins` breaks every configuration down by condition and by each bin on the records (prominence, theme, noise kind, name ambiguity, register, scale), with a place-resampled interval on exact match. Groups configurations by the `paradigm` on their records, orders rows by the `tier` in `configs/*.yaml`, and Holm-adjusts the by-place McNemar p-values over the `COMPARISONS` family. |
 | `stats.py` | Statistical primitives, all clustered by place: McNemar, Holm adjustment, cluster bootstrap, paired effect intervals. |
 | `error_layers.py` | Gives every item one layer of its configuration's chain where it was lost (no mention, gold not among the candidates, wrong selection, ...). Also `analyse.py layers`. |
 | `simulate_designs.py` | Exploratory: cascades, gates and fallbacks built item by item from the saved predictions of two configurations. Not part of the planned comparisons. |
@@ -88,7 +88,8 @@ produce prints `n/a`, not 0.0).
 Statistics pair and resample by **place**, never by item. The `stats` output
 has a `p_holm` column: the Holm-adjusted by-place McNemar p over the family of
 comparisons that ran (family size printed). `--out` writes the failure, table,
-statistics, bootstrap and grounding tables as CSV, with `n_boot` and `seed`.
+statistics, bootstrap, bin and grounding tables as CSV, with `n_boot` and `seed`
+(10,000 replicates, seed 20260917 unless `--boot` / `--seed` say otherwise).
 
 ## API keys
 

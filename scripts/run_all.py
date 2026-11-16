@@ -41,7 +41,7 @@ ORDER = ["majority_class", "population_wikidata",
          "geoparser_irchel",
          "retrieve_rerank", "refined", "blink",
          "gemma4", "grounded_gemma_linking",
-         "dense_retrieval", "char_ngram", "grid_lm", "grounded_gemma"]
+         "dense_retrieval", "grounded_gemma"]
 
 
 def config_names() -> list[str]:

@@ -4,6 +4,7 @@
     python scripts/analyse.py tables   --split test
     python scripts/analyse.py stats    --split test
     python scripts/analyse.py layers   --split test   # scripts/error_layers.py
+    python scripts/analyse.py bins     --split test   # every config by condition and bin
     python scripts/analyse.py all      --split test --out results/summary
 
 Reads results/predictions/*.jsonl and splits/item_split.csv, plus configs/*.yaml
@@ -69,7 +70,7 @@ from pathlib import Path
 
 import yaml
 
-from score import (attach_split, find_prediction_files, group_by, load_predictions,
+from score import (BIN_COLUMNS, attach_split, find_prediction_files, group_by, load_predictions,
                    prediction_file_key, print_table, row_order, score_record,
                    summarise_metrics)
 import stats as st
@@ -77,9 +78,8 @@ import stats as st
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = REPO_ROOT / "configs"
 
-# Bootstrap replicates for this report. stats.DEFAULT_N_BOOT is larger than a
-# pure-Python report over every configuration needs.
-DEFAULT_BOOT = 2000
+# Bootstrap replicates for this report: the one default, in stats.py.
+DEFAULT_BOOT = st.DEFAULT_N_BOOT
 RULE = "=" * 100
 
 # Report order. A configuration declares its tier and variant in its config
@@ -96,8 +96,7 @@ def _config_stages(raw: dict) -> set[str]:
     # wikidata_search is retrieval, not a linker: the records never carry links.
     if (raw.get("linking") or {}).get("backend") not in (None, "none", "wikidata_search"):
         stages.add("linking")
-    if paradigm in ("ner_dependent", "dense_retrieval", "grounded_llm", "grid_lm",
-                    "lexical_retrieval"):
+    if paradigm in ("ner_dependent", "dense_retrieval", "grounded_llm"):
         stages.add("candidates")
     if paradigm == "grounded_llm":
         stages.add("selection")
@@ -232,8 +231,8 @@ def attribute(rec: dict, has_ner_stage: bool = True) -> str | None:
             return "abstained"               # declined with the gold in front of it
         return "wrong_candidate_selected"    # had it, chose another
 
-    # --- ranking with no mention detection (tier 3): dense, lexical, grid --
-    if rec.get("paradigm") in ("dense_retrieval", "grid_lm", "lexical_retrieval"):
+    # --- ranking with no mention detection (tier 3): dense retrieval --------
+    if rec.get("paradigm") == "dense_retrieval":
         if not places:
             return "returned_nothing"
         return "correct_candidate_not_first" if gold_in_places else "gold_not_retrieved"
@@ -513,8 +512,7 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
         by_paradigm[key] = ordered(by_paradigm[key])
 
     ner_dependent = by_paradigm.get("ner_dependent", [])
-    dense = (by_paradigm.get("dense_retrieval", []) + by_paradigm.get("lexical_retrieval", [])
-             + by_paradigm.get("grid_lm", []))
+    dense = by_paradigm.get("dense_retrieval", [])
     ner_free = by_paradigm.get("ner_free", [])
     grounded = by_paradigm.get("grounded_llm", [])
 
@@ -528,6 +526,10 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
         note = ("A place is either dev or test, so the most frequent DEV place "
                 "cannot be a test gold place: majority_class is structurally "
                 "0% exact on test. That is the split working, not a defect.")
+    elif "majority_class" in present:
+        note = ("majority_class answers with the most frequent DEV place, so off the "
+                "test split it is scored on the posts it was chosen from: in-sample, "
+                "not comparable with the other rows. Report it on test only.")
     _print_metric_table([(n, summarise_metrics(groups[n])) for n in ordered(present)], note=note)
 
     print(RULE)
@@ -701,6 +703,52 @@ def cmd_stats(scored: list[dict], args, meta: dict) -> None:
                   boot_rows)
 
 
+# ---------------------------------------------------------------- bins
+
+# Shown on screen; the CSV has every bin (env_theme has too many levels to print).
+BINS_PRINTED = ["condition", *(b for b in BIN_COLUMNS if b != "env_theme")]
+
+
+def cmd_bins(scored: list[dict], args, meta: dict) -> None:
+    """Every configuration broken down by condition and by each bin the runner
+    copied onto the records, with a place-resampled interval on exact match.
+    Descriptive: no tests are run across bin levels. Items whose bin is empty
+    (the bin does not apply to their condition) form the level "(none)"."""
+    groups = group_by(scored, "config_name")
+    names = sorted(groups, key=lambda n: sort_key(n, meta))
+    print(RULE)
+    print(f"BY BIN  (split={args.split}, n_boot={args.boot}, seed={args.seed})")
+    print(RULE)
+    rows = []
+    for bin_name in ["condition", *BIN_COLUMNS]:
+        show = bin_name in BINS_PRINTED
+        if show:
+            print(f"-- {bin_name} --")
+            print(f"{'configuration':24} {'level':20} {'n':>5} {'exact % [95% CI] (clusters)':>34} "
+                  f"{'country':>8} {'cont':>6}")
+        for name in names:
+            levels = group_by(groups[name], bin_name)
+            for level in sorted(levels, key=lambda v: (v is None, str(v))):
+                recs = levels[level]
+                m = summarise_metrics(recs)
+                ci = st.cluster_bootstrap_ci(recs, st.exact_rate, n_boot=args.boot, seed=args.seed)
+                shown = "(none)" if level is None else str(level)
+                if show:
+                    pc = lambda v: "-" if v is None else f"{v * 100:.1f}"
+                    print(f"{name:24} {shown:20} {m['n']:>5} {st.fmt_ci(ci, pct=True):>34} "
+                          f"{pc(m['country']):>8} {pc(m['continent']):>6}")
+                rows.append([name, bin_name, shown, m["n"], ci.get("n_places"),
+                             m["exact"], ci.get("lo"), ci.get("hi"), m["country"],
+                             m["continent"], m["no_result_rate"], args.boot, args.seed])
+        if show:
+            print()
+    if args.out:
+        write_rows(Path(args.out) / f"table_bins_{args.split}.csv",
+                   ["config", "bin", "level", "n", "n_places", "exact", "exact_lo",
+                    "exact_hi", "country", "continent", "no_result_rate", "n_boot", "seed"],
+                   rows)
+
+
 # ---------------------------------------------------------------- entry
 
 def _warn_uneven_coverage(scored: list[dict]) -> None:
@@ -749,7 +797,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command",
-                   choices=["failures", "tables", "stats", "grounding", "layers", "all"])
+                   choices=["failures", "tables", "stats", "grounding", "layers", "bins", "all"])
     p.add_argument("--split", default="test", choices=["all", "dev", "test"])
     p.add_argument("--configs", nargs="*", default=None)
     p.add_argument("--datasets", nargs="*", default=None)
@@ -793,6 +841,8 @@ def main() -> None:
         cmd_tables(scored, args, meta)
     if args.command in ("stats", "all"):
         cmd_stats(scored, args, meta)
+    if args.command in ("bins", "all"):
+        cmd_bins(scored, args, meta)
     if args.command in ("layers", "all"):
         from error_layers import report     # imports this module, so not at the top
         report([dict(r) for r in scored], meta, args.split,
