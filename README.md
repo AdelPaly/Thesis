@@ -5,7 +5,7 @@ social-media post is about. Each method reads a post and returns a Wikidata
 item (QID). The methods range from baselines through a geoparser, entity
 linkers and retrieval to LLMs with and without retrieved candidates.
 
-The evaluation data is a synthetic dataset of 3,310 posts about 955 places.
+The evaluation data is a synthetic dataset of 3,349 posts about 955 places.
 Every post belongs to one condition that fixes how the place appears in it
 (named, hidden behind a clue, ambiguous, with or without a misleading signal),
 so results can be read per condition.
@@ -107,15 +107,16 @@ in `configs/datasets.yaml`.
 | `EXPLICIT` | 955 | the place name only |
 | `A` | 363 | no place name, one clue entity tied to the place |
 | `B` | 363 | a place name shared with a place in another country, and one clue |
-| `NOISE_EXPLICIT` | 903 | as `EXPLICIT`, plus one misleading signal from another country |
+| `NOISE_EXPLICIT` | 942 | as `EXPLICIT`, plus one misleading signal from another country |
 | `NOISE_A` | 363 | as `A`, plus one misleading signal |
 | `NOISE_B` | 363 | as `B`, plus one misleading signal |
 
-722 posts are dev and 2,588 test. The split is by place (`splits/`), so no
+735 posts are dev and 2,614 test. The split is by place (`splits/`), so no
 place is on both sides. The posts were written by an LLM from a plan and
-checked by a second model; they are plausible, not factual. How the dataset
-was built, and how to build it again, is in
-[`generation/README.md`](generation/README.md).
+checked by a second model; they are plausible, not factual. This is release
+`synthetic-v1`: `generation/synthetic/output/release.json` holds its date, file
+hashes, models and code revision. How the dataset was built, and how to build
+it again, is in [`generation/README.md`](generation/README.md).
 
 ## Layout
 

@@ -734,10 +734,20 @@ def main(argv: list[str] | None = None) -> int:
     swapped_out = {(s["place_qid"], c) for s in (gen.read_jsonl(swaps_path) if swaps_path.exists() else [])
                    for c in s.get("conditions") or []}
 
+    # Posts taken out by hand after the audit (output/manual_removed.csv): they
+    # passed every check here, so without this a re-run would put them back.
+    removed_path = dataset_path.with_name("manual_removed.csv")
+    removed = {}
+    if removed_path.exists():
+        with removed_path.open(encoding="utf-8", newline="") as f:
+            removed = {r["item_id"]: r.get("reason") or "" for r in csv.DictReader(f)}
+
     report, kept = [], []
     for item in items:
         row = latest.get(item["item_id"])
         verdict = verdict_for(item, row, aliases, env_pattern, limits)
+        if verdict is None and item["item_id"] in removed:
+            verdict = ("manual_removed", removed[item["item_id"]])
         if verdict is None and (item["place_qid"], item["condition"]) in swapped_out:
             verdict = ("swapped_out", "place swapped for a reserve after a failed item in its set")
         item = used_item(item, row)

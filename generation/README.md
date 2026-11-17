@@ -6,7 +6,7 @@ known exactly. Each post hides its place behind clues (a club based there, an
 event held there), an ambiguous place name, or both.
 
 The dataset is already built: `synthetic/output/synthetic_dataset.csv`
-(3,310 posts, 955 places). **You do not need anything here to run the
+(3,349 posts, 955 places, release `synthetic-v1`). **You do not need anything here to run the
 evaluation.** This folder is the record of how the dataset was made, with
 every input kept, so each step can be checked or run again.
 
@@ -17,10 +17,24 @@ every input kept, so each step can be checked or run again.
 | `synthetic/plan.py` | decides every post: place, condition, clues, style, theme. No network, no model | `synthetic/output/item_plan.jsonl` (4,370 items: 3,500 planned, 870 reserve) |
 | `synthetic/validate_anchors.py` | checks every planned clue and distractor against Wikidata and repairs the plan | `synthetic/output/anchor_checks.jsonl` |
 | `synthetic/generate.py` | the writer model writes each post, the judge model (`judge.py`) checks it | `synthetic/output/raw_generations.jsonl`, `swaps.jsonl` |
-| `synthetic/finalise.py` | applies the checks, balances the conditions, writes the dataset | `synthetic/output/synthetic_dataset.csv`, `finalise_report.csv` |
+| `synthetic/finalise.py` | applies the checks, balances the conditions, writes the dataset | `synthetic/output/synthetic_dataset.csv`, `finalise_report.csv`, `release.json` |
+| `synthetic/audit.py` | a model that took no part in generation reads every kept post again | `synthetic/output/audit/<model>.jsonl` |
+| `synthetic/quality_report.py` | yield, balance against the plan, rule checks, length and the audit as numbers | `synthetic/output/quality_report.csv` |
 
 The writer was Claude Haiku 5.5 and the judge DeepSeek v4.1 Flash, both through
-OpenRouter (2026-11-12 to 13). Neither is among the evaluated systems.
+OpenRouter (2026-11-12 to 13). Neither is among the evaluated systems. The
+judge decides what enters the dataset, so it is a filter, not an independent
+check of it.
+
+The audit (2026-11-17) was run with Qwen3.8-27B. It flags many acceptable
+posts, so its flags are candidates for review, not verdicts: off-theme posts
+and links the model paraphrased instead of quoting are not counted unless
+asked for (`--strict-theme`, `--strict-quotes`). The flagged `A` and `B` posts
+were read with an AI assistant and seven were rewritten with
+`synthetic/regenerate.py`, which sends an item back to the writer with the
+reason its post was removed. The same script wrote 39 `NOISE_EXPLICIT` posts
+that had failed their first three tries (`--failed NOISE_EXPLICIT`). No
+documented manual sample of the posts was rated.
 
 ## Running a step again
 
@@ -65,7 +79,7 @@ including models tried and dropped.
 | `NOISE_EXPLICIT` | `EXPLICIT` plus one distractor in the same way, on the same places and with the same theme, valence, scale, register and length as its `EXPLICIT` post |
 
 `A`, `B`, `NOISE_A` and `NOISE_B` are balanced to 363 posts each. `EXPLICIT`
-(955) and `NOISE_EXPLICIT` (903) keep every post that passed.
+(955) and `NOISE_EXPLICIT` (942) keep every post that passed.
 
 Clues that are themselves place names (a municipality, a river, a mountain
 range) are allowed in the post by name; every other place name is not.
@@ -148,10 +162,14 @@ synthetic/
   generate.py          sends each planned post to the writer model
   judge.py             the second model's check on each post
   finalise.py          checks the posts, writes the dataset CSV
+  audit.py             a second judge model reads the finished dataset
+  regenerate.py        rewrites posts removed by hand or failed in one condition
+  quality_report.py    the quality criteria as numbers
   build_exemplars.py   picks real posts as tone references
   length_dist.py       word-count distribution of real posts
   sampler/, state/     the pre-generated integers the plan draws from (with a
                        per-batch source log), and the cursor
   data/                style_exemplars.jsonl and its label cache
-  output/              plan, anchor checks, raw generations, dataset CSV, report
+  output/              plan, anchor checks, raw generations, dataset CSV, reports,
+                       release.json, the audit log
 ```

@@ -1,0 +1,56 @@
+{
+  "release": "synthetic-v1",
+  "created_utc": "2026-11-17T19:57:41+00:00",
+  "rows": 3349,
+  "rows_by_condition": {
+    "A": 363,
+    "B": 363,
+    "EXPLICIT": 955,
+    "NOISE_A": 363,
+    "NOISE_B": 363,
+    "NOISE_EXPLICIT": 942
+  },
+  "balance": {
+    "per_condition": 363,
+    "seed": 20261004
+  },
+  "files": {
+    "dataset": {
+      "path": "generation/synthetic/output/synthetic_dataset.csv",
+      "sha256": "ec426ffeff2fe1e82ee06893f9bb152e21f0d368a53c54eddcd242901012ad0a"
+    },
+    "finalise_report": {
+      "path": "generation/synthetic/output/finalise_report.csv",
+      "sha256": "72ae8efbcf7614e5f3ddeb49fff57b0deada6944afab1bee714315f9923fb3af"
+    },
+    "item_plan": {
+      "path": "generation/synthetic/output/item_plan.jsonl",
+      "sha256": "2547d65da9b175b967339d1f2ed67d0ffbbd6d58af8b3886b46605bb2ecd62ab"
+    },
+    "place_split": {
+      "path": "splits/place_split.csv",
+      "sha256": "d55fca922c120f675fb0b736071203e91e89155348ffacaba28c6ed902a7daa5"
+    }
+  },
+  "plan_version": [
+    "10"
+  ],
+  "generator_version": [
+    "1"
+  ],
+  "config_hash": {
+    "312c7d08fe10e0b4": 3349
+  },
+  "writer_model": {
+    "anthropic/claude-haiku-5.5": 3349
+  },
+  "judge_model": {
+    "deepseek/deepseek-v4.1-flash": 3349
+  },
+  "generated_utc": {
+    "first": "2026-11-12T21:01:08+00:00",
+    "last": "2026-11-17T19:30:12+00:00"
+  },
+  "code_rev": "9ecde8ac61699e4c1ccd740a4f67c14680811448",
+  "code_dirty": false
+}

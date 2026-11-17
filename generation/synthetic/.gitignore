@@ -1,2 +1,6 @@
 .env
 tests/
+# working files: prompts and raw replies, derived audit tables, review lists
+output/raw_responses.jsonl
+output/manual_removed.csv
+output/audit/*.csv
