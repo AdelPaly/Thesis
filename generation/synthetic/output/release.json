@@ -1,6 +1,6 @@
 {
   "release": "synthetic-v1",
-  "created_utc": "2026-11-17T22:32:48+00:00",
+  "created_utc": "2026-11-17T22:37:46+00:00",
   "rows": 3349,
   "rows_by_condition": {
     "A": 363,
@@ -53,6 +53,6 @@
     "first": "2026-11-12T21:01:08+00:00",
     "last": "2026-11-17T22:32:36+00:00"
   },
-  "code_rev": "23b815993111fb1b880a6f68e619590613d026b9",
-  "code_dirty": true
+  "code_rev": "322c160f3e3b339c491218103df7884202805fe2",
+  "code_dirty": false
 }
