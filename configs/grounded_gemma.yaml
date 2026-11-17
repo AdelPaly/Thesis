@@ -6,7 +6,7 @@ question: >
   over its retriever alone
 design: >
   retrieve(dense_retrieval as configured, top-10) → [gate: candidates?] no: abstain
-  (selection.no_candidates, no LLM call) / yes: LLM select(gemma-4-31b-it, numbered list
+  (selection.no_candidates, no LLM call) / yes: LLM select(gemma-4-12b-it, numbered list
   → index or refuse) → chosen candidate. Output: refused → no prediction,
   selection.abstained; unparseable / out-of-list → no prediction, violation in selection
   and error.
@@ -32,14 +32,14 @@ rerank:
   model: null
   enabled: false
 llm:
-  provider: google
-  model: gemma-4-31b-it
+  provider: vse
+  model: gemma-4-12b-it
   revision: null
   temperature: 0.0
   top_p: null
   prompt_template: v1
   run_date: null
-  cache_name: gemma4_31b
+  cache_name: gemma4_12b
 dense:
   encoder: shared          # configs/shared.yaml
   pool: gold_plus_predicted

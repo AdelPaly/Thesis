@@ -40,7 +40,7 @@ LOG_DIR = REPO_ROOT / "results" / "logs"
 ORDER = ["majority_class", "population_wikidata",
          "geoparser_irchel",
          "retrieve_rerank", "refined", "blink",
-         "gemma4", "grounded_gemma_linking",
+         "gemma4", "qwen3_vl", "grounded_gemma_linking",
          "dense_retrieval", "grounded_gemma"]
 
 

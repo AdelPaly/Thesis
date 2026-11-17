@@ -1,0 +1,37 @@
+name: qwen3_vl
+tier: 4
+paradigm: ner_free
+question: >
+  do the conclusions about the LLM alone hold for a second model from another
+  family; same design and prompt as gemma4
+design: >
+  LLM(qwen3-vl:235b-a22b-instruct, VSE gateway, temperature 0, prompt v1 → JSON
+  city/country/continent/refused) → resolve: city, else country (Wikidata search
+  limit=1, first hit with coords) → else continent string only (no QID, no coords) →
+  prediction. No candidate list. Output: refused, unparseable or unresolvable → no
+  prediction; the reason is only in llm_raw_response.
+description: >
+  Tier 4, LLM only: gemma4 with another model, so a difference between the two
+  is a difference between models. Qwen3-VL 235B (instruct), text input only,
+  served by the VSE gateway. It took no part in writing, judging or auditing
+  the dataset.
+ner:
+  model: null
+  entity_types: null
+linking:
+  backend: none
+  refined_model: null
+  refined_entity_set: null
+  top_n: 1
+rerank:
+  model: null
+  enabled: false
+llm:
+  provider: vse
+  model: qwen3-vl:235b-a22b-instruct
+  revision: null
+  temperature: 0.0
+  top_p: null
+  prompt_template: v1
+  run_date: null
+  cache_name: qwen3_vl_235b

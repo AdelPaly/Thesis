@@ -101,7 +101,7 @@ statistics, bootstrap, bin and grounding tables as CSV, with `n_boot` and `seed`
 ## API keys
 
 No script here contains a key, and the Wikidata endpoints are public. The LLM
-configurations need `GOOGLE_API_KEY`, read from a git-ignored `src/.env`. The
+configurations need `VSE_API_KEY`, read from a git-ignored `src/.env`. The
 synthetic dataset is generated in `../generation/`, which reads its own key.
 
 ## Environment
@@ -130,7 +130,8 @@ Large external files, none committed (sizes as on the original machine):
 | Wikidata response cache `src/.wikidata_cache/` | linkers, gazetteer, dense index | built by the runner from public Wikidata endpoints | ~0.6 GB |
 | Bluesky English dump (`generation/synthetic/data/bluesky_en.jsonl`) | synthetic-data generation only | `scripts/fetch_bluesky_en.py` from the HF dataset `alpindale/two-million-bluesky-posts` | ~0.4 GB |
 
-Gemma configurations (`grounded_gemma`, `gemma4`) call the Google API
-(`GOOGLE_API_KEY`) and replay from `src/.llm_cache/` where a response is cached.
+The LLM configurations (`gemma4`, `qwen3_vl`, `grounded_gemma`,
+`grounded_gemma_linking`) call the VSE gateway (`VSE_API_KEY`) and replay from
+`src/.llm_cache/` where a response is cached.
 None of the above is needed to rescore: `python scripts/check_rescore.py`
 reads only `results/predictions/`, `splits/` and `configs/`.

@@ -43,7 +43,7 @@ SHARED_ENCODER_FIELDS = {
 PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
              "grounded_llm", "geoparser"}
 LINKING_BACKENDS = {"refined", "blink", "wikidata_search", "none"}
-LLM_PROVIDERS = {None, "google", "openrouter"}
+LLM_PROVIDERS = {None, "google", "openrouter", "vse"}
 PROMPT_TEMPLATES = {"v1"}
 TIERS = range(0, 6)
 BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
@@ -80,7 +80,7 @@ class RerankConfig:
 class LLMConfig:
     # Who serves the model, kept apart from the model itself: the same weights
     # on another provider are the same model.
-    provider: str | None = None        # google | openrouter
+    provider: str | None = None        # google | openrouter | vse
     model: str | None = None
     revision: str | None = None        # pinned where the provider offers one
     # None means "not sent": the provider's own default applies.

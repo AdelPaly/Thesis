@@ -238,14 +238,18 @@ class OpenRouterClient:
     def __init__(self, model: Optional[str] = None, api_key: Optional[str] = None,
                  timeout: float = DEFAULT_TIMEOUT_S,
                  max_retries: int = DEFAULT_MAX_RETRIES,
-                 app_title: str = OPENROUTER_APP_TITLE) -> None:
+                 app_title: str = OPENROUTER_APP_TITLE,
+                 url: str = OPENROUTER_API_URL, key_env: str = "OPENROUTER_API_KEY") -> None:
         import requests
 
         self._requests = requests
-        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
+        # Any endpoint that speaks the same chat-completions protocol (the VSE
+        # gateway) is reached by giving its url and the name of its key.
+        self.url = url
+        self.api_key = api_key or os.environ.get(key_env)
         self.model = model or os.environ.get("OPENROUTER_MODEL")
         if not self.api_key:
-            raise OpenRouterError("OPENROUTER_API_KEY is not set (src/.env)")
+            raise OpenRouterError(f"{key_env} is not set (src/.env)")
         if not self.model:
             raise OpenRouterError("OPENROUTER_MODEL is not set (src/.env)")
         self.timeout = timeout
@@ -277,7 +281,7 @@ class OpenRouterClient:
             last = attempt == self.max_retries - 1
             wait = None  # server-requested wait (Retry-After), if any
             try:
-                resp = self.session.post(OPENROUTER_API_URL, json=body, timeout=self.timeout)
+                resp = self.session.post(self.url, json=body, timeout=self.timeout)
             except (requests.ConnectionError, requests.Timeout) as e:
                 if last:
                     raise OpenRouterError(f"request failed: {e}") from e
@@ -388,6 +392,30 @@ class OpenRouterProvider:
         return text if text.strip() else REFUSAL_SENTINEL
 
 
+VSE_API_URL = "https://litellm.vse.cz/chat/completions"
+
+
+class VSEProvider(OpenRouterProvider):
+    """The VSE gateway (a LiteLLM proxy run by the university): the same
+    protocol as OpenRouter, another address and key (VSE_API_KEY). VSE_API_URL
+    in the environment overrides the address."""
+
+    def __init__(self, llm):
+        from config import ConfigError
+
+        if llm.revision is not None:
+            raise ConfigError("provider 'vse' has no model revision to pin")
+        try:
+            self.client = OpenRouterClient(model=llm.model, app_title="GeoProject evaluation",
+                                           url=os.environ.get("VSE_API_URL") or VSE_API_URL,
+                                           key_env="VSE_API_KEY")
+        except OpenRouterError as e:
+            raise ConfigError(str(e)) from None
+        self.model_id = llm.model
+        self.generation_params = generation_params(llm)
+        self._sampling = _sampling(llm)
+
+
 class LocalHFClient:
     """A Hugging Face causal LM run on this machine with transformers.
 
@@ -439,7 +467,7 @@ class LocalHFClient:
         return text if text.strip() else REFUSAL_SENTINEL
 
 
-PROVIDERS = {"google": GoogleClient, "openrouter": OpenRouterProvider,
+PROVIDERS = {"google": GoogleClient, "openrouter": OpenRouterProvider, "vse": VSEProvider,
              "local_hf": LocalHFClient}
 
 

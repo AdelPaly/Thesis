@@ -5,7 +5,7 @@ question: >
   does parametric knowledge (LLM alone, whole text) beat mention detection and
   retrieval; matched control for grounded_gemma
 design: >
-  LLM(gemma-4-31b-it, Google, temperature 0, prompt v1 → JSON
+  LLM(gemma-4-12b-it, VSE gateway, temperature 0, prompt v1 → JSON
   city/country/continent/refused) → resolve: city, else country (Wikidata search
   limit=1, first hit with coords) → else continent string only (no QID, no coords) →
   prediction. No candidate list. Output: refused, unparseable or unresolvable → no
@@ -15,7 +15,7 @@ description: >
   as grounded_gemma, so the grounded-vs-ungrounded comparison measures the
   grounding rather than a model change.
 
-  Google Gemma 4 31B (instruction tuned), reading the whole text in one pass.
+  Google Gemma 4 12B (instruction tuned), reading the whole text in one pass.
   No mention detection stage: the model is asked for city / country /
   continent directly, and the answer is resolved against Wikidata. A
   continent-only answer carries no coordinate.
@@ -31,11 +31,11 @@ rerank:
   model: null
   enabled: false
 llm:
-  provider: google
-  model: gemma-4-31b-it
+  provider: vse
+  model: gemma-4-12b-it
   revision: null
   temperature: 0.0
   top_p: null
   prompt_template: v1
   run_date: null
-  cache_name: gemma4
+  cache_name: gemma4_12b

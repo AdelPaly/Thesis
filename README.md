@@ -63,9 +63,10 @@ One YAML file in `configs/` per method. Adding a file adds a method.
 | 2 | `refined` | ReFinED entity linking | nothing (8.6 GB download on first use) |
 | 2 | `blink` | BLINK entity linking | BLINK checkout and models, see below |
 | 3 | `dense_retrieval` | dense retrieval over place texts | nothing |
-| 4 | `gemma4` | LLM on the whole text | `GOOGLE_API_KEY` |
-| 5 | `grounded_gemma` | LLM choosing among dense candidates | `GOOGLE_API_KEY` |
-| 5 | `grounded_gemma_linking` | LLM choosing among linked candidates | `GOOGLE_API_KEY` |
+| 4 | `gemma4` | LLM on the whole text (Gemma 4 12B) | `VSE_API_KEY` |
+| 4 | `qwen3_vl` | the same with a second model (Qwen3-VL 235B) | `VSE_API_KEY` |
+| 5 | `grounded_gemma` | LLM choosing among dense candidates | `VSE_API_KEY` |
+| 5 | `grounded_gemma_linking` | LLM choosing among linked candidates | `VSE_API_KEY` |
 
 Models are downloaded on first use (Flair `ner-large` 6.3 GB,
 `intfloat/multilingual-e5-base` 2.2 GB, ReFinED 8.6 GB). Run a subset with
@@ -74,7 +75,10 @@ Models are downloaded on first use (Flair `ner-large` 6.3 GB,
 ### Keys
 
 Keys go in `src/.env` (git-ignored; `src/.env.example` lists them). Only the
-Gemma configurations need one: a Google AI Studio key as `GOOGLE_API_KEY`.
+LLM configurations need one: `VSE_API_KEY`, for the university's model gateway
+(litellm.vse.cz), which served Gemma 4 12B and Qwen3-VL 235B for the results.
+Both models have open weights; to run them elsewhere, set `llm.provider` in the
+configuration to `openrouter` or `google` and give that provider's key.
 Wikidata is public; set `WDQS_CONTACT` to your email or URL so its operators
 can reach you.
 

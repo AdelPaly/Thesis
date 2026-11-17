@@ -23,7 +23,7 @@ comparisons:
   - [refined, gemma4, "mention detection vs parametric knowledge"]
   - [dense_retrieval, gemma4, "no mention detection: retrieval vs parametric"]
   # tier 4: between models (reportable only beyond the within-model template spread)
-  - [qwen3_4b, gemma4, "second model vs first"]
+  - [qwen3_vl, gemma4, "second model vs first"]
   # tier 5: grounding
   - [grounded_gemma, gemma4, "does grounding help (same model, matched control)"]
   - [grounded_gemma, dense_retrieval, "grounded LLM vs its retriever alone"]

@@ -8,7 +8,7 @@ design: >
   NER(flair/ner-large, LOC/PER/ORG) → link(ReFinED, as refined) → resolve(property
   chain) → distinct place QIDs by linker confidence, top-10 (no rerank) → [gate:
   candidates?] no: abstain (selection.no_candidates, no LLM call) / yes: LLM
-  select(gemma-4-31b-it, as grounded_gemma) → chosen candidate. Output: as
+  select(gemma-4-12b-it, as grounded_gemma) → chosen candidate. Output: as
   grounded_gemma.
 description: >
   Tier 5, second variant. Identical to grounded_gemma except that the
@@ -30,14 +30,14 @@ rerank:
   model: null
   enabled: false
 llm:
-  provider: google
-  model: gemma-4-31b-it
+  provider: vse
+  model: gemma-4-12b-it
   revision: null
   temperature: 0.0
   top_p: null
   prompt_template: v1
   run_date: null
-  cache_name: gemma4_31b
+  cache_name: gemma4_12b
 grounded:
   candidate_source: linking
   top_k: 10
