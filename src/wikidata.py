@@ -10,6 +10,8 @@ from collections.abc import MutableMapping
 
 import requests
 
+import meter
+
 logger = logging.getLogger(__name__)
 
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
@@ -207,6 +209,7 @@ def _api_get(params: dict, timeout: float = REQUEST_TIMEOUT, url: str = WIKIDATA
         _rate_limiter.wait()
         resp = None
         try:
+            meter.add("wikidata_requests")
             resp = requests.get(url, params=params, headers=HEADERS, timeout=timeout)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             last_error = str(e)

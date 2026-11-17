@@ -22,6 +22,8 @@ Sections (the `section` column of the CSV):
                  count should be 0
     style        post length in words beside the real posts it was modelled on
                  (sampler/length_dist.json), and the longest post in characters
+    repetition   posts that share a stock scene (regenerate.stock_scene), posts
+                 per writer configuration, and how each kept post was written
     second_judge the audit model's verdicts on the kept posts. It read only
                  posts the generation-time judge accepted, so this is how often
                  it accepts those, not agreement over all posts written.
@@ -46,6 +48,7 @@ import audit
 import finalise
 import generate as gen
 import plan
+import regenerate
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -199,6 +202,26 @@ def main(argv: list[str] | None = None) -> int:
                 sum(1 for n in lengths if n > ref["p95"]), len(lengths))
     out.add("style", "characters per post", "all", "longest post", max(len(d["text"]) for d in dataset),
             reference=f"limit {limit}")
+
+    # ---- repeated scenes: posts that share one of the two stock scenes, and
+    # how many came from the prompt before and after it lost its examples
+    for c in conditions + ["all"]:
+        mine = [d for d in dataset if c in ("all", d["signal_type"])]
+        scenes = Counter(regenerate.stock_scene(d["text"]) or "none" for d in mine)
+        out.add("repetition", "posts in a stock scene", c, "any stock scene", len(mine) - scenes["none"], len(mine))
+        if c == "all":
+            for scene, n in scenes.most_common():
+                out.add("repetition", "posts in a stock scene", c, scene, n, len(mine))
+    hashes = Counter((latest.get(d["item_id"]) or {}).get("config_hash") or "?" for d in dataset)
+    for config_hash, n in hashes.most_common():
+        out.add("repetition", "posts per writer configuration", "all", config_hash, n, len(dataset))
+    # rows rewritten on 2026-11-17 carry no "regenerated" field: over 3 tries, or a manual removal in the try log
+    how = Counter(r.get("regenerated") or ("manual or failed (2026-11-17)" if (r.get("tries") or 0) > 3
+                                           or any(t.get("manual_removed") for t in r.get("try_log") or [])
+                                           else "first generation")
+                  for r in ((latest.get(d["item_id"]) or {}) for d in dataset))
+    for mode, n in how.most_common():
+        out.add("repetition", "how the kept post was written", "all", mode, n, len(dataset))
 
     # ---- second judge
     audit_path = args.audit

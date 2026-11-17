@@ -375,7 +375,28 @@ def type_note(clue: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
                                  entity_type)
     if clue.get("property") in (prompt_cfg.get("untyped_properties") or []):
         entity_type = None
+    if clue.get("what") and not clue.get("is_human"):   # clue_types.py: "railway station"
+        entity_type = clue["what"]
     return f" ({entity_type})" if entity_type else ""
+
+
+def attach_clue_types(items: list[dict[str, Any]], path: Path) -> int:
+    """Add "what" (clue_types.py: the Wikidata type in words) to every clue,
+    spare clue and distractor entity that has one, in memory. Returns how many
+    got one; 0 when the file is not there."""
+    if not path.exists():
+        return 0
+    types = json.loads(path.read_text(encoding="utf-8"))
+    n = 0
+    for item in items:
+        entities = (item.get("clues") or []) + (item.get("spare_clues") or [])
+        if item.get("noise_entity"):
+            entities.append(item["noise_entity"])
+        for entity in entities:
+            if entity.get("clue_qid") in types and not entity.get("is_human"):
+                entity["what"] = types[entity["clue_qid"]]
+                n += 1
+    return n
 
 
 def build_messages(
@@ -1533,6 +1554,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     plan = read_jsonl(plan_path)
     if not plan:
         raise SystemExit(f"no items in {plan_path} - run plan.py first")
+    if paths.get("clue_types"):
+        attach_clue_types(plan, Path(paths["clue_types"]))
 
     existing = latest_rows(read_jsonl(out_path))
     ok_ids = {i for i, r in existing.items() if not r.get("error")}

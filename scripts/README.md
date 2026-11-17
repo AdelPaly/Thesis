@@ -42,6 +42,13 @@ dev, which is why `SALT` and `DEV_FRACTION` are constants.
 | `../src/runner.py` | Runs one configuration (`../configs/*.yaml`) over one dataset and writes per-item records to `../results/predictions/<config>__<dataset>.jsonl`. **Computes no metrics.** Resumable; a failed item is recorded with an `error`, never skipped. |
 | `run_all.py` | Drives the runner over a set of (configuration, dataset) pairs, one at a time, logging each to `../results/logs/`. Sequential on purpose: two runners contend for the Wikidata rate limiter and clobber each other's caches. |
 
+Every record says how it was made: `config_hash` and `code_rev`, the `models`
+and decoding settings by role, `run_utc`, the `dataset_release` it was computed
+on with the file's `dataset_sha256`, the `seconds` the item took and its `cost`
+(LLM calls, prompt and output tokens, Wikidata requests). An LLM answer
+replayed from the response cache counts as `llm_cache_hits` and has no tokens:
+the cache keeps the answer, not what it cost or when it was fetched.
+
 `configs/` is the registry — adding a file is enough to get a configuration
 run. `ORDER` in `run_all.py` is an ordering preference only; anything in
 `configs/` but not in `ORDER` still runs.

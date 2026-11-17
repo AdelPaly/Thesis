@@ -31,6 +31,8 @@ import json
 import logging
 import re
 
+import meter
+
 from llm_common import (REFUSAL_SENTINEL, PickleCache, fingerprint,
                         parse_json_object)
 
@@ -92,6 +94,7 @@ class GroundedSelector:
         key = self._key(text, candidates)
         cached = self._cache.get(key)
         if cached:
+            meter.add("llm_cache_hits")
             return cached
         prompt = PROMPT.format(text=text, candidates=format_candidates(candidates))
         try:

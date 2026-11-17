@@ -3,4 +3,6 @@ tests/
 # working files: prompts and raw replies, derived audit tables, review lists
 output/raw_responses.jsonl
 output/manual_removed.csv
-output/audit/*.csv
+output/audit/*
+!output/audit/vse_Qwen3.8_27B_summary.csv
+!output/audit/manual_sample_100.csv

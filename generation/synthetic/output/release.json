@@ -1,6 +1,6 @@
 {
   "release": "synthetic-v1",
-  "created_utc": "2026-11-17T19:59:02+00:00",
+  "created_utc": "2026-11-17T22:32:48+00:00",
   "rows": 3349,
   "rows_by_condition": {
     "A": 363,
@@ -17,15 +17,15 @@
   "files": {
     "dataset": {
       "path": "generation/synthetic/output/synthetic_dataset.csv",
-      "sha256": "ec426ffeff2fe1e82ee06893f9bb152e21f0d368a53c54eddcd242901012ad0a"
+      "sha256": "67923155233d7b31c5f6e5a6b2c30a5b96cfeedb58df832c2023e9e0ac8403e3"
     },
     "finalise_report": {
       "path": "generation/synthetic/output/finalise_report.csv",
-      "sha256": "72ae8efbcf7614e5f3ddeb49fff57b0deada6944afab1bee714315f9923fb3af"
+      "sha256": "6aab6264fc8a96c7e38041463c3ffef594ce66f63224009090efc357212eda8c"
     },
     "item_plan": {
       "path": "generation/synthetic/output/item_plan.jsonl",
-      "sha256": "2547d65da9b175b967339d1f2ed67d0ffbbd6d58af8b3886b46605bb2ecd62ab"
+      "sha256": "74a13fa2b7de96cae8ee27cf698b747004a91eb14dbd8a27e2de2438b0cf8f48"
     },
     "place_split": {
       "path": "splits/place_split.csv",
@@ -39,7 +39,9 @@
     "1"
   ],
   "config_hash": {
-    "312c7d08fe10e0b4": 3349
+    "ef5a773f6a13d7fe": 1060,
+    "312c7d08fe10e0b4": 2173,
+    "1aa62aa44e125092": 116
   },
   "writer_model": {
     "anthropic/claude-haiku-5.5": 3349
@@ -49,8 +51,8 @@
   },
   "generated_utc": {
     "first": "2026-11-12T21:01:08+00:00",
-    "last": "2026-11-17T19:30:12+00:00"
+    "last": "2026-11-17T22:32:36+00:00"
   },
-  "code_rev": "ed1444360da57157197796439d4098c3bb3b5e6d",
-  "code_dirty": false
+  "code_rev": "23b815993111fb1b880a6f68e619590613d026b9",
+  "code_dirty": true
 }

@@ -1,0 +1,25 @@
+# Entities that must not appear in a post, as a clue or as a distractor
+# (2026-11-17, user: nothing linked to Islamist terrorism or armed groups of
+# that kind). One Wikidata id per line, then its name. finalise.py drops any
+# post whose clue or distractor is listed (status banned_entity).
+Q34490      Al-Qaeda
+Q4703056    Al-Qaeda Kurdish Battalions
+Q39075689   ISIS Hunters
+Q521338     Malika El Aroud
+Q861979     Mahdi Army
+Q216826     Muqtada al-Sadr
+# 2026-11-17, user: nothing linked to Nazi crimes either; also killers, murders and massacres
+Q66232      Ludolf von Alvensleben
+Q121854     Sepp Janko
+Q4231784    Gestapo–NKVD conferences
+Q112967076  Tetsuya Yamagami
+Q15063392   Vasily Filippenko
+Q117662822  Pya-Hodo Massacre
+Q131057001  Murder of Vicky Hernández
+Q11580320   attempted assassination of Asari Giichi
+# 2026-11-17, user: anything relevant to terrorism, or extremist
+Q237039     Joseba Sarrionandia
+Q95658      Rudolf Stahlecker
+Q1575189    Juárez Cartel
+Q22894064   Liwa Al-Quds
+Q853699     Mouvement national de libération de l'Azawad

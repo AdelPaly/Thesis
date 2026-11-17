@@ -18,6 +18,8 @@ import re
 import time
 from typing import Any, Optional
 
+import meter
+
 log = logging.getLogger(__name__)
 
 CACHE_DIR = os.path.join(os.path.dirname(__file__), ".llm_cache")
@@ -183,7 +185,12 @@ class GoogleClient:
         delay = self.INITIAL_DELAY_S
         for attempt in range(1, self.MAX_ATTEMPTS + 1):
             try:
-                return self.model.generate_content(prompt, generation_config=cfg).text
+                response = self.model.generate_content(prompt, generation_config=cfg)
+                meter.add("llm_calls")
+                usage = getattr(response, "usage_metadata", None)
+                meter.add("llm_prompt_tokens", getattr(usage, "prompt_token_count", 0) or 0)
+                meter.add("llm_output_tokens", getattr(usage, "candidates_token_count", 0) or 0)
+                return response.text
             except ValueError as e:
                 # `.text` raises when the candidate was blocked or has no parts.
                 log.warning("Gemma returned no usable text (%s); recording a refusal", e)
@@ -372,7 +379,12 @@ class OpenRouterProvider:
 
     def call(self, prompt: str) -> str:
         """Raw text for `prompt`; a refusal sentinel for an empty answer."""
-        text, _ = self.client.complete(prompt, **self._sampling)
+        text, meta = self.client.complete(prompt, **self._sampling)
+        usage = (meta or {}).get("usage") or {}
+        meter.add("llm_calls")
+        meter.add("llm_prompt_tokens", usage.get("prompt_tokens") or 0)
+        meter.add("llm_output_tokens", usage.get("completion_tokens") or 0)
+        meter.add("llm_cost_usd", float(usage.get("cost") or 0))
         return text if text.strip() else REFUSAL_SENTINEL
 
 
@@ -420,6 +432,9 @@ class LocalHFClient:
                                       do_sample=False, temperature=None, top_p=None,
                                       top_k=None,
                                       pad_token_id=self.tokenizer.eos_token_id)
+        meter.add("llm_calls")
+        meter.add("llm_prompt_tokens", int(ids.shape[1]))
+        meter.add("llm_output_tokens", int(out.shape[1] - ids.shape[1]))
         text = self.tokenizer.decode(out[0, ids.shape[1]:], skip_special_tokens=True)
         return text if text.strip() else REFUSAL_SENTINEL
 

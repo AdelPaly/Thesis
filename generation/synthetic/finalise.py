@@ -742,10 +742,25 @@ def main(argv: list[str] | None = None) -> int:
         with removed_path.open(encoding="utf-8", newline="") as f:
             removed = {r["item_id"]: r.get("reason") or "" for r in csv.DictReader(f)}
 
+    # Entities that must never be in a post (banned_entities.txt, next to this
+    # script): a post whose clue or distractor is one of them is dropped.
+    banned_path, banned = HERE / "banned_entities.txt", {}
+    if banned_path.exists():
+        for line in banned_path.read_text(encoding="utf-8").splitlines():
+            if line.strip() and not line.startswith("#"):
+                qid, _, name = line.strip().partition(" ")
+                banned[qid] = name.strip()
+
     report, kept = [], []
     for item in items:
         row = latest.get(item["item_id"])
         verdict = verdict_for(item, row, aliases, env_pattern, limits)
+        if verdict is None and banned:
+            entities = used_item(item, row).get("clues") or []
+            entities = entities + ([item["noise_entity"]] if item.get("noise_entity") else [])
+            hit = [banned[e["clue_qid"]] for e in entities if e.get("clue_qid") in banned]
+            if hit:
+                verdict = ("banned_entity", ", ".join(hit))
         if verdict is None and item["item_id"] in removed:
             verdict = ("manual_removed", removed[item["item_id"]])
         if verdict is None and (item["place_qid"], item["condition"]) in swapped_out:

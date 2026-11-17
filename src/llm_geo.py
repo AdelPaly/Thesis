@@ -10,6 +10,8 @@ from __future__ import annotations
 import hashlib
 import logging
 
+import meter
+
 from llm_common import (CACHE_DIR, REFUSAL_SENTINEL, PickleCache,  # noqa: F401
                         fingerprint, make_client, parse_json_object)
 
@@ -108,6 +110,7 @@ class LLMGeoPipeline:
         key = hashlib.sha256(text.encode()).hexdigest()
         cached = self._cache.get(key)
         if cached:
+            meter.add("llm_cache_hits")
             return cached
         prompt = self.prompt.format(text=text)
         try:

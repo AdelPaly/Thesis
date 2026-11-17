@@ -200,6 +200,7 @@ def describe(item: dict[str, Any], name: str, config: dict[str, Any] | None = No
             kind = {"place_or_org": "a place or organisation", "work_or_event": "a work or event",
                     "species": "a plant or animal species",
                     "media": "a newspaper or broadcaster"}.get(c.get("entity_type"), "")
+            kind = c.get("what") or kind   # clue_types.py: "railway station"
             return f'- "{name}"' + (f" ({kind}; " if kind else " (") + f"link to the place: {relation(c, config)})"
     if (item.get("noise_entity") or {}).get("clue_label") == name:
         if item["noise_entity"].get("kind") == "demonym":

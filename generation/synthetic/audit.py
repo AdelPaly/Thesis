@@ -39,6 +39,25 @@ Writes, next to the dataset (output/audit/):
                            already there, so a run can be stopped and resumed.
     <model>_flagged.csv    the posts with a verdict, to read by hand
     <model>_summary.csv    flagged posts per condition and reason
+
+The audit is a filter, not a verdict (2026-11-17). On the rated sample of 100
+posts (output/audit/manual_sample_100.csv) it flagged seven, six of which were
+kept, and it missed the four rejected posts (a tomb in another city, a beach
+with a roof). Read its flags; do not cut on them.
+
+Each flag is put in one of two groups (the `about` column):
+
+    clue        the clue's tie to the place, a name used as the wrong kind of
+                thing, a false lead, a claim that is not about the place.
+                Worth reading by hand.
+    scene       how the distractor is worked in, an invented detail of the
+                setting, loose joins in a post that carries a distractor.
+                The post rules allow these (2026-11-17, user); the count is
+                reported and the posts need no reading.
+
+The judge is told what each clue is (output/clue_types.json, "a railway
+station"), as the generation-time judge is. A log row written before that
+(no "typed" field) is asked again when its post has a typed clue.
 """
 from __future__ import annotations
 
@@ -64,7 +83,25 @@ import plan
 
 HERE = Path(__file__).resolve().parent
 SAMPLE_SEED = 20261117
-FLAGGED_COLUMNS = ["item_id", "condition", "place_name", "country", "clues", "noise_entity",
+# verdicts about the scene rather than the clue; the last four only when the post carries a distractor
+SCENE_ALWAYS = {"judge_setting", "judge_noise_nonsense", "judge_decorative", "judge_imagined", "judge_off_theme"}
+SCENE_WITH_NOISE = {"judge_fragments", "judge_incoherent", "judge_media", "judge_untied_claim"}
+
+
+def about(status: str, item: dict[str, Any] | None) -> str:
+    """"scene" or "clue": which of the two groups a flag belongs to."""
+    if status in SCENE_ALWAYS or (status in SCENE_WITH_NOISE and (item or {}).get("noise_entity")):
+        return "scene"
+    return "clue"
+
+
+def typed(item: dict[str, Any]) -> bool:
+    """Whether the prompt names what any of the item's clues or its distractor is."""
+    entities = (item.get("clues") or []) + ([item["noise_entity"]] if item.get("noise_entity") else [])
+    return any(e.get("what") for e in entities)
+
+
+FLAGGED_COLUMNS = ["item_id", "condition", "about", "place_name", "country", "clues", "noise_entity",
                    "rule_status", "rule_reason", "judge_status", "judge_reason", "text"]
 
 
@@ -107,7 +144,10 @@ def load_posts(config: dict[str, Any]) -> list[tuple[dict[str, Any], dict[str, s
     """(plan item, dataset row) for every post in the dataset. A post whose
     clues differ from its plan item is refused: the judge would be told the
     wrong names."""
-    items = {i["item_id"]: i for i in gen.read_jsonl(Path(config["paths"]["item_plan"]))}
+    plan_items = gen.read_jsonl(Path(config["paths"]["item_plan"]))
+    if config["paths"].get("clue_types"):
+        gen.attach_clue_types(plan_items, Path(config["paths"]["clue_types"]))
+    items = {i["item_id"]: i for i in plan_items}
     with Path(config["paths"]["dataset_csv"]).open(encoding="utf-8", newline="") as f:
         rows = list(csv.DictReader(f))
     posts = []
@@ -168,6 +208,7 @@ def check_post(item: dict[str, Any], row: dict[str, str], checker: judge.Judge |
         "noise_entity": (item.get("noise_entity") or {}).get("clue_label") or "",
         "text": text, "rule": list(rule) if rule else None,
         "audited_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
+        "typed": typed(item),
     }
     if checker is not None:
         result = checker.check(item, text)
@@ -179,7 +220,7 @@ def check_post(item: dict[str, Any], row: dict[str, str], checker: judge.Judge |
 def summarise(records: list[dict[str, Any]], posts: dict[str, dict[str, Any]],
               strict: frozenset[str], out: Path) -> None:
     """Tables on the screen, and the flagged posts and counts as CSV."""
-    flagged, by_reason, by_condition, errors = [], Counter(), Counter(), 0
+    flagged, by_reason, by_condition, by_about, errors = [], Counter(), Counter(), Counter(), 0
     totals = Counter(r["condition"] for r in records)
     for r in records:
         item = posts.get(r["item_id"])
@@ -190,10 +231,12 @@ def summarise(records: list[dict[str, Any]], posts: dict[str, dict[str, Any]],
         if not (rule or verdict or r.get("error")):
             continue
         status = (verdict or ("judge_error", r.get("error") or "") if not rule else rule)[0]
-        by_reason[(r["condition"], status)] += 1
+        group = about(status, item)
+        by_reason[(r["condition"], status, group)] += 1
         by_condition[r["condition"]] += 1
+        by_about[(r["condition"], group)] += 1
         flagged.append({
-            "item_id": r["item_id"], "condition": r["condition"], "place_name": r["place_name"],
+            "item_id": r["item_id"], "condition": r["condition"], "about": group, "place_name": r["place_name"],
             "country": r.get("country", ""), "clues": "; ".join(r.get("clues") or []),
             "noise_entity": r.get("noise_entity", ""),
             "rule_status": rule[0] if rule else "", "rule_reason": rule[1] if rule else "",
@@ -203,22 +246,26 @@ def summarise(records: list[dict[str, Any]], posts: dict[str, dict[str, Any]],
 
     print(f"\n{len(records)} posts audited, {len(flagged)} flagged "
           f"({100 * len(flagged) / max(1, len(records)):.1f}%), {errors} judge errors")
-    print(f'\n{"condition":<16}{"audited":>8}{"flagged":>9}{"share":>8}')
+    print(f'\n{"condition":<16}{"audited":>8}{"flagged":>9}{"share":>8}{"clue":>7}{"scene":>7}')
     for condition in sorted(totals):
         n, bad = totals[condition], by_condition[condition]
-        print(f"{condition:<16}{n:>8}{bad:>9}{100 * bad / n:>7.1f}%")
+        print(f"{condition:<16}{n:>8}{bad:>9}{100 * bad / n:>7.1f}%"
+              f'{by_about[(condition, "clue")]:>7}{by_about[(condition, "scene")]:>7}')
+    print(f'{"all":<16}{len(records):>8}{len(flagged):>9}{100 * len(flagged) / max(1, len(records)):>7.1f}%'
+          f'{sum(n for (_, g), n in by_about.items() if g == "clue"):>7}'
+          f'{sum(n for (_, g), n in by_about.items() if g == "scene"):>7}')
     reasons = Counter()
-    for (_, status), n in by_reason.items():
-        reasons[status] += n
-    print(f'\n{"reason":<24}{"posts":>6}')
-    for status, n in reasons.most_common():
-        print(f"{status:<24}{n:>6}")
+    for (_, status, group), n in by_reason.items():
+        reasons[(group, status)] += n
+    print(f'\n{"about":<7}{"reason":<24}{"posts":>6}')
+    for (group, status), n in sorted(reasons.items(), key=lambda kv: (kv[0][0], -kv[1])):
+        print(f"{group:<7}{status:<24}{n:>6}")
 
     stem = out.with_suffix("")
     finalise.write_csv(Path(f"{stem}_flagged.csv"), FLAGGED_COLUMNS, flagged)
-    finalise.write_csv(Path(f"{stem}_summary.csv"), ["condition", "reason", "posts", "audited"],
-                       [{"condition": c, "reason": s, "posts": n, "audited": totals[c]}
-                        for (c, s), n in sorted(by_reason.items())])
+    finalise.write_csv(Path(f"{stem}_summary.csv"), ["condition", "about", "reason", "posts", "audited"],
+                       [{"condition": c, "about": g, "reason": s, "posts": n, "audited": totals[c]}
+                        for (c, s, g), n in sorted(by_reason.items())])
     print(f"\nwrote {stem}_flagged.csv and {stem}_summary.csv")
 
 
@@ -265,7 +312,8 @@ def main(argv: list[str] | None = None) -> int:
     # is about the text the dataset holds now.
     current = {item["item_id"]: row["text"].strip() for item, row in posts}
     done = {r["item_id"]: r for r in (gen.read_jsonl(out) if out.exists() else [])
-            if (args.rules_only or r.get("answer") is not None) and current.get(r["item_id"]) == r["text"]}
+            if (args.rules_only or r.get("answer") is not None) and current.get(r["item_id"]) == r["text"]
+            and (args.rules_only or r.get("typed") or not typed(by_id[r["item_id"]]))}
     if not args.summary:
         todo = [p for p in select(posts, args) if p[0]["item_id"] not in done]
         print(f"{len(posts)} posts in the dataset, {len(done)} already audited, {len(todo)} to do"

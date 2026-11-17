@@ -17,6 +17,7 @@ paths:
   random_stream:     sampler/geo_random.txt
   length_dist:       sampler/length_dist.json     # built by length_dist.py
   style_exemplars:   data/style_exemplars.jsonl   # built by build_exemplars.py
+  clue_types:        output/clue_types.json       # built by clue_types.py (Wikidata P31)
   bluesky_dump:      data/bluesky_en.jsonl        # source for build_exemplars.py
 
   # outputs
@@ -661,18 +662,25 @@ prompt:
 
     Build the post in two steps (2026-11-02, user).
     First, put each name where it belongs, saying its link in everyday words
-    and without naming the place: the company in front of its offices, the
-    club at its ground, a person in their home town or at their work, the
-    mayor at the council, the festival on its grounds. "Here" on its own does
+    and without naming the place. Where a name belongs depends on what it is:
+    a company has works, a shop, a depot or a head office, a station has a
+    platform and an entrance, a club has a ground, a school has a campus, a
+    person has a home town or a place of work, a festival has its grounds.
+    These are kinds of link, not words to copy. "Here" on its own does
     not tie anything: say the link. Do not write the words born, grew up or
     died.
-    Second, make the environmental point come out of that: something the
-    name's event, site or work does to the place, or that happens there
-    because of it or while it is going on. For example, a singer gives a gig
-    in his home town and the crowd leaves rubbish everywhere afterwards; a
-    company's trucks idle outside its offices all day; a club's ground floods
-    every winter now. The name and the point are one story. Never set a name
-    and an unrelated point side by side, joined by "and" or a comma.
+    Second, make the environmental point come out of that, and make it the
+    topic you are given below, not another one. How the two meet is yours to
+    find, and it differs from name to name: something it built, changed,
+    started, stopped or neglected; what its work, its building, its land, its
+    visitors or its supplies do to the surroundings; what the problem does to
+    it; what the writer sees, hears or smells there. Many posts are written
+    from these same instructions, so do not reach for the stock scene:
+    vehicles with their engines running outside an office, or a crowd leaving
+    cups, bottles and wrappers behind, belong only in a post whose topic is
+    traffic fumes or litter, and even there in your own way. The name and the
+    point are one story. Never set a name and an unrelated point side by
+    side, joined by "and" or a comma.
 
     Real people may do something that fits who they are and their link to
     the place: an actor filming, a singer at a gig, an athlete training, a
@@ -926,7 +934,8 @@ prompt:
   # Revolution" could be anywhere in the country).
   clue_line: >-
     - "{label}"{type_note}. Its link to the place: {relation}. Say that link
-    in the post (it is there, at its offices, its ground, its site). If it
+    in the post (it is there: at its own building, ground, site, route or
+    land, whichever fits what it is). If it
     can travel (a band, a team, a touring show), being here is not the link:
     say the link itself (the band formed here, the club's home ground). Make
     the environmental point something it does, causes or suffers there. Use
@@ -952,9 +961,10 @@ prompt:
     - "{label}"{type_note}, known as: {known_for}. Their link to the place:
     {relation}. They are from history and are not alive today: never show them
     doing, attending, opening or noticing anything. Bring them in only through
-    what they left behind here (their tomb, statue, house, studio, church, a
+    what they left behind here (their house, statue, studio, church, a
     street or school named after them, their work), and say that link in the
-    post. Make the environmental point come out of that thing: what happens at
+    post. Do not write about their tomb, grave or burial: most people are not
+    buried where they lived or worked. Make the environmental point come out of that thing: what happens at
     it, around it or because of it. Do not name the place.
 
   # Added to a person's line when Wikidata ties them the same way to other places
@@ -971,16 +981,18 @@ prompt:
   noise_entity: >-
     - "{label}"{type_note}, which belongs to a different place from the one
     this post is about. Weave it into the same scene as something that is
-    really there or going on (a band playing at the gig, a club's shirt in
-    the crowd, a brand in the bins), never as a comparison or a line tacked
-    on at the end, and without saying it is from somewhere else.
+    really there or going on, in a way that fits what it is (its people, its
+    product, its name on something, something about it heard or talked
+    about), never as a comparison or a line tacked on at the end, and without
+    saying it is from somewhere else.
 
   # The demonym distractor (plan.noise_kinds). {label} is the country
   # adjective; {forms} its other accepted forms.
   noise_demonym: >-
     - the word "{label}"{forms}, for people or things in the scene that come
-    from that country: {label} tourists, {label} music, {label} companies,
-    {label} beer. Weave it into the same scene as something that is really
+    from that country: visitors, students, workers, a neighbour, a shop or
+    restaurant, a firm, a product, a film or a song, whichever fits the
+    scene. Weave it into the same scene as something that is really
     there or going on, never as a comparison or a line tacked on at the end.
     Use the word itself, not the country's name, and do not suggest the post
     is set in that country.
@@ -1001,6 +1013,8 @@ prompt:
     instruction above.
 
   rejection_explanations:
+    false_burial: it spoke of the person's tomb, grave or burial here, and they are not buried here; bring them in through something else they left behind (a house, a statue, a street or school named after them, their work)
+    stock_scene: it used a scene that many other posts already use (vehicles with engines running outside an office, or a crowd leaving cups, bottles and wrappers); find a different way for the name and the topic to meet
     names_place: it named the place, its country or a region it is in
     wrong_toponym: the place name was missing, changed or had something added to it
     missing_name: the place name was missing
@@ -1071,7 +1085,7 @@ prompt:
     with these fields:
 
   output_fields:
-    situation: one sentence saying, for each name, its link to the place, what it is doing there and how that causes or meets the environmental point ("his gig in his home town leaves rubbish all over the streets"); if you were given a name or word from a different place, also say where it shows up in that scene
+    situation: one sentence saying, for each name, its link to the place, what it is doing there and how that causes or meets the environmental point; if you were given a name or word from a different place, also say where it shows up in that scene
     post_text: the post
     entities_referenced: each named thing you mentioned, written exactly as it appears in the post
     naming_form_used: the place name exactly as you wrote it, or null if there is none

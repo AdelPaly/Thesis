@@ -18,6 +18,8 @@ every input kept, so each step can be checked or run again.
 | `synthetic/validate_anchors.py` | checks every planned clue and distractor against Wikidata and repairs the plan | `synthetic/output/anchor_checks.jsonl` |
 | `synthetic/generate.py` | the writer model writes each post, the judge model (`judge.py`) checks it | `synthetic/output/raw_generations.jsonl`, `swaps.jsonl` |
 | `synthetic/finalise.py` | applies the checks, balances the conditions, writes the dataset | `synthetic/output/synthetic_dataset.csv`, `finalise_report.csv`, `release.json` |
+| `synthetic/clue_types.py` | looks up what kind of thing each clue is (Wikidata "instance of") for the prompt | `synthetic/output/clue_types.json` |
+| `synthetic/regenerate.py` | writes a post again: removed by hand, failed, or copying a stock scene | appends to `raw_generations.jsonl` |
 | `synthetic/audit.py` | a model that took no part in generation reads every kept post again | `synthetic/output/audit/<model>.jsonl` |
 | `synthetic/quality_report.py` | yield, balance against the plan, rule checks, length and the audit as numbers | `synthetic/output/quality_report.csv` |
 
@@ -26,15 +28,59 @@ OpenRouter (2026-11-12 to 13). Neither is among the evaluated systems. The
 judge decides what enters the dataset, so it is a filter, not an independent
 check of it.
 
-The audit (2026-11-17) was run with Qwen3.8-27B. It flags many acceptable
-posts, so its flags are candidates for review, not verdicts: off-theme posts
-and links the model paraphrased instead of quoting are not counted unless
-asked for (`--strict-theme`, `--strict-quotes`). The flagged `A` and `B` posts
+The audit (2026-11-17) was run with Qwen3.8-27B. It is a filtering tool and
+not an accurate one: its flags are candidates for review, not verdicts. On the
+sample of 100 rated posts it flagged seven, six of which were kept, and it
+missed all four rejected posts. Its per-post log stays local; the counts per
+condition and reason are in
+`synthetic/output/audit/vse_Qwen3.8_27B_summary.csv`. Told what each clue is,
+it did find 21 posts that used a name as the wrong kind of thing, and 19 were
+rewritten.
+Off-theme posts and links the model paraphrased instead of quoting are not
+counted unless asked for (`--strict-theme`, `--strict-quotes`). Each flag is
+marked as being about the clue (worth reading) or about the scene (the
+distractor, an invented detail of the setting), which the post rules allow.
+`synthetic/check_burials.py` covers one fault no judge sees: a post that
+speaks of a person's tomb in a place where, by Wikidata, they are not buried
+or did not die. It found 97 such posts, and all were rewritten; where no post
+without a tomb passed, the place's spare clue was used instead.
+
+`synthetic/output/audit/manual_sample_100.csv` is a sample of 100 posts drawn
+at random from the whole dataset (seed 20261118), each with one answer, keep or
+not, and a note where the answer is no. 96 were kept and 4 rejected: two for a
+tomb in the wrong city, one for a beach written as a building and one for a tie
+that is only a street sign. The first three faults were then searched for in
+the whole dataset as described here; the sheet shows the posts as they were
+rated.
+
+The flagged `A` and `B` posts
 were read with an AI assistant and seven were rewritten with
 `synthetic/regenerate.py`, which sends an item back to the writer with the
 reason its post was removed. The same script wrote 39 `NOISE_EXPLICIT` posts
-that had failed their first three tries (`--failed NOISE_EXPLICIT`). No
-documented manual sample of the posts was rated.
+that had failed their first three tries (`--failed NOISE_EXPLICIT`).
+
+A third of the first generation shared two scenes that the prompt had given as
+worked examples: vehicles idling outside an office, and a crowd leaving cups
+and bottles behind (34.1 % of posts, over half of `NOISE_A` and `NOISE_B`). The
+writer had also treated stations, parks and a boat as companies, because the
+prompt gave only their names. On 2026-11-17 the examples were taken out of the
+prompt, `synthetic/clue_types.py` fetched what each clue is from Wikidata
+("railway station") for the writer and the judge, and
+`regenerate.py --stock-scenes` rewrote the posts that matched either scene
+(`stock_scene()` in that script; two rounds). 1,095 posts were replaced; a
+post that failed its tries kept its old text. 3.3 % of posts still match a
+stock scene, most of them on a topic that is about traffic fumes or litter.
+The dataset therefore holds posts from two versions of the prompt: every row
+of `raw_generations.jsonl` carries its `config_hash`, `release.json` counts
+both, and `quality_report.csv` (section `repetition`) gives the shares.
+
+Nothing linked to terrorism, extremism, Nazi crimes, killers or massacres may
+appear in a post, as a clue or as a distractor. `synthetic/banned_entities.txt`
+lists the entities found in the plan (by name, Wikidata type, party, membership
+and conviction); `finalise.py` drops any post that uses one. Ten kept posts
+did: their distractor, or for one place its clue, was swapped in the plan for
+another entity of the same place (`noise_swaps`, `banned_clue_swaps` on the
+plan item) and the posts were written again.
 
 ## Running a step again
 
@@ -163,7 +209,8 @@ synthetic/
   judge.py             the second model's check on each post
   finalise.py          checks the posts, writes the dataset CSV
   audit.py             a second judge model reads the finished dataset
-  regenerate.py        rewrites posts removed by hand or failed in one condition
+  regenerate.py        rewrites posts removed by hand, failed, or copying a stock scene
+  clue_types.py        what each clue is, from Wikidata, for the prompt
   quality_report.py    the quality criteria as numbers
   build_exemplars.py   picks real posts as tone references
   length_dist.py       word-count distribution of real posts

@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import csv
 import functools
+import hashlib
 import json
 import logging
 import math
@@ -37,6 +38,7 @@ sys.path.insert(0, str(SRC))
 from config import (REPO_ROOT, PipelineConfig, load_all_configs,     # noqa: E402
                     load_config, load_datasets)
 from keys import item_id, legacy_config_name                          # noqa: E402,F401
+import meter                                                          # noqa: E402
 import pipeline                                                       # noqa: E402
 from pipeline import Pipeline                                         # noqa: E402
 from wikidata import save_caches                                      # noqa: E402
@@ -90,6 +92,42 @@ def code_rev() -> str:
         return "unknown"
 
 
+def dataset_release(path: Path) -> dict:
+    """What the dataset file is: its sha256, and the name of the release whose
+    release.json (next to the file) lists that hash. Results are claims about a
+    named release, so every record says which one it was computed on; a file
+    that no release.json describes is "unreleased"."""
+    digest = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    name = "unreleased"
+    release_file = Path(path).with_name("release.json")
+    if release_file.exists():
+        try:
+            release = json.loads(release_file.read_text(encoding="utf-8"))
+            if (release.get("files") or {}).get("dataset", {}).get("sha256") == digest:
+                name = release.get("release") or name
+        except (OSError, ValueError):
+            pass
+    return {"name": name, "sha256": digest}
+
+
+def models_of(cfg: PipelineConfig) -> dict:
+    """The models and decoding settings a configuration uses, by role, as they
+    are in its file. The config_hash covers them; this is the readable form."""
+    llm = cfg.llm
+    used = {
+        "ner": cfg.ner.model,
+        "linker": cfg.linking.backend if cfg.linking.backend not in (None, "none") else None,
+        "linker_model": cfg.linking.refined_model,
+        "rerank": cfg.rerank.model if cfg.rerank.enabled else None,
+        "dense_encoder": getattr(cfg.dense, "encoder", None),
+        "llm": f"{llm.provider}/{llm.model}" if llm.model else None,
+        "llm_revision": llm.revision,
+        "llm_temperature": llm.temperature if llm.model else None,
+        "llm_prompt_template": llm.prompt_template if llm.model else None,
+    }
+    return {role: value for role, value in used.items() if value is not None}
+
+
 def _clean(value):
     """Normalise a CSV/prediction value: NaN, non-finite floats and blank
     strings become None; everything else is returned unchanged."""
@@ -109,7 +147,7 @@ def _latlon(row):
     return [float(lat), float(lon)]
 
 
-def build_record(cfg: PipelineConfig, dataset: str, row, out) -> dict:
+def build_record(cfg: PipelineConfig, dataset: str, row, out, run: dict | None = None) -> dict:
     """Flatten one dataset row and its PipelineOutput into the JSON record
     stored in the predictions file. Gold fields come from `row`, predicted
     fields from `out`; scoring happens elsewhere."""
@@ -122,6 +160,10 @@ def build_record(cfg: PipelineConfig, dataset: str, row, out) -> dict:
         "config_name": cfg.name,
         "config_hash": cfg.config_hash,
         "code_rev": code_rev(),
+        # When and on what this item was computed, and what it cost (run_one):
+        # run_utc, dataset_release, dataset_sha256, seconds, cost.
+        **(run or {}),
+        "models": models_of(cfg),
         "paradigm": cfg.paradigm,
         "text": row["text"],
         "place_qid": _clean(row.get("qid")),
@@ -255,6 +297,8 @@ def run(config_name: str, dataset_name: str, limit: int | None = None,
     if existing:
         print(f"resume   : {len(existing)} item(s) already done")
 
+    release = dataset_release(spec.resolved_path())
+    print(f"release  : {release['name']} ({release['sha256'][:12]})")
     pipe = Pipeline(cfg, dataset=dataset_name)
     pipe.prepare([row["text"] for _, row in df.iterrows()
                   if item_id(row["text"]) not in existing])
@@ -271,8 +315,13 @@ def run(config_name: str, dataset_name: str, limit: int | None = None,
             if iid in existing:
                 records.append(existing[iid])
                 continue
+            meter.reset()
+            started = time.perf_counter()
             out = pipe.run(row["text"])
-            rec = build_record(cfg, dataset_name, row, out)
+            run = {"run_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
+                   "dataset_release": release["name"], "dataset_sha256": release["sha256"],
+                   "seconds": round(time.perf_counter() - started, 3), "cost": meter.read()}
+            rec = build_record(cfg, dataset_name, row, out, run)
             records.append(rec)
             status = rec["predicted_qid"] or ("ERROR" if rec["error"] else "no-result")
             log.info("[%d/%d] %s -> %s", len(records), len(df), iid, status)
