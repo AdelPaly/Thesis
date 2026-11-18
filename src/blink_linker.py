@@ -13,13 +13,18 @@ memory and scores each mention against all of it. That does not fit in this
 machine's memory, so every mention of a run is scored in one pass over the
 file, reading one chunk at a time (a plain read, not a memory map, so pages
 already scored do not stay resident) and keeping a running top-k. It is the
-same exact inner-product search, not an approximate index.
+same exact inner-product search, not an approximate index. The mentions are
+scored a block at a time too: a run has several thousand of them, and one
+score matrix for all of them against a chunk, with its sort indices, was over
+18 GB.
 
 The cross-encoder's chosen Wikipedia title is mapped to a Wikidata QID by the
 enwiki sitelink.
 
 Linking results are cached on disk keyed by the mention and its context, so a
-re-run or a resumed run does not repeat the pass.
+re-run or a resumed run does not repeat the pass. The cross-encoder works
+through the mentions in batches and the cache is saved after each, so a run
+that is stopped keeps what it had rescored.
 """
 from __future__ import annotations
 
@@ -42,6 +47,8 @@ CACHE_PATH = Path(__file__).resolve().parent / ".blink_cache" / "links.pkl"
 N_ENTITIES = 5903527
 DIM = 1024
 CHUNK_ROWS = 200_000
+QUERY_BLOCK = 512        # mentions scored against a chunk at once
+RERANK_BATCH = 200       # mentions rescored between two saves of the cache
 ENCODE_BATCH = 16
 
 
@@ -173,14 +180,16 @@ class BlinkLinker:
         best_ids = np.zeros((len(queries), k), dtype=np.int64)
         for start in range(0, N_ENTITIES, CHUNK_ROWS):
             chunk = self._rows(start, min(start + CHUNK_ROWS, N_ENTITIES))
-            scores = queries @ chunk.T
-            part = np.argpartition(-scores, k - 1, axis=1)[:, :k]
-            part_scores = np.take_along_axis(scores, part, axis=1)
-            merged_scores = np.concatenate([best_scores, part_scores], axis=1)
-            merged_ids = np.concatenate([best_ids, part + start], axis=1)
-            keep = np.argsort(-merged_scores, axis=1, kind="stable")[:, :k]
-            best_scores = np.take_along_axis(merged_scores, keep, axis=1)
-            best_ids = np.take_along_axis(merged_ids, keep, axis=1)
+            for q in range(0, len(queries), QUERY_BLOCK):
+                rows = slice(q, q + QUERY_BLOCK)
+                scores = queries[rows] @ chunk.T
+                part = np.argpartition(-scores, k - 1, axis=1)[:, :k]
+                part_scores = np.take_along_axis(scores, part, axis=1)
+                merged_scores = np.concatenate([best_scores[rows], part_scores], axis=1)
+                merged_ids = np.concatenate([best_ids[rows], part + start], axis=1)
+                keep = np.argsort(-merged_scores, axis=1, kind="stable")[:, :k]
+                best_scores[rows] = np.take_along_axis(merged_scores, keep, axis=1)
+                best_ids[rows] = np.take_along_axis(merged_ids, keep, axis=1)
             log.info("BLINK bi-encoder pass: %d / %d entities",
                      min(start + CHUNK_ROWS, N_ENTITIES), N_ENTITIES)
         return best_ids, best_scores
@@ -221,14 +230,17 @@ class BlinkLinker:
         log.info("BLINK: linking %d mention(s)", len(todo))
         queries = self._encode_contexts(todo)
         nns, bi_scores = self._search(queries)
-        logits, id2title = self._rerank(todo, nns)
-        for s, ids, bis, cross in zip(todo, nns, bi_scores, logits):
-            order = np.argsort(-cross, kind="stable")
-            self._cache[_mention_key(s, self.top_k)] = [
-                {"local_id": int(ids[j]), "title": id2title[int(ids[j])],
-                 "biencoder_score": float(bis[j]), "crossencoder_score": float(cross[j])}
-                for j in order]
-        self.save_cache()
+        for b in range(0, len(todo), RERANK_BATCH):
+            batch = slice(b, b + RERANK_BATCH)
+            logits, id2title = self._rerank(todo[batch], nns[batch])
+            for s, ids, bis, cross in zip(todo[batch], nns[batch], bi_scores[batch], logits):
+                order = np.argsort(-cross, kind="stable")
+                self._cache[_mention_key(s, self.top_k)] = [
+                    {"local_id": int(ids[j]), "title": id2title[int(ids[j])],
+                     "biencoder_score": float(bis[j]), "crossencoder_score": float(cross[j])}
+                    for j in order]
+            self.save_cache()
+            log.info("BLINK cross-encoder: %d / %d mentions", min(b + RERANK_BATCH, len(todo)), len(todo))
 
     def link(self, sample: dict) -> list[dict]:
         """The cross-encoder's ranking of the top-k entities for one mention,
