@@ -64,7 +64,17 @@ python scripts/run_all.py
 |--------|---------|
 | `score.py` | Reads the prediction files and computes every metric. Imports nothing from `../src/`, loads no model, makes no network call. |
 
+Next to exact match the table has `ex+in` (exact or inside): the answer also
+counts when it lies inside the gold place on Wikidata, such as the station a
+linker found for a town. `coarser` is the share of answers that are a larger
+unit containing the gold place (a prefecture for its capital); it is shown as
+a count and is not a kind of correct. Both read `results/containment.csv`,
+which `build_containment.py` fetches from Wikidata once per new prediction
+file, so scoring itself stays offline. The rule was fixed on dev on 2026-11-18,
+after a first look at dev results and before any test result was scored.
+
 ```bash
+python scripts/build_containment.py          # after new predictions
 python scripts/score.py --split dev          # choose here
 python scripts/score.py --split test         # report once
 python scripts/score.py --by condition

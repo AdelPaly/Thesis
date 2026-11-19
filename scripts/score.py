@@ -23,6 +23,18 @@ exact          : predicted_qid == place_qid, over items that HAVE a gold QID.
                  0% exact would be wrong. The n_gold_qid column is the
                  denominator, so a dataset without gold QIDs reports exact as
                  "-" rather than zero.
+exact_or_inside: exact, or the predicted item lies inside the gold place on
+                 Wikidata (the station found for a town, a lighthouse for an
+                 island): results/containment.csv, built by
+                 scripts/build_containment.py, says so for each (predicted,
+                 gold) pair. A second score next to exact, never instead of
+                 it; added on 2026-11-18 after a first look at dev results and
+                 before any test result was scored. "-" when the file is not
+                 there; a wrong answer whose pair is not in the file counts as
+                 not inside, and the number of such answers is printed.
+coarser        : the answer is a larger unit that contains the gold place (a
+                 prefecture named after its capital, a country). Reported as a
+                 share of items; it is not a kind of correct.
 country        : exact, or predicted_country == gold_country (any one of a
                  "; "-joined gold, for a place in several). The hierarchy is
                  derived HERE, at report time, not baked into stored booleans.
@@ -49,6 +61,7 @@ from keys import current_config_name, place_key  # noqa: E402
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
 CONFIG_DIR = REPO_ROOT / "configs"
 ITEM_SPLIT_PATH = REPO_ROOT / "splits" / "item_split.csv"
+CONTAINMENT_PATH = REPO_ROOT / "results" / "containment.csv"
 
 # Prominence bins, the environmental theme, name ambiguity, register and scale,
 # written by generation/synthetic/
@@ -58,7 +71,7 @@ BIN_COLUMNS = ["place_prominence", "rival_prominence", "clue_prominence", "env_t
                "name_ambiguous", "place_is_most_famous", "register", "scale"]
 
 LABEL_WIDTH = 34
-CSV_FIELDS = ["group", "n", "n_gold_qid", "exact", "country", "continent",
+CSV_FIELDS = ["group", "n", "n_gold_qid", "exact", "exact_or_inside", "coarser", "country", "continent",
               "no_result_rate", "error_rate"]
 
 
@@ -171,6 +184,20 @@ def _norm_continent(value) -> str | None:
     return CONTINENT_CODES.get(key, key) if key else None
 
 
+_containment: dict | None = None
+unknown_pairs: set = set()      # wrong answers whose pair containment.csv does not hold
+
+
+def containment() -> dict | None:
+    """{(predicted_qid, gold_qid): "inside" | "contains" | "none"} from
+    results/containment.csv, or None when the file is not there."""
+    global _containment
+    if _containment is None and CONTAINMENT_PATH.exists():
+        with CONTAINMENT_PATH.open(encoding="utf-8", newline="") as f:
+            _containment = {(r["predicted_qid"], r["gold_qid"]): r["relation"] for r in csv.DictReader(f)}
+    return _containment
+
+
 def score_record(rec: dict) -> dict:
     """Per-item scoring. Returns the record plus derived fields; the stored
     record itself is never mutated with metric booleans."""
@@ -191,12 +218,22 @@ def score_record(rec: dict) -> dict:
     pred_cont = _norm_continent(rec.get("predicted_continent"))
     continent = country or bool(gold_cont and pred_cont and gold_cont == pred_cont)
 
+    relation = None
+    table = containment()
+    if table is not None and gold_qid and pred_qid and not exact:
+        relation = table.get((pred_qid, gold_qid))
+        if relation is None:
+            unknown_pairs.add((pred_qid, gold_qid))
+
     return {
         **rec,
         "has_prediction": has_prediction,
         "no_result": not has_prediction,
         "is_error": rec.get("error") is not None,
         "exact": exact,
+        "exact_or_inside": exact or relation == "inside",
+        "coarser": relation == "contains",
+        "scorable_inside": gold_qid is not None and table is not None,
         "country_correct": country,
         "continent_correct": continent,
         "scorable_exact": gold_qid is not None,
@@ -219,6 +256,10 @@ def summarise_metrics(scored: list[dict]) -> dict:
         "n_gold_country": n_gold_country,
         "n_gold_continent": n_gold_continent,
         "exact": pct(sum(s["exact"] for s in scored), n_gold_qid),
+        "exact_or_inside": pct(sum(s["exact_or_inside"] for s in scored if s["scorable_inside"]),
+                               sum(s["scorable_inside"] for s in scored)),
+        "coarser": pct(sum(s["coarser"] for s in scored if s["scorable_inside"]),
+                       sum(s["scorable_inside"] for s in scored)),
         "country": pct(sum(s["country_correct"] for s in scored if s["scorable_country"]),
                        n_gold_country),
         "continent": pct(sum(s["continent_correct"] for s in scored if s["scorable_continent"]),
@@ -286,7 +327,7 @@ def _fmt(value: float | None, as_pct: bool = False, width: int = 7) -> str:
 
 
 def print_table(rows: list[tuple[str, dict]], group_label: str = "config") -> None:
-    header = (f"{group_label:{LABEL_WIDTH}} {'n':>4} {'nQID':>5} {'exact':>7} "
+    header = (f"{group_label:{LABEL_WIDTH}} {'n':>4} {'nQID':>5} {'exact':>7} {'ex+in':>7} {'coarser':>7} "
               f"{'country':>7} {'cont':>7} {'no-res':>7} {'err':>6}")
     print(header)
     print("-" * len(header))
@@ -295,7 +336,8 @@ def print_table(rows: list[tuple[str, dict]], group_label: str = "config") -> No
             print(f"{label:{LABEL_WIDTH}} {0:>4}")
             continue
         print(f"{label:{LABEL_WIDTH}} {m['n']:>4} {m['n_gold_qid']:>5} "
-              f"{_fmt(m['exact'], True)} {_fmt(m['country'], True)} "
+              f"{_fmt(m['exact'], True)} {_fmt(m.get('exact_or_inside'), True)} "
+              f"{_fmt(m.get('coarser'), True)} {_fmt(m['country'], True)} "
               f"{_fmt(m['continent'], True)} "
               f"{_fmt(m['no_result_rate'], True)} {_fmt(m['error_rate'], True, 6)}")
 
@@ -355,6 +397,12 @@ def main() -> None:
                 rows.append((f"    {args.by}={shown}", summarise_metrics(sub_items)))
 
     print_table(rows)
+    if containment() is None:
+        print("\nex+in and coarser are empty: no results/containment.csv "
+              "(python scripts/build_containment.py)")
+    elif unknown_pairs:
+        print(f"\n{len(unknown_pairs)} (predicted, gold) pair(s) are not in results/containment.csv and "
+              "count as not inside; run python scripts/build_containment.py to look them up")
     if args.out:
         write_csv(rows, Path(args.out))
 
