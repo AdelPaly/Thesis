@@ -6,7 +6,6 @@ __pycache__/
 # Virtual environments (python install.py)
 .venv/
 .venv-geoparser/
-venv/
 
 # IDE and local tool state
 .idea/
@@ -32,15 +31,18 @@ src/.wikidata_cache/
 src/.llm_cache/
 src/.dense_index/
 src/.blink_cache/
-src/*.pkl
 generation/out/cache/
 
-# Runner checkpoint temporaries
+# Runner checkpoint temporaries, run logs, results that were replaced
 results/predictions/*.tmp
+results/logs/
+results/superseded_pool/
 
 # Bluesky English dump (~380 MB, rebuild with scripts/fetch_bluesky_en.py)
 generation/synthetic/data/bluesky_en.*
-src/bluesky_en.jsonl
 
 # Superseded plans, written by plan.py and validate_anchors.py
 generation/synthetic/output/archive/
+
+# Local duplicate of the dump; delete the file, then this line
+src/bluesky_en.jsonl

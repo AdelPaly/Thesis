@@ -1,7 +1,8 @@
 # `scripts/`
 
-Everything here is on the path from raw data to reported results, in the order
-it runs.
+The scripts on the path from raw data to reported results, in the order they
+run, and two side tools: `simulate_designs.py` (exploratory) and
+`check_rescore.py` (a check).
 
 Scripts are standalone (`python scripts/<name>.py`) and resolve paths relative
 to the repository root.
@@ -29,11 +30,11 @@ needed to build those references again.
 | `make_split.py` | Writes `../splits/place_split.csv` (the assignment) and `../splits/item_split.csv` (joined to item ids). Both committed. |
 
 The unit is a **place, not an item**, so posts about the same place cannot
-straddle the boundary. Global across datasets, stratified by
-(dataset, condition), deterministic from `sha256(SALT + place_key)`.
-Configurations and thresholds are chosen on **dev**; **test is reported once**.
-`--force` moves places between sides and invalidates every threshold fitted on
-dev, which is why `SALT` and `DEV_FRACTION` are constants.
+straddle the boundary. The side of each place comes from the dataset's own
+`split` column, which `generation/reform_places.py` set when the places were
+chosen (214 of 955 places are dev: 735 posts dev, 2,614 test). `make_split.py`
+copies that into the two files the scorer reads; a place never changes side.
+Configurations and settings are chosen on **dev**; **test is reported once**.
 
 ## 3. Inference
 
@@ -62,13 +63,14 @@ python scripts/run_all.py
 
 | Script | Purpose |
 |--------|---------|
-| `score.py` | Reads the prediction files and computes every metric. Imports nothing from `../src/`, loads no model, makes no network call. |
+| `build_containment.py` | Fetches from Wikidata, for every wrong answer, whether it lies inside the gold place or contains it. Writes `../results/containment.csv` (committed). The only scoring step that uses the network. |
+| `score.py` | Reads the prediction files and computes every metric. Loads no model and makes no network call; from `../src/` it imports only `keys.py` (standard library). |
 
 Next to exact match the table has `ex+in` (exact or inside): the answer also
 counts when it lies inside the gold place on Wikidata, such as the station a
 linker found for a town. `coarser` is the share of answers that are a larger
 unit containing the gold place (a prefecture for its capital); it is shown as
-a count and is not a kind of correct. Both read `results/containment.csv`,
+a share of posts and is not a kind of correct. Both read `results/containment.csv`,
 which `build_containment.py` fetches from Wikidata once per new prediction
 file, so scoring itself stays offline. The rule was fixed on dev on 2026-11-18,
 after a first look at dev results and before any test result was scored.
@@ -95,7 +97,7 @@ python scripts/analyse.py all --split test --out results/summary
 ```
 
 Failure attribution classifies each wrong prediction by the stage where it
-broke, read from recorded fields rather than inferred. Ten levels: `error`
+broke, read from recorded fields rather than inferred. Eleven levels: `error`
 (a runner exception, reported separately from pipeline failures), `no_ner_span`,
 `span_not_linked`, `wrong_entity`, `gold_not_retrieved`,
 `wrong_candidate_selected`, `correct_candidate_not_first`, `abstained`,
@@ -104,27 +106,49 @@ architectures with no stages to attribute to (a level an architecture cannot
 produce prints `n/a`, not 0.0).
 Statistics pair and resample by **place**, never by item. The `stats` output
 has a `p_holm` column: the Holm-adjusted by-place McNemar p over the family of
-comparisons that ran (family size printed). `--out` writes the failure, table,
-statistics, bootstrap, bin and grounding tables as CSV, with `n_boot` and `seed`
-(10,000 replicates, seed 20260917 unless `--boot` / `--seed` say otherwise).
+comparisons that ran (family size printed). `--out` writes the failure,
+error-layer, table, statistics, bootstrap, bin and grounding tables as CSV,
+with `n_boot` and `seed` (10,000 replicates, seed 20260917 unless `--boot` /
+`--seed` say otherwise). The tables for the test split are committed in
+`../results/summary/`.
+
+Two views of the same failures exist. `analyse.py failures` gives the eleven
+levels above, per wrong prediction. `error_layers.py` (`analyse.py layers`)
+gives every post one of fewer, coarser layers:
+
+| Layer (`error_layers.py`) | Levels it covers (`analyse.py failures`) |
+|---|---|
+| `no_mention` | `no_ner_span`, `span_not_linked` |
+| `gold_not_in_candidates` | `wrong_entity`, `gold_not_retrieved` |
+| `wrong_selection` | `wrong_candidate_selected`, `correct_candidate_not_first` |
+| `abstained` | `abstained`, `returned_nothing` |
+| `wrong` | `no_intermediate_stages` (the method has no stages to look into) |
+
+`abstained` is narrower in the first view (a grounded LLM declined although
+the gold place was among its candidates) than in the second (any post with no
+prediction after candidates were found).
 
 ## API keys
 
 No script here contains a key, and the Wikidata endpoints are public. The LLM
-configurations need `VSE_API_KEY`, read from a git-ignored `src/.env`. The
-synthetic dataset is generated in `../generation/`, which reads its own key.
+configurations need `VSE_API_KEY`, read from a git-ignored `src/.env`
+(`OPENROUTER_API_KEY` or `GOOGLE_API_KEY` if a configuration is switched to
+that provider). The synthetic dataset is generated in `../generation/`, which
+reads its own key.
 
 ## Environment
 
 - **Python 3.13.3** (CPython, Windows 11 x64). `requirements.lock` (repo root)
   is the exact `pip freeze` of the environment; `requirements.txt` is the
-  short list. `python install.py` creates `.venv` and installs the lock.
+  short list. `python install.py --run` creates `.venv` and installs the lock;
+  without `--run` it installs only what scoring needs.
   The lock pins ReFinED to a git commit and `en_core_web_md` to its release
   wheel. torch is the CPU build. Scoring and analysis (`score.py`,
   `analyse.py`, `check_rescore.py`) need only PyYAML, numpy and scipy.
 - **Irchel Geoparser** (`geoparser_irchel`) runs in a second venv,
   `.venv-geoparser` (or `GEOPARSER_PYTHON`), with `geoparser==0.6.1`
-  (`python install.py --geoparser`). It needs transformers>=5, which conflicts
+  (`python install.py --geoparser`, which also downloads the gazetteer). It
+  needs transformers>=5, which conflicts
   with Flair, so it is not in the lock.
 
 Large external files, none committed (sizes as on the original machine):
@@ -137,11 +161,12 @@ Large external files, none committed (sizes as on the original machine):
 | `intfloat/multilingual-e5-base` | rerank and dense retrieval (`configs/shared.yaml`) | Hugging Face hub, auto-download | ~2.2 GB |
 | GeoNames gazetteer `geonames.db` | `geoparser_irchel` | built by the geoparser's gazetteer setup, in `%LOCALAPPDATA%/geoparser/gazetteers` | ~9.6 GB |
 | `dguzh/geo-all-MiniLM-L6-v2`, spaCy `en_core_web_sm` | `geoparser_irchel` | Hugging Face hub / spaCy, in `.venv-geoparser` | ~0.1 GB |
-| Wikidata response cache `src/.wikidata_cache/` | linkers, gazetteer, dense index | built by the runner from public Wikidata endpoints | ~0.6 GB |
+| Wikidata response cache `src/.wikidata_cache/` | linkers, gazetteer, dense index | built by the runner from public Wikidata endpoints | ~1.5 GB |
 | Bluesky English dump (`generation/synthetic/data/bluesky_en.jsonl`) | synthetic-data generation only | `scripts/fetch_bluesky_en.py` from the HF dataset `alpindale/two-million-bluesky-posts` | ~0.4 GB |
 
 The LLM configurations (`gemma4`, `qwen3_vl`, `grounded_gemma`,
 `grounded_gemma_linking`) call the VSE gateway (`VSE_API_KEY`) and replay from
 `src/.llm_cache/` where a response is cached.
 None of the above is needed to rescore: `python scripts/check_rescore.py`
-reads only `results/predictions/`, `splits/` and `configs/`.
+reads only `results/` (the predictions, `containment.csv` and the tables it
+compares against), `splits/` and `configs/`.

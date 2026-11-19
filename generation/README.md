@@ -10,7 +10,7 @@ The dataset is already built: `synthetic/output/synthetic_dataset.csv`
 evaluation.** This folder is the record of how the dataset was made, with
 every input kept, so each step can be checked or run again.
 
-| step | what it does | output (kept) |
+| step | what it does | output |
 |---|---|---|
 | `reform_places.py` | picks the places, their clues, namesakes and condition pools from Wikidata | `out/places.csv` (1,129 places) |
 | `place_inputs.py` | fetches the names, clue relations and themes the generator needs | `out/place_inputs.jsonl` |
@@ -20,7 +20,8 @@ every input kept, so each step can be checked or run again.
 | `synthetic/finalise.py` | applies the checks, balances the conditions, writes the dataset | `synthetic/output/synthetic_dataset.csv`, `finalise_report.csv`, `release.json` |
 | `synthetic/clue_types.py` | looks up what kind of thing each clue is (Wikidata "instance of") for the prompt | `synthetic/output/clue_types.json` |
 | `synthetic/regenerate.py` | writes a post again: removed by hand, failed, or copying a stock scene | appends to `raw_generations.jsonl` |
-| `synthetic/audit.py` | a model that took no part in generation reads every kept post again | `synthetic/output/audit/<model>.jsonl` |
+| `synthetic/audit.py` | a model that took no part in generation reads every kept post again | `synthetic/output/audit/<model>.jsonl` (local), `<model>_summary.csv` (kept) |
+| `synthetic/check_burials.py` | finds posts that speak of a person's tomb where, by Wikidata, they are not buried | `synthetic/output/audit/burial_check.csv` (local) |
 | `synthetic/quality_report.py` | yield, balance against the plan, rule checks, length and the audit as numbers | `synthetic/output/quality_report.csv` |
 
 The writer was Claude Haiku 5.5 and the judge DeepSeek v4.1 Flash, both through
@@ -46,8 +47,9 @@ or did not die. It found 97 such posts, and all were rewritten; where no post
 without a tomb passed, the place's spare clue was used instead.
 
 `synthetic/output/audit/manual_sample_100.csv` is a sample of 100 posts drawn
-at random from the whole dataset (seed 20261118), each with one answer, keep or
-not, and a note where the answer is no. 96 were kept and 4 rejected: two for a
+at random from the whole dataset (seed 20261118; drawn once by hand, no script
+in the repository does it), each with one answer, keep or not, and a note where
+the answer is no. 96 were kept and 4 rejected: two for a
 tomb in the wrong city, one for a beach written as a building and one for a tie
 that is only a street sign. The first three faults were then searched for in
 the whole dataset as described here; the sheet shows the posts as they were
@@ -70,9 +72,11 @@ prompt, `synthetic/clue_types.py` fetched what each clue is from Wikidata
 (`stock_scene()` in that script; two rounds). 1,095 posts were replaced; a
 post that failed its tries kept its old text. 3.3 % of posts still match a
 stock scene, most of them on a topic that is about traffic fumes or litter.
-The dataset therefore holds posts from two versions of the prompt: every row
-of `raw_generations.jsonl` carries its `config_hash`, `release.json` counts
-both, and `quality_report.csv` (section `repetition`) gives the shares.
+The dataset therefore holds posts from three versions of the prompt: the
+original one (2,173 posts), the one without the worked examples (1,060) and
+the one that also forbids writing about a tomb (116). Every row of
+`raw_generations.jsonl` carries its `config_hash`, `release.json` counts all
+three, and `quality_report.csv` (section `repetition`) gives the shares.
 
 Nothing linked to terrorism, extremism, Nazi crimes, killers or massacres may
 appear in a post, as a clue or as a distractor. `synthetic/banned_entities.txt`
@@ -84,6 +88,13 @@ plan item) and the posts were written again.
 
 ## Running a step again
 
+What can be run again from the repository alone: everything up to and
+including `finalise.py` and `quality_report.py`. The working files of the
+repairs stay local (the per-post audit log, the burial check, the list of
+posts removed by hand, the raw model replies), so `regenerate.py` in its
+default and `--burials` modes, and `quality_report.py --audit`, need
+`audit.py` or `check_burials.py` to be run first. No tests are committed.
+
 `finalise.py` reads only the kept files, so it costs nothing:
 
 ```bash
@@ -93,6 +104,7 @@ python finalise.py
 
 Writing posts again calls paid models. The OpenRouter key goes in
 `synthetic/.env` as `OPENROUTER_API_KEY=...` (template: `synthetic/.env.example`).
+The audit with a `vse:` model reads `VSE_API_KEY` from the same file.
 
 ```bash
 cd synthetic
@@ -130,6 +142,53 @@ including models tried and dropped.
 Clues that are themselves place names (a municipality, a river, a mountain
 range) are allowed in the post by name; every other place name is not.
 
+## Words used here
+
+| word | meaning |
+|---|---|
+| place | the gold answer of a post: one Wikidata item with coordinates |
+| condition | how the place appears in the post; the column is `signal_type` |
+| clue | an entity tied to the place (a club based there, a person born there). The code also says **anchor** for a clue or distractor that is checked against Wikidata, and **hook** for the kind of tie |
+| noise, distractor, misleading signal | the same thing: one name from a place in another country. The **donor** is that place |
+| rival, namesake | the best-known other place with the same name |
+| plan, reserve | items planned for the dataset, and spare items used when a planned one fails |
+| writer, judge | the model that writes a post and the model that accepts or rejects it during generation |
+| audit | a later reading of the finished posts by a third model |
+
+## The columns of `synthetic_dataset.csv`
+
+| column | meaning |
+|---|---|
+| `text` | the post |
+| `qid`, `location_name`, `country`, `continent`, `latitude`, `longitude` | the gold place: Wikidata item, name, country, continent code, coordinates |
+| `signal_type` | the condition (table above). The evaluation calls it `condition` |
+| `signal` | what kind of evidence the post carries, a coarser grouping: `explicit` (the name), `A` (a clue), `A+B` (an ambiguous name and a clue). Not the condition |
+| `surface_form` | the place name as written in the post; empty when the post has none |
+| `clue_qids`, `clue_labels`, `clue_forms` | the clue: Wikidata item, its label, and how the post writes it |
+| `clue_name_shared` | 1 if the clue's name is also the name of something elsewhere (allowed in `B` and `NOISE_B` only) |
+| `clue_link_elsewhere` | other places the clue is also tied to |
+| `noise_entity`, `noise_kind` | the distractor as written, and whether it is an `entity` or a `demonym` ("French") |
+| `noise_donor_qid`, `noise_donor_place`, `noise_donor_country_qid` | the place the distractor comes from, and its country |
+| `register`, `scale`, `valence`, `angle`, `role` | style of the post: kind of post, how wide the claim is, positive or negative, the idea given to the writer, the role of a person clue |
+| `topic` | the environmental theme of the post (called `env_theme` in the plan and on prediction records) |
+| `target_len`, `len` | planned and actual length, in words |
+| `place_sitelinks`, `rival_sitelinks` | number of Wikipedia language versions of the place and of its namesake |
+| `place_prominence`, `clue_prominence` | those counts in three bins |
+| `rival_qid`, `name_ambiguous`, `place_is_most_famous`, `rival_prominence` | the namesake, whether the name is shared, whether the place has more sitelinks than its namesake, and by how much |
+| `tries` | writer attempts until the judge accepted |
+| `clue_swapped`, `swapped_from` | `clue_swapped`: clue replacements made after planning, as old>new (empty in this release). `swapped_from`: for a post on a reserve place, the planned place it stands in for |
+| `split` | `dev` or `test`, by place |
+| `pool` | whether the item came from the `plan` or the `reserve` |
+| `item_id` | the id of the planned item. **Not** the `item_id` on prediction records, which is a hash of the text (`src/keys.py`); join predictions to the dataset on `text` |
+| `model` | the writer model |
+
+`out/places.csv` has short headers: `i` is the place's Wikidata item, `c` its
+country, `sub` its subtype, `sl` its sitelinks, `rival_*` its namesake, and
+`A`, `B`, `EXPLICIT` say whether the place is in that condition's `plan` or
+`reserve`. The remaining short columns (`pbin`, `cbin`, `rbin`, `sbin`,
+`n_fam`, `n_dom`, `hooks`, `old`, `rank`, `n_names`) are working columns of
+`reform_places.py`, explained where that script writes them.
+
 ## The place set
 
 `out/places.csv` holds, per place, its type, country, continent, dev/test
@@ -153,11 +212,11 @@ python place_inputs.py
 cd synthetic && python plan.py --replace
 ```
 
-Set `SSL_CERT_FILE` first if Python's HTTPS to qlever.dev fails. Both scripts
-cache every query in `out/cache` (not committed), so a rerun is fast.
+Both scripts (and `clue_types.py`, `check_burials.py`) cache every query in `out/cache` (not committed), so a rerun is fast.
 `place_inputs.py` also checks the B rule: a B clue must have no clue relation
 (born, located in, headquartered…) with the namesake. B places left with no
-such clue are listed in `out/b_need_clues.csv` and are not planned for B.
+such clue are listed in `out/b_need_clues.csv` and are not planned for B. For
+this place set the file is empty (header only).
 
 ## Environmental posts
 
@@ -179,9 +238,12 @@ necessarily true) claim about its place's surroundings.
 
 ## Style references
 
-`synthetic/data/style_exemplars.jsonl` holds real Bluesky posts used as tone
-references in the prompts, picked by `build_exemplars.py`
-(`exemplar_labels.jsonl` is its label cache). Building them again needs the
+`synthetic/data/style_exemplars.jsonl` holds 110 real Bluesky posts used as
+tone references in the prompts, picked by `build_exemplars.py`
+(`exemplar_labels.jsonl` is its label cache). They come from the public
+Hugging Face dataset `alpindale/two-million-bluesky-posts`; each keeps the
+address of the original post (`at://did:plc:…`) as its source. They are shown
+to the writer model as examples of tone and appear in no post of the dataset. Building them again needs the
 Bluesky dump (~380 MB, not committed):
 
 ```bash
@@ -208,7 +270,9 @@ synthetic/
   generate.py          sends each planned post to the writer model
   judge.py             the second model's check on each post
   finalise.py          checks the posts, writes the dataset CSV
+  banned_entities.txt  entities no post may use; finalise.py drops such posts
   audit.py             a second judge model reads the finished dataset
+  check_burials.py     finds posts that place a tomb where the person is not buried
   regenerate.py        rewrites posts removed by hand, failed, or copying a stock scene
   clue_types.py        what each clue is, from Wikidata, for the prompt
   quality_report.py    the quality criteria as numbers
@@ -217,6 +281,9 @@ synthetic/
   sampler/, state/     the pre-generated integers the plan draws from (with a
                        per-batch source log), and the cursor
   data/                style_exemplars.jsonl and its label cache
-  output/              plan, anchor checks, raw generations, dataset CSV, reports,
-                       release.json, the audit log
+  output/              plan (item_plan.jsonl) and the items the plan rejected
+                       (plan_rejections.jsonl), anchor checks, raw generations,
+                       dataset CSV, reports, release.json; in audit/ the audit
+                       summary and the sample of 100 rated posts
+  .env.example         template for the keys (copy to .env)
 ```
