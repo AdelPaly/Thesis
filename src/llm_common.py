@@ -364,6 +364,12 @@ def parse_json_reply(text: str) -> Any:
     raise ValueError(f"reply is not valid JSON: {text[:300]!r}")
 
 
+# An answer is one short JSON object (about 40 tokens). Without a limit a
+# model that falls into a loop ("S.S.S.S...") writes until the request times
+# out; with it the reply is cut, fails to parse and counts as no prediction.
+MAX_OUTPUT_TOKENS = 512
+
+
 class OpenRouterProvider:
     """The pipeline's view of OpenRouter: one user message in, text out."""
 
@@ -383,7 +389,7 @@ class OpenRouterProvider:
 
     def call(self, prompt: str) -> str:
         """Raw text for `prompt`; a refusal sentinel for an empty answer."""
-        text, meta = self.client.complete(prompt, **self._sampling)
+        text, meta = self.client.complete(prompt, max_tokens=MAX_OUTPUT_TOKENS, **self._sampling)
         usage = (meta or {}).get("usage") or {}
         meter.add("llm_calls")
         meter.add("llm_prompt_tokens", usage.get("prompt_tokens") or 0)
