@@ -6,9 +6,8 @@
 
 No model, no network. Each design below combines the stored predictions of two
 existing configurations item by item, so it costs nothing to try and needs no
-new run. The handlers in src/pipeline.py stay as they are; this is the cheaper
-of the two options in the supervisor's notes (2.3): simulate the composition
-rules offline instead of building a rule-executing chain.
+new run. The handlers in src/pipeline.py stay as they are: the composition
+rules are simulated offline instead of building a chain that executes them.
 
 The designs are an EXPLORATORY family (dated below), not part of the
 pre-registered comparisons.yaml family: they are reported with intervals and
@@ -30,8 +29,9 @@ oracle    correct when A or B is correct. NOT a design: the upper bound of
           two fail on different items.
 
 Rules with a choice (override's t) see only dev; everything else has no free
-parameter. Dev sets are small (20-45 items per dataset), so a tuned t is
-noisy; it is reported next to its dev score.
+parameter. Dev is 735 posts about 214 places, and posts about one place are
+not independent, so a tuned t is still noisy; it is reported next to its dev
+score.
 
 For every design and dataset the table gives exact/country/continent and the
 no-result rate, and the paired exact difference against the better of its two

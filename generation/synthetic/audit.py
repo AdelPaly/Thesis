@@ -19,11 +19,11 @@ providers: in the config (vse, openrouter). The questions, their wording and
 the verdict order are judge.py's, so a difference between this audit and the
 generation-time judge is a difference between the two models, not the rules.
 
-One change to the verdict (2026-11-17, user): the distractor may be nonsense,
+One change to the verdict: the post rules allow a distractor that is nonsense,
 so "judge_noise_nonsense" is not counted unless --strict-noise is given. The
 judge's full answer is kept either way.
 
-Two more after reading Qwen's 305 flags by hand (2026-11-17), neither counted
+Two more after reading Qwen's 305 flags by hand, neither counted
 unless asked for; the log is unchanged, so --summary re-scores without a call:
 
     --strict-theme   "judge_off_theme": the post is environmental but not on
@@ -40,7 +40,7 @@ Writes, next to the dataset (output/audit/):
     <model>_flagged.csv    the posts with a verdict, to read by hand
     <model>_summary.csv    flagged posts per condition and reason
 
-The audit is a filter, not a verdict (2026-11-17). On the rated sample of 100
+The audit is a filter, not a verdict. On the rated sample of 100
 posts (output/audit/manual_sample_100.csv) it flagged seven, six of which were
 kept, and it missed the four rejected posts (a tomb in another city, a beach
 with a roof). Read its flags; do not cut on them.
@@ -52,7 +52,7 @@ Each flag is put in one of two groups (the `about` column):
                 Worth reading by hand.
     scene       how the distractor is worked in, an invented detail of the
                 setting, loose joins in a post that carries a distractor.
-                The post rules allow these (2026-11-17, user); the count is
+                The post rules allow these; the count is
                 reported and the posts need no reading.
 
 The judge is told what each clue is (output/clue_types.json, "a railway

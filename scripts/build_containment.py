@@ -16,7 +16,8 @@ the relation between them on Wikidata.
                to the gold place
     contains   the other way round: the gold place lies in the predicted
                item, which is a larger unit (a prefecture named after its
-               capital, a country). Reported as a count, never as correct.
+               capital, a country). Reported as a percentage of items (the
+               scorer's `coarser` column), never as correct.
     none       neither
 
 The rule was fixed on the dev split on 2026-11-18, after a first look at dev

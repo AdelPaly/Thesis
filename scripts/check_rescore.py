@@ -1,4 +1,4 @@
-"""Rescoring smoke test: do the committed tables reproduce from the saved predictions?
+"""Rescoring check: do the tables in results/summary/ reproduce from the saved predictions?
 
     python scripts/check_rescore.py              # temp dir, deleted afterwards
     python scripts/check_rescore.py --keep DIR   # write the fresh tables to DIR
@@ -8,12 +8,12 @@ functions in scripts/score.py) and scripts/score.py itself -- on
 results/predictions/ into a temporary directory, never into results/summary.
 Then:
 
-  1. every CSV committed in results/summary/ is compared with the freshly
+  1. every CSV in results/summary/ is compared with the freshly
      written file of the same name (same columns, same rows, numbers equal to
      within --tol);
   2. the whole evaluation is run a second time and the two fresh runs are
      compared, which separates nondeterminism (e.g. an unseeded bootstrap) from
-     stale committed tables.
+     stale tables.
 
 Prints PASS/FAIL per table; exits 0 only if everything passes. Loads no model
 and makes no network call.

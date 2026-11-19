@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-The model check on a generated post (Task 5).
+The model check on a generated post.
 
 generate.py's rule checks (finalise.check) catch what a string match can:
 the place or country named, a clue or the planned name missing, the length.
@@ -151,16 +151,15 @@ JUDGE_SCHEMA: dict[str, Any] = {
 
 # Drop reasons in the order they are checked: the first that applies is the one
 # recorded. Names outside the list come first: they can leak the location.
-# judge_unanchored (2026-10-30, user): a clue only mentioned in passing points
+# judge_unanchored: a clue only mentioned in passing points
 # to its country, not to the place ("thanks Party of the Revolution" could be
 # anywhere in Tanzania). Only planned clues count: the place name needs no
 # anchor, and the distractor belongs to another place.
-# judge_setting (same day, user): an invented landscape or facility ("that
+# judge_setting: an invented landscape or facility ("that
 # concrete plant", "the wetlands") is a clue nobody planned; a system can use
 # it, or be misled by it, and the gold label assumes the planned clues are the
 # only locating signal. It ranks with the leaks.
-# 2026-11-02 (user, after smoke13): invented claims about real people, names
-# used against their type, a claim not tied to the place, listed fragments and
+# Invented claims about real people, names used against their type, a claim not tied to the place, listed fragments and
 # untied media framing fail as well. A post off the planned topic fails as
 # judge_off_theme, reported apart from judge_no_environment (no claim at all).
 ORDER = ("judge_place", "judge_person", "judge_setting", "judge_invented_person", "judge_misused",
@@ -241,8 +240,8 @@ def _norm(name: str) -> str:
     return " ".join(name.lower().replace('"', "").split())
 
 
-# A person's link must name a lasting tie (2026-11-12, user: "it must be clear how
-# the entity that can walk and move around the earth is tied to the place").
+# A person's link must name a lasting tie: a person can walk and move around
+# the earth, so the post has to make clear how they are tied to the place.
 # Being seen, filming or training here could happen anywhere.
 TIE_WORDS = re.compile(r"\b(home|homes|hometown|lives?|lived|living|born|grew up|raised|from|"
                        r"house|flat|office|offices|works?|worked|working|job|seat|studio|founded|formed|"
@@ -257,7 +256,7 @@ PERSON = {"his", "her", "their", "he", "she", "they", "where"}
 
 def person_tie(words: str) -> bool:
     """A tie word that is not the writer's own: "outside my office", "near my home town" and
-    "our street" tie the writer, not the person (2026-11-12 pilot: Kaja Kallas, Gauguin)."""
+    "our street" tie the writer, not the person."""
     for m in TIE_WORDS.finditer(words):
         before = set(words[:m.start()].split()[-2:])
         if m.group().startswith("where") or before & PERSON or not before & WRITERS:
@@ -266,7 +265,7 @@ def person_tie(words: str) -> bool:
 
 
 # Conditions that name the place: the toponym says where, the clue only which one, so a person
-# shown there is tied enough (2026-11-12, user: "drop it from B completely").
+# shown there is tied enough, and the lasting-tie rule does not apply.
 NAMED_PLACE = {"B", "NOISE_B"}
 
 BARE_LINK = {"here", "there", "around here", "near here", "nearby", "in town", "back", "locally", "local"}
@@ -275,7 +274,7 @@ BARE_LINK = {"here", "there", "around here", "near here", "nearby", "in town", "
 def missing_evidence(item: dict[str, Any], answer: dict[str, Any], text: str) -> list[str]:
     """Planned names whose link or connection the judge could not quote from the
     post: no entry, empty words, words that are not in the post, or a link that
-    is only "here" (2026-11-02, user: "say gig in his hometown"). The quotes are
+    is only "here" (the post should say "gig in his hometown"). The quotes are
     checked against the text, so the judge cannot pass a post on a tie it
     imagined."""
     folded = " ".join(_norm(text).split())
@@ -317,7 +316,7 @@ def verdict(item: dict[str, Any], answer: dict[str, Any], text: str | None = Non
     # field" or "the market" as a place name.
     extra = lambda key: [n for n in answer.get(key) or []  # noqa: E731
                          if _norm(n) not in allowed and n.strip() and any(ch.isupper() for ch in n)]
-    # The distractor is exempt: its job is to be there without belonging (2026-11-02: Qwen failed "a kid
+    # The distractor is exempt: its job is to be there without belonging (a judge failed "a kid
     # holding a Paul the Apostle banner in the crowd" as decorative). Listed fragments still fail.
     noise_name = _norm((item.get("noise_entity") or {}).get("clue_label") or "")
     decorative = [n for n in answer.get("decorative_names") or [] if _norm(n) in allowed and _norm(n) != noise_name]
@@ -340,7 +339,7 @@ def verdict(item: dict[str, Any], answer: dict[str, Any], text: str | None = Non
         "judge_off_theme": bool(item.get("env_theme")) and answer.get("on_theme") is False,
         "judge_imagined": answer.get("imagined_reaction") is True,
         "judge_decorative": decorative,
-        # 2026-11-12 (user): the distractor misleads machines, not a careful reader.
+        # The distractor misleads machines, not a careful reader.
         "judge_noise_nonsense": bool(item.get("noise_entity")) and answer.get("distractor_makes_sense") is False,
         "judge_unanchored": unanchored,
         "judge_no_environment": answer.get("environmental_claim") is False,
@@ -367,8 +366,8 @@ class Judge:
     def check(self, item: dict[str, Any], text: str) -> dict[str, Any]:
         """{"answer", "verdict", "error", "usage"}; a failed call is recorded, not raised."""
         messages = judge_messages(item, text, self.config)
-        # A reply with no JSON is asked again once (2026-11-12: DeepSeek returned none on 3 of
-        # about 60 calls, and each cost the writer a try).
+        # A reply with no JSON is asked again once (the judge model returned none on about 1 call
+        # in 20, and each cost the writer a try).
         for attempt in range(2):
             try:
                 content, metadata, _ = gen.call_with_backoff(

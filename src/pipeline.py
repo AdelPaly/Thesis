@@ -16,10 +16,10 @@ import csv
 import logging
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Callable, TypedDict
+from typing import TypedDict
 
 from config import ConfigError, PipelineConfig
-from keys import item_id, place_key
+from keys import place_key
 
 logger = logging.getLogger(__name__)
 
@@ -109,15 +109,9 @@ def _candidate_record(cand: Candidate) -> dict:
 class Pipeline:
     """Built once per run from a config; `run(text)` is called per item."""
 
-    def __init__(self, cfg: PipelineConfig, dataset: str | None = None, *,
-                 ner_fn: Callable | None = None,
-                 link_fn: Callable | None = None,
-                 rank_fn: Callable | None = None,
-                 resolve_fn: Callable | None = None):
-        """The `*_fn` arguments replace the real stage callables
-        (extract_entities, link_mentions, rank_candidates,
-        resolve_qid_to_candidate). Left as None they are imported lazily, so
-        the pipeline can be exercised without Flair, ReFinED or the network."""
+    def __init__(self, cfg: PipelineConfig, dataset: str | None = None):
+        """The stage modules (ner, refined_linker, ranking, ...) are imported
+        where a stage first runs, so a configuration loads only what it uses."""
         self.cfg = cfg
         # Some configurations are constants fitted on the dev split of a
         # particular dataset (majority_class), so the pipeline needs to know
@@ -129,10 +123,6 @@ class Pipeline:
         self._geoparser = None
         self._ner_memo: dict[str, list[dict]] = {}
         self._dense_index = None
-        self._ner_fn = ner_fn
-        self._link_fn = link_fn
-        self._rank_fn = rank_fn
-        self._resolve_fn = resolve_fn
         self._paradigms = {
             "ner_dependent": self._run_linking_path,
             "ner_free": self._run_llm_path,
@@ -149,11 +139,9 @@ class Pipeline:
         run, because `prepare` and `run` both need the spans."""
         if text in self._ner_memo:
             return [dict(e) for e in self._ner_memo[text]]
-        fn = self._ner_fn
-        if fn is None:
-            from ner import extract_entities as fn
-        spans = fn(text, model=self.cfg.ner.model,
-                   entity_types=self.cfg.ner.entity_types)
+        from ner import extract_entities
+        spans = extract_entities(text, model=self.cfg.ner.model,
+                                 entity_types=self.cfg.ner.entity_types)
         self._ner_memo[text] = [dict(e) for e in spans]
         return spans
 
@@ -166,13 +154,11 @@ class Pipeline:
             return [{"mention": e["text"], "mention_type": e["type"],
                      "qid": None, "confidence": None, "candidates": []}
                     for e in spans]
-        fn = self._link_fn
-        if fn is None:
-            from refined_linker import link_mentions as fn
-        linked = fn(text, spans,
-                    model_name=li.refined_model,
-                    entity_set=li.refined_entity_set,
-                    top_n=li.top_n)
+        from refined_linker import link_mentions
+        linked = link_mentions(text, spans,
+                               model_name=li.refined_model,
+                               entity_set=li.refined_entity_set,
+                               top_n=li.top_n)
         return [{"mention": ent["text"], "mention_type": ent["type"],
                  "qid": link["qid"], "confidence": link["confidence"],
                  "candidates": link["candidates"]}
@@ -212,20 +198,15 @@ class Pipeline:
         get_linker(self.cfg.linking.top_n).link_all(samples)
 
     def _resolved_links(self, spans, linked_entities):
-        """Yield (link, candidate) for each linked QID that resolves."""
-        resolve = self._resolve_fn
-        if resolve is None:
-            from wikidata import resolve_qid_to_candidate as resolve
+        """Yield (link, candidate) for each linked QID that resolves to a
+        place through the property chain."""
+        from wikidata import resolve_qid_to_candidate
         for ent, link in zip(spans, linked_entities):
             if not link["qid"]:
                 continue
-            cand = resolve(link["qid"], ent["text"], ent["type"])
+            cand = resolve_qid_to_candidate(link["qid"], ent["text"], ent["type"])
             if cand:
                 yield link, cand
-
-    def _places_from_links(self, spans, linked_entities) -> list[Candidate]:
-        """Turn linked QIDs into geographic candidates via the property chain."""
-        return [cand for _, cand in self._resolved_links(spans, linked_entities)]
 
     def _places_from_search(self, spans) -> list[Candidate]:
         from wikidata import get_all_coords
@@ -235,10 +216,8 @@ class Pipeline:
         """Rerank by text/description similarity; a no-op when disabled."""
         if not candidates or not self.cfg.rerank.enabled:
             return candidates
-        fn = self._rank_fn
-        if fn is None:
-            from ranking import rank_candidates as fn
-        return fn(text, candidates, model=self.cfg.rerank.model)
+        from ranking import rank_candidates
+        return rank_candidates(text, candidates, model=self.cfg.rerank.model)
 
     def _llm_pipeline(self):
         if self._llm is None:
@@ -286,9 +265,8 @@ class Pipeline:
         out.candidate_places = [_candidate_record(c) for c in candidates]
         out.prediction = candidates[0] if candidates else None
 
-    def _dev_rows(self) -> list[dict]:
-        """The dev side of this dataset's split, one dict per item with a gold
-        QID. This is the training data of every fitted configuration: a place
+    def _dev_place_counts(self) -> Counter:
+        """Gold QID counts over the dev side of this dataset's split. A place
         is either dev or test, so nothing fitted here has seen a test place."""
         import pandas as pd
 
@@ -302,30 +280,17 @@ class Pipeline:
 
         df = pd.read_csv(load_datasets()[self.dataset].resolved_path(),
                          keep_default_na=False, na_values=[""])   # "NA" is a continent
+        counts: Counter = Counter()
         if "qid" not in df:
-            return []
-        rows = []
+            return counts
         for row in df.to_dict("records"):
             qid = row.get("qid")
             if not (isinstance(qid, str) and qid.strip()):
                 continue
             if side.get(place_key(qid, row.get("location_name"))) != "dev":
                 continue
-            rows.append({
-                "item_id": item_id(row["text"]),
-                "text": row["text"],
-                "qid": qid.strip(),
-                "location_name": _str_or_none(row.get("location_name")),
-                "country": _str_or_none(row.get("country")),
-                "continent": _str_or_none(row.get("continent")),
-                "lat": _float_or_none(row.get("latitude")),
-                "lon": _float_or_none(row.get("longitude")),
-            })
-        return rows
-
-    def _dev_place_counts(self) -> Counter:
-        """Gold QID counts over the dev side of this dataset's split."""
-        return Counter(r["qid"] for r in self._dev_rows())
+            counts[qid.strip()] += 1
+        return counts
 
     def _majority_place(self) -> Candidate | None:
         """The most frequent gold place in the DEV split of this dataset.
@@ -338,10 +303,8 @@ class Pipeline:
         cand = None
         if counts:
             qid, n = counts.most_common(1)[0]
-            resolve = self._resolve_fn
-            if resolve is None:
-                from wikidata import resolve_qid_to_candidate as resolve
-            cand = resolve(qid, qid, "LOC")
+            from wikidata import resolve_qid_to_candidate
+            cand = resolve_qid_to_candidate(qid, qid, "LOC")
             if cand is not None:
                 cand = {**cand, "score": float(n)}
         self._majority = cand
@@ -475,7 +438,8 @@ class Pipeline:
             candidates = self._places_from_search(out.ner_spans)
         else:
             out.linked_entities = self._link(text, out.ner_spans)
-            candidates = self._places_from_links(out.ner_spans, out.linked_entities)
+            candidates = [cand for _, cand in self._resolved_links(
+                out.ner_spans, out.linked_entities)]
         candidates = self._rank(text, candidates)
         out.candidate_places = [_candidate_record(c) for c in candidates]
         out.prediction = candidates[0] if candidates else None
@@ -508,10 +472,3 @@ class Pipeline:
             out.error = f"{type(e).__name__}: {e}"
             out.prediction = None
         return out
-
-
-def set_debug(flag: bool) -> None:
-    """Compatibility shim for older callers: per-item tracebacks are logged at
-    DEBUG, so this just lowers this module's logger level."""
-    if flag:
-        logger.setLevel(logging.DEBUG)

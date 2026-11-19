@@ -48,7 +48,6 @@ class GeoparserWorker:
             self.close()
             raise ConfigError(f"geoparser {hello.get('version')} is installed but the "
                               f"configuration pins {gp_cfg.version}")
-        self.version = hello["version"]
 
     def _read(self) -> dict:
         line = self._proc.stdout.readline()

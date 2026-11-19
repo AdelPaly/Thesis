@@ -38,7 +38,6 @@ llm:
   temperature: 0.0
   top_p: null
   prompt_template: v1
-  run_date: null
   cache_name: gemma4_12b
 dense:
   encoder: shared          # configs/shared.yaml

@@ -1,3 +1,9 @@
+"""Wikidata client: search, entity fetch, and candidate places for a mention.
+
+Every request goes through `_api_get` (rate limited, retried). Results are
+kept in pickle caches under src/.wikidata_cache, written at exit and by
+`save_caches`, so a second run over the same data makes few requests.
+"""
 from __future__ import annotations
 
 import atexit
@@ -107,10 +113,6 @@ class Cache(MutableMapping):
     def __contains__(self, key) -> bool:
         return key in self._ensure()
 
-    @property
-    def loaded(self) -> bool:
-        return self._data is not None
-
     def save(self) -> bool:
         """Write to disk if changed. Returns True if the file was rewritten."""
         with self._lock:
@@ -164,7 +166,6 @@ def save_caches() -> None:
                     ", ".join(f"{c.name}={len(c)}" for c in _CACHES))
 
 
-_save_caches = save_caches
 atexit.register(save_caches)
 
 
@@ -379,11 +380,6 @@ def _fetch_labels_status(qids: list[str]) -> tuple[dict[str, str], bool]:
             all(q in _label_cache for q in qids))
 
 
-def _fetch_labels(qids: list[str]) -> dict[str, str]:
-    """Batch-fetch English labels, using cache. Returns dict QID -> label."""
-    return _fetch_labels_status(qids)[0]
-
-
 def fetch_aliases(qids: list[str]) -> dict[str, list[str]]:
     """Batch-fetch English aliases, using a cache. {QID: [alias, ...]}.
 
@@ -494,24 +490,6 @@ def get_coords_of(entity: dict) -> tuple[float, float] | None:
     if val and "latitude" in val:
         return val["latitude"], val["longitude"]
     return None
-
-
-def coords_for_qids(qids) -> dict[str, tuple[float, float] | None]:
-    """Coordinates for a batch of QIDs: {qid: (lat, lon) | None}.
-
-    The one coordinate client. The dataset tooling used to reach Wikidata
-    through a second transport (a SPARQL endpoint) with a second on-disk cache
-    (src/.qid_coords_cache.pkl) for exactly this fact; both are gone. This goes
-    through the same rate-limited wbgetentities path and the same
-    src/.wikidata_cache the pipeline uses, so a QID fetched by either side is
-    cached for both. QIDs that could not be fetched map to None for this call
-    and are not cached.
-    """
-    wanted = sorted({q for q in qids if isinstance(q, str) and q.startswith("Q")})
-    if not wanted:
-        return {}
-    entities = fetch_entities(wanted)
-    return {q: get_coords_of(entities.get(q, {})) for q in wanted}
 
 
 # The continents a place may carry. Wikidata gives some places a wider region
@@ -774,10 +752,3 @@ def get_all_coords(entities: list[dict], top_n: int = 10) -> list[dict]:
                 "continent": coord["continent"],
             })
     return all_candidates
-
-
-# Backward-compatible aliases for the former private names.
-_search_entities = search_entities
-_fetch_entities = fetch_entities
-_get_coords = get_coords_of
-_resolve_country_continent = resolve_country_continent

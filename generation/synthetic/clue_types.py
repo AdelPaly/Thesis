@@ -15,37 +15,34 @@ A label with a capital letter in it is dropped ("commune of France"): it would
 tell the writer the country. At most two labels are kept per entity, the
 shortest first. The plan itself is not changed; generate.attach_clue_types()
 adds the words to the items in memory.
+
+Queries go through ../reform_places.py (QLever, retried, cached in
+../out/cache): a rerun reads the cache, so delete it to ask Wikidata again.
 """
 from __future__ import annotations
 
 import json
+import os
 import sys
-import time
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
-import generate as gen
-import plan
-
 HERE = Path(__file__).resolve().parent
-ENDPOINT = "https://qlever.dev/api/wikidata"
+sys.path.insert(0, str(HERE.parent))
+import reform_places as rp   # noqa: E402  (sparql: the cached, retried query function)
+
+import generate as gen       # noqa: E402
+import plan                  # noqa: E402
+
+CACHE = str(HERE.parent / "out" / "cache")
 BATCH = 150
-PREFIXES = ("PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> "
-            "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ")
 
 
 def query(qids: list[str]) -> dict[str, list[str]]:
-    sparql = (PREFIXES + "SELECT ?item ?label WHERE { VALUES ?item { " + " ".join("wd:" + q for q in qids)
-              + ' } ?item wdt:P31 ?class . ?class rdfs:label ?label . FILTER(LANG(?label) = "en") }')
-    request = urllib.request.Request(ENDPOINT + "?" + urllib.parse.urlencode({"query": sparql}),
-                                     headers={"Accept": "application/sparql-results+json",
-                                              "User-Agent": "clue-types/1.0"})
-    with urllib.request.urlopen(request, timeout=120, context=gen.tls_context()) as response:
-        rows = json.load(response)["results"]["bindings"]
+    rows = rp.sparql("SELECT ?item ?label WHERE { VALUES ?item { " + rp.V(qids)
+                     + ' } ?item wdt:P31 ?class . ?class rdfs:label ?label . FILTER(LANG(?label) = "en") }', CACHE)
     found: dict[str, list[str]] = {}
-    for row in rows:
-        found.setdefault(row["item"]["value"].rsplit("/", 1)[-1], []).append(row["label"]["value"])
+    for row in rows:                    # rp.sparql gives {variable: value}, an entity as its QID
+        found.setdefault(row["item"], []).append(row["label"])
     return found
 
 
@@ -65,13 +62,13 @@ def main() -> int:
             entities.append(item["noise_entity"])
         qids |= {e["clue_qid"] for e in entities if not e.get("is_human") and e.get("clue_qid")}
     ordered = sorted(qids)
+    os.makedirs(CACHE, exist_ok=True)
     types: dict[str, str] = {}
     for start in range(0, len(ordered), BATCH):
         for qid, labels in query(ordered[start:start + BATCH]).items():
             if words(labels):
                 types[qid] = words(labels)
         print(f"  {min(start + BATCH, len(ordered))}/{len(ordered)}", flush=True)
-        time.sleep(0.5)
     plan.atomic_write_text(out, json.dumps(dict(sorted(types.items())), ensure_ascii=False, indent=0) + "\n")
     print(f"{len(types)} of {len(ordered)} entities have a type; wrote {out}")
     return 0

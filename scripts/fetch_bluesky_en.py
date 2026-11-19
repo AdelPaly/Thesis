@@ -22,7 +22,7 @@ deduplication, no length limits, no content filtering.
 
 Usage:
     python scripts/fetch_bluesky_en.py
-    python scripts/fetch_bluesky_en.py --format parquet --limit 50000
+    python scripts/fetch_bluesky_en.py --limit 50000
 """
 
 import argparse
@@ -54,16 +54,15 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=pathlib.Path,
-                    help="output path (default: generation/synthetic/data/bluesky_en.<format>)")
-    ap.add_argument("--format", choices=("jsonl", "parquet"), default="jsonl",
-                    help="output format (default: jsonl, same shape as the source)")
+                    help="output path, JSON lines in the shape of the source "
+                         "(default: generation/synthetic/data/bluesky_en.jsonl)")
     ap.add_argument("--num-proc", type=int, default=10,
                     help="parallel workers for the filter (default: 10)")
     ap.add_argument("--limit", type=int,
                     help="only process the first N posts (for a quick trial run)")
     args = ap.parse_args()
 
-    out = args.out or (ROOT / "generation" / "synthetic" / "data" / f"bluesky_en.{args.format}")
+    out = args.out or (ROOT / "generation" / "synthetic" / "data" / "bluesky_en.jsonl")
     if not out.is_absolute():
         out = ROOT / out
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -76,10 +75,7 @@ def main():
 
     en = ds.filter(is_english, num_proc=args.num_proc)
 
-    if args.format == "jsonl":
-        en.to_json(out, orient="records", lines=True, force_ascii=False)
-    else:
-        en.to_parquet(out)
+    en.to_json(out, orient="records", lines=True, force_ascii=False)
 
     shown = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
     pct = len(en) / max(len(ds), 1) * 100

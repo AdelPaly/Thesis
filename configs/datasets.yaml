@@ -1,12 +1,11 @@
-# Dataset registry. Paths are repo-relative. Every dataset carries the same
-# columns: text, qid, location_name, country, continent, signal_type,
-# latitude, longitude. A null qid is allowed (see scorer: place_qid may be
-# null for corpora that have coordinates but no gold Wikidata id). A dataset
-# with a `split` column brings its own dev/test assignment, which
-# scripts/make_split.py uses as is.
+# Dataset registry. Paths are repo-relative. A dataset carries the columns
+# text, qid, location_name, country, continent, signal_type, latitude,
+# longitude. A dataset with a `split` column brings its own dev/test
+# assignment, which scripts/make_split.py uses as is.
 synthetic:
   path: generation/synthetic/output/synthetic_dataset.csv
   description: >
     Synthetic Bluesky-style posts (generation/synthetic, Haiku writer, DeepSeek
     judge): A, B, NOISE_A, NOISE_B balanced to 363 each, EXPLICIT and
-    NOISE_EXPLICIT unbalanced. Split by place in reform_places.py (~20 % dev).
+    NOISE_EXPLICIT unbalanced. Split by place in reform_places.py: 214 of 955
+    places and 735 of 3,349 posts are dev.

@@ -17,11 +17,8 @@ description: >
   published geoparsers. Any configuration that does not clear this is not
   earning its complexity.
 
-  gazetteer is 'wikidata' (population = P1082) rather than 'geonames' for two
-  reasons: no GEONAMES_USERNAME is configured in this repo, and GeoNames
-  returns GeoNames ids rather than QIDs, which makes exact-QID match
-  uncomputable for its predictions. The heuristic is identical either way --
-  most populous candidate for the surface form.
+  The gazetteer is Wikidata (population = P1082), so every candidate is a QID
+  and exact-QID match can be computed for its predictions.
 
   linking.top_n is how many gazetteer hits per toponym are considered before
   taking the most populous one, and linking.backend records that retrieval is

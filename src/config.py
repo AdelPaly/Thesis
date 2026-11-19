@@ -14,7 +14,6 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field, asdict, fields, replace
-from datetime import date
 from pathlib import Path
 
 import yaml
@@ -87,10 +86,6 @@ class LLMConfig:
     temperature: float | None = None
     top_p: float | None = None
     prompt_template: str = "v1"
-    # Date of the run that produced the predictions. Provenance only: a hosted
-    # model can change behind an unchanged id, so the id alone does not say
-    # what was evaluated. Excluded from config_hash.
-    run_date: str | None = None
     # cache_name addresses the on-disk response cache (src/.llm_cache/<name>.pkl).
     # Kept separate from `model` so existing caches stay addressable after a
     # model slug is rewritten; defaults to a slugified model id.
@@ -176,7 +171,6 @@ class PipelineConfig:
         for presentation_only in ("tier", "variant", "description", "design",
                                   "question", "config_hash", "source_path"):
             d.pop(presentation_only, None)
-        d["llm"].pop("run_date")
         # Hash-stability shim: GroundedConfig.allow_abstention was removed (it
         # was never read) but every existing prediction file was hashed with it
         # present and True. Re-adding it keeps those hashes, and so resume,
@@ -305,9 +299,6 @@ def from_dict(raw: dict, source_path: str = "",
     built = {}
     for key, (cls, sub) in sections.items():
         _check_keys(key, sub, cls)
-        if isinstance(sub.get("run_date"), date):
-            # YAML reads an unquoted 2026-08-14 as a date.
-            sub = {**sub, "run_date": sub["run_date"].isoformat()}
         built[key] = cls(**sub)
 
     llm = built["llm"]
@@ -373,7 +364,6 @@ def _validate_types(cfg: PipelineConfig) -> None:
                          ("llm.model", cfg.llm.model),
                          ("llm.cache_name", cfg.llm.cache_name),
                          ("llm.revision", cfg.llm.revision),
-                         ("llm.run_date", cfg.llm.run_date),
                          ("llm.prompt_template", cfg.llm.prompt_template),
                          ("dense.encoder", cfg.dense.encoder),
                          ("baseline.strategy", cfg.baseline.strategy)):

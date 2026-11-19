@@ -1,39 +1,33 @@
 """Build the dev/test split and write it to splits/place_split.csv.
 
-    python scripts/make_split.py            # refuses to clobber an existing split
-    python scripts/make_split.py --force    # rebuild; existing places keep their side
+    python scripts/make_split.py            # refuses to overwrite an existing split
+    python scripts/make_split.py --force    # write the files again
 
 The split unit is a PLACE, not an item. Every item about the same place lands
 on the same side of the boundary, so a configuration cannot be tuned on one
 post about Bath and then reported on another post about Bath.
 
-The assignment is:
+This script decides nothing. Each dataset in configs/datasets.yaml carries its
+own `split` column (the synthetic set was split by place in
+generation/reform_places.py before any post was written), and the script
+copies that assignment into the two files the runner and the scorer read:
 
-* global -- a place keeps one side across every dataset it appears in, so a
-  place seen in both the social-media and the GeoCorpora sets cannot be dev in
-  one and test in the other;
-* labelled with the (dataset, condition) of the place's first occurrence (the
-  `stratum` column), for reporting;
-* deterministic -- a place not yet in the committed split goes to dev when
-  sha256(SALT + place_key), read as a fraction of 2**256, is below
-  DEV_FRACTION. That depends on the place alone, never on how many other
-  places exist or on row order (which has been in doubt before);
-* committed -- the existing place_split.csv IS the assignment. On a rebuild
-  every place already in it keeps its side; only unseen places are assigned.
-  Nothing ever moves, so thresholds fitted on dev stay valid.
+* splits/place_split.csv -- one row per place: its side, the (dataset,
+  condition) of its first occurrence (the `stratum` column, for reporting),
+  the number of items, and the datasets and conditions it appears in;
+* splits/item_split.csv -- one row per item with the side of its place.
 
-A dataset with its own `split` column (the synthetic set, split by place in
-generation/reform_places.py before any post was written) overrides all of
-the above for its places.
+A row whose `split` is neither dev nor test stops the run, and so does a place
+that two rows put on different sides. The output depends on the datasets
+alone, so a rebuild from the same data writes the same files.
 
-Places with no gold QID are keyed by their normalised location name instead,
-so corpora with coordinates but no QIDs still split by place.
+A place is keyed by its gold QID, or by its normalised location name when it
+has none (src/keys.py).
 """
 from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -50,34 +44,10 @@ SPLIT_PATH = REPO_ROOT / "splits" / "place_split.csv"
 ITEM_SPLIT_PATH = REPO_ROOT / "splits" / "item_split.csv"
 DATASET_REGISTRY = REPO_ROOT / "configs" / "datasets.yaml"
 
-# Changing either of these changes the assignment of unseen places. They are
-# constants on purpose.
-SALT = "geo-dev-test-split-v1"
-DEV_FRACTION = 0.30
 
-
-def _rank(key: str) -> str:
-    return hashlib.sha256((SALT + key).encode("utf-8")).hexdigest()
-
-
-def hash_side(key: str) -> str:
-    """Side for an unseen place, from its hash alone (no rounding, no
-    dependence on stratum size)."""
-    return "dev" if int(_rank(key), 16) / 16 ** 64 < DEV_FRACTION else "test"
-
-
-def load_existing(path: Path = SPLIT_PATH) -> dict[str, str]:
-    """place_key -> side from a committed split, or {} when there is none."""
-    if not path.exists():
-        return {}
-    df = pd.read_csv(path, keep_default_na=False)
-    return dict(zip(df["place_key"], df["split"]))
-
-
-def build(existing: dict[str, str] | None = None) -> tuple[list[dict], list[tuple]]:
-    """Return (rows, items). Places in `existing` keep their side; the rest are
-    assigned by hash_side. Pure: reads the datasets, writes nothing."""
-    existing = existing or {}
+def build() -> tuple[list[dict], list[tuple]]:
+    """Return (rows, items), each place on the side its dataset gives it.
+    Pure: reads the datasets, writes nothing."""
     registry = yaml.safe_load(DATASET_REGISTRY.read_text(encoding="utf-8"))
 
     places = {}          # key -> {qid, name, stratum, items, datasets, conditions}
@@ -95,12 +65,14 @@ def build(existing: dict[str, str] | None = None) -> tuple[list[dict], list[tupl
                 continue
             # NaN is truthy, so `or "none"` would yield the string "nan".
             condition = "none" if pd.isna(row.signal_type) else str(row.signal_type)
-            # A dataset that brings its own split (the synthetic set, assigned
-            # by place before generation) is used as is.
+            # The dataset's own split (assigned by place before generation) is
+            # used as is.
             own = getattr(row, "split", None)
-            own = own if own in ("dev", "test") else None
+            if own not in ("dev", "test"):
+                raise SystemExit(f"{ds_name}: {key} has split {own!r}; every row "
+                                 f"needs dev or test in its `split` column")
             entry = places.get(key)
-            if entry is not None and own and entry["split"] != own:
+            if entry is not None and entry["split"] != own:
                 raise SystemExit(f"{key}: {ds_name} puts it in {own}, but it is already "
                                  f"{entry['split']} from {entry['stratum']}")
             if entry is None:
@@ -112,7 +84,7 @@ def build(existing: dict[str, str] | None = None) -> tuple[list[dict], list[tupl
                     "n_items": 0,
                     "datasets": set(),
                     "conditions": set(),
-                    "split": own or existing.get(key) or hash_side(key),
+                    "split": own,
                 }
             entry["n_items"] += 1
             entry["datasets"].add(ds_name)
@@ -168,7 +140,7 @@ def summarise(rows: list[dict]) -> None:
         print("no places found")
         return
     print(f"places: {len(rows)}   items: {sum(r['n_items'] for r in rows)}")
-    print(f"dev fraction for unseen places: {DEV_FRACTION}  salt: {SALT}\n")
+    print()
 
     per_ds = defaultdict(lambda: defaultdict(int))   # ds -> split -> places
     for r in rows:
@@ -204,13 +176,11 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--force", action="store_true",
-                   help="overwrite existing split files (existing places keep their side)")
+                   help="overwrite existing split files")
     p.add_argument("--out", default=str(SPLIT_PATH), help="place split output path")
     p.add_argument("--items-out", default=None,
                    help="item split output path (default: splits/item_split.csv "
                         "when --out is the default, else item_split.csv beside --out)")
-    p.add_argument("--existing", default=str(SPLIT_PATH),
-                   help="committed place split whose assignments are kept")
     args = p.parse_args()
 
     out = Path(args.out)
@@ -226,10 +196,9 @@ def main() -> None:
     if clash and not args.force:
         raise SystemExit(
             f"{', '.join(clash)} already exists. The split is meant to be stable; "
-            f"--force rebuilds it, and every place already in {args.existing} "
-            f"keeps its side, so only unseen places are assigned.")
+            f"--force writes it again from the datasets' own split column.")
 
-    rows, items = build(load_existing(Path(args.existing)))
+    rows, items = build()
     summarise(rows)
     print(f"\nwrote {write(rows, out)}")
     print(f"wrote {write_items(rows, items, items_out)}")

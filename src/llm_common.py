@@ -4,7 +4,7 @@ parsing.
 The provider is configuration (`llm.provider`); `make_client` dispatches on it.
 Cache file names and entry keys are owned by the callers (llm_geo, llm_grounded);
 this module adds the load/save mechanics, a fingerprint entry that notices
-prompt or generation-parameter changes, and the JSON parsers.
+prompt or generation-parameter changes, and the JSON parser.
 """
 from __future__ import annotations
 
@@ -112,9 +112,6 @@ class PickleCache:
             return
         self.data[key] = value
 
-    def __len__(self) -> int:
-        return sum(1 for k in self.data if k != META_KEY)
-
     def save(self) -> None:
         tmp = self.path + ".tmp"
         with open(tmp, "wb") as f:
@@ -193,7 +190,7 @@ class GoogleClient:
                 return response.text
             except ValueError as e:
                 # `.text` raises when the candidate was blocked or has no parts.
-                log.warning("Gemma returned no usable text (%s); recording a refusal", e)
+                log.warning("the model returned no usable text (%s); recording a refusal", e)
                 return REFUSAL_SENTINEL
             except self._transient as e:
                 if attempt == self.MAX_ATTEMPTS:
@@ -205,7 +202,6 @@ class GoogleClient:
 
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_APP_TITLE = "GeoProject synthetic dataset generation"
 
 DEFAULT_TIMEOUT_S = 600
 DEFAULT_MAX_RETRIES = 5
@@ -228,17 +224,16 @@ class OpenRouterClient:
     endpoint) with retry/backoff.
 
     Every call returns (text, meta) where meta records the model that
-    actually served the request, the generation id and token usage —
-    needed for the generation metadata in DATASETS.md.
+    actually served the request, the generation id and token usage; the
+    providers below read the usage for the cost meter.
 
-    The API key and, when `model` is not given, the model slug come from the
-    environment (OPENROUTER_API_KEY, OPENROUTER_MODEL). This module does not
-    load .env files; entry points do."""
+    The API key comes from the environment variable named by `key_env`. This
+    module does not load .env files; entry points do."""
 
-    def __init__(self, model: Optional[str] = None, api_key: Optional[str] = None,
+    def __init__(self, model: str,
                  timeout: float = DEFAULT_TIMEOUT_S,
                  max_retries: int = DEFAULT_MAX_RETRIES,
-                 app_title: str = OPENROUTER_APP_TITLE,
+                 app_title: str = "GeoProject evaluation",
                  url: str = OPENROUTER_API_URL, key_env: str = "OPENROUTER_API_KEY") -> None:
         import requests
 
@@ -246,12 +241,10 @@ class OpenRouterClient:
         # Any endpoint that speaks the same chat-completions protocol (the VSE
         # gateway) is reached by giving its url and the name of its key.
         self.url = url
-        self.api_key = api_key or os.environ.get(key_env)
-        self.model = model or os.environ.get("OPENROUTER_MODEL")
+        self.api_key = os.environ.get(key_env)
+        self.model = model
         if not self.api_key:
             raise OpenRouterError(f"{key_env} is not set (src/.env)")
-        if not self.model:
-            raise OpenRouterError("OPENROUTER_MODEL is not set (src/.env)")
         self.timeout = timeout
         self.max_retries = max_retries
         self.session = requests.Session()
@@ -263,18 +256,18 @@ class OpenRouterClient:
 
     def chat(self, messages: list[dict[str, str]],
              temperature: Optional[float] = None,
-             max_tokens: Optional[int] = None,
-             json_mode: bool = False, **extra: Any) -> tuple[str, dict]:
-        """Single chat completion. `extra` is merged into the request body
-        (e.g. seed=42, top_p=0.9, provider={...}). Returns (text, meta)."""
+             top_p: Optional[float] = None,
+             max_tokens: Optional[int] = None) -> tuple[str, dict]:
+        """Single chat completion. A parameter left as None is not sent.
+        Returns (text, meta)."""
         requests = self._requests
-        body = {"model": self.model, "messages": messages, **extra}
+        body = {"model": self.model, "messages": messages}
+        if top_p is not None:
+            body["top_p"] = top_p
         if temperature is not None:
             body["temperature"] = temperature
         if max_tokens is not None:
             body["max_tokens"] = max_tokens
-        if json_mode:
-            body["response_format"] = {"type": "json_object"}
 
         delay = INITIAL_BACKOFF_S
         for attempt in range(self.max_retries):
@@ -314,14 +307,9 @@ class OpenRouterClient:
             delay = min(delay * 2, MAX_BACKOFF_S)
         raise OpenRouterError("retries exhausted")
 
-    def complete(self, user_message: str, system_prompt: Optional[str] = None,
-                 **kwargs: Any) -> tuple[str, dict]:
-        """Convenience: optional system prompt + one user message."""
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": user_message})
-        return self.chat(messages, **kwargs)
+    def complete(self, user_message: str, **kwargs: Any) -> tuple[str, dict]:
+        """Convenience: one user message; `kwargs` go to `chat`."""
+        return self.chat([{"role": "user", "content": user_message}], **kwargs)
 
     def _log_retry(self, attempt: int, reason: str) -> None:
         log.warning("retry %d/%d after %s", attempt + 1, self.max_retries - 1, reason)
@@ -347,23 +335,6 @@ class OpenRouterClient:
         return choice["message"].get("content") or "", meta
 
 
-def parse_json_reply(text: str) -> Any:
-    """Parse a model reply as JSON, tolerating ```json fences and
-    leading/trailing chatter around the outermost object/array."""
-    cleaned = re.sub(r"^\s*```(?:json)?\s*|\s*```\s*$", "", text.strip())
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        pass
-    starts = [i for i in (cleaned.find("{"), cleaned.find("[")) if i != -1]
-    if starts:
-        start = min(starts)
-        end = cleaned.rfind("}" if cleaned[start] == "{" else "]")
-        if end > start:
-            return json.loads(cleaned[start:end + 1])
-    raise ValueError(f"reply is not valid JSON: {text[:300]!r}")
-
-
 # An answer is one short JSON object (about 40 tokens). Without a limit a
 # model that falls into a loop ("S.S.S.S...") writes until the request times
 # out; with it the reply is cut, fails to parse and counts as no prediction.
@@ -371,16 +342,25 @@ MAX_OUTPUT_TOKENS = 512
 
 
 class OpenRouterProvider:
-    """The pipeline's view of OpenRouter: one user message in, text out."""
+    """The pipeline's view of OpenRouter: one user message in, text out.
+
+    A subclass is another endpoint with the same protocol: it sets the name,
+    the address, the environment variable holding the key and, optionally,
+    one that overrides the address."""
+
+    NAME = "openrouter"
+    API_URL = OPENROUTER_API_URL
+    URL_ENV: Optional[str] = None
+    KEY_ENV = "OPENROUTER_API_KEY"
 
     def __init__(self, llm):
         from config import ConfigError
 
         if llm.revision is not None:
-            raise ConfigError("provider 'openrouter' has no model revision to pin")
+            raise ConfigError(f"provider {self.NAME!r} has no model revision to pin")
+        url = (os.environ.get(self.URL_ENV) if self.URL_ENV else None) or self.API_URL
         try:
-            self.client = OpenRouterClient(model=llm.model,
-                                           app_title="GeoProject evaluation")
+            self.client = OpenRouterClient(model=llm.model, url=url, key_env=self.KEY_ENV)
         except OpenRouterError as e:
             raise ConfigError(str(e)) from None
         self.model_id = llm.model
@@ -406,75 +386,13 @@ class VSEProvider(OpenRouterProvider):
     protocol as OpenRouter, another address and key (VSE_API_KEY). VSE_API_URL
     in the environment overrides the address."""
 
-    def __init__(self, llm):
-        from config import ConfigError
-
-        if llm.revision is not None:
-            raise ConfigError("provider 'vse' has no model revision to pin")
-        try:
-            self.client = OpenRouterClient(model=llm.model, app_title="GeoProject evaluation",
-                                           url=os.environ.get("VSE_API_URL") or VSE_API_URL,
-                                           key_env="VSE_API_KEY")
-        except OpenRouterError as e:
-            raise ConfigError(str(e)) from None
-        self.model_id = llm.model
-        self.generation_params = generation_params(llm)
-        self._sampling = _sampling(llm)
+    NAME = "vse"
+    API_URL = VSE_API_URL
+    URL_ENV = "VSE_API_URL"
+    KEY_ENV = "VSE_API_KEY"
 
 
-class LocalHFClient:
-    """A Hugging Face causal LM run on this machine with transformers.
-
-    The weights are pinned: `llm.revision` must be a commit hash of the model
-    repository, so the row stays reproducible however the hosted model moves.
-    Decoding is greedy (temperature 0, no top_p), the only setting that is
-    deterministic here. Inference runs on the CPU in float32, because this
-    machine has no GPU and torch's CPU bfloat16 matmul is slower than float32
-    on it; dtype and the new-token cap change the answers, so both are part of
-    the cache fingerprint."""
-
-    DTYPE = "float32"
-    MAX_NEW_TOKENS = 128
-
-    def __init__(self, llm):
-        import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-
-        from config import ConfigError
-
-        if not llm.revision:
-            raise ConfigError("provider 'local_hf' requires llm.revision (a commit hash)")
-        if llm.temperature not in (0, 0.0) or llm.top_p not in (None, 1, 1.0):
-            raise ConfigError("provider 'local_hf' decodes greedily: set temperature 0 "
-                              "and top_p null or 1.0")
-        self._torch = torch
-        self.model_id = llm.model
-        self.generation_params = {**generation_params(llm), "dtype": self.DTYPE,
-                                  "max_new_tokens": self.MAX_NEW_TOKENS}
-        self.tokenizer = AutoTokenizer.from_pretrained(llm.model, revision=llm.revision)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            llm.model, revision=llm.revision, dtype=getattr(torch, self.DTYPE))
-        self.model.eval()
-
-    def call(self, prompt: str) -> str:
-        """Raw text for `prompt`; a refusal sentinel for an empty answer."""
-        ids = self.tokenizer.apply_chat_template(
-            [{"role": "user", "content": prompt}], add_generation_prompt=True,
-            return_tensors="pt")
-        with self._torch.no_grad():
-            out = self.model.generate(ids, max_new_tokens=self.MAX_NEW_TOKENS,
-                                      do_sample=False, temperature=None, top_p=None,
-                                      top_k=None,
-                                      pad_token_id=self.tokenizer.eos_token_id)
-        meter.add("llm_calls")
-        meter.add("llm_prompt_tokens", int(ids.shape[1]))
-        meter.add("llm_output_tokens", int(out.shape[1] - ids.shape[1]))
-        text = self.tokenizer.decode(out[0, ids.shape[1]:], skip_special_tokens=True)
-        return text if text.strip() else REFUSAL_SENTINEL
-
-
-PROVIDERS = {"google": GoogleClient, "openrouter": OpenRouterProvider, "vse": VSEProvider,
-             "local_hf": LocalHFClient}
+PROVIDERS = {"google": GoogleClient, "openrouter": OpenRouterProvider, "vse": VSEProvider}
 
 
 def make_client(llm):

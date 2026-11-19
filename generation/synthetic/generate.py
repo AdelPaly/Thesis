@@ -11,10 +11,11 @@ WHAT THIS SCRIPT DOES
     script turns a planned item into a prompt, sends it, and records what came
     back. finalise.py then validates the rows and writes the dataset.
 
-    Two OpenRouter clients exist in this repository on purpose: this
-    stdlib-only one (urllib, no third-party packages, its own .env reader and
-    backoff) and src/llm_openrouter.py (requests + python-dotenv) used by the
-    evaluation code. Consolidating them is a deliberate non-goal for now.
+    Two chat-completions clients exist in this repository on purpose: the
+    one below (ChatClient: urllib only, its own .env reader and backoff), used
+    by every script in this folder, and the one in src/llm_common.py, used by
+    the evaluation code. Generation and evaluation are separate programs and
+    share no code.
 
 FOUR RULES THAT ARE NOT NEGOTIABLE
     1. The raw response is logged before anything tries to parse it. A parser
@@ -95,12 +96,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
 
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    sys.exit("PyYAML is required: pip install pyyaml")
+import plan   # noqa: E402  (load_config, utc_now; contains_word, so prompt and planner match names alike)
 
-import plan   # noqa: E402  (contains_word, so prompt and planner match names alike)
+utc_now = plan.utc_now   # by its own name: several functions below have a parameter called plan
 
 
 HERE = Path(__file__).resolve().parent
@@ -133,17 +131,20 @@ GENERATION_DEFAULTS: dict[str, Any] = {
 # paths: keys the scripts index directly. load_config checks them once.
 REQUIRED_PATHS = (
     "item_plan", "raw_generations", "raw_response_log", "style_exemplars", "length_dist",
-    "place_inputs", "bluesky_dump", "dataset_csv", "finalise_report",
+    "place_inputs", "dataset_csv", "finalise_report",
 )
 
-# Keys of the config's prompt: section that build_messages needs.
+# Keys of the config's prompt: section that build_messages needs. The section
+# also holds length_bands and length_line, which nothing reads any more (items
+# carry target_len since plan version 6): the whole section is hashed into
+# config_hash, so they stay in config.yaml.
 REQUIRED_PROMPT_KEYS = (
-    "system", "task", "length_bands", "forbidden_toponym", "ambiguous_toponym",
+    "system", "task", "forbidden_toponym", "ambiguous_toponym",
     "place_clue_exception", "scale_lines", "valence_lines", "role_hint_intro", "role_hints",
     "claim_rules", "target_len_line",
     "exact_toponym", "entities_header", "clue_line", "noise_entity",
     "surface_ambiguous", "surface_exact", "exemplar_intro", "register_line",
-    "length_line", "register_notes_line", "slots_footer", "output_intro",
+    "register_notes_line", "slots_footer", "output_intro",
     "output_fields",
 )
 
@@ -172,7 +173,8 @@ RESPONSE_SCHEMA: dict[str, Any] = {
     "properties": {
         # First, so the model settles the one situation the post grows from
         # before it writes: with thinking off this is its only planning step.
-        # A reason per name (smoke5-6) gave posts that listed the reasons.
+        # One sentence for the whole post: a reason per name gave posts that
+        # listed the reasons.
         # Not dataset content.
         "situation": {
             "type": "string",
@@ -215,12 +217,9 @@ RESPONSE_SCHEMA: dict[str, Any] = {
 # --------------------------------------------------------------------------- #
 
 def load_config(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        raise SystemExit(f"config not found: {path}")
-    config = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    for section in ("paths", "generation", "prompt"):
-        if section not in config:
-            raise SystemExit(f"{path} is missing the {section!r} section")
+    """plan.load_config (read, absolute paths) plus the checks on the keys
+    the generator and the scripts built on it index directly."""
+    config = plan.load_config(path, ("paths", "generation", "prompt"))
     missing = [k for k in REQUIRED_PATHS if k not in config["paths"]]
     if missing:
         raise SystemExit(f"{path}: paths: is missing {missing}")
@@ -232,11 +231,6 @@ def load_config(path: Path) -> dict[str, Any]:
     if unwritten:
         raise SystemExit(f"{path}: prompt.output_fields has no wording for "
                          f"{unwritten} (every RESPONSE_SCHEMA field needs one)")
-    # Paths in the config are relative to the config file's folder, so the
-    # scripts behave the same whatever directory they are started from.
-    base = path.resolve().parent
-    config["paths"] = {key: str((base / value).resolve())
-                      for key, value in config["paths"].items()}
     return config
 
 
@@ -346,8 +340,8 @@ def describe_clue(clue: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     phrases = prompt_cfg.get("relation_phrases") or {}
     relation = (phrases.get(clue.get("property"))
                 or clue.get("property_label") or clue.get("property"))
-    # 2026-11-12 pilot: people from history were shown alive ("Napoleon came back to open the
-    # new road", 38 failed tries in B and NOISE_B), so they get their own line.
+    # People from history get their own line: with the general one they were shown alive
+    # ("Napoleon came back to open the new road").
     key = "clue_line"
     if clue.get("is_human"):
         key = "clue_line_person_past" if clue.get("is_living") is False else "clue_line_person"
@@ -358,8 +352,8 @@ def describe_clue(clue: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
         label=clue["clue_label"], type_note=note, relation=relation,
         known_for=clue.get("description") or note.strip(" ()") or "a person",
     )
-    # 2026-11-12, user: a person tied the same way to other places too (validate_anchors
-    # link_elsewhere) is narrowed down in the context where the writer can.
+    # A person tied the same way to other places too (validate_anchors link_elsewhere) is
+    # narrowed down in the context where the writer can.
     if clue.get("link_elsewhere") and prompt_cfg.get("clue_link_elsewhere"):
         line += " " + prompt_cfg["clue_link_elsewhere"].strip()
     return line
@@ -485,15 +479,14 @@ def build_messages(
         prompt_cfg["target_len_line"].strip().format(
             n=item["target_len"], lo=(config.get("finalise") or {}).get("min_words", 8),
             hi=(config.get("finalise") or {}).get("max_words", 28),
-            chars=(config.get("finalise") or {}).get("max_chars") or 300) if "target_len" in item
-        else prompt_cfg["length_line"].strip().format(
-            length=prompt_cfg["length_bands"][item["length_band"]]),
+            chars=(config.get("finalise") or {}).get("max_chars") or 300),
     ]
     if item.get("register_description"):
         detail.append(prompt_cfg["register_notes_line"].strip().format(
             notes=item["register_description"]))
     # prompt.show_slots: false leaves the planned slots out of the prompt (they
     # stay in the plan). They competed with the clues for words.
+    # The display is switched off in config.yaml, so this block does not run.
     if prompt_cfg.get("show_slots", True) and item.get("slots"):
         for slot_name, slot_value in item["slots"].items():
             label = slot_labels.get(slot_name) or slot_name.replace("_", " ").capitalize()
@@ -504,8 +497,8 @@ def build_messages(
     # 6. output shape, generated from RESPONSE_SCHEMA so the two cannot drift
     parts.append(build_output_shape(prompt_cfg))
 
-    # 7. last check (2026-11-12): Haiku left the distractor out of 9 in 15
-    # first tries with it only in the list of names.
+    # 7. last check: with the distractor only in the list of names the writer
+    # left it out of most first tries.
     names = [c["clue_label"] for c in clues] + ([noise["clue_label"]] if noise else [])
     if names and prompt_cfg.get("final_check"):
         quoted = [f'"{n}"' for n in names]
@@ -570,9 +563,8 @@ def build_constraint(item: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
                 if c.get("is_toponym")]
     river_line = (" " + prompt_cfg["place_clue_exception"].format(names=quoted_list(toponyms))
                   if toponyms else "")
-    # 2026-11-12: Haiku dropped the demonym on every first try (6/6), reading
-    # "leave out words made from place names" as banning it. The distractor is
-    # named as the exception.
+    # The distractor is named as the exception: the writer read "leave out
+    # words made from place names" as banning the demonym and dropped it.
     noise = item.get("noise_entity") or {}
     if noise.get("clue_label") and prompt_cfg.get("noise_exception"):
         river_line += " " + prompt_cfg["noise_exception"].strip().format(label=noise["clue_label"])
@@ -675,8 +667,8 @@ def _error_code(parsed: Any) -> int | None:
         return None
 
 
-# Two OpenRouter clients exist in this repository (see the module docstring):
-# this one has no third-party dependencies, src/llm_openrouter.py uses requests.
+# Two chat-completions clients exist in this repository (see the module
+# docstring): this one, and the evaluation's in src/llm_common.py.
 class ChatClient:
     """
     A minimal client for an OpenAI-compatible /chat/completions endpoint.
@@ -1239,7 +1231,7 @@ def build_raw_entry(
         "item_id": item["item_id"],
         "generator_version": GENERATOR_VERSION,
         "config_hash": config_hash,
-        "requested_utc": _utc_now(),
+        "requested_utc": utc_now(),
         "model": client.model,
         "base_url": client.base_url,
         "sampling": {
@@ -1275,7 +1267,7 @@ def build_record(
         "generator_version": GENERATOR_VERSION,
         "config_hash": config_hash,
         "plan_version": item.get("plan_version"),
-        "generated_utc": _utc_now(),
+        "generated_utc": utc_now(),
         "model": model,
         "condition": item["condition"],
         "signal": item.get("signal"),
@@ -1287,7 +1279,7 @@ def build_record(
         "surface_form": item["surface_form"],
         "noise_entity_qid": (item.get("noise_entity") or {}).get("clue_qid"),
         "register": item["register"],
-        "length_band": item.get("length_band"),
+        "length_band": item.get("length_band"),   # None since plan version 6; kept so rows have one shape
         "target_len": item.get("target_len"),
         "scale": item.get("scale"),
         "valence": item.get("valence"),
@@ -1321,7 +1313,7 @@ def try_seed(item_id: str, n: int) -> int:
 def retry_feedback(last_try: dict[str, Any], prompt_cfg: dict[str, Any]) -> str:
     """The prompt.retry_feedback block for the next try: the rejected post, the
     plain-words explanation of its status and the checker's own reason
-    (2026-11-02, user: retry with the rejection reason before failing)."""
+    (an item is retried with the rejection reason before it fails)."""
     status = last_try["status"]
     problem = (prompt_cfg.get("rejection_explanations") or {}).get(status, status.replace("_", " "))
     return prompt_cfg["retry_feedback"].strip().format(
@@ -1360,7 +1352,7 @@ def run_item(
     raw_log: AppendLog,
 ) -> dict[str, Any]:
     """
-    Up to judge.max_tries tries of one item (Task 4). Each try is written,
+    Up to judge.max_tries tries of one item. Each try is written,
     checked by the rules (finalise.check, without the keyword list) and, if it
     passes them, by the judge model (judge.py). A try the judge fails because
     a clue is only dropped in swaps that clue for a spare on the next try.
@@ -1469,7 +1461,7 @@ EXPLICIT_SET = frozenset(plan.EXPLICIT_CONDITIONS)   # plan_swaps' own `plan` ar
 
 
 def condition_set(condition: str) -> tuple[str, ...] | None:
-    """The conditions a place is swapped in together (Task 4), or None (EXPLICIT, NOISE_EXPLICIT)."""
+    """The conditions a place is swapped in together, or None (EXPLICIT, NOISE_EXPLICIT)."""
     return A_SET if condition in A_SET else B_SET if condition in B_SET else None
 
 
@@ -1497,7 +1489,7 @@ def plan_swaps(rows: list[dict[str, Any]], plan: list[dict[str, Any]], ran: list
                swapped: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """
     For every item that failed all its tries, swap its place out of the
-    item's condition set and a matched reserve in (Task 4: an A place leaves
+    item's condition set and a matched reserve in (an A place leaves
     A and NOISE_A together, a B place B and NOISE_B). Returns the reserve
     items to run - the set's conditions that ran for the failed place, plus
     the reserve place's EXPLICIT and NOISE_EXPLICIT - and the swap records.
@@ -1523,7 +1515,7 @@ def plan_swaps(rows: list[dict[str, Any]], plan: list[dict[str, Any]], ran: list
         swaps.append({"place_qid": item["place_qid"], "place_name": item["place_name"],
                       "set": cset[0], "failed_condition": item["condition"],
                       "failed_status": row["final_status"], "replacement_qid": new,
-                      "conditions": conditions, "swapped_utc": _utc_now()})
+                      "conditions": conditions, "swapped_utc": utc_now()})
         if new is None:
             continue
         used.add(new)
@@ -1624,7 +1616,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         run_items(items, client, config, exemplars, config_hash,
                   out_log, raw_log, tally, judge)
-        # Task 4: a place whose item failed every try leaves its condition set
+        # A place whose item failed every try leaves its condition set
         # and a matched reserve comes in; repeated while swapped-in places fail.
         while not args.no_swap:
             rows =[{**r, "_item": by_id[i]} for i, r in latest_rows(read_jsonl(out_path)).items()
@@ -1658,10 +1650,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"raw log   {raw_log_path}")
     print(f"swaps     {swaps_path}")
     return 0
-
-
-def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 if __name__ == "__main__":

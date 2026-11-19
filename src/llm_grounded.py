@@ -28,15 +28,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
 import re
 
 import meter
 
 from llm_common import (REFUSAL_SENTINEL, PickleCache, fingerprint,
                         parse_json_object)
-
-log = logging.getLogger(__name__)
 
 PROMPT = """You are a geolocation assistant. Identify the single real-world location the text refers to, choosing from the numbered candidate list.
 
@@ -71,12 +68,11 @@ def format_candidates(candidates: list[dict]) -> str:
 
 
 class GroundedSelector:
-    """Wraps a provider pipeline (llm_gemma) for the raw call, with
-    its own prompt and its own response cache."""
+    """Wraps a provider pipeline (llm_geo.LLMGeoPipeline) for the raw call,
+    with its own prompt and its own response cache."""
 
     def __init__(self, provider, cache_name: str):
         self.provider = provider
-        self.cache_name = cache_name
         params = getattr(provider, "generation_params", {})
         self._cache = PickleCache(cache_name, fingerprint(PROMPT, params))
 
@@ -106,10 +102,6 @@ class GroundedSelector:
             self._cache.put(key, raw)
         return raw
 
-    @staticmethod
-    def _parse(raw: str) -> dict | None:
-        return parse_json_object(raw)
-
     def select(self, text: str, candidates: list[dict]) -> tuple[dict | None, dict, str]:
         """Return (chosen_candidate | None, selection_record, raw_response).
 
@@ -120,7 +112,7 @@ class GroundedSelector:
              "abstained": bool, "violation": str | None}
         """
         raw = self._get_response(text, candidates)
-        parsed = self._parse(raw)
+        parsed = parse_json_object(raw)
         record = {"index": None, "qid": None, "abstained": False, "violation": None}
 
         if parsed is None:
@@ -167,8 +159,3 @@ def build(provider, cache_name: str) -> GroundedSelector:
     if key not in _selectors:
         _selectors[key] = GroundedSelector(provider, cache_name)
     return _selectors[key]
-
-
-def clear_selectors() -> None:
-    """Forget memoised selectors (tests, multi-config in-process runs)."""
-    _selectors.clear()

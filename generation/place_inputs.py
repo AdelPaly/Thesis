@@ -98,8 +98,8 @@ KIND = {'settlement': 'town', 'island': 'island', 'lake': 'lake', 'reservoir': '
 WIDE_THEMES = ['government plans for drilling, fracking or mining', 'a large construction or infrastructure project',
                'overtourism', 'national climate policy and broken promises', "a company's environmental scandal",
                'protests against an environmental decision', 'development on protected land']
-# Good news, for items planned 'positive' (2026-10-30, user: the posts were always negative; people also post about
-# clean-ups, new recycling schemes and claimed climate innovations). Claims, like the problems: they need not be true.
+# Good news, for items planned 'positive': with problems alone every post was negative, and people also post about
+# clean-ups, new recycling schemes and claimed climate innovations. Claims, like the problems: they need not be true.
 POSITIVE = {
     'town': ['a new recycling or deposit-return scheme', 'a repair cafe or tool library', 'a community solar or energy co-op',
              'new bike lanes or electric buses', 'heat pumps, insulation or green roofs', 'cleaner air after a traffic change',
@@ -180,7 +180,7 @@ def strip_country(desc, country_forms):
     "Prime Minister of Cuba" -> "Prime Minister". The writer must not be handed the country."""
     for form in sorted((f for f in country_forms if len(f) > 2), key=len, reverse=True):
         desc = re.sub(rf'\s*\b(of|in|from)?\s*(the\s+)?{re.escape(form)}\b', '', desc, flags=re.I)
-    # 2026-11-02: stripping '()' as well cut the closing bracket off "actor (born 1944)".
+    # Only empty brackets go: stripping '(' and ')' as characters cut the closing bracket off "actor (born 1944)".
     desc = re.sub(r'\(\s*\)', '', re.sub(r'\s+', ' ', desc)).strip(' ,-')
     if desc.startswith('(') and desc.endswith(')'):
         desc = desc[1:-1].strip()
@@ -264,7 +264,7 @@ def main():
     living = {q for q in human - dead if born.get(q, 0) > 1920}
     # A person's kind, from their occupations, as the role hint for the writer (reform_places gives people none).
     # The kind most of their occupations fall under wins, ties in OCCUPATION order (a politician who also wrote
-    # books is a politician). 2026-11-02: first-in-order alone made Sam Elliott (six acting occupations, one
+    # books is a politician). First-in-order alone made Sam Elliott (six acting occupations, one
     # "film producer") a business figure, and the writer gave him a company buying water rights.
     kinds = defaultdict(lambda: defaultdict(set))
     for r in rp.batched(lambda b: f'''SELECT DISTINCT ?i ?o ?c WHERE {{ VALUES ?i {{{rp.V(b)}}}
@@ -274,7 +274,7 @@ def main():
     person_role = {q: min(ks, key=lambda k: (-len(ks[k]), order.index(k))) for q, ks in kinds.items()}
     # What a person is known for (the English description), shown to the writer instead of how they are linked
     # to the place: 85% of person clues are linked by birth or death, and given "born here" the writer kept
-    # writing it (2026-10-29, user). The place's own country and demonym words are cut from it per place below.
+    # writing it. The place's own country and demonym words are cut from it per place below.
     pdesc = {r['i']: r['d'] for r in rp.batched(lambda b: f'''SELECT ?i ?d WHERE {{ VALUES ?i {{{rp.V(b)}}}
         ?i schema:description ?d FILTER(LANG(?d) = "en") }}''', sorted(human), cache)}
     # which property links each clue to its place (reform_places keeps only the family)

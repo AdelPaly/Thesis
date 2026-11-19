@@ -5,17 +5,13 @@ wbgetentities client and the shared src/.wikidata_cache. Candidates are
 Wikidata QIDs, so a prediction is comparable to a gold QID, and population is
 P1082.
 
-A GeoNames backend previously sat behind a config switch and was never once
-executed -- no GEONAMES_USERNAME is configured in this repo. It has been
-removed rather than carried: untested code that has never run is worse than
-absent code, and it returned GeoNames ids rather than QIDs, which would have
-made exact-QID match uncomputable for anything predicted through it. If
-GeoNames population data is wanted later, write it then and test it.
+There is no GeoNames backend: it would return GeoNames ids, not QIDs, and
+exact-QID match could not be computed for its predictions.
 
 Candidates come back highest population first:
 
-    {"qid", "name", "lat", "lon", "population", "country",
-     "continent", "description", "sitelinks"}
+    {"qid", "lat", "lon", "population", "country", "continent",
+     "description", "sitelinks"}
 """
 from __future__ import annotations
 
@@ -64,7 +60,6 @@ def _wikidata_candidates(name: str, top_n: int) -> list[dict]:
         country, continent = geo.get(qid, ("", ""))
         out.append({
             "qid": qid,
-            "name": ent.get("labels", {}).get("en", {}).get("value", name),
             "lat": lat, "lon": lon,
             "population": _population(ent),
             "country": country, "continent": continent,

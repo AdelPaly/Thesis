@@ -3,7 +3,7 @@
 ReFinED (Amazon 2022) does joint NER + entity typing + disambiguation and links
 directly to Wikidata QIDs, so there's no Wikipedia->QID hop. We feed it
 Flair-detected mentions (via the `spans` override) so mention detection stays
-identical across every non-LLM configuration.
+identical across the configurations that start from Flair NER.
 
 Model identity (`refined_model`, `refined_entity_set`) comes from the
 configuration; instances are cached per (model, entity_set) pair.
@@ -16,11 +16,6 @@ from refined.data_types.base_types import Span
 log = logging.getLogger(__name__)
 
 _instances = {}
-
-
-def clear_instances() -> None:
-    """Drop cached ReFinED models (test / multi-config reset hook)."""
-    _instances.clear()
 
 
 def _load(model_name: str, entity_set: str) -> Refined:
@@ -69,13 +64,10 @@ def link_mentions(text: str, entities: list[dict],
          "candidates": [{"qid": str, "score": float}, ...]}
 
     Mentions carry Flair's own character offsets (ner.extract_entities), so the
-    ReFinED spans address exactly the text Flair tagged. The previous version
-    re-derived offsets with a case-insensitive `str.find` and a moving cursor,
-    which silently dropped any mention it could not re-find and misaligned the
-    rest. Every mention now produces a span, so the output is always the same
-    length as the input. A mention whose offsets are not valid for `text`
-    (0 <= start < end <= len(text)) is skipped with a warning and gets an
-    empty link, so the output stays aligned with the input.
+    ReFinED spans address exactly the text Flair tagged. A mention whose
+    offsets are not valid for `text` (0 <= start < end <= len(text)) is
+    skipped with a warning and gets an empty link, so the output always has
+    the same length and order as the input.
     """
     if not entities:
         return []

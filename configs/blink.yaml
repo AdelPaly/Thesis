@@ -23,8 +23,8 @@ description: >
   and reranking against the published reference, on the same mentions.
 
   The chosen Wikipedia title is mapped to Wikidata by its enwiki sitelink. The
-  entity matrix is 24 GB, so it is memory-mapped and searched exactly in one
-  pass per run rather than held in memory; see src/blink_linker.py.
+  entity matrix is 24 GB, so it is read from disk in chunks and searched exactly
+  in one pass per run rather than held in memory; see src/blink_linker.py.
 ner:
   model: flair/ner-large
   entity_types: null

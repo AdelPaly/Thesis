@@ -18,7 +18,7 @@ paths:
   length_dist:       sampler/length_dist.json     # built by length_dist.py
   style_exemplars:   data/style_exemplars.jsonl   # built by build_exemplars.py
   clue_types:        output/clue_types.json       # built by clue_types.py (Wikidata P31)
-  bluesky_dump:      data/bluesky_en.jsonl        # source for build_exemplars.py
+  bluesky_dump:      data/bluesky_en.jsonl        # source for build_exemplars.py and length_dist.py
 
   # outputs
   item_plan:         output/item_plan.jsonl
@@ -58,7 +58,7 @@ plan:
   # (prompt.valence_lines words each; the theme comes from the place's
   # env_themes or env_themes_positive). Drawn uniformly from this list, so
   # [negative, positive] is 50/50; [negative, negative, positive] would be
-  # a third positive. 2026-10-30, user: the posts were always negative.
+  # a third positive. With no valence in the plan every post was negative.
   valences: [negative, positive]
 
   # The kind of distractor in the NOISE conditions, one drawn per item, uniformly:
@@ -66,7 +66,7 @@ plan:
   # demonym that country's adjective ("French tourists", "British music").
   # Both come from the same donor places (never the post's own country or its
   # rival's), so the two kinds differ only in what is taken from the donor.
-  # 2026-11-06 (user): half and half, to compare the two kinds of noise.
+  # Half and half, to compare the two kinds of noise.
   noise_kinds: [entity, demonym]
 
   # The inclusive range the integers in sampler/geo_random.txt were generated
@@ -218,13 +218,13 @@ slots:
 # --------------------------------------------------------------------------- #
 
 finalise:
-  # Posts kept per condition after the checks: 5 conditions x 400 = 2,000,
-  # plus EXPLICIT and NOISE_EXPLICIT (unbalanced, one per place). reform_places.py sizes each
+  # Posts kept per condition after the checks, for A, B, NOISE_A and NOISE_B;
+  # EXPLICIT and NOISE_EXPLICIT are unbalanced (one per place). reform_places.py sizes each
   # condition's plan to this (FINAL) plus a reserve for failed posts. If any
   # condition ends below this, finalise.py stops with an error rather than
   # write fewer. null cuts to the smallest condition instead.
   # --per-condition overrides it.
-  per_condition: 363   # 400 unreachable: reserves used up (2026-11-14)
+  per_condition: 363   # the planned 400 was out of reach: the reserves were used up
 
   # Conditions left out of the cut to per_condition: every post that passes the
   # checks is kept, whatever continent it is on. EXPLICIT, so every A and B
@@ -233,16 +233,16 @@ finalise:
   unbalanced: [EXPLICIT, NOISE_EXPLICIT]
 
   # The recommended length: plan.py draws each post's target word count from
-  # the real Bluesky posts within this range, Q1 and Q3 (data/
-  # bluesky_en_word_length_stats.csv; length_dist.py finds the same on
-  # 1,040,753 posts, 2026-10-29). Not a check: a post that misses its target
+  # the real Bluesky posts within this range, Q1 and Q3 of their word counts
+  # (length_dist.py, over the 1,040,753 posts of data/bluesky_en.jsonl).
+  # Not a check: a post that misses its target
   # is kept if it fits max_chars.
   min_words: 8
   max_words: 28
 
   # The hard limit: a post longer than this many characters is dropped as
-  # "length". Bluesky's own post limit (2026-11-07, user: the 8-28 word check
-  # dropped mostly noise posts of 29-35 words). null turns the check off.
+  # "length". Bluesky's own post limit; an earlier check on the 8-28 word range
+  # dropped mostly noise posts of 29-35 words. null turns the check off.
   max_chars: 300
 
   # Conditions with their own target range, as {condition: [min, max]}.
@@ -354,8 +354,8 @@ finalise:
     - tree[- ]planting
     - planting trees
     - green ?spaces?
-    # 2026-11-02: smoke13 dropped "bag ban actually holding, river cleaner",
-    # "cleaning the river" and "buses all electric now, cleaner"
+    # Without these, "bag ban actually holding, river cleaner", "cleaning the
+    # river" and "buses all electric now, cleaner" were dropped
     - clean
     - bans?\b
     - bags?\b
@@ -376,28 +376,18 @@ generation:
   # Any OpenAI-compatible /chat/completions endpoint. The model must NOT be one
   # of the systems under evaluation: generating the dataset with a model that
   # later appears in the results table gives it an advantage no experiment can
-  # measure away. That rules out Gemma and the Groq-served models here.
-  # DeepSeek is not among the evaluated systems (confirmed 2026-09-30).
+  # measure away. That rules out Gemma and the other evaluated models here.
   #
-  # Pinned, not the ~deepseek/deepseek-flash-latest alias. On 2026-09-30 the
-  # alias pointed at this model at the same price, but an alias can move, and
-  # a run that spans the move would mix two generators in one dataset (the
-  # config_hash check also catches an edited model name). Paid model. The
-  # 2026-09-30 price was $0.02/M input, $0.396/M output; OpenRouter's usage
-  # block on 2026-11-02 billed $0.13/M input and $0.65/M output (smoke13), so
-  # compare_models.py reports usage.cost as billed, never a price from here.
+  # The writer is Claude Haiku 5.5 through OpenRouter; it is not among the
+  # evaluated systems. Paid model. The slug is pinned, not the
+  # ~anthropic/claude-haiku-latest alias: an alias can move, and a run that
+  # spans the move would mix two generators in one dataset (the config_hash
+  # check also catches an edited model name).
   #
-  # 2026-10-29: the writer is qwen3.5:122b on the VSE LiteLLM gateway. The
-  # smoke runs (output/model_test/smoke2-4) passed 60-80% of its posts against
-  # DeepSeek's ~23%, which mostly forgot the topic and the distractor. Qwen is
-  # not among the evaluated systems. (Superseded 2026-11-12, see below.) DeepSeek was then the judge:
-  # a different model family checks the writer's posts. The settings below
-  # (reasoning, headers, timeout) are the gateway's; the DeepSeek settings are
-  # kept under providers.openrouter for compare_models.py.
-  #
-  # 2026-11-12 (user): the writer is Claude Haiku 5.5 through OpenRouter, in
-  # place of DeepSeek; qwen3.5:122b is no longer on the VSE gateway. Haiku is
-  # not among the evaluated systems. Pinned slug, not ~anthropic/claude-haiku-latest.
+  # Two writers were tried before it: DeepSeek, which mostly forgot the topic
+  # and the distractor in trial runs, and qwen3.5:122b on the VSE LiteLLM
+  # gateway, which is no longer served there. The endpoints of both are kept
+  # under providers: below for audit.py.
   base_url: https://openrouter.ai/api/v1
   model: anthropic/claude-haiku-5.5
   api_key_env: OPENROUTER_API_KEY
@@ -408,7 +398,7 @@ generation:
 
   # json_schema where the provider supports it, json_object as a fallback,
   # none if it supports neither. LiteLLM passes the schema on as the model's
-  # output format; the smoke runs returned valid JSON on every reply. The
+  # output format; trial runs returned valid JSON on every reply. The
   # prompt states the schema either way, and the parser pulls the first
   # balanced JSON object out of whatever comes back.
   structured_output: json_schema
@@ -443,14 +433,13 @@ generation:
   error_body_head_chars: 400     # response body kept per failed attempt
 
 
-# Other OpenAI-compatible endpoints, for compare_models.py. A model written as
-# "<provider>:<model>" (openrouter:deepseek/deepseek-v4.1-flash) is sent to
-# that provider, with these settings over the generation: ones above; a model
-# with no known prefix goes to generation.base_url (the gateway). Keys come
-# from .env, like the one above.
+# Other OpenAI-compatible endpoints, for audit.py. Its --model is written as
+# "<provider>:<model>" (openrouter:deepseek/deepseek-v4.1-flash) and is sent
+# to that provider, with these settings over the judge's. Keys come from
+# .env, like the one above.
 providers:
   # OpenRouter, for DeepSeek (the judge's endpoint too). Thinking off through
-  # its reasoning object: at effort low the smoke run spent all 4000 tokens
+  # its reasoning object: at effort low a trial run spent all 4000 tokens
   # thinking on 16 of 30 items and returned nothing.
   openrouter:
     base_url: https://openrouter.ai/api/v1
@@ -475,7 +464,7 @@ providers:
     # No OpenRouter reasoning object here. Thinking is switched off through
     # LiteLLM's own reasoning_effort: "none" (think: false also works).
     # Left on, qwen3.5:122b thought for 4000 tokens (about 38 s) on every
-    # smoke item and returned no content.
+    # trial item and returned no content.
     reasoning_effort: null
     exclude_reasoning: false
     reasoning_enabled: true
@@ -485,23 +474,20 @@ providers:
 
 
 # --------------------------------------------------------------------------- #
-# judge.py (the model check, Task 5) and the retries (Task 4)
+# judge.py (the model check) and the retries
 # --------------------------------------------------------------------------- #
 
 # Every post that passes the rule checks is read by a second model from a
-# different family (2026-10-29, user: keep the checker apart from the writer).
+# different family, so the checker is kept apart from the writer.
 # It answers yes/no questions (judge.JUDGE_SCHEMA); judge.verdict turns them
 # into a drop reason. It replaces finalise.environment_keywords, which dropped
 # clear claims ("the water smells like diesel again") for want of a keyword.
 judge:
   # Settings laid over generation: for the judge's calls.
   model_settings:
-    # 2026-11-12 (user): Haiku writes, a Qwen on the VSE gateway judges
-    # (qwen3.5:122b is gone; this is the largest Qwen left there).
-    # Later the same day (smoke23, user asked for the most appropriate judge):
-    # DeepSeek v4.1 through OpenRouter. A different family from the Haiku
-    # writer, and the strictest of the three judges tried: it alone failed
-    # posts whose claim was not tied to the place. The VSE copy
+    # The judge is DeepSeek v4.1 through OpenRouter. A different family from
+    # the Haiku writer, and the strictest of the three judges tried: it alone
+    # failed posts whose claim was not tied to the place. The VSE copy
     # (deepseek-v4-flash) returns 403 "Model is blocked".
     base_url: https://openrouter.ai/api/v1
     model: deepseek/deepseek-v4.1-flash
@@ -618,18 +604,18 @@ judge:
 # shape (taken from RESPONSE_SCHEMA). Placeholders in {braces} are filled by
 # str.format, so a literal brace in any template below must be doubled.
 prompt:
-  # No worked examples of whole phrases in the task: smoke6 (2026-10-29) copied
-  # one nearly word for word into three posts ("the bit about the old
-  # crossings got me, half are dry now").
+  # No worked examples of whole phrases in the task: the writer copied one
+  # nearly word for word into three posts ("the bit about the old crossings
+  # got me, half are dry now").
   #
-  # "In English" is stated in both. The 2026-10-01 smoke run had no language
-  # instruction, and an EXPLICIT item for Cîșlița-Prut came back in Romanian.
+  # "In English" is stated in both. With no language instruction an EXPLICIT
+  # item for Cîșlița-Prut came back in Romanian.
   system: >-
     You write short social media posts in English that sound like ordinary
     people wrote them. Follow the instructions exactly, especially the ones
     about what must not appear in the post. Reply with JSON only.
 
-  # 2026-11-02 (user, after smoke13): the rules below replace the earlier
+  # The rules below replace the earlier
   # "tie every name / bring a person in with a hand in it" wording, which led
   # the writer to invent actions for real people ("Sam Elliott's company just
   # bought up the water rights"), to use past events as present venues ("the
@@ -701,7 +687,7 @@ prompt:
   entity_type_labels:
     person: a person
     # People, by whether they are alive (place_inputs.py: no date of death and
-    # born after 1920). smoke7 gave living footballers and politicians statues.
+    # born after 1920). Without the split living footballers and politicians got statues.
     person_living: a living person
     person_historical: a person from history
     place_or_org: a place or organisation
@@ -738,7 +724,7 @@ prompt:
     P201: flows out of it
     P4552: the mountain range it belongs to
     P6: heads the local government here
-    # Added 2026-11-01 with the reclue (born/died, water and range links dropped).
+    # Relations of the current clue rules (born/died, water and range links are no longer clues).
     P2541: works in this area
     P183: a species found only here
     P291: published or broadcast here
@@ -752,7 +738,9 @@ prompt:
   # A slot missing here is shown as its name with underscores as spaces.
   # false: the planned slots are not shown. With topic, scale and register
   # also in the prompt they crowded out the clues and posts read like a
-  # checklist (2026-10-29 smoke runs); the register alone sets the tone.
+  # checklist; the register alone sets the tone. slot_labels above and
+  # slots_footer below are therefore not used; they stay because this whole
+  # section is hashed into the generation config_hash.
   show_slots: false
 
   slot_labels:
@@ -765,7 +753,9 @@ prompt:
     stance: Their take
     mood_marker: Mood
 
-  # Length bands, kept for items planned before plan version 6.
+  # Length bands of items planned before plan version 6. Nothing reads them
+  # or length_line any more (every item carries target_len); they stay because
+  # this whole section is hashed into the generation config_hash.
   length_bands:
     7_to_30_words: between 7 and 30 words
 
@@ -796,7 +786,7 @@ prompt:
 
   # Added after environment_line, by the item's planned scale (plan.scales).
   # How far a claim travels is a matter of the story, not of how famous the
-  # place is (2026-10-27, user). The global line keeps clean posts clean: a
+  # place is. The global line keeps clean posts clean: a
   # world issue told through actors and the issue, never through another place
   # ("the Amazon", "China"), which finalise.py checks.
   scale_lines:
@@ -832,8 +822,8 @@ prompt:
     education: a university or school could be running a study, a protest or a green scheme
     culture: a festival, museum or club could leave waste behind or go green
     # People, by occupation (place_inputs.py OCCUPATION, from Wikidata P106).
-    # 2026-11-02 (user): documented role only, so the hints no longer offer
-    # decisions, money or projects to invent.
+    # Documented role only: the hints offer no decisions, money or projects
+    # to invent.
     politician: opening, visiting or deciding something in their own area, or the writer's view of their record
     athlete: training, playing or turning up at their club or ground
     artist: a gig, a shoot or a show where they belong, or their fans
@@ -925,11 +915,11 @@ prompt:
   entities_header: >-
     Mention these by name:
 
-  # The relation is background for the model, not wording: the 2026-10-29
-  # smoke posts copied it ("Hristo Stoichkov was born here"). A first fix,
+  # The relation is background for the model, not wording: early
+  # posts copied it ("Hristo Stoichkov was born here"). A first fix,
   # '(background only, do not write this: born here)', was read as "do not
   # write the entity" and clues went missing.
-  # The anchor sentence sits on every clue line (2026-10-30): as a general
+  # The anchor sentence sits on every clue line: as a general
   # rule in the task the writer ignored it twice ("thanks Party of the
   # Revolution" could be anywhere in the country).
   clue_line: >-
@@ -943,7 +933,7 @@ prompt:
 
   # People (is_human): what they are known for (their Wikidata description,
   # without the place's country words) and their link to the place, which
-  # ties them in (2026-11-02, user: "in front of their office or home town").
+  # ties them in ("in front of their office or home town").
   # {known_for} falls back to the type note's wording when a person has no
   # description.
   clue_line_person: >-
@@ -976,7 +966,7 @@ prompt:
     are not sure, say the link plainly; never invent a tie or name the other
     places.
 
-  # The smoke posts marked the distractor as foreign ("Henry Figueroa from
+  # Early posts marked the distractor as foreign ("Henry Figueroa from
   # elsewhere"), which gives it away.
   noise_entity: >-
     - "{label}"{type_note}, which belongs to a different place from the one
@@ -1004,7 +994,7 @@ prompt:
     Place name to use: "{surface}"
 
   # Added to the prompt on tries 2 and later (generate.run_item): what was
-  # wrong with the last try, so the writer can fix it (2026-11-02, user).
+  # wrong with the last try, so the writer can fix it.
   # {post} is the rejected post, {problem} the explanation below (by status)
   # and {detail} the checker's own words.
   retry_feedback: >-
@@ -1058,8 +1048,8 @@ prompt:
     Length: {length}
 
   # {n} is the item's target_len, drawn from the real posts' lengths.
-  # 2026-11-12 (user): only Bluesky's limit is enforced; the middle quartiles of
-  # real posts are a recommendation (Haiku wrote 2.3 times the target in smoke28).
+  # Only Bluesky's limit is enforced; the middle quartiles of real posts are a
+  # recommendation (the writer wrote 2.3 times the target when it was a rule).
   target_len_line: >-
     Length: about {n} words. Most real posts are {lo} to {hi} words, so stay in
     that range if you can; never more than {chars} characters.

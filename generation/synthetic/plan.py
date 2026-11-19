@@ -103,12 +103,11 @@ import csv
 import functools
 import hashlib
 import json
-import math
 import os
 import re
 import sys
 import unicodedata
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -149,7 +148,7 @@ CONDITION_SPECS: dict[str, dict[str, Any]] = {
 }
 
 # Conditions whose clue may share its name with something elsewhere (validate_anchors
-# "shared_name"). 2026-11-12, user: in A such a clue is swapped for a spare; in B the
+# "shared_name"). In A such a clue is swapped for a spare; in B the
 # place name is already ambiguous, so the clue is kept and the ambiguity recorded on it
 # (clue["name_shared"]).
 NAME_SHARED_OK = {"B", "NOISE_B"}
@@ -393,17 +392,11 @@ class Place:
     # ("Danish"), from place_inputs.py. "" when the country has none.
     country_adjective: str = ""
     country_demonyms: list[str] = field(default_factory=list)
-    # distractor_clues() memoised per donor qid; see reset_caches().
+    # distractor_clues() memoised per donor qid.
     _distractors: dict[str, list[dict[str, Any]]] = field(
         default_factory=dict, repr=False, compare=False)
     # noise_donors() memoised.
     _donors: list[str] | None = field(default=None, repr=False, compare=False)
-
-    def reset_caches(self) -> None:
-        """Forget memoised distractors and donors. Call after name_forms or any
-        donor's clues change."""
-        self._distractors.clear()
-        self._donors = None
 
     def distractor_clues(self, donor: "Place") -> list[dict[str, Any]]:
         """
@@ -615,11 +608,14 @@ def label_leak(label: str, place_forms: Sequence[str], country_forms: Sequence[s
     return None
 
 
-def load_config(path: Path) -> dict[str, Any]:
+def load_config(path: Path,
+                sections: Sequence[str] = ("paths", "plan", "registers", "slots")) -> dict[str, Any]:
+    """Read config.yaml, check the sections the caller needs are there, and
+    make its paths absolute. generate.load_config adds its own checks."""
     if not path.exists():
         raise SystemExit(f"config not found: {path}")
     config = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    for section in ("paths", "plan", "registers", "slots"):
+    for section in sections:
         if section not in config:
             raise SystemExit(f"{path} is missing the {section!r} section")
     # Paths in the config are relative to the config file's folder, so the
@@ -640,7 +636,7 @@ def noise_donors(place: Place, places: dict[str, Place]) -> list[str]:
     at least one clue to draw from. It may be on the same continent or on
     another, but not in the same country as the post's place, nor in the
     country of its rival namesake (so a NOISE_B distractor never points at the
-    namesake). Memoised on the place (reset_caches clears it).
+    namesake). Memoised on the place.
     """
     # A distractor whose label names THIS place ("2013 South American
     # Championships" carries "American" into a United States item) would put a
@@ -973,7 +969,7 @@ def conditions_for(place: Place, conditions: Iterable[str]) -> list[tuple[str, s
     outright), so it is planned only for places in the A or B plan; a reserve
     place gets it as a reserve item, generated only if the place is swapped in.
     The EXPLICIT-only infrastructure places in places.csv get nothing: they
-    have no A or B item to compare with (2026-10-30, user).
+    have no A or B item to compare with.
     pool is "plan" or "reserve".
     """
     out = []
@@ -1079,7 +1075,7 @@ def plan_items(
     slate, rejections = build_slate(places, config)
     scales = list(config["plan"]["scales"])
     valences = list(config["plan"]["valences"])
-    # entity / demonym distractor, drawn uniformly (2026-11-06, user: half and half)
+    # entity / demonym distractor, drawn uniformly (half and half)
     noise_kinds = list(config["plan"].get("noise_kinds") or ["entity"])
 
     items: list[dict[str, Any]] = []
@@ -1409,9 +1405,6 @@ def _as_int(value: Any, default: int) -> int:
         return int(float(text)) if text else default
     except (TypeError, ValueError):
         return default
-
-
-_utc_now = utc_now  # underscore alias kept for older callers
 
 
 if __name__ == "__main__":

@@ -19,15 +19,18 @@ be retrieved from a post about football.
 
 THE CANDIDATE POOL defines the difficulty. Retrieving from 150 places is not
 the same task as retrieving from 100,000, so the pool size is recorded in the
-metadata and reported. Two pools take what other configurations returned:
+metadata and reported. One pool is the gold places alone; two more add what
+other configurations returned:
 
+    gold_only             every gold place across all configured datasets and
+                          nothing else (no configuration uses it)
     gold_plus_answers     every gold place across all configured datasets
                           + the final answer of every other configuration, one
                           per post (configurations that read the pool excluded)
     gold_plus_predicted   the gold places + every QID any configuration ever
                           listed as a candidate, including linker candidate sets
 
-  both filtered to entities that have coordinates.
+  all filtered to entities that have coordinates.
 
 The reported configurations use gold_plus_answers. gold_plus_predicted was the
 first choice and was replaced on dev (2026-11-19, before any test result was
@@ -59,34 +62,28 @@ from pathlib import Path
 import numpy as np
 
 import wikidata as wd
+from config import REPO_ROOT, load_all_configs, load_datasets
 
 log = logging.getLogger(__name__)
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = Path(__file__).resolve().parent / ".dense_index"
+# The pool is always read from here, also when the runner writes elsewhere
+# (--out-dir).
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
-CONFIGS_DIR = REPO_ROOT / "configs"
 
 
 def _pool_readers() -> set[str]:
     """Configurations that themselves retrieve from the pool. Their answers are
     left out of it, or running one twice would change what it retrieves from."""
-    import yaml
-    out = set()
-    for path in CONFIGS_DIR.glob("*.yaml"):
-        cfg = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        if not isinstance(cfg, dict) or "paradigm" not in cfg:
-            continue
-        if cfg.get("paradigm") == "dense_retrieval" or (cfg.get("grounded") or {}).get("candidate_source") == "dense":
-            out.add(cfg.get("name") or path.stem)
-    return out
+    return {name for name, cfg in load_all_configs().items()
+            if cfg.paradigm == "dense_retrieval"
+            or cfg.grounded.candidate_source == "dense"}
 
 
 POOL_READERS = _pool_readers()
 
 
 def _dataset_gold_qids() -> set[str]:
-    from config import load_datasets
     out = set()
     for spec in load_datasets().values():
         path = spec.resolved_path()
@@ -161,9 +158,8 @@ def build_pool(pool_spec: str) -> list[str]:
     raise ValueError(f"unknown dense.pool {pool_spec!r}")
 
 
-def index_text(qid: str, entity: dict, fields, geo: dict, aliases: dict,
-               passage_prefix: str = "") -> str:
-    """The text that represents a place in the index."""
+def index_text(qid: str, entity: dict, fields, geo: dict, aliases: dict) -> str:
+    """The text that represents a place in the index (no encoder prefix)."""
     label = entity.get("labels", {}).get("en", {}).get("value", "") or qid
     description = entity.get("descriptions", {}).get("en", {}).get("value", "")
     country, continent = geo.get(qid, ("", ""))
@@ -181,7 +177,7 @@ def index_text(qid: str, entity: dict, fields, geo: dict, aliases: dict,
         parts.append(f"in {country}")
     if "continent" in fields and continent:
         parts.append(continent)
-    return passage_prefix + ". ".join(p for p in parts if p)
+    return ". ".join(p for p in parts if p)
 
 
 def _signature(cfg, pool=None) -> str:
@@ -260,11 +256,10 @@ class Catalogue:
     """The candidate places of a pool: their QIDs in index order, their place
     records, and the text that represents each one (no encoder prefix)."""
 
-    def __init__(self, qids, places, texts, pool_size, unfetched):
+    def __init__(self, qids, places, texts, unfetched):
         self.qids = qids
         self.places = places
         self.texts = texts
-        self.pool_size = pool_size
         self.unfetched = unfetched
 
 
@@ -285,8 +280,8 @@ def build_catalogue(d, pool=None, gold=None) -> Catalogue:
     log.info("with coordinates: %d", len(placed))
     if unfetched:
         # A transient 429 makes an entity look exactly like an entity with no
-        # coordinates, which is how the retired results lost data quietly.
-        # Retry once before accepting the loss, and count what is still missing.
+        # coordinates, so a pool can lose places without any error. Retry once
+        # before accepting the loss, and count what is still missing.
         log.info("%d QID(s) returned nothing; retrying once", len(unfetched))
         entities.update(wd.fetch_entities(unfetched))
         unfetched = [q for q in pool if not entities.get(q)]
@@ -314,20 +309,7 @@ def build_catalogue(d, pool=None, gold=None) -> Catalogue:
         qids.append(qid)
         texts.append(index_text(qid, ent, d.index_fields or [], geo, aliases))
     wd.save_caches()
-    return Catalogue(qids, places, texts, len(pool), unfetched)
-
-
-_catalogues: dict = {}
-
-
-def get_catalogue(d) -> Catalogue:
-    """The catalogue for a dense section, built once per process and pool."""
-    pool = build_pool(d.pool)
-    key = (hashlib.sha256(",".join(pool).encode()).hexdigest(),
-           d.pool, tuple(d.index_fields or []))
-    if key not in _catalogues:
-        _catalogues[key] = build_catalogue(d, pool)
-    return _catalogues[key]
+    return Catalogue(qids, places, texts, unfetched)
 
 
 def load_or_build(cfg) -> DenseIndex:
@@ -386,11 +368,6 @@ def load_or_build(cfg) -> DenseIndex:
 
 
 _indexes = {}
-
-
-def clear_indexes() -> None:
-    """Drop in-process cached indexes (test / multi-config reset hook)."""
-    _indexes.clear()
 
 
 def get_index(cfg) -> DenseIndex:

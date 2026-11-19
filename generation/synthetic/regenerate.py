@@ -43,7 +43,7 @@ manual_removed.csv (default)
     "elsewhere_by_death" in output/audit/burial_check.csv: the post speaks of
     a person's tomb or grave, and by Wikidata the person is buried, or with no
     burial on record died, over 100 km away. The "unknown" rows are rewritten
-    too: a tomb that cannot be checked is not kept (2026-11-17, user). The post and where
+    too: a tomb that cannot be checked is not kept. The post and where
     the person is buried are the feedback, and a new post that mentions a
     tomb, grave or burial again is rejected. An item that fails keeps its old
     post.
@@ -116,7 +116,7 @@ def entries_for(args: argparse.Namespace, paths: dict[str, str], latest: dict[st
     """The items to rewrite: item_id, condition, place_name, status, reason."""
     if args.burials:
         with (Path(paths["dataset_csv"]).parent / "audit" / "burial_check.csv").open(encoding="utf-8", newline="") as f:
-            rows = list(csv.DictReader(f))   # elsewhere, elsewhere_by_death and unknown (2026-11-17, user)
+            rows = list(csv.DictReader(f))   # elsewhere, elsewhere_by_death and unknown
         return [{"item_id": r["item_id"], "condition": r["condition"], "place_name": r["place"],
                  "status": "false_burial",
                  "reason": (f'{r["person"]} is buried at {r["buried_at"]}, {r["buried_km"]} km from here'

@@ -14,7 +14,7 @@ score.py and statistics from stats.py, so there is one definition of each.
 
 Failure attribution
 -------------------
-For every wrong prediction, where did it break? The ten levels are attributed
+For every wrong prediction, where did it break? The eleven levels are attributed
 from the stage fields the runner recorded, not inferred from the shape of the
 output:
 

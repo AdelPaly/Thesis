@@ -6,7 +6,7 @@ and repair the plan before anything is generated.
     python validate_anchors.py            # check, repair output/item_plan.jsonl, write the report
     python validate_anchors.py --dry-run  # check and report only
 
-An anchor is rejected when (2026-11-02, user, after smoke13):
+An anchor is rejected when:
 
     elsewhere      it is filed under another place as well, one that is neither
                    inside the place nor above it (Goyang Zaicro FC: P131 Goyang,
@@ -25,8 +25,7 @@ An anchor is rejected when (2026-11-02, user, after smoke13):
     alias_leak     one of its names (label or alias; for people the label only)
                    contains a name of the place or a region it lies in
                    ("Sydney 2000")
-    shared_name    (2026-11-12, user) another documented item (3+ sitelinks)
-                   has its English name as label or alias and is neither inside
+    shared_name    another documented item (3+ sitelinks) has its English name as label or alias and is neither inside
                    the place nor around it: "Applied Science University" is a
                    university in Sitra and a team in Amman, and Wikipedia has a
                    disambiguation page for it. Namesakes must be people or
@@ -43,7 +42,7 @@ Repair: a rejected clue is replaced by the item's first spare clue that passes;
 a rejected distractor by the best-known clue of the same donor place that
 passes, else by one from another donor the planner allows (plan.noise_donors,
 in an order fixed by the item id), so a noise item is never lost while its
-plain twin is kept (2026-11-04, user). An item left without enough anchors, and every item of a
+plain twin is kept. An item left without enough anchors, and every item of a
 condition no longer in config plan.conditions, is removed from the plan and
 written to output/plan_rejections.jsonl. The old plan is archived first. Writes
 output/anchor_checks.jsonl (one verdict per place and anchor), which
@@ -61,7 +60,7 @@ import json
 import re
 import shutil
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -75,7 +74,6 @@ import plan                  # noqa: E402
 
 CACHE = str(HERE.parent / "out" / "cache")
 LOCATING = ["P131", "P159", "P276", "P115"]           # where a thing is said to be
-DATED = ["P585", "P580", "P582"]                       # point in time, start, end
 OCCURRENCE = "Q1190554"
 MILITARY = ["Q831663", "Q645883", "Q180684", "Q350604", "Q124734", "Q10931", "Q188055", "Q2001676",
             "Q1384277", "Q124490", "Q115431196"]
@@ -162,8 +160,7 @@ def wikidata_facts(qids: list[str]) -> dict[str, dict[str, Any]]:
 def place_name_index(inputs: dict[str, dict[str, Any]], places_csv: Path) -> dict[str, set[str]]:
     """Every place name the dataset itself holds -> the places it belongs to: each
     place's label, other names, regions and country names (place_inputs.jsonl,
-    places.csv) and the clues that are themselves places. No Wikidata query
-    (2026-11-02, user)."""
+    places.csv) and the clues that are themselves places. No Wikidata query."""
     index: dict[str, set[str]] = {}
     # one-word names need 5 letters: "Salt" (Jordan) and "Finn" matched "Salt Spring dollar", "Finn Brothers"
     add = lambda name, q: index.setdefault(name, set()).add(q) if name and len(name) >= (4 if " " in name else 5) else None  # noqa: E731
@@ -293,8 +290,8 @@ def main(argv: list[str] | None = None) -> int:
 
     bad = lambda p, c, noise=False: verdicts.get((p, c["clue_qid"], noise))  # noqa: E731
 
-    # Distractor repair draws on other donor places (2026-11-04, user: each NOISE
-    # condition must cover the same places as its clean one). Their clues are judged here,
+    # Distractor repair draws on other donor places (each NOISE condition must
+    # cover the same places as its clean one). Their clues are judged here,
     # with the same rules, when first needed.
     places = plan.load_places(Path(config["paths"]["places_csv"]), Path(config["paths"]["place_inputs"]))
 
@@ -344,7 +341,7 @@ def main(argv: list[str] | None = None) -> int:
              and i["place_qid"] in places and bad(i["place_qid"], i["noise_entity"], True)
              and all(bad(i["place_qid"], c, True) for c in distractor_options(i, i["noise_entity"]["donor_place_qid"]))]
     fetch_facts([c for i in stuck for q in donor_order(i)[1:11] for c in distractor_options(i, q)])
-    # Role and description as place_inputs.py now gives them (2026-11-02: role by most occupations, the
+    # Role and description as place_inputs.py now gives them (role by most occupations, the
     # description's closing bracket kept); the plan copied them when it was written.
     fresh = {(r["place_qid"], c["clue_qid"]): c for r in inputs.values()
              for c in r.get("clues") or []}
@@ -369,12 +366,12 @@ def main(argv: list[str] | None = None) -> int:
                              "reason": "condition_dropped", "detail": "not in config plan.conditions"})
             changes["condition_dropped"] += 1
             continue
-        # B keeps a clue whose name is shared and records it; A swaps it (2026-11-12, user).
+        # B keeps a clue whose name is shared and records it; A swaps it.
         shared_ok = item["condition"] in plan.NAME_SHARED_OK
         usable = lambda v: v is None or (shared_ok and v[0] == "shared_name")  # noqa: E731
         def mark(c: dict[str, Any], v: tuple[str, str] | None) -> dict[str, Any]:
             c = {**c, "name_shared": v[1]} if v else c
-            # 2026-11-12, user: a person tied the same way to other places is kept; the writer
+            # A person tied the same way to other places is kept; the writer
             # narrows it down in context and the places are listed for checking by hand.
             if c.get("is_human"):
                 other = sorted({lbl for x, lbl in facts.get(c["clue_qid"], {}).get("links", {}).get(c.get("property"), ())

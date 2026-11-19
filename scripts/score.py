@@ -17,12 +17,9 @@ has_prediction : the configuration returned something -- a QID, a coordinate,
                  or at minimum a continent.
 no_result      : the complement of has_prediction. Reported per item, as a
                  column, not as a separate denominator.
-exact          : predicted_qid == place_qid, over items that HAVE a gold QID.
-                 place_qid is allowed to be null: some corpora have gold
-                 coordinates but no gold Wikidata id, and reporting those as
-                 0% exact would be wrong. The n_gold_qid column is the
-                 denominator, so a dataset without gold QIDs reports exact as
-                 "-" rather than zero.
+exact          : predicted_qid == place_qid, over items that have a gold QID.
+                 The n_gold_qid column is the denominator; with no gold QID
+                 at all, exact is printed as "-" rather than zero.
 exact_or_inside: exact, or the predicted item lies inside the gold place on
                  Wikidata (the station found for a town, a lighthouse for an
                  island): results/containment.csv, built by
@@ -34,7 +31,8 @@ exact_or_inside: exact, or the predicted item lies inside the gold place on
                  not inside, and the number of such answers is printed.
 coarser        : the answer is a larger unit that contains the gold place (a
                  prefecture named after its capital, a country). Reported as a
-                 share of items; it is not a kind of correct.
+                 percentage of the items with a gold QID (same denominator as
+                 exact_or_inside); it is not a kind of correct.
 country        : exact, or predicted_country == gold_country (any one of a
                  "; "-joined gold, for a place in several). The hierarchy is
                  derived HERE, at report time, not baked into stored booleans.
@@ -267,9 +265,6 @@ def summarise_metrics(scored: list[dict]) -> dict:
         "no_result_rate": sum(s["no_result"] for s in scored) / n,
         "error_rate": sum(s["is_error"] for s in scored) / n,
     }
-
-
-aggregate = summarise_metrics  # name analyse.py still imports
 
 
 def load_predictions(paths: Iterable[Path | str]) -> list[dict]:

@@ -9,16 +9,19 @@ latest attempt for every planned item, checks it, balances the conditions,
 and writes:
 
     output/finalise_report.csv     every planned item with its status and,
-                                   when dropped, the reason. Written BEFORE
-                                   the Wikidata lookup, so a network failure
-                                   cannot lose it, and rewritten once the
-                                   coordinate check has run.
-    output/synthetic_dataset.csv   the posts that passed, in the same columns
-                                   as the datasets in ../../src/ (text, qid,
-                                   location_name, country, continent,
-                                   signal_type, latitude, longitude) plus the
-                                   plan's details for analysis. Not written if
-                                   the Wikidata lookup fails.
+                                   when dropped, the reason. Written before
+                                   the coordinates are read, so a failure
+                                   there cannot lose it, and rewritten after
+                                   each later step that drops posts.
+    output/synthetic_dataset.csv   the posts that passed, in the columns the
+                                   evaluation reads (text, qid, location_name,
+                                   country, continent, signal_type, latitude,
+                                   longitude; see configs/datasets.yaml) plus
+                                   the plan's details for analysis. Not written
+                                   if ../out/places.csv cannot be read.
+    output/release.json            the name of the release, the hashes of the
+                                   files above and of the plan, and what made
+                                   them (models, config hashes, code revision).
 
 A post is dropped when:
 
@@ -43,15 +46,16 @@ A post is dropped when:
     format          a line break, an emoji or a hashtag
     unplanned_entity  a capitalised name that belongs to no planned name (not
                     counting the first word of a sentence)
-    (2026-11-02, user, after smoke13; the judge's own reasons are in judge.py)
-    no_coordinates  the place's QID has no P625 coordinate on Wikidata, so the
-                    row could not be scored
+    (the judge's own reasons are in judge.py)
+    no_coordinates  the place has no coordinate in ../out/places.csv (Wikidata
+                    P625 when the place set was built), so the row could not
+                    be scored
     repeated_clue   the plan lists the same clue entity twice, so the item
                     carries fewer distinct clues than its condition promises
                     (a planning-stage defect; checked before anything else)
     no_explicit     an A, NOISE_A, B, NOISE_B or NOISE_EXPLICIT post whose place has no kept
                     EXPLICIT post, so it has no reference to be read against
-                    (2026-11-04, user: EXPLICIT covers every A and B place).
+                    (EXPLICIT covers every A and B place).
                     Applied before balancing, so balancing fills from the rest.
     balanced_out    the post passed every check but was not selected when the
                     conditions were cut to the same size (see below)
@@ -65,7 +69,7 @@ Balancing: the plan holds a reserve per condition (pool "reserve", generated
 only to replace failed posts), so after the checks the conditions hold
 different numbers of posts. Pooled and per-condition numbers are easier to
 compare when every condition has the same n, so each condition is cut to N
-posts: finalise.per_condition in config.yaml (150), or --per-condition, or the
+posts: finalise.per_condition in config.yaml (363), or --per-condition, or the
 size of the smallest condition after the checks when neither is set. Within a condition the posts are spread as evenly as the
 supply allows across continents, and which posts are chosen is decided only by
 --seed, so the same inputs always give the same dataset. Every post cut this
@@ -76,8 +80,8 @@ planner uses to keep leaking clues out.
 
 signal_type is the plan's condition (A, B, EXPLICIT, NOISE_A, NOISE_B,
 NOISE_EXPLICIT), so `scripts/score.py --by condition` reports each one separately.
-Gold coordinates come from Wikidata P625 (truthy), the same property the
-other datasets were built from.
+Gold coordinates are Wikidata P625 (truthy) as reform_places.py stored them in
+../out/places.csv; no network call is made here.
 """
 from __future__ import annotations
 
@@ -108,7 +112,7 @@ ERROR_REASON_CHARS = 200   # how much of a generation error goes in the report
 # kept. All three go by Wikipedia counts.
 # place_prominence (every condition), by the place's own sitelinks (language
 # versions): under 30, 30 to 99, 100 or more (100+ is the "famous" tier of the
-# place selection). Over the 899 places that is 456 / 278 / 165.
+# place selection). Over the 955 places of the dataset that is 296 / 425 / 234.
 PLACE_PROMINENCE_BINS = [(100, "high_100_plus"), (30, "mid_30_to_99"), (0, "low_under_30")]
 # rival_prominence (B, NOISE_B, and EXPLICIT when other places share the name;
 # name_ambiguous says which): (place sitelinks + 1) / (sitelinks + 1 of the
@@ -253,21 +257,21 @@ def char_count(text: str) -> int:
     return len(unicodedata.normalize("NFC", text.strip()))
 
 
-MAX_ANCHORS = 2          # 2026-11-02 (user): at most two planned anchors per post
+MAX_ANCHORS = 2          # at most two planned anchors per post
 EMOJI = re.compile("[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF️]")
 HASHTAG = re.compile(r"(?<!\w)#\w")
 CAPITALISED = re.compile(r"[A-Z][\w'’./&-]*")
 # Capitalised words that are not names: the pronoun, days, months, family
 # words and common abbreviations. Anything else capitalised that is not part
 # of a planned name, and not the first word of a sentence, is an unplanned
-# entity (2026-11-02, user: "Chris Smith got it moving" in an EXPLICIT post
-# that was given no person).
+# entity ("Chris Smith got it moving" in an EXPLICIT post that was given no
+# person).
 NOT_NAMES = {plan.fold(w) for w in (
     "I I'm I'd I've I'll Im Ive OK Ok TV EV EVs PM AM CO2 LOL Lol OMG Omg Mum Mom Dad God Sir "
     "Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March April May June July "
     "August September October November December Christmas Easter "
-    # titles and roles written before or instead of a name (2026-11-12: "President Alexander
-    # Lukashenka", "a DJ set" were dropped as unplanned names)
+    # titles and roles written before or instead of a name (without them "President Alexander
+    # Lukashenka" and "a DJ set" were dropped as unplanned names)
     "DJ MC CEO MP MPs President Presidents Prime Minister Ministers Mayor Governor Senator King Queen "
     "Prince Princess Pope Dr Mr Mrs Ms Professor Prof Sheikh Emir Chancellor Councillor").split()}
 ANCHOR_CHECKS = HERE / "output" / "anchor_checks.jsonl"
@@ -728,7 +732,7 @@ def main(argv: list[str] | None = None) -> int:
     env_pattern = environment_pattern((config.get("finalise") or {}).get("environment_keywords"))
     limits = char_limit(config.get("finalise"))
 
-    # Places swapped out of a condition set for a reserve (generate.py, Task 4):
+    # Places swapped out of a condition set for a reserve (generate.py, plan_swaps):
     # their rows in that set are dropped, whatever they say.
     swaps_path = Path(paths["raw_generations"]).parent / "swaps.jsonl"
     swapped_out = {(s["place_qid"], c) for s in (gen.read_jsonl(swaps_path) if swaps_path.exists() else [])
@@ -776,7 +780,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Written first, so a failure below cannot lose the per-item verdicts.
     write_csv(report_path, REPORT_COLUMNS, report)
-    print(f"wrote {report_path} (before the coordinate lookup)")
+    print(f"wrote {report_path} (before the coordinates are read)")
 
     try:
         coords = coordinates(sorted({item["place_qid"] for item, _, _ in kept}))

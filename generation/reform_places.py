@@ -1,8 +1,15 @@
 """Reform the places set in one run. Stdlib only. Source: QLever Wikidata endpoint (full Wikidata, live updates).
-Run:  python reform_places.py --seed 20261028 [--exclude excluded_qids.txt] [--out out]
+Run:  python reform_places.py --seed 20261028 [--exclude excluded_qids.txt] [--prefer old_qids.txt] [--out out]
+  --exclude FILE   QIDs never picked, one per line
+  --prefer FILE    QIDs tried first, one per line
+  --conts EU,AS    continents to build (default: all six)
+  --final N        places per condition before the reserve (default: FINAL)
+  --alloc AS=95    fixed plan size per continent, in place of the split of --final by supply
+  --env            environment first: ENV_SHARE, non-town types searched in full, towns with species/operator clues first
+  --file NAME      output file in --out (default places.csv); the report is written next to it
 Every reply is cached in out/cache: a rerun with the same seed and cache gives the same set. The run stops on an
 endpoint error instead of skipping data; run it again to resume from the cache."""
-import argparse, csv, hashlib, json, math, os, re, time, urllib.parse, urllib.request
+import argparse, csv, hashlib, json, math, os, re, ssl, time, urllib.parse, urllib.request
 from collections import Counter, defaultdict
 
 # ---------------- config (record these values in the thesis) ----------------
@@ -22,14 +29,13 @@ EVENT = 'Q1190554'                           # 'event' clues must be occurrences
 RIVAL_MIN_SL, B_MIN_KM = 3, 161              # namesake must be documented and more than 161 km away; B also needs a clue with no FAMILY/OUT link to it
                                              # and the best-known such namesake must be in another country (scoring is place / country / continent)
 CAP, FLOOR_POP = .08, 2e6                    # country cap (share of continent plan); floor for countries >2M
-FULL = set()                                  # continents searched in full (4000 per walk, 20 floor tries); the rest cheaply
-ENV = {'on': False}                          # --env (2026-11-10 top-up, user): environment first - more natural places, they are searched in full,
+ENV = {'on': False}                          # --env: environment first - more natural places, they are searched in full (4000 per walk, else 600),
 ENV_SHARE = {'A': {'settlement': .35, 'natural': .45, 'island': .10, 'manmade': .10},     # and towns with species/operator clues are tried first
              'B': {'settlement': .30, 'natural': .55, 'island': .05, 'manmade': .10}}
 ENV_FAMS = {'species', 'operator'}
 OUTFILE = 'places.csv'
-MAX_WALK = lambda ct, t='': 4000 if ct in FULL or (ENV['on'] and t != 'settlement') else 600
-FLOOR_TRIES = lambda ct: 20 if ct in FULL else 10
+MAX_WALK = lambda ct, t='': 4000 if ENV['on'] and t != 'settlement' else 600
+FLOOR_TRIES = lambda ct: 10                  # candidates tried per country for the country floor
 PBIN = lambda s: 'low' if s < 30 else 'mid' if s < 100 else 'high'
 RBIN = lambda r: 'rival_leads' if r <= .5 else 'place_leads' if r >= 2 else 'similar'
 B_WT = (1 / 3, 1 / 6, 1 / 6, 1 / 3)          # B slots: rival_leads, similar_behind, similar_ahead, place_leads ('similar' split by rank)
@@ -54,8 +60,8 @@ BIG = ['Q1549591', 'Q5119', 'Q1637706']                      # big city, capital
 BIG_KM = 25                                  # ... if it is also within 25 km of that city (keeps towns in large Chinese prefectures)
 DEV = .20                                    # share of places in the dev split, fixed by place before generation
 BLOCK_COUNTRIES = ['Q1246', 'Q865', 'Q219060', 'Q40362', 'Q6250', 'Q23334', 'Q23427', 'Q907112', 'Q23681', 'Q34754']  # disputed: country label is contested
-# 2026-11-01 (user): no born/died here (P19, P20: the person says nothing about the place), no water or range links (P206, P885,
-# P403, P200, P201, P4552: next to the place they all but name it). Added families that suit environmental posts instead.
+# No born/died here (P19, P20: the person says nothing about the place) and no water or range links (P206, P885,
+# P403, P200, P201, P4552: next to the place they all but name it). Species, operator and media suit environmental posts instead.
 FAMILY = {'P551': 'people', 'P937': 'people', 'P7153': 'people', 'P159': 'org', 'P740': 'org', 'P2541': 'org',   # P7153: significant place; P2541: operating area
           'P276': 'event', 'P131': 'part', 'P361': 'part', 'P706': 'part',
           'P183': 'species', 'P2341': 'species', 'P291': 'media'}                     # clue -> place: endemic/native species, local paper or broadcaster
@@ -86,10 +92,15 @@ PFX = ('PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wik
 V = lambda ids: ' '.join('wd:' + i for i in ids)
 MAX_Q = 6000                                 # longest query sent; qlever.dev refuses URLs over ~8,000 characters (HTTP 414)
 
-def val(v):
-    if v.startswith('<'): return v[1:-1].rsplit('/', 1)[-1]
-    if v.startswith('"'): return v[1:v.rindex('"')].replace('\\t', ' ').replace('\\"', '"').replace('\\\\', '\\')
-    return v
+def tls_context():
+    """Certificate checks against certifi's list of authorities when it is installed (the Windows store can lag behind
+    and fail a valid certificate), else against the system's. Verification stays on either way."""
+    try: import certifi
+    except ImportError:
+        try: from pip._vendor import certifi
+        except ImportError: return ssl.create_default_context()
+    return ssl.create_default_context(cafile=certifi.where())
+TLS = tls_context()
 
 class TooBig(Exception): pass
 
@@ -121,7 +132,7 @@ def sparql(q, cache):
     cut = 0
     for n in range(30):                              # rate limit: wait and retry. Timeout or cut-off reply: caller splits the batch
         try:
-            d = json.loads(urllib.request.urlopen(req, timeout=300).read().decode('utf-8'))   # a cut-off reply fails here
+            d = json.loads(urllib.request.urlopen(req, timeout=300, context=TLS).read().decode('utf-8'))   # a cut-off reply fails here
             b = d['results']['bindings']; total = d.get('meta', {}).get('result-size-total')
             if total is not None and int(total) != len(b): raise ConnectionError(f'reply has {len(b)} of {total} rows')
             rows = [{k: v['value'].rsplit('/', 1)[-1] if v['type'] == 'uri' else v['value'] for k, v in r.items()} for r in b]
@@ -191,7 +202,6 @@ def pool(cache, countries):
 # ---------------- gate: exclusions, clean clue families, namesakes ----------------
 def gate(chunk, cache, countries):
     ids, by_sl = [p['i'] for p in chunk], {p['i']: p['sl'] for p in chunk}
-    isa = lambda ids, cls: {r['i'] for r in batched(lambda b: f'SELECT DISTINCT ?i WHERE {{ VALUES ?i {{{V(b)}}} VALUES ?x {{{V(cls)}}} ?i wdt:P31/wdt:P279* ?x }}', ids, cache)}
     blocked = {r['i'] for r in batched(lambda b: f'''SELECT DISTINCT ?i WHERE {{ VALUES ?i {{{V(b)}}}
         VALUES ?x {{{V(BLOCK_CLASSES + SUBDIV)}}} ?i wdt:P31/wdt:P279* ?x }}''', ids, cache)}
     by_ll = {p['i']: p['latlon'] for p in chunk}
@@ -434,7 +444,7 @@ def write(out, sel, log, seed):
     tab = Counter((p['continent'], k, s) for p in sel for k, s in p['cond'].items())
     ov = sum(1 for p in sel if p['cond'].get('A') == p['cond'].get('B') == 'plan')
     with open(os.path.join(out, OUTFILE.replace('places', 'report').replace('.csv', '.md')), 'w', encoding='utf-8') as f:
-        try: idx = json.loads(urllib.request.urlopen(EP + '?cmd=stats', timeout=30).read()).get('name-index', '?')
+        try: idx = json.loads(urllib.request.urlopen(EP + '?cmd=stats', timeout=30, context=TLS).read()).get('name-index', '?')
         except Exception: idx = 'unknown'
         sha = hashlib.sha256(open(__file__, 'rb').read()).hexdigest()[:16]
         f.write(f'# Places run\n\nSeed {seed}. Endpoint {EP}, {time.strftime("%Y-%m-%d")}. Index: {idx}. Script sha256: {sha}.\n\n| continent | A plan | A reserve | B plan | B reserve | infra |\n|---|---|---|---|---|---|\n')

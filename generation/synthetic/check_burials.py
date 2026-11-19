@@ -19,66 +19,55 @@ post's own place. A post is listed as
     elsewhere            buried more than FAR_KM from the place
     elsewhere_by_death   Wikidata has no place of burial and the person died
                          more than FAR_KM away; taken as buried where they
-                         died (2026-11-17, user)
+                         died
     unknown              neither a place of burial nor a place of death with
                          coordinates
     here                 buried, or with no burial on record died, within
                          FAR_KM (not written to the file)
 
 The distance is only a screen for this check. It takes no part in scoring.
+
+Queries go through ../reform_places.py (QLever, retried, cached in
+../out/cache): a rerun reads the cache, so delete it to ask Wikidata again.
 """
 from __future__ import annotations
 
 import csv
-import json
-import math
+import os
 import re
 import sys
-import time
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
-import finalise
-import generate as gen
-import plan
-
 HERE = Path(__file__).resolve().parent
-ENDPOINT = "https://qlever.dev/api/wikidata"
+sys.path.insert(0, str(HERE.parent))
+import reform_places as rp   # noqa: E402  (sparql: the cached, retried query function; km)
+
+import finalise              # noqa: E402
+import generate as gen       # noqa: E402
+import plan                  # noqa: E402
+
+CACHE = str(HERE.parent / "out" / "cache")
 FAR_KM = 100
 WORDS = re.compile(r"\b(tomb|tombs|grave|graves|graveside|buried|burial|cemetery|mausoleum|resting place)\b", re.I)
 COLUMNS = ["verdict", "item_id", "condition", "place", "country", "person", "buried_at", "buried_km",
            "died_at", "died_km", "text"]
 
 
-def km(a: tuple[float, float], b: tuple[float, float]) -> float:
-    (la1, lo1), (la2, lo2) = [(math.radians(x), math.radians(y)) for x, y in (a, b)]
-    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
-    return 6371 * 2 * math.asin(math.sqrt(h))
-
-
 def lookup(qids: list[str]) -> dict[str, dict[str, tuple[str, tuple[float, float] | None]]]:
     """{person: {"buried": (label, coords), "died": (label, coords)}}."""
-    sparql = (
-        "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> "
-        "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
-        "SELECT ?p ?kind ?label ?coord WHERE { VALUES ?p { " + " ".join("wd:" + q for q in qids) + " } "
+    rows = rp.sparql(
+        "SELECT ?p ?kind ?label ?coord WHERE { VALUES ?p { " + rp.V(qids) + " } "
         '{ ?p wdt:P119 ?x . BIND("buried" AS ?kind) } UNION { ?p wdt:P20 ?x . BIND("died" AS ?kind) } '
-        '?x rdfs:label ?label . FILTER(LANG(?label) = "en") OPTIONAL { ?x wdt:P625 ?coord } }')
-    request = urllib.request.Request(ENDPOINT + "?" + urllib.parse.urlencode({"query": sparql}),
-                                     headers={"Accept": "application/sparql-results+json",
-                                              "User-Agent": "burial-check/1.0"})
-    with urllib.request.urlopen(request, timeout=120, context=gen.tls_context()) as response:
-        rows = json.load(response)["results"]["bindings"]
+        '?x rdfs:label ?label . FILTER(LANG(?label) = "en") OPTIONAL { ?x wdt:P625 ?coord } }', CACHE)
     found: dict[str, dict[str, tuple[str, tuple[float, float] | None]]] = {}
-    for row in rows:
+    for row in rows:                    # rp.sparql gives {variable: value}, an entity as its QID
         coords = None
-        match = re.match(r"POINT\(([-\d.eE]+) ([-\d.eE]+)\)", row.get("coord", {}).get("value", ""), re.I)
+        match = re.match(r"POINT\(([-\d.eE]+) ([-\d.eE]+)\)", row.get("coord", ""), re.I)
         if match:
             coords = (float(match.group(2)), float(match.group(1)))
-        slot = found.setdefault(row["p"]["value"].rsplit("/", 1)[-1], {})
-        if row["kind"]["value"] not in slot or (coords and not slot[row["kind"]["value"]][1]):
-            slot[row["kind"]["value"]] = (row["label"]["value"], coords)
+        slot = found.setdefault(row["p"], {})
+        if row["kind"] not in slot or (coords and not slot[row["kind"]][1]):
+            slot[row["kind"]] = (row["label"], coords)
     return found
 
 
@@ -100,18 +89,18 @@ def main() -> int:
             if clue.get("is_human"):
                 posts.append((row, clue))
     people = sorted({clue["clue_qid"] for _, clue in posts})
+    os.makedirs(CACHE, exist_ok=True)
     facts: dict[str, dict] = {}
     for start in range(0, len(people), 100):
         facts.update(lookup(people[start:start + 100]))
-        time.sleep(0.5)
 
     out = []
     for row, clue in posts:
         here = (float(row["latitude"]), float(row["longitude"]))
         fact = facts.get(clue["clue_qid"], {})
         buried, died = fact.get("buried"), fact.get("died")
-        b_km = round(km(here, buried[1])) if buried and buried[1] else None
-        d_km = round(km(here, died[1])) if died and died[1] else None
+        b_km = round(rp.km(here, buried[1])) if buried and buried[1] else None
+        d_km = round(rp.km(here, died[1])) if died and died[1] else None
         if b_km is not None and b_km <= FAR_KM:
             continue
         if b_km is None and buried is None and d_km is not None and d_km <= FAR_KM:

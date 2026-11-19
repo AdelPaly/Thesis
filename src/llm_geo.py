@@ -8,17 +8,14 @@ instances are memoised per configuration so a run loads one client.
 from __future__ import annotations
 
 import hashlib
-import logging
 
 import meter
 
-from llm_common import (CACHE_DIR, REFUSAL_SENTINEL, PickleCache,  # noqa: F401
-                        fingerprint, make_client, parse_json_object)
+from llm_common import (REFUSAL_SENTINEL, PickleCache, fingerprint, make_client,
+                        parse_json_object)
 
 from wikidata import (search_entities, fetch_entities, get_coords_of,
                       resolve_country_continent)
-
-log = logging.getLogger(__name__)
 
 PROMPT = """You are a geolocation assistant. Given a text, identify the single most \
 relevant real-world location the text refers to.
@@ -31,37 +28,8 @@ Do not guess if you have no confidence — refuse instead.
 
 Text: {text}"""
 
-PROMPT_V2 = """Read the post below and work out where in the world it is about.
-
-Post:
-\"\"\"
-{text}
-\"\"\"
-
-Reply with one JSON object and nothing else, with exactly these keys:
-- "city": the city, or null if you cannot tell
-- "country": the country, or null if you cannot tell
-- "continent": the continent, or null if you cannot tell
-- "refused": true only if the post gives no geographic clue at all, otherwise false
-
-If you are not confident, refuse rather than guess."""
-
-PROMPT_V3 = """Task: geolocate a text.
-
-<text>
-{text}
-</text>
-
-Question: which single real-world location does this text refer to?
-
-Output: JSON only, in this form:
-{{"city": string or null, "country": string or null, "continent": string or null, "refused": boolean}}
-
-"refused" is true only when the text contains no geographic signal. When unsure, refuse instead of guessing."""
-
-# Three wordings and layouts of one question, with one answer format, so a
-# difference between templates is prompt sensitivity and nothing else.
-PROMPTS = {"v1": PROMPT, "v2": PROMPT_V2, "v3": PROMPT_V3}
+# The one template; `llm.prompt_template` names it.
+PROMPTS = {"v1": PROMPT}
 
 
 # Models are asked for JSON null when a field is unknown, and mostly comply --
@@ -94,8 +62,6 @@ class LLMGeoPipeline:
         self.client = client
         self.model_id = client.model_id
         self.generation_params = client.generation_params
-        self.model_name = cache_name
-        self.prompt_template = prompt_template
         self.prompt = PROMPTS[prompt_template]
         self._cache = PickleCache(cache_name, fingerprint(self.prompt, self.generation_params))
 
@@ -122,9 +88,6 @@ class LLMGeoPipeline:
         if raw != REFUSAL_SENTINEL:
             self._cache.put(key, raw)
         return raw
-
-    def _parse_json(self, raw: str) -> dict | None:
-        return parse_json_object(raw)
 
     def _resolve_to_candidate(self, parsed: dict) -> dict | None:
         """Cascading QID resolution: city -> country -> continent string."""
@@ -176,7 +139,7 @@ class LLMGeoPipeline:
         the runner stores it in `llm_raw_response` so a parsing change can be
         re-scored without another API call."""
         raw = self._get_response(text)
-        parsed = self._parse_json(raw)
+        parsed = parse_json_object(raw)
         if parsed is None or parsed.get("refused"):
             return None, raw
         return self._resolve_to_candidate(parsed), raw
@@ -193,8 +156,3 @@ def build(llm) -> LLMGeoPipeline:
         _instances[key] = LLMGeoPipeline(make_client(llm), llm.cache_name,
                                          llm.prompt_template)
     return _instances[key]
-
-
-def clear_instances() -> None:
-    """Forget memoised pipelines (tests, multi-config in-process runs)."""
-    _instances.clear()

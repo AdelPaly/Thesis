@@ -37,9 +37,8 @@ sys.path.insert(0, str(SRC))
 
 from config import (REPO_ROOT, PipelineConfig, load_all_configs,     # noqa: E402
                     load_config, load_datasets)
-from keys import item_id, legacy_config_name                          # noqa: E402,F401
+from keys import item_id                                              # noqa: E402
 import meter                                                          # noqa: E402
-import pipeline                                                       # noqa: E402
 from pipeline import Pipeline                                         # noqa: E402
 from wikidata import save_caches                                      # noqa: E402
 
@@ -51,8 +50,9 @@ WRITE_ATTEMPTS = 6
 WRITE_BACKOFF_S = 0.5
 GIT_REV_TIMEOUT_S = 10
 GIT_STATUS_TIMEOUT_S = 20
-# The dirty marker only looks at what can change a prediction; results/ is
-# tracked in git and changes on every run.
+# The dirty marker only looks at what can change a prediction. The prediction
+# files and summary tables under results/ are committed and change on every
+# run; the logs are not committed.
 CODE_PATHS = ("src", "configs")
 
 # Optional dataset columns copied onto each prediction record so scripts/score.py
@@ -73,8 +73,8 @@ def code_rev() -> str:
     revision makes that detectable, and the resume path reports how many
     records came from a different one.
 
-    Only src/ and configs/ count towards "dirty": the tracked prediction files
-    would otherwise mark every revision dirty the moment a run starts.
+    Only src/ and configs/ count towards "dirty": the committed prediction
+    files would otherwise mark every revision dirty the moment a run starts.
     """
     try:
         rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
@@ -119,7 +119,7 @@ def models_of(cfg: PipelineConfig) -> dict:
         "linker": cfg.linking.backend if cfg.linking.backend not in (None, "none") else None,
         "linker_model": cfg.linking.refined_model,
         "rerank": cfg.rerank.model if cfg.rerank.enabled else None,
-        "dense_encoder": getattr(cfg.dense, "encoder", None),
+        "dense_encoder": cfg.dense.encoder,
         "llm": f"{llm.provider}/{llm.model}" if llm.model else None,
         "llm_revision": llm.revision,
         "llm_temperature": llm.temperature if llm.model else None,
@@ -286,14 +286,6 @@ def run(config_name: str, dataset_name: str, limit: int | None = None,
     print(f"output   : {_display(out_path)}")
 
     existing = _load_existing(out_path, cfg.config_hash, overwrite)
-    legacy = legacy_config_name(cfg.name)
-    legacy_path = out_dir / f"{legacy}__{dataset_name}.jsonl" if legacy else None
-    if not out_path.exists() and legacy_path and legacy_path.exists():
-        # A renamed configuration resumes from its file under the old name. That
-        # file is read, never rewritten; the records move to the new name.
-        existing = {iid: {**rec, "config_name": cfg.name} for iid, rec in
-                    _load_existing(legacy_path, cfg.config_hash, overwrite).items()}
-        print(f"legacy   : resuming from {_display(legacy_path)}")
     if existing:
         print(f"resume   : {len(existing)} item(s) already done")
 
@@ -412,8 +404,6 @@ def main() -> None:
     if not args.config or not args.dataset:
         p.error("--config and --dataset are required (or use --list)")
 
-    if hasattr(pipeline, "set_debug"):
-        pipeline.set_debug(args.debug)
     run(args.config, args.dataset, limit=args.limit, overwrite=args.overwrite,
         out_dir=Path(args.out_dir), split=args.split, shared=args.shared)
 

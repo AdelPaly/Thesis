@@ -1,10 +1,10 @@
 # The pairwise comparisons the analysis tests. Not a configuration.
 #
 # Chosen in advance, before the results they test were seen, and only these
-# are tested: every pair of ~15 configurations would be over 100 tests on
-# about 100 place clusters, most of them underpowered, and a family that size
-# makes any single p-value meaningless. A pair naming a configuration with no
-# predictions is skipped, and the Holm family is the pairs that run.
+# are tested: every pair of the 11 configurations would be 55 tests on the 741
+# test places, and a family that size weakens every single p-value. A pair
+# naming a configuration with no predictions is skipped, and the Holm family
+# is the pairs that run.
 #
 # Each entry: [a, b, question]. Exact-match McNemar by place, paired effect
 # with a place-resampled interval, and the minimum detectable effect.
@@ -22,7 +22,7 @@ comparisons:
   - [dense_retrieval, refined, "dense retrieval vs entity linking"]
   - [refined, gemma4, "mention detection vs parametric knowledge"]
   - [dense_retrieval, gemma4, "no mention detection: retrieval vs parametric"]
-  # tier 4: between models (reportable only beyond the within-model template spread)
+  # tier 4: between models
   - [qwen3_vl, gemma4, "second model vs first"]
   # tier 5: grounding
   - [grounded_gemma, gemma4, "does grounding help (same model, matched control)"]
