@@ -1,0 +1,7 @@
+# Files whose sha256 is recorded (release.json, the prediction records) and the
+# results are stored byte for byte, so the hash is the same on every platform.
+generation/synthetic/output/synthetic_dataset.csv -text
+generation/synthetic/output/finalise_report.csv -text
+generation/synthetic/output/item_plan.jsonl -text
+splits/*.csv -text
+results/** -text
