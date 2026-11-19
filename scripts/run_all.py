@@ -35,7 +35,7 @@ LOG_DIR = REPO_ROOT / "results" / "logs"
 # first look at the numbers. Names absent from configs/ are skipped, and
 # configurations present in configs/ but missing here still run (appended), so
 # this is an ordering preference, not a registry.
-# The pool-based configurations go last: the dense pool (gold_plus_predicted)
+# The pool-based configurations go last: the dense pool (gold_plus_answers)
 # is built from every other configuration's predictions, so it has to see them.
 ORDER = ["majority_class", "population_wikidata",
          "geoparser_irchel",

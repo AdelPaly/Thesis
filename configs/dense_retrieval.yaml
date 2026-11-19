@@ -6,7 +6,7 @@ question: >
   the LLM
 design: >
   embed(post with 'query: ', E5 multilingual-e5-base) → cosine kNN over the place index
-  (pool gold_plus_predicted: every dataset gold QID + every QID any config proposed;
+  (pool gold_plus_answers: every dataset gold QID + every other config's final answer;
   text = label, description, aliases, country, continent with 'passage: ') → top-10 →
   top-1. No NER, no linker, no LLM. Output: always predicts (no score threshold, never
   abstains).
@@ -43,7 +43,7 @@ llm:
   model: null
 dense:
   encoder: shared          # configs/shared.yaml
-  pool: gold_plus_predicted
+  pool: gold_plus_answers
   top_k: 10
   index_fields: [label, description, aliases, country, continent]
   query_prefix: shared

@@ -19,12 +19,22 @@ be retrieved from a post about football.
 
 THE CANDIDATE POOL defines the difficulty. Retrieving from 150 places is not
 the same task as retrieving from 100,000, so the pool size is recorded in the
-metadata and reported. The `gold_plus_predicted` pool is:
+metadata and reported. Two pools take what other configurations returned:
 
-    every gold place across all configured datasets
-  + every QID any configuration ever proposed as a candidate place
-  + every QID in a linker candidate set
-  filtered to entities that actually have coordinates
+    gold_plus_answers     every gold place across all configured datasets
+                          + the final answer of every other configuration, one
+                          per post (configurations that read the pool excluded)
+    gold_plus_predicted   the gold places + every QID any configuration ever
+                          listed as a candidate, including linker candidate sets
+
+  both filtered to entities that have coordinates.
+
+The reported configurations use gold_plus_answers. gold_plus_predicted was the
+first choice and was replaced on dev (2026-11-19, before any test result was
+scored): its 20,136 items were mostly things no configuration had settled on
+(craters on other bodies, power stations, studios), and the encoder matched
+posts to them by topic word. With it dense_retrieval reached 0.7% exact match
+on dev and the gold place was in the top 10 for 168 of 955 EXPLICIT posts.
 
 Two properties of that pool must be stated when reporting this tier:
 
@@ -55,6 +65,24 @@ log = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = Path(__file__).resolve().parent / ".dense_index"
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
+CONFIGS_DIR = REPO_ROOT / "configs"
+
+
+def _pool_readers() -> set[str]:
+    """Configurations that themselves retrieve from the pool. Their answers are
+    left out of it, or running one twice would change what it retrieves from."""
+    import yaml
+    out = set()
+    for path in CONFIGS_DIR.glob("*.yaml"):
+        cfg = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        if not isinstance(cfg, dict) or "paradigm" not in cfg:
+            continue
+        if cfg.get("paradigm") == "dense_retrieval" or (cfg.get("grounded") or {}).get("candidate_source") == "dense":
+            out.add(cfg.get("name") or path.stem)
+    return out
+
+
+POOL_READERS = _pool_readers()
 
 
 def _dataset_gold_qids() -> set[str]:
@@ -100,10 +128,34 @@ def _predicted_qids() -> set[str]:
     return out
 
 
+def _answer_qids() -> set[str]:
+    """The final answer of every other configuration, one per post."""
+    out = set()
+    if not PREDICTIONS_DIR.exists():
+        return out
+    for path in sorted(PREDICTIONS_DIR.glob("*.jsonl")):
+        if path.name.split("__")[0] in POOL_READERS:
+            continue
+        with path.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if rec.get("predicted_qid"):
+                    out.add(rec["predicted_qid"])
+    return out
+
+
 def build_pool(pool_spec: str) -> list[str]:
     """QIDs in the candidate pool, before the coordinate filter."""
     if pool_spec == "gold_only":
         return sorted(_dataset_gold_qids())
+    if pool_spec == "gold_plus_answers":
+        return sorted(_dataset_gold_qids() | _answer_qids())
     if pool_spec == "gold_plus_predicted":
         return sorted(_dataset_gold_qids() | _predicted_qids())
     raise ValueError(f"unknown dense.pool {pool_spec!r}")

@@ -48,7 +48,7 @@ PROMPT_TEMPLATES = {"v1"}
 TIERS = range(0, 6)
 BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
 GAZETTEERS = {"wikidata"}
-DENSE_POOLS = {"gold_only", "gold_plus_predicted"}
+DENSE_POOLS = {"gold_only", "gold_plus_answers", "gold_plus_predicted"}
 CANDIDATE_SOURCES = {"dense", "linking"}
 
 
