@@ -1,17 +1,14 @@
-# Code revisions of the reported runs
+# Code revisions of the reported runs, and the corrected resolver
 
-The eleven reported configurations were not all run at one code revision, and
-`gemma4` was written at two. This note sets out the check that no answer
-depends on that. Everything in it is printed by
+Two things are set out here: the correction of the resolver of `gemma4` and
+`qwen3_vl`, which were run twice, and the check that the code revision changed
+no answer of the other runs. What the scripts print:
 
 ```bash
-python scripts/check_revisions.py            # from git and results/predictions/
-python scripts/check_revisions.py --replay   # also resolves the LLM-only replies again
+python scripts/check_revisions.py            # from git and the stored records
+python scripts/check_revisions.py --replay   # also resolves the first LLM-only replies again
+python scripts/posthoc_report.py --split test   # first runs against the reported runs
 ```
-
-The runs were not repeated. The test split is reported once, and a second run
-would also pick up changes in Wikidata's live search that have nothing to do
-with the code.
 
 ## Which run was made at which revision
 
@@ -19,51 +16,90 @@ with the code.
 |---|---|---|
 | `470bcf0` | `majority_class`, `population_wikidata`, `geoparser_irchel`, `retrieve_rerank`, `refined` | 3,349 each |
 | `3bff62c` | `blink` | 3,349 |
-| `3bff62c` | `gemma4`, first part | 329 |
-| `34d0b50` | `gemma4`, second part | 3,020 |
-| `34d0b50` | `qwen3_vl`, `grounded_gemma_linking` | 3,349 each |
+| `34d0b50` | `grounded_gemma_linking` | 3,349 |
 | `44cacce` | `dense_retrieval`, `grounded_gemma` | 3,349 each |
+| `4a96b21` | `gemma4`, `qwen3_vl` (reported runs, corrected resolver) | 3,349 each |
+| `3bff62c`, `34d0b50` | `gemma4`, first run (329 and 3,020 records) | 3,349 |
+| `34d0b50` | `qwen3_vl`, first run | 3,349 |
 
-Every configuration except `gemma4` was run whole at one revision. No record
-is marked `+dirty`, and each file has one `config_hash`.
+No record is marked `+dirty`, and each file has one `config_hash`. The first
+runs are in `results/posthoc/original/`.
 
-## What changed between the revisions
+## The corrected resolver of `gemma4` and `qwen3_vl`
+
+The two LLM-only configurations get text from the model (a city, a country)
+and resolve it to a Wikidata item.
+
+1. **First runs** (19 November, prompt v1, rule v1). The rule searched Wikidata
+   for the city and took the first result. The country the model named was used
+   only when the city found nothing. Test scores: 38.9% and 42.5% exact match.
+2. **The fault.** The analysis of the wrong answers showed that in a large
+   share the model had named the correct place and country, and the rule had
+   returned another item of the same name.
+3. **Country only** (21 November, `scripts/posthoc_llm_resolver.py`). The
+   stored answers of the first runs were resolved again with the country, with
+   no model call: 47.9% and 56.6%. Written on the development split first, no
+   variant tried.
+4. **Corrected rule** (22 November, `src/resolver.py`, prompt v2). The prompt
+   also asks for approximate coordinates, and the rule chooses by country and
+   coordinates. It has 63 unit tests on hand-made cases
+   (`tests/test_resolver.py`). One setting, the 25 km limit, was chosen on the
+   development split. The rule was then fixed
+   (`results/posthoc/v2_frozen_rule.sha256`, the two files as at `9b69970`;
+   later commits changed only comments in them) and run once on the test split:
+   50.8% and 61.9%.
+5. **Reported runs.** `configs/gemma4.yaml` and `configs/qwen3_vl.yaml` now use
+   prompt v2 and the corrected rule, and the files in `results/predictions/`
+   are those runs. They were written at `4a96b21` from the response cache: no
+   model was called, and all 6,698 answers, replies and resolutions are
+   identical to the run of step 4. The run time and cost of step 4, when the
+   models were called, are in `results/posthoc/first_run_cost.csv`.
+
+The correction was made after the first test scores had been seen. It was
+developed on the development split only. `results/posthoc/` holds the first
+runs, the country-only answers and the tables that compare the three
+(`table_resolver_*.csv`, `table_resolver_differences_*.csv`,
+`table_resolution_reasons_*.csv`).
+
+Two configurations were run before the correction and depend on the answers of
+the others: the candidate pool of `dense_retrieval` and `grounded_gemma` holds
+the other configurations' answers as they were on 19 November, the first-run
+answers of `gemma4` and `qwen3_vl` among them. They were not run again.
+
+## What changed between the revisions of the other runs
 
 Only changes under `src/` and `configs/` can change an answer.
 
 | Step | Files changed | Configurations it can reach | Effect on the stored answers |
 |---|---|---|---|
 | `470bcf0` to `3bff62c` | `src/blink_linker.py` | `blink` | None on the others. `blink` was run after the change. |
-| `3bff62c` to `7cd7ba4` | `src/llm_common.py`: LLM replies limited to 512 output tokens | the four LLM configurations | Reaches `gemma4`, see below. The other three were run after the change. The five configurations run at `470bcf0` and `blink` call no LLM. |
+| `3bff62c` to `7cd7ba4` | `src/llm_common.py`: LLM replies limited to 512 output tokens | the four LLM configurations | The two grounded configurations were run after the change. The five configurations run at `470bcf0` and `blink` call no LLM. For the first run of `gemma4` see below. |
 | `7cd7ba4` to `34d0b50` | nothing under `src/` or `configs/` | none | None. |
 | `34d0b50` to `44cacce` | `src/dense_index.py`, `src/config.py` (one more allowed value for the dense pool), `configs/dense_retrieval.yaml`, `configs/grounded_gemma.yaml` | `dense_retrieval`, `grounded_gemma` | None on the others. Both were run after the change. |
 
-So each configuration other than `gemma4` would have been given the same code
-at any of the four revisions, as far as the code it uses goes.
+So each of the nine configurations that were run once would have been given
+the same code at any of these revisions, as far as the code it uses goes. For
+the configurations that call no LLM this rests on the list of changed files,
+not on running them again.
 
-## `gemma4`: two revisions in one file
+## The first runs
 
-The run stopped after 329 posts and was resumed eight hours later, after the
-512-token limit had been added. The 329 replies written before the limit are
-at most 119 characters long (a JSON object with a city, a country and a
-continent), far below 512 tokens, so the limit would not have cut any of them.
-All 329 are posts of condition A. Nothing else that `gemma4` uses changed
-between the two revisions.
+They are no longer the reported runs, and are kept as the record of the
+correction.
 
-## The stored LLM-only answers against the code
+**Two revisions in one file.** The first run of `gemma4` stopped after 329
+posts and was resumed eight hours later, after the 512-token limit had been
+added. The 329 replies written before the limit are at most 119 characters
+long, far below 512 tokens, so the limit would not have cut any of them.
 
-With `--replay` the stored replies of `gemma4` and `qwen3_vl` (6,698 records)
-are resolved again, once with `src/llm_geo.py` as it stood at `44cacce` and
-once with the current code (`src/resolver.py`, rule v1):
-
-- the two versions of the code give the same answer on all 6,698 records;
-- 8 stored answers differ from what the code gives now: 7 of `gemma4` and 1 of
-  `qwen3_vl`.
-
-The 8 are not a difference in code. In each, a Wikidata lookup failed while
-the run was being made, and the answer fell back to the country or to nothing;
-the same reply resolves to a place today. Three of the stored answers are no
-answer at all, four are the country and one is another item.
+**Failed lookups.** With `--replay` the stored replies of the first runs
+(6,698 records) are resolved again with rule v1, once with `src/llm_geo.py` as
+it stood at `44cacce` and once with the current code. The two versions of the
+code give the same answer on all 6,698 records. Eight stored answers differ
+from what the code gives now, seven of `gemma4` and one of `qwen3_vl`: in each
+a Wikidata lookup failed during the run and the answer fell back to the
+country or to nothing. None of the eight is scored correct, and five would be
+correct if resolved today.
 
 | Item | Configuration | Stored | Resolved now |
 |---|---|---|---|
@@ -76,31 +112,13 @@ answer at all, four are the country and one is another item.
 | `e091651003066fd1` | `gemma4` | Q32 | Q1842 |
 | `9107f8eb39526e88` | `qwen3_vl` | Q145 | Q107393 |
 
-The reported numbers use the stored answers and were left as they are. None
-of the 8 stored answers is scored correct. Resolved today, 4 of the 7 `gemma4`
-answers and the `qwen3_vl` answer would be the correct place, so the reported
-exact match is lower than the code would give by at most 4 of 3,349 posts
-(0.12 points) for `gemma4` and 1 of 3,349 (0.03 points) for `qwen3_vl`.
+A failed lookup leaves no trace on a record of the first runs. The reported
+runs record the outcome of every resolution (`resolution` on the record), so a
+lookup that finds nothing is visible there as `not_found`.
 
-## What this does not show
+## The result tables
 
-- The check for the configurations that call no LLM rests on the list of
-  changed files, not on running them again.
-- A failed lookup leaves no trace on a record, so the count of 8 covers only
-  the two LLM-only configurations, where the reply is stored and can be
-  resolved again.
-
-## The post-hoc runs
-
-`gemma4_v2` and `qwen3_vl_v2` (`results/posthoc/`) were first run at
-`41a88f3+dirty`, before the resolver was committed. After the commit
-(`9b69970`) both were written again from the response cache with
-`--overwrite`: no model was called, and all 6,698 answers, replies and
-resolutions are identical to the first run. The records now carry `9b69970`;
-their run time and cost fields are those of the replay, not of the first run.
-The rule had been fixed before the test run
-(`results/posthoc/v2_frozen_rule.sha256`).
-
-The result tables in `results/summary/` and `results/posthoc/` name the
-revision they were written at and the version of `configs/comparisons.yaml`
-in their last two columns.
+The tables in `results/summary/` and `results/posthoc/` name the revision they
+were written at and the version of `configs/comparisons.yaml` in their last two
+columns. The list of planned comparisons is unchanged; the comparisons that
+involve `gemma4` or `qwen3_vl` were computed again with the reported runs.

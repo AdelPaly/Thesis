@@ -1,9 +1,9 @@
 a,b,n_pairs,diff,diff_lo,diff_hi,a_only_correct,b_only_correct,eval_code_rev,comparisons_sha256
-gemma4_v2,gemma4,735,9.8,4.4,15.3,120,48,9b69970,a32d65af73ac
-gemma4_v2,gemma4_country_resolver,735,0.5,-2.6,3.8,39,35,9b69970,a32d65af73ac
-gemma4_v2,refined,735,-2.3,-7.5,2.9,92,109,9b69970,a32d65af73ac
-gemma4_v2,grounded_gemma_linking,735,-3.3,-8.2,1.7,78,102,9b69970,a32d65af73ac
-qwen3_vl_v2,qwen3_vl,735,17.0,11.5,22.6,150,25,9b69970,a32d65af73ac
-qwen3_vl_v2,qwen3_vl_country_resolver,735,2.9,0.4,5.6,32,11,9b69970,a32d65af73ac
-qwen3_vl_v2,refined,735,5.9,0.7,10.9,122,79,9b69970,a32d65af73ac
-qwen3_vl_v2,grounded_gemma_linking,735,4.9,-0.1,9.9,112,76,9b69970,a32d65af73ac
+gemma4,gemma4_first_run,735,9.8,4.4,15.3,120,48,4a96b21,a32d65af73ac
+gemma4,gemma4_country_resolver,735,0.5,-2.6,3.8,39,35,4a96b21,a32d65af73ac
+gemma4,refined,735,-2.3,-7.5,2.9,92,109,4a96b21,a32d65af73ac
+gemma4,grounded_gemma_linking,735,-3.3,-8.2,1.7,78,102,4a96b21,a32d65af73ac
+qwen3_vl,qwen3_vl_first_run,735,17.0,11.5,22.6,150,25,4a96b21,a32d65af73ac
+qwen3_vl,qwen3_vl_country_resolver,735,2.9,0.4,5.6,32,11,4a96b21,a32d65af73ac
+qwen3_vl,refined,735,5.9,0.7,10.9,122,79,4a96b21,a32d65af73ac
+qwen3_vl,grounded_gemma_linking,735,4.9,-0.1,9.9,112,76,4a96b21,a32d65af73ac
