@@ -1,0 +1,9 @@
+a,b,n_pairs,diff,diff_lo,diff_hi,a_only_correct,b_only_correct,eval_code_rev,comparisons_sha256
+gemma4_v2,gemma4,2614,11.8,9.1,14.5,426,117,9b69970,a32d65af73ac
+gemma4_v2,gemma4_country_resolver,2614,2.8,1.1,4.6,168,94,9b69970,a32d65af73ac
+gemma4_v2,refined,2614,-2.9,-5.7,-0.2,312,389,9b69970,a32d65af73ac
+gemma4_v2,grounded_gemma_linking,2614,-4.9,-7.5,-2.3,240,368,9b69970,a32d65af73ac
+qwen3_vl_v2,qwen3_vl,2614,19.3,16.3,22.3,572,67,9b69970,a32d65af73ac
+qwen3_vl_v2,qwen3_vl_country_resolver,2614,5.2,3.4,7.2,188,51,9b69970,a32d65af73ac
+qwen3_vl_v2,refined,2614,8.1,5.3,11.0,471,258,9b69970,a32d65af73ac
+qwen3_vl_v2,grounded_gemma_linking,2614,6.2,3.5,8.9,409,247,9b69970,a32d65af73ac
