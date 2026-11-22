@@ -1,28 +1,26 @@
-"""Post-hoc analysis: resolve the LLM-only answers to Wikidata with the country.
+"""Resolve the first LLM-only runs again with the country, calling no model.
 
     python scripts/posthoc_llm_resolver.py --split dev     # where the rule was fixed
     python scripts/posthoc_llm_resolver.py --split test    # applied once, afterwards
 
-The reported LLM-only configurations (gemma4, qwen3_vl) turn the model's answer
-into a Wikidata item by searching for the city name alone and taking the first
-result (src/llm_geo.py). The country the model gave is not used unless the city
-finds nothing, so "Worcester, South Africa" becomes the city in the United
-States. This script re-resolves the stored answers (`llm_raw_response`) with
-the country and calls no model.
-
-The rule, fixed on the development split before the test split was resolved:
+A record of how the resolver of gemma4 and qwen3_vl was corrected. Their first
+runs (results/posthoc/original/) turned the model's answer into a Wikidata
+item by searching for the city name alone and taking the first result. The
+country the model gave was not used unless the city found nothing, so
+"Worcester, South Africa" became the city in the United States. This script
+resolves those stored answers (`llm_raw_response`) again with the country:
 
   1. search Wikidata for the city name, ten results;
   2. take the first result that has coordinates, lies in the country the model
      named (P17 equals the item the country name resolves to) and is not that
      country itself;
-  3. if there is none, or the model named no country, keep the answer of the
-     reported configuration.
+  3. if there is none, or the model named no country, keep the first answer.
 
-This is NOT one of the reported configurations. It was written after the test
-results had been scored, because the error analysis showed the cause. Its
-records go to results/posthoc/ (never results/predictions/) under the names
-gemma4_country_resolver and qwen3_vl_country_resolver.
+It was the first step of the correction and shows how much the country alone
+recovers from the same replies. The reported configurations now use the rule
+in src/resolver.py (country and coordinates, prompt v2). The records written
+here go to results/posthoc/ under the names gemma4_country_resolver and
+qwen3_vl_country_resolver and are not reported configurations.
 """
 from __future__ import annotations
 
@@ -39,7 +37,7 @@ from llm_common import parse_json_object  # noqa: E402
 from llm_geo import _clean_name  # noqa: E402
 from score import attach_split, load_predictions, score_record, summarise_metrics  # noqa: E402
 
-PREDICTIONS = REPO_ROOT / "results" / "predictions"
+ORIGINAL = REPO_ROOT / "results" / "posthoc" / "original"
 OUT_DIR = REPO_ROOT / "results" / "posthoc"
 CONFIGS = ["gemma4", "qwen3_vl"]
 SEARCH_LIMIT = 10
@@ -86,7 +84,7 @@ def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     for config in CONFIGS:
-        records = attach_split(load_predictions([PREDICTIONS / f"{config}__synthetic.jsonl"]))
+        records = attach_split(load_predictions([ORIGINAL / f"{config}__synthetic.jsonl"]))
         records = [r for r in records if r.get("split") == args.split]
         new, changed = [], 0
         for i, rec in enumerate(records, 1):

@@ -4,7 +4,8 @@
     python scripts/check_revisions.py --replay   # also part 4, needs the Wikidata cache
 
 The prediction files were written at more than one code revision (`code_rev`
-on every record). This prints what is needed to judge whether that matters:
+on every record). gemma4 and qwen3_vl were run a second time with a corrected
+resolver; their first runs are in results/posthoc/original/ and are listed too. This prints what is needed to judge whether that matters:
 
   1. records per revision, per prediction file, with the first and last run time;
   2. for a file written at two revisions on either side of the 512-token
@@ -13,8 +14,9 @@ on every record). This prints what is needed to judge whether that matters:
   3. the files under src/ and configs/ that differ between consecutive
      revisions, so each difference can be set against the configurations that
      ran on either side of it;
-  4. (--replay) the two LLM-only configurations resolved again from their
-     stored replies, with the resolution code as it stood at the last run
+  4. (--replay) the first runs of the two LLM-only configurations
+     (results/posthoc/original/, rule v1) resolved again from their stored
+     replies, with the resolution code as it stood at the last run
      revision and with the current code: how many answers the two give
      differently, and how many stored answers differ from what the code gives
      now. The second number counts lookups that failed during the run, not a
@@ -35,6 +37,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PREDICTIONS = REPO_ROOT / "results" / "predictions"
+ORIGINAL = REPO_ROOT / "results" / "posthoc" / "original"   # first runs of the LLM-only configurations
 TOKEN_LIMIT_REV = "7cd7ba4"       # "Limit LLM answers to 512 output tokens"
 LAST_RUN_LLM_GEO_REV = "44cacce"  # src/llm_geo.py as at the last revision a run was made at
 LLM_ONLY = ["gemma4", "qwen3_vl"]
@@ -60,18 +63,19 @@ def is_ancestor(a: str, b: str) -> bool:
 def part_1_and_3() -> list[str]:
     print("1. records per code revision\n")
     revisions, before_limit = set(), {}
-    for path in sorted(PREDICTIONS.glob("*.jsonl")):
+    for path in [*sorted(PREDICTIONS.glob("*.jsonl")), *sorted(ORIGINAL.glob("*.jsonl"))]:
         by_rev = defaultdict(list)
         for rec in records(path):
             by_rev[rec.get("code_rev", "unknown")].append(rec)
         for rev, recs in sorted(by_rev.items(), key=lambda kv: min(r["run_utc"] for r in kv[1])):
             times = [r["run_utc"] for r in recs]
-            print(f"  {path.stem:38} {rev:10} {len(recs):5}  {min(times)}  {max(times)}")
+            name = path.stem + (" (first run)" if path.parent == ORIGINAL else "")
+            print(f"  {name:50} {rev:10} {len(recs):5}  {min(times)}  {max(times)}")
             base = rev.split("+")[0]
             revisions.add(base)
             if len(by_rev) > 1 and base != "unknown" and not is_ancestor(TOKEN_LIMIT_REV, base):
                 replies = [r.get("llm_raw_response") or "" for r in recs]
-                before_limit[(path.stem, rev)] = (len(recs), max(map(len, replies)))
+                before_limit[(name, rev)] = (len(recs), max(map(len, replies)))
     print("\n2. files written on both sides of the 512-token limit "
           f"({TOKEN_LIMIT_REV}): replies written before it\n")
     for (name, rev), (n, longest) in before_limit.items():
@@ -99,7 +103,7 @@ def part_2(revisions: list[str]) -> None:
 
 
 def part_4() -> None:
-    print("\n4. LLM-only answers resolved again from the stored replies\n")
+    print("\n4. first LLM-only runs resolved again from the stored replies (rule v1)\n")
     sys.path.insert(0, str(REPO_ROOT / "src"))
     import resolver  # noqa: E402
     from llm_common import parse_json_object  # noqa: E402
@@ -115,7 +119,7 @@ def part_4() -> None:
     for name in LLM_ONLY:
         n = code_differs = stored_differs = 0
         examples = []
-        for rec in records(PREDICTIONS / f"{name}__synthetic.jsonl"):
+        for rec in records(ORIGINAL / f"{name}__synthetic.jsonl"):
             raw = rec.get("llm_raw_response")
             parsed = parse_json_object(raw) if raw else None
             then = None if parsed is None or parsed.get("refused") else old._resolve_to_candidate(parsed)

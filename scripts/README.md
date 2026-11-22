@@ -93,14 +93,18 @@ python scripts/score.py --by condition
 | `check_rescore.py` | Re-runs scoring and analysis into a temporary folder and compares with the tables in `results/summary/`, and with a second fresh run. |
 | `check_revisions.py` | The prediction files were written at more than one code revision. Prints the records per revision, the files under `src/` and `configs/` that changed between them, and (`--replay`) resolves the LLM-only replies again with the old and the current code. The findings are in `../results/REVISIONS.md`. |
 | `plot_results.py` | Draws the seven figures of the results chapter from the summary tables and the predictions into `results/figures/` (PNG and PDF), with the numbers behind three of them as CSV. Needs matplotlib (`python install.py --run`). |
-| `posthoc_llm_resolver.py` | Post-hoc: resolves the stored answers of `gemma4` and `qwen3_vl` again with the country the model named. Calls no model. Writes to `results/posthoc/`, never `results/predictions/`. |
-| `posthoc_report.py` | Post-hoc: scores the reported LLM-only runs, the country-resolved answers and the v2 runs (`configs/posthoc/`, prompt with coordinates, resolver in `src/resolver.py`) side by side, and tabulates how each answer was resolved or why not (declined, unreadable, not found, ambiguous). |
+| `posthoc_llm_resolver.py` | Record of the resolver correction: resolves the stored answers of the first `gemma4` and `qwen3_vl` runs (`results/posthoc/original/`) again with the country the model named. Calls no model. Writes to `results/posthoc/`. |
+| `posthoc_report.py` | Record of the resolver correction: scores the first runs, the country-only answers and the reported runs side by side, and tabulates how each answer was resolved or why not (declined, unreadable, not found, ambiguous). |
 
-The v2 runs are not in `configs/`, so `run_all.py`, the summary tables and the dense pool do not see them:
+`gemma4` and `qwen3_vl` were run twice. The first runs took the first Wikidata
+search result for the city and ignored the country the model named. The
+resolver was corrected on the development split (`src/resolver.py`, prompt v2
+with coordinates) and the configurations were run again; those are the
+reported runs. The first runs and the comparison are in `results/posthoc/`,
+and `../results/REVISIONS.md` gives the account.
 
 ```bash
-python src/runner.py --config configs/posthoc/gemma4_v2.yaml --dataset synthetic --split dev --out-dir results/posthoc/v2_dev
-python scripts/posthoc_report.py --split dev
+python scripts/posthoc_report.py --split test
 python -m pytest tests/test_resolver.py      # the resolver's unit tests, no network
 ```
 

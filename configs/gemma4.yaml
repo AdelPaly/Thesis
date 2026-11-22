@@ -5,11 +5,12 @@ question: >
   does parametric knowledge (LLM alone, whole text) beat mention detection and
   retrieval; matched control for grounded_gemma
 design: >
-  LLM(gemma-4-12b-it, VSE gateway, temperature 0, prompt v1 → JSON
-  city/country/continent/refused) → resolve: city, else country (Wikidata search
-  limit=1, first hit with coords) → else continent string only (no QID, no coords) →
-  prediction. No candidate list. Output: refused, unparseable or unresolvable → no
-  prediction; the reason is only in llm_raw_response.
+  LLM(gemma-4-12b-it, VSE gateway, temperature 0, prompt v2 → JSON
+  city/country/continent/latitude/longitude/refused) → resolve (src/resolver.py):
+  Wikidata search for the city, 10 results → those in the named country → among
+  several, the first within 25 km of the model's coordinates → else country, else
+  continent string only (no QID, no coords) → prediction. No candidate list. The
+  record's `resolution` says resolved, declined, unreadable, not_found or ambiguous.
 description: >
   Tier 4, LLM only, and the matched ungrounded control for tier 5: same model
   as grounded_gemma, so the grounded-vs-ungrounded comparison measures the
@@ -19,6 +20,12 @@ description: >
   No mention detection stage: the model is asked for city / country /
   continent directly, and the answer is resolved against Wikidata. A
   continent-only answer carries no coordinate.
+
+  Resolver corrected on 2026-11-22. The first runs (prompt v1) took the first
+  Wikidata search result for the city and ignored the country the model named.
+  The rule was corrected on the development split only and then run once on
+  the test split. The first runs are kept in results/posthoc/original/; see
+  results/REVISIONS.md.
 ner:
   model: null
   entity_types: null
@@ -36,5 +43,5 @@ llm:
   revision: null
   temperature: 0.0
   top_p: null
-  prompt_template: v1
-  cache_name: gemma4_12b
+  prompt_template: v2
+  cache_name: gemma4_12b_v2

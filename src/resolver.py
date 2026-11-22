@@ -8,14 +8,16 @@ and has to find the Wikidata item for it. There are two rules, chosen by the
 prompt template of the configuration:
 
   v1  `resolve_first_hit`. Search the city name, take the first result. The
-      country is used only when the city finds nothing. This is the rule of the
-      reported configurations gemma4 and qwen3_vl and it is kept unchanged; it
-      sends "Worcester, South Africa" to the city in Massachusetts.
+      country is used only when the city finds nothing. This was the rule of the
+      first runs of gemma4 and qwen3_vl (results/posthoc/original/) and it is
+      kept so that they can be reproduced; it sends "Worcester, South Africa"
+      to the city in Massachusetts.
 
   v2  `resolve_by_country_and_coordinates`. Search the city name (ten results),
-      keep the results in the country the model named, and of those take the
-      one nearest the coordinates the model gave. See the function for the
-      fallbacks.
+      keep the results in the country the model named, and among several take
+      the first within 25 km of the coordinates the model gave. See the
+      function for the fallbacks. This is the rule of the reported gemma4 and
+      qwen3_vl.
 
 Both return `(candidate or None, resolution)`. `resolution` is stored on the
 prediction record, so a missing or coarse answer has a reason:
@@ -161,8 +163,8 @@ def resolve_first_hit(raw_or_parsed, *, search: Callable = wd.search_entities,
                       fetch: Callable = wd.fetch_entities,
                       geo: Callable = wd.resolve_country_continent) -> tuple[dict | None, dict]:
     """Rule v1: the first search result for the city, else for the country,
-    else the continent as a string. The prediction is what the reported
-    configurations have always produced; only the resolution is new."""
+    else the continent as a string. The prediction is what the first runs of
+    gemma4 and qwen3_vl produced; only the resolution is new."""
     parsed, ended = _read(raw_or_parsed)
     if ended:
         return None, ended

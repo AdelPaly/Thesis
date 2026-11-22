@@ -1,16 +1,16 @@
-"""Post-hoc analysis of the LLM-only resolver: scores and failure reasons.
+"""The correction of the LLM-only resolver: scores and failure reasons.
 
     python scripts/posthoc_report.py --split dev
     python scripts/posthoc_report.py --split test
 
 Compares, on one split, for Gemma 4 and Qwen3-VL:
 
-  reported   gemma4, qwen3_vl: prompt v1, first search result for the city
-             (results/predictions/)
-  country    the same stored answers resolved with the country
-             (scripts/posthoc_llm_resolver.py -> results/posthoc/)
-  v2         gemma4_v2, qwen3_vl_v2: prompt v2 with coordinates, resolved by
-             country and coordinates (configs/posthoc/ -> results/posthoc/v2_<split>/)
+  first run     gemma4_first_run, qwen3_vl_first_run: prompt v1, first search
+                result for the city (results/posthoc/original/)
+  country only  the first run's stored answers resolved with the country
+                (scripts/posthoc_llm_resolver.py -> results/posthoc/)
+  reported      gemma4, qwen3_vl: prompt v2 with coordinates, resolved by
+                country and coordinates (results/predictions/)
 
 with refined and grounded_gemma_linking for reference, and writes to
 results/posthoc/:
@@ -20,10 +20,10 @@ results/posthoc/:
   table_resolver_differences_<split>.csv  paired differences with intervals
   table_resolution_reasons_<split>.csv  how each answer was resolved or why not
 
-The reasons of the reported configurations are derived here from their stored
-replies with the v1 rule (src/resolver.py), from the Wikidata cache; their
-predictions are not touched. None of this is part of the planned comparisons,
-and the intervals are not adjusted for multiple comparisons.
+The reasons of the first runs are derived here from their stored replies with
+the v1 rule (src/resolver.py), from the Wikidata cache; their predictions are
+not touched. The intervals here are not adjusted for multiple comparisons; the
+planned comparisons are in results/summary/table_stats_<split>.csv.
 """
 from __future__ import annotations
 
@@ -58,10 +58,10 @@ def load(path: Path, split: str) -> list[dict] | None:
 def variants(split: str) -> dict[str, list[dict]]:
     out = {}
     for model in MODELS:
-        out[model] = load(PREDICTIONS / f"{model}__synthetic.jsonl", split)
+        out[f"{model}_first_run"] = load(POSTHOC / "original" / f"{model}__synthetic.jsonl", split)
         out[f"{model}_country_resolver"] = load(
             POSTHOC / f"{model}_country_resolver__synthetic__{split}.jsonl", split)
-        out[f"{model}_v2"] = load(POSTHOC / f"v2_{split}" / f"{model}_v2__synthetic.jsonl", split)
+        out[model] = load(PREDICTIONS / f"{model}__synthetic.jsonl", split)
     for name in REFERENCES:
         out[name] = load(PREDICTIONS / f"{name}__synthetic.jsonl", split)
     return {name: recs for name, recs in out.items() if recs}
@@ -114,8 +114,8 @@ def main() -> None:
     print("\npaired differences in exact match, points (a - b)")
     rows = []
     for model in MODELS:
-        for a, b in ((f"{model}_v2", model), (f"{model}_v2", f"{model}_country_resolver"),
-                     (f"{model}_v2", "refined"), (f"{model}_v2", "grounded_gemma_linking")):
+        for a, b in ((model, f"{model}_first_run"), (model, f"{model}_country_resolver"),
+                     (model, "refined"), (model, "grounded_gemma_linking")):
             if a not in data or b not in data:
                 continue
             pairs = st.pair_records(data[a], data[b])
@@ -124,7 +124,7 @@ def main() -> None:
             lost = sum(rb["exact"] and not ra["exact"] for _, ra, rb in pairs)
             rows.append([a, b, len(pairs), pct(ci["point"]), pct(ci["lo"]), pct(ci["hi"]),
                          gained, lost])
-            print(f"  {a:14} - {b:30} {pct(ci['point']):>6} ({pct(ci['lo'])} to {pct(ci['hi'])})"
+            print(f"  {a:10} - {b:30} {pct(ci['point']):>6} ({pct(ci['lo'])} to {pct(ci['hi'])})"
                   f"   a right, b wrong {gained:4}   b right, a wrong {lost:4}")
     write(POSTHOC / f"table_resolver_differences_{args.split}.csv",
           ["a", "b", "n_pairs", "diff", "diff_lo", "diff_hi", "a_only_correct", "b_only_correct"],
@@ -132,7 +132,7 @@ def main() -> None:
 
     print("\nhow each answer was resolved")
     rows = []
-    for name in (n for m in MODELS for n in (m, f"{m}_v2")):
+    for name in (n for m in MODELS for n in (f"{m}_first_run", m)):
         if name not in data:
             continue
         counts, correct = Counter(), Counter()
