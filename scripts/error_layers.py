@@ -52,6 +52,7 @@ from pathlib import Path
 from score import (attach_split, find_prediction_files, load_predictions, row_order,
                    score_record)
 from analyse import load_config_meta
+import provenance
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUT = REPO_ROOT / "results" / "summary"
@@ -209,9 +210,9 @@ def write_csv(rows: list[dict], path: Path) -> None:
     fields = ["config", "dataset", "condition", "layer", "detail", "n", "n_layer",
               "n_items", "share", "share_layer"]
     with path.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=fields)
+        w = csv.DictWriter(f, fieldnames=[*fields, *provenance.COLUMNS])
         w.writeheader()
-        w.writerows(rows)
+        w.writerows({**row, **provenance.as_dict()} for row in rows)
     print(f"\nwrote {path}")
 
 

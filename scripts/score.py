@@ -55,6 +55,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from keys import current_config_name, place_key  # noqa: E402
+import provenance  # noqa: E402
 
 PREDICTIONS_DIR = REPO_ROOT / "results" / "predictions"
 CONFIG_DIR = REPO_ROOT / "configs"
@@ -340,10 +341,10 @@ def print_table(rows: list[tuple[str, dict]], group_label: str = "config") -> No
 def write_csv(rows: list[tuple[str, dict]], out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        w = csv.DictWriter(f, fieldnames=[*CSV_FIELDS, *provenance.COLUMNS])
         w.writeheader()
         for label, m in rows:
-            row = {"group": label.strip()}
+            row = {"group": label.strip(), **provenance.as_dict()}
             for k in CSV_FIELDS[1:]:
                 v = m.get(k)
                 row[k] = round(v, 4) if isinstance(v, float) else v

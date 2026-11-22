@@ -43,7 +43,7 @@ PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
              "grounded_llm", "geoparser"}
 LINKING_BACKENDS = {"refined", "blink", "wikidata_search", "none"}
 LLM_PROVIDERS = {None, "google", "openrouter", "vse"}
-PROMPT_TEMPLATES = {"v1"}
+PROMPT_TEMPLATES = {"v1", "v2"}
 TIERS = range(0, 6)
 BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
 GAZETTEERS = {"wikidata"}

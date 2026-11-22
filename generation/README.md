@@ -90,10 +90,18 @@ plan item) and the posts were written again.
 
 What can be run again from the repository alone: everything up to and
 including `finalise.py` and `quality_report.py`. The working files of the
-repairs stay local (the per-post audit log, the burial check, the list of
-posts removed by hand, the raw model replies), so `regenerate.py` in its
-default and `--burials` modes, and `quality_report.py --audit`, need
-`audit.py` or `check_burials.py` to be run first. No tests are committed.
+repairs are committed too (the per-post audit log, the burial check, the hand
+checks and the list of posts removed by hand, which is empty once its posts
+are rewritten); only the raw model replies (`raw_responses.jsonl`, 33 MB) stay
+local. [`MANUAL_EDITS.md`](MANUAL_EDITS.md) lists everything a person decided,
+and `synthetic/manual_edits.py` rebuilds the list of posts removed by hand
+from the generation log. The tests are in `synthetic/tests/`
+(`python -m pytest generation/synthetic/tests`).
+
+Rows written from 2026-11-22 on carry the `code_rev` of the generation code.
+The rows of `synthetic-v1` are older and are left unchanged;
+`synthetic/infer_code_rev.py` writes for them the commits each row falls
+between (`synthetic/output/raw_generations_code_rev.csv`).
 
 `finalise.py` reads only the kept files, so it costs nothing:
 
@@ -274,6 +282,8 @@ synthetic/
   audit.py             a second judge model reads the finished dataset
   check_burials.py     finds posts that place a tomb where the person is not buried
   regenerate.py        rewrites posts removed by hand, failed, or copying a stock scene
+  manual_edits.py      lists the posts removed by hand, from the generation log
+  infer_code_rev.py    the commits each old generation row falls between
   clue_types.py        what each clue is, from Wikidata, for the prompt
   quality_report.py    the quality criteria as numbers
   build_exemplars.py   picks real posts as tone references

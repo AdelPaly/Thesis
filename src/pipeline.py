@@ -60,6 +60,9 @@ class PipelineOutput:
     # and whether it broke the selection contract. Stored so a wrong answer can
     # be attributed to bad retrieval versus bad selection.
     selection: dict | None = None
+    # LLM alone only: how the answer became a Wikidata item, or why it did not
+    # (declined, unreadable, not_found, ambiguous). See src/resolver.py.
+    resolution: dict | None = None
     error: str | None = None
 
 
@@ -448,8 +451,9 @@ class Pipeline:
         """Whole-text LLM reading. candidate_places stays empty by
         construction: the LLM's answer is resolved with a limit=1 search, so
         there is no scored candidate list to record."""
-        cand, raw = self._llm_pipeline().geolocate_verbose(text)
+        cand, raw, resolution = self._llm_pipeline().geolocate_verbose(text)
         out.llm_raw_response = raw
+        out.resolution = resolution
         out.prediction = cand
 
     # ---------------------------------------------------------------- entry

@@ -80,6 +80,7 @@ from __future__ import annotations
 import argparse
 import copy
 import email.utils
+import functools
 import hashlib
 import http.client
 import json
@@ -87,6 +88,7 @@ import os
 import random
 import re
 import ssl
+import subprocess
 import sys
 import time
 import urllib.error
@@ -104,6 +106,28 @@ utc_now = plan.utc_now   # by its own name: several functions below have a param
 HERE = Path(__file__).resolve().parent
 
 GENERATOR_VERSION = "1"
+
+
+@functools.lru_cache(maxsize=1)
+def code_rev() -> str:
+    """Short git revision of the generation code, `+dirty` if a .py or .yaml
+    file under generation/ has uncommitted changes. Written on every raw row.
+    Not part of config_hash: a commit that changes nothing the generator does
+    must not make a resume look like a different configuration."""
+    def git(*args: str) -> str | None:
+        try:
+            res = subprocess.run(["git", *args], cwd=HERE, capture_output=True,
+                                 text=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        return res.stdout.strip() if res.returncode == 0 else None
+
+    rev = git("rev-parse", "--short", "HEAD")
+    if not rev:
+        return "unknown"
+    dirty = git("status", "--porcelain", "--", ":(top,glob)generation/**/*.py",
+                ":(top,glob)generation/**/*.yaml")
+    return rev + ("+dirty" if dirty else "")
 
 # Defaults for optional generation: keys in config.yaml. This is the single
 # place they are declared; read them through gen_setting() so the client, the
@@ -1231,6 +1255,7 @@ def build_raw_entry(
         "item_id": item["item_id"],
         "generator_version": GENERATOR_VERSION,
         "config_hash": config_hash,
+        "code_rev": code_rev(),
         "requested_utc": utc_now(),
         "model": client.model,
         "base_url": client.base_url,
@@ -1266,6 +1291,7 @@ def build_record(
         "item_id": item["item_id"],
         "generator_version": GENERATOR_VERSION,
         "config_hash": config_hash,
+        "code_rev": code_rev(),
         "plan_version": item.get("plan_version"),
         "generated_utc": utc_now(),
         "model": model,

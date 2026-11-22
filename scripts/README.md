@@ -91,6 +91,18 @@ python scripts/score.py --by condition
 | `error_layers.py` | Gives every item one layer of its configuration's chain where it was lost (no mention, gold not among the candidates, wrong selection, ...). Also `analyse.py layers`. |
 | `simulate_designs.py` | Exploratory: cascades, gates and fallbacks built item by item from the saved predictions of two configurations. Not part of the planned comparisons. |
 | `check_rescore.py` | Re-runs scoring and analysis into a temporary folder and compares with the tables in `results/summary/`, and with a second fresh run. |
+| `check_revisions.py` | The prediction files were written at more than one code revision. Prints the records per revision, the files under `src/` and `configs/` that changed between them, and (`--replay`) resolves the LLM-only replies again with the old and the current code. The findings are in `../results/REVISIONS.md`. |
+| `plot_results.py` | Draws the seven figures of the results chapter from the summary tables and the predictions into `results/figures/` (PNG and PDF), with the numbers behind three of them as CSV. Needs matplotlib (`python install.py --run`). |
+| `posthoc_llm_resolver.py` | Post-hoc: resolves the stored answers of `gemma4` and `qwen3_vl` again with the country the model named. Calls no model. Writes to `results/posthoc/`, never `results/predictions/`. |
+| `posthoc_report.py` | Post-hoc: scores the reported LLM-only runs, the country-resolved answers and the v2 runs (`configs/posthoc/`, prompt with coordinates, resolver in `src/resolver.py`) side by side, and tabulates how each answer was resolved or why not (declined, unreadable, not found, ambiguous). |
+
+The v2 runs are not in `configs/`, so `run_all.py`, the summary tables and the dense pool do not see them:
+
+```bash
+python src/runner.py --config configs/posthoc/gemma4_v2.yaml --dataset synthetic --split dev --out-dir results/posthoc/v2_dev
+python scripts/posthoc_report.py --split dev
+python -m pytest tests/test_resolver.py      # the resolver's unit tests, no network
+```
 
 ```bash
 python scripts/analyse.py all --split test --out results/summary
@@ -111,6 +123,14 @@ error-layer, table, statistics, bootstrap, bin and grounding tables as CSV,
 with `n_boot` and `seed` (10,000 replicates, seed 20260917 unless `--boot` /
 `--seed` say otherwise). The tables for the test split are committed in
 `../results/summary/`.
+
+Every table ends in two columns from `provenance.py`, the same on every row:
+`eval_code_rev`, the git revision the table was written at (`+dirty` if
+`scripts/`, `src/keys.py` or `configs/` had uncommitted changes), and
+`comparisons_sha256`, the first 12 hex digits of the hash of
+`configs/comparisons.yaml`. For a clean stamp, commit the code, write the
+tables, then commit the tables. `check_rescore.py` does not compare these two
+columns.
 
 Two views of the same failures exist. `analyse.py failures` gives the eleven
 levels above, per wrong prediction. `error_layers.py` (`analyse.py layers`)

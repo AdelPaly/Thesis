@@ -34,6 +34,7 @@ SPLIT = "test"
 
 sys.path.insert(0, str(REPO_ROOT / "src"))
 from keys import current_config_name  # noqa: E402  (stdlib-only rename map)
+from provenance import COLUMNS as PROVENANCE_COLUMNS  # noqa: E402
 
 
 def run_evaluation(out_dir: Path) -> None:
@@ -68,6 +69,11 @@ def read_table(path: Path) -> tuple[list[str], list[list[str]]]:
     if not rows:
         return [], []
     header, body = rows[0], rows[1:]
+    # The provenance columns name the code revision, which differs between the
+    # committed table and a fresh one by design; they are not compared.
+    keep = [i for i, c in enumerate(header) if c not in PROVENANCE_COLUMNS]
+    header = [header[i] for i in keep]
+    body = [[row[i] for i in keep if i < len(row)] for row in body]
     if "config" in header:
         i = header.index("config")
         for row in body:

@@ -1,8 +1,5 @@
 .env
-tests/
-# working files: prompts and raw replies, derived audit tables, review lists
+__pycache__/
+# The prompts and raw replies (33 MB) stay local. The correction files are
+# committed: the hand-removal list, the audit and review tables, the tests.
 output/raw_responses.jsonl
-output/manual_removed.csv
-output/audit/*
-!output/audit/vse_Qwen3.8_27B_summary.csv
-!output/audit/manual_sample_100.csv

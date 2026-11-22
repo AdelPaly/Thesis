@@ -183,6 +183,7 @@ def build_record(cfg: PipelineConfig, dataset: str, row, out, run: dict | None =
         "predicted_continent": _clean(pred.get("continent")),
         "llm_raw_response": out.llm_raw_response,
         "selection": out.selection,
+        "resolution": out.resolution,
         "error": out.error,
     }
 

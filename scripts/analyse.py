@@ -73,6 +73,7 @@ import yaml
 from score import (BIN_COLUMNS, attach_split, find_prediction_files, group_by, load_predictions,
                    prediction_file_key, print_table, row_order, score_record,
                    summarise_metrics)
+import provenance
 import stats as st
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -335,8 +336,8 @@ def write_rows(path: Path, header: list[str], rows: list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(header)
-        w.writerows(rows)
+        w.writerow([*header, *provenance.COLUMNS])
+        w.writerows([*row, *provenance.values()] for row in rows)
     print(f"wrote {path}")
 
 
