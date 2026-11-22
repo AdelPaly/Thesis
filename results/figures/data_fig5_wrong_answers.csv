@@ -1,0 +1,169 @@
+config,condition,answer,n,of,share
+refined,NOISE_A,correct,60,292,20.5
+refined,NOISE_A,inside or containing the place,4,292,1.4
+refined,NOISE_A,the clue entity itself,67,292,22.9
+refined,NOISE_A,"other, right country",45,292,15.4
+refined,NOISE_A,same-name place elsewhere,0,292,0.0
+refined,NOISE_A,"other, wrong country",79,292,27.1
+refined,NOISE_A,no answer,37,292,12.7
+refined,A,correct,79,292,27.1
+refined,A,inside or containing the place,4,292,1.4
+refined,A,the clue entity itself,68,292,23.3
+refined,A,"other, right country",50,292,17.1
+refined,A,same-name place elsewhere,0,292,0.0
+refined,A,"other, wrong country",34,292,11.6
+refined,A,no answer,57,292,19.5
+refined,NOISE_B,correct,129,279,46.2
+refined,NOISE_B,inside or containing the place,4,279,1.4
+refined,NOISE_B,the clue entity itself,49,279,17.6
+refined,NOISE_B,"other, right country",24,279,8.6
+refined,NOISE_B,same-name place elsewhere,28,279,10.0
+refined,NOISE_B,"other, wrong country",34,279,12.2
+refined,NOISE_B,no answer,11,279,3.9
+refined,B,correct,141,279,50.5
+refined,B,inside or containing the place,7,279,2.5
+refined,B,the clue entity itself,50,279,17.9
+refined,B,"other, right country",18,279,6.5
+refined,B,same-name place elsewhere,24,279,8.6
+refined,B,"other, wrong country",29,279,10.4
+refined,B,no answer,10,279,3.6
+refined,NOISE_EXPLICIT,correct,460,731,62.9
+refined,NOISE_EXPLICIT,inside or containing the place,19,731,2.6
+refined,NOISE_EXPLICIT,the clue entity itself,0,731,0.0
+refined,NOISE_EXPLICIT,"other, right country",6,731,0.8
+refined,NOISE_EXPLICIT,same-name place elsewhere,53,731,7.3
+refined,NOISE_EXPLICIT,"other, wrong country",138,731,18.9
+refined,NOISE_EXPLICIT,no answer,55,731,7.5
+refined,EXPLICIT,correct,535,741,72.2
+refined,EXPLICIT,inside or containing the place,26,741,3.5
+refined,EXPLICIT,the clue entity itself,0,741,0.0
+refined,EXPLICIT,"other, right country",5,741,0.7
+refined,EXPLICIT,same-name place elsewhere,65,741,8.8
+refined,EXPLICIT,"other, wrong country",15,741,2.0
+refined,EXPLICIT,no answer,95,741,12.8
+blink,NOISE_A,correct,34,292,11.6
+blink,NOISE_A,inside or containing the place,4,292,1.4
+blink,NOISE_A,the clue entity itself,66,292,22.6
+blink,NOISE_A,"other, right country",33,292,11.3
+blink,NOISE_A,same-name place elsewhere,0,292,0.0
+blink,NOISE_A,"other, wrong country",151,292,51.7
+blink,NOISE_A,no answer,4,292,1.4
+blink,A,correct,76,292,26.0
+blink,A,inside or containing the place,5,292,1.7
+blink,A,the clue entity itself,70,292,24.0
+blink,A,"other, right country",59,292,20.2
+blink,A,same-name place elsewhere,0,292,0.0
+blink,A,"other, wrong country",55,292,18.8
+blink,A,no answer,27,292,9.2
+blink,NOISE_B,correct,109,279,39.1
+blink,NOISE_B,inside or containing the place,5,279,1.8
+blink,NOISE_B,the clue entity itself,53,279,19.0
+blink,NOISE_B,"other, right country",19,279,6.8
+blink,NOISE_B,same-name place elsewhere,23,279,8.2
+blink,NOISE_B,"other, wrong country",70,279,25.1
+blink,NOISE_B,no answer,0,279,0.0
+blink,B,correct,133,279,47.7
+blink,B,inside or containing the place,8,279,2.9
+blink,B,the clue entity itself,56,279,20.1
+blink,B,"other, right country",21,279,7.5
+blink,B,same-name place elsewhere,23,279,8.2
+blink,B,"other, wrong country",37,279,13.3
+blink,B,no answer,1,279,0.4
+blink,NOISE_EXPLICIT,correct,353,731,48.3
+blink,NOISE_EXPLICIT,inside or containing the place,15,731,2.1
+blink,NOISE_EXPLICIT,the clue entity itself,0,731,0.0
+blink,NOISE_EXPLICIT,"other, right country",7,731,1.0
+blink,NOISE_EXPLICIT,same-name place elsewhere,43,731,5.9
+blink,NOISE_EXPLICIT,"other, wrong country",310,731,42.4
+blink,NOISE_EXPLICIT,no answer,3,731,0.4
+blink,EXPLICIT,correct,547,741,73.8
+blink,EXPLICIT,inside or containing the place,25,741,3.4
+blink,EXPLICIT,the clue entity itself,0,741,0.0
+blink,EXPLICIT,"other, right country",12,741,1.6
+blink,EXPLICIT,same-name place elsewhere,81,741,10.9
+blink,EXPLICIT,"other, wrong country",49,741,6.6
+blink,EXPLICIT,no answer,27,741,3.6
+qwen3_vl,NOISE_A,correct,60,292,20.5
+qwen3_vl,NOISE_A,inside or containing the place,25,292,8.6
+qwen3_vl,NOISE_A,the clue entity itself,8,292,2.7
+qwen3_vl,NOISE_A,"other, right country",71,292,24.3
+qwen3_vl,NOISE_A,same-name place elsewhere,0,292,0.0
+qwen3_vl,NOISE_A,"other, wrong country",72,292,24.7
+qwen3_vl,NOISE_A,no answer,56,292,19.2
+qwen3_vl,A,correct,69,292,23.6
+qwen3_vl,A,inside or containing the place,25,292,8.6
+qwen3_vl,A,the clue entity itself,6,292,2.1
+qwen3_vl,A,"other, right country",65,292,22.3
+qwen3_vl,A,same-name place elsewhere,0,292,0.0
+qwen3_vl,A,"other, wrong country",38,292,13.0
+qwen3_vl,A,no answer,89,292,30.5
+qwen3_vl,NOISE_B,correct,218,279,78.1
+qwen3_vl,NOISE_B,inside or containing the place,26,279,9.3
+qwen3_vl,NOISE_B,the clue entity itself,0,279,0.0
+qwen3_vl,NOISE_B,"other, right country",15,279,5.4
+qwen3_vl,NOISE_B,same-name place elsewhere,11,279,3.9
+qwen3_vl,NOISE_B,"other, wrong country",9,279,3.2
+qwen3_vl,NOISE_B,no answer,0,279,0.0
+qwen3_vl,B,correct,210,279,75.3
+qwen3_vl,B,inside or containing the place,34,279,12.2
+qwen3_vl,B,the clue entity itself,0,279,0.0
+qwen3_vl,B,"other, right country",13,279,4.7
+qwen3_vl,B,same-name place elsewhere,11,279,3.9
+qwen3_vl,B,"other, wrong country",11,279,3.9
+qwen3_vl,B,no answer,0,279,0.0
+qwen3_vl,NOISE_EXPLICIT,correct,520,731,71.1
+qwen3_vl,NOISE_EXPLICIT,inside or containing the place,43,731,5.9
+qwen3_vl,NOISE_EXPLICIT,the clue entity itself,0,731,0.0
+qwen3_vl,NOISE_EXPLICIT,"other, right country",34,731,4.7
+qwen3_vl,NOISE_EXPLICIT,same-name place elsewhere,56,731,7.7
+qwen3_vl,NOISE_EXPLICIT,"other, wrong country",76,731,10.4
+qwen3_vl,NOISE_EXPLICIT,no answer,2,731,0.3
+qwen3_vl,EXPLICIT,correct,540,741,72.9
+qwen3_vl,EXPLICIT,inside or containing the place,49,741,6.6
+qwen3_vl,EXPLICIT,the clue entity itself,0,741,0.0
+qwen3_vl,EXPLICIT,"other, right country",39,741,5.3
+qwen3_vl,EXPLICIT,same-name place elsewhere,59,741,8.0
+qwen3_vl,EXPLICIT,"other, wrong country",42,741,5.7
+qwen3_vl,EXPLICIT,no answer,12,741,1.6
+grounded_gemma_linking,NOISE_A,correct,54,292,18.5
+grounded_gemma_linking,NOISE_A,inside or containing the place,3,292,1.0
+grounded_gemma_linking,NOISE_A,the clue entity itself,65,292,22.3
+grounded_gemma_linking,NOISE_A,"other, right country",33,292,11.3
+grounded_gemma_linking,NOISE_A,same-name place elsewhere,0,292,0.0
+grounded_gemma_linking,NOISE_A,"other, wrong country",33,292,11.3
+grounded_gemma_linking,NOISE_A,no answer,104,292,35.6
+grounded_gemma_linking,A,correct,74,292,25.3
+grounded_gemma_linking,A,inside or containing the place,3,292,1.0
+grounded_gemma_linking,A,the clue entity itself,67,292,22.9
+grounded_gemma_linking,A,"other, right country",39,292,13.4
+grounded_gemma_linking,A,same-name place elsewhere,0,292,0.0
+grounded_gemma_linking,A,"other, wrong country",21,292,7.2
+grounded_gemma_linking,A,no answer,88,292,30.1
+grounded_gemma_linking,NOISE_B,correct,149,279,53.4
+grounded_gemma_linking,NOISE_B,inside or containing the place,4,279,1.4
+grounded_gemma_linking,NOISE_B,the clue entity itself,43,279,15.4
+grounded_gemma_linking,NOISE_B,"other, right country",6,279,2.2
+grounded_gemma_linking,NOISE_B,same-name place elsewhere,18,279,6.5
+grounded_gemma_linking,NOISE_B,"other, wrong country",10,279,3.6
+grounded_gemma_linking,NOISE_B,no answer,49,279,17.6
+grounded_gemma_linking,B,correct,167,279,59.9
+grounded_gemma_linking,B,inside or containing the place,7,279,2.5
+grounded_gemma_linking,B,the clue entity itself,43,279,15.4
+grounded_gemma_linking,B,"other, right country",12,279,4.3
+grounded_gemma_linking,B,same-name place elsewhere,17,279,6.1
+grounded_gemma_linking,B,"other, wrong country",7,279,2.5
+grounded_gemma_linking,B,no answer,26,279,9.3
+grounded_gemma_linking,NOISE_EXPLICIT,correct,481,731,65.8
+grounded_gemma_linking,NOISE_EXPLICIT,inside or containing the place,19,731,2.6
+grounded_gemma_linking,NOISE_EXPLICIT,the clue entity itself,0,731,0.0
+grounded_gemma_linking,NOISE_EXPLICIT,"other, right country",6,731,0.8
+grounded_gemma_linking,NOISE_EXPLICIT,same-name place elsewhere,45,731,6.2
+grounded_gemma_linking,NOISE_EXPLICIT,"other, wrong country",60,731,8.2
+grounded_gemma_linking,NOISE_EXPLICIT,no answer,120,731,16.4
+grounded_gemma_linking,EXPLICIT,correct,530,741,71.5
+grounded_gemma_linking,EXPLICIT,inside or containing the place,26,741,3.5
+grounded_gemma_linking,EXPLICIT,the clue entity itself,0,741,0.0
+grounded_gemma_linking,EXPLICIT,"other, right country",5,741,0.7
+grounded_gemma_linking,EXPLICIT,same-name place elsewhere,60,741,8.1
+grounded_gemma_linking,EXPLICIT,"other, wrong country",13,741,1.8
+grounded_gemma_linking,EXPLICIT,no answer,107,741,14.4
