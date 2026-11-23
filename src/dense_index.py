@@ -37,7 +37,8 @@ other configurations returned:
 
   all filtered to entities that have coordinates.
 
-The reported configurations use gold_plus_answers. gold_plus_predicted was the
+The reported configurations use gold_plus_answers_described (see below).
+gold_plus_predicted was the
 first choice and was replaced on dev (2026-11-19, before any test result was
 scored): its 20,136 items were mostly things no configuration had settled on
 (craters on other bodies, power stations, studios), and the encoder matched

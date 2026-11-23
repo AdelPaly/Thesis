@@ -99,9 +99,16 @@ python scripts/score.py --by condition
 `gemma4` and `qwen3_vl` were run twice. The first runs took the first Wikidata
 search result for the city and ignored the country the model named. The
 resolver was corrected on the development split (`src/resolver.py`, prompt v2
-with coordinates) and the configurations were run again; those are the
-reported runs. The first runs and the comparison are in `results/posthoc/`,
-and `../results/REVISIONS.md` gives the account.
+with coordinates) and the configurations were run again. The first runs and
+the comparison are in `results/posthoc/`.
+
+An audit on 23 November then found four more faults of the same kind, in
+`population_wikidata`, `retrieve_rerank`, the two LLM-only configurations and
+the pool of `dense_retrieval` and `grounded_gemma`. They were corrected on the
+development split and the six configurations were run once more; those are the
+reported runs, and the runs before the audit are in
+`results/posthoc/before_audit/`. `../results/REVISIONS.md` gives the account
+of both.
 
 ```bash
 python scripts/posthoc_report.py --split test

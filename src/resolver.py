@@ -16,14 +16,14 @@ prompt template of the configuration:
   v2  `resolve_by_country_and_coordinates`. Search the city name (ten results),
       keep the results in the country the model named, and among several take
       the first within 25 km of the coordinates the model gave. See the
-      function for the fallbacks. This is the rule of the reported gemma4 and
-      qwen3_vl.
+      function for the fallbacks. This was the rule of gemma4 and qwen3_vl
+      until 2026-11-23 (results/posthoc/before_audit/).
 
   v3  v2 with a wider search. When the model named a country and none of the
       ten results lies in it, the name is searched again with fifty results
       before the rule goes on: "Cambridge, New Zealand" and "San Fernando,
       Trinidad and Tobago" are not among the first ten items of that name.
-      Same prompt as v2.
+      Same prompt as v2. This is the rule of the reported gemma4 and qwen3_vl.
 
 All return `(candidate or None, resolution)`. `resolution` is stored on the
 prediction record, so a missing or coarse answer has a reason:

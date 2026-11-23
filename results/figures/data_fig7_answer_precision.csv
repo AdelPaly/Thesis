@@ -1,11 +1,11 @@
 config,n,answered,precision_when_answered,exact
-population_wikidata,2614,79.7,44.0,35.1
+population_wikidata,2614,80.4,67.6,54.4
 geoparser_irchel,2614,23.5,28.3,6.7
-retrieve_rerank,2614,95.5,22.8,21.8
+retrieve_rerank,2614,95.5,24.5,23.4
 refined,2614,89.9,59.8,53.7
 blink,2614,97.6,49.1,47.9
-dense_retrieval,2614,100.0,3.3,3.3
-gemma4,2614,88.9,57.1,50.8
-qwen3_vl,2614,93.9,65.9,61.9
-grounded_gemma,2614,45.9,29.4,13.5
+dense_retrieval,2614,100.0,12.0,12.0
+gemma4,2614,88.9,58.1,51.6
+qwen3_vl,2614,93.9,67.7,63.6
+grounded_gemma,2614,63.5,51.2,32.6
 grounded_gemma_linking,2614,81.1,68.6,55.7

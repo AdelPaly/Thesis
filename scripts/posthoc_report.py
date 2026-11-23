@@ -10,7 +10,8 @@ Compares, on one split, for Gemma 4 and Qwen3-VL:
   country only  the first run's stored answers resolved with the country
                 (scripts/posthoc_llm_resolver.py -> results/posthoc/)
   reported      gemma4, qwen3_vl: prompt v2 with coordinates, resolved by
-                country and coordinates (results/predictions/)
+                country and coordinates, with the wider search of rule v3
+                (results/predictions/)
 
 with refined and grounded_gemma_linking for reference, and writes to
 results/posthoc/:

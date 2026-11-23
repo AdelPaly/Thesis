@@ -84,7 +84,7 @@ One YAML file in `configs/` per method. Adding a file adds a method.
 | Tier | Configuration | Method | Needs beyond `install.py` |
 |---|---|---|---|
 | 0 | `majority_class` | most frequent place in dev | nothing |
-| 0 | `population_wikidata` | Flair NER, most populous candidate | nothing |
+| 0 | `population_wikidata` | Flair NER, most populous candidate of that name | nothing |
 | 1 | `geoparser_irchel` | Irchel Geoparser as published | second environment, see below |
 | 2 | `retrieve_rerank` | Wikidata search and rerank | nothing |
 | 2 | `refined` | ReFinED entity linking | nothing (8.6 GB download on first use) |

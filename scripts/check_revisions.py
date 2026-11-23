@@ -5,7 +5,10 @@
 
 The prediction files were written at more than one code revision (`code_rev`
 on every record). gemma4 and qwen3_vl were run a second time with a corrected
-resolver; their first runs are in results/posthoc/original/ and are listed too. This prints what is needed to judge whether that matters:
+resolver; their first runs are in results/posthoc/original/ and are listed too,
+as are the runs replaced after the audit of 2026-11-23
+(results/posthoc/before_audit/). This prints what is needed to judge whether
+that matters:
 
   1. records per revision, per prediction file, with the first and last run time;
   2. for a file written at two revisions on either side of the 512-token
@@ -38,6 +41,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PREDICTIONS = REPO_ROOT / "results" / "predictions"
 ORIGINAL = REPO_ROOT / "results" / "posthoc" / "original"   # first runs of the LLM-only configurations
+BEFORE_AUDIT = REPO_ROOT / "results" / "posthoc" / "before_audit"   # runs replaced on 2026-11-23
+LABELS = {ORIGINAL: " (first run)", BEFORE_AUDIT: " (before the audit)"}
 TOKEN_LIMIT_REV = "7cd7ba4"       # "Limit LLM answers to 512 output tokens"
 LAST_RUN_LLM_GEO_REV = "44cacce"  # src/llm_geo.py as at the last revision a run was made at
 LLM_ONLY = ["gemma4", "qwen3_vl"]
@@ -63,13 +68,14 @@ def is_ancestor(a: str, b: str) -> bool:
 def part_1_and_3() -> list[str]:
     print("1. records per code revision\n")
     revisions, before_limit = set(), {}
-    for path in [*sorted(PREDICTIONS.glob("*.jsonl")), *sorted(ORIGINAL.glob("*.jsonl"))]:
+    for path in [*sorted(PREDICTIONS.glob("*.jsonl")), *sorted(BEFORE_AUDIT.glob("*.jsonl")),
+                 *sorted(ORIGINAL.glob("*.jsonl"))]:
         by_rev = defaultdict(list)
         for rec in records(path):
             by_rev[rec.get("code_rev", "unknown")].append(rec)
         for rev, recs in sorted(by_rev.items(), key=lambda kv: min(r["run_utc"] for r in kv[1])):
             times = [r["run_utc"] for r in recs]
-            name = path.stem + (" (first run)" if path.parent == ORIGINAL else "")
+            name = path.stem + LABELS.get(path.parent, "")
             print(f"  {name:50} {rev:10} {len(recs):5}  {min(times)}  {max(times)}")
             base = rev.split("+")[0]
             revisions.add(base)
