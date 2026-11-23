@@ -41,7 +41,7 @@ llm:
   cache_name: gemma4_12b
 dense:
   encoder: shared          # configs/shared.yaml
-  pool: gold_plus_answers
+  pool: gold_plus_answers_described
   top_k: 10
   index_fields: [label, description, aliases, country, continent]
   query_prefix: shared

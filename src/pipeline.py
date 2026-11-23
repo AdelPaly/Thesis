@@ -252,7 +252,8 @@ class Pipeline:
         for span in out.ner_spans:
             for cand in lookup(span["text"], backend=ba.gazetteer,
                                top_n=self.cfg.linking.top_n,
-                               min_population=ba.min_population):
+                               min_population=ba.min_population,
+                               same_name=ba.strategy == "most_populous_named"):
                 candidates.append({
                     "entity": span["text"],
                     "entity_type": span["type"],
@@ -322,7 +323,7 @@ class Pipeline:
 
     def _run_baseline(self, text, out):
         strategy = self.cfg.baseline.strategy
-        if strategy == "most_populous":
+        if strategy in ("most_populous", "most_populous_named"):
             self._run_population_baseline(text, out)
         elif strategy == "majority_dev_place":
             self._run_majority_baseline(text, out)

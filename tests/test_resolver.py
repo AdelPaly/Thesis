@@ -323,3 +323,70 @@ def test_distance():
 def test_reply_wrapped_in_a_code_fence_is_read():
     reply = "```json\n" + answer("Worcester", "South Africa", -33.6, 19.4) + "\n```"
     assert qid(v2(reply)) == "Q1025649"
+
+
+# ------------------------------------------------------- v3: the wider search
+
+NZ, TT = "Q664", "Q754"
+ITEMS.update({
+    NZ: ("New Zealand", -41.0, 174.0, NZ), TT: ("Trinidad and Tobago", 10.7, -61.2, TT),
+    "Q350": ("Cambridge", 52.21, 0.12, UK), "Q49111": ("Cambridge", 42.37, -71.11, US),
+    "Q1028261": ("Cambridge", -37.88, 175.47, NZ),          # Waikato
+    "Q99999001": ("Cambridge", -41.20, 175.10, NZ),         # a second one, made up for the tie
+})
+# ten namesakes outside New Zealand come first, as on Wikidata
+for _i in range(8):
+    ITEMS[f"Q9000{_i}"] = ("Cambridge", 40.0 + _i, -80.0 - _i, US)
+SEARCHES.update({
+    "Cambridge": ["Q350", "Q49111", *[f"Q9000{i}" for i in range(8)], "Q1028261", "Q99999001"],
+    "New Zealand": [NZ], "Trinidad and Tobago": [TT],
+})
+
+
+def v3(answer):
+    return resolver.resolve_wide(answer, search=search, fetch=fetch, geo=geo)
+
+
+def test_v2_does_not_reach_the_eleventh_result():
+    cand, res = v2(answer("Cambridge", "New Zealand", -37.9, 175.5))
+    assert qid((cand, res)) == NZ and res["status"] == "not_found" and res["level"] == "country"
+
+
+def test_v3_finds_the_place_beyond_the_first_ten():
+    cand, res = v3(answer("Cambridge", "New Zealand", -37.9, 175.5))
+    assert cand["qid"] == "Q1028261"
+    assert res["status"] == "resolved" and res["level"] == "city" and res["n_searched"] == 50
+
+
+def test_v3_wider_results_follow_the_same_rule():
+    """Two in the country: the coordinates choose, as in v2."""
+    assert qid(v3(answer("Cambridge", "New Zealand", -41.2, 175.1))) == "Q99999001"
+    cand, res = v3(answer("Cambridge", "New Zealand"))
+    assert res["status"] == "ambiguous" and cand["qid"] == NZ
+
+
+def test_v3_does_not_search_again_when_the_first_ten_have_the_country():
+    cand, res = v3(answer("Cambridge", "United Kingdom", 52.2, 0.1))
+    assert cand["qid"] == "Q350" and "n_searched" not in res
+
+
+def test_v3_wider_search_with_nothing_in_the_country_changes_nothing():
+    """Not in the country even among fifty: the ten results decide, as in v2."""
+    a = answer("Cambridge", "Trinidad and Tobago", 10.6, -61.4)
+    assert v3(a) == v2(a)
+    a = answer("Cambridge", "Trinidad and Tobago", 52.2, 0.1)      # coordinates point at England
+    assert v3(a) == v2(a) and qid(v3(a)) == "Q350"
+
+
+def test_v3_without_a_country_is_v2():
+    a = answer("Cambridge", None, 42.4, -71.1)
+    assert v3(a) == v2(a)
+
+
+@pytest.mark.parametrize("a", [
+    answer("Worcester", "South Africa", -33.6, 19.4), answer("Malé", "Maldives", 4.2, 73.5),
+    answer("Springfield", "United States", 39.8, -89.6), answer("Perth", "Australia", -31.95, 115.86),
+    answer("Tbilisi", "Georgia", 41.7, 44.8), answer("Singapore", "Singapore", 1.3, 103.8),
+    answer("Nowhere", "France"), answer(None, "France"), answer(refused=True)])
+def test_v3_agrees_with_v2_on_the_earlier_cases(a):
+    assert v3(a) == v2(a)

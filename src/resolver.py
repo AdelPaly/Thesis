@@ -19,7 +19,13 @@ prompt template of the configuration:
       function for the fallbacks. This is the rule of the reported gemma4 and
       qwen3_vl.
 
-Both return `(candidate or None, resolution)`. `resolution` is stored on the
+  v3  v2 with a wider search. When the model named a country and none of the
+      ten results lies in it, the name is searched again with fifty results
+      before the rule goes on: "Cambridge, New Zealand" and "San Fernando,
+      Trinidad and Tobago" are not among the first ten items of that name.
+      Same prompt as v2.
+
+All return `(candidate or None, resolution)`. `resolution` is stored on the
 prediction record, so a missing or coarse answer has a reason:
 
   status   resolved    the named place was matched to one Wikidata item
@@ -36,7 +42,8 @@ prediction record, so a missing or coarse answer has a reason:
            answer.
   method   how the item was chosen (first_hit, country, country+coordinates,
            country+search_order, coordinates, only_candidate).
-  n_candidates, n_in_country, km: the numbers behind the choice.
+  n_candidates, n_in_country, km: the numbers behind the choice; n_searched
+           (v3) when the choice came from the wider search.
 
 The Wikidata calls are parameters so the rule can be tested without a network
 (tests/test_resolver.py).
@@ -51,6 +58,9 @@ import wikidata as wd
 from llm_common import parse_json_object
 
 SEARCH_LIMIT = 10
+# v3: results asked for when none of the first SEARCH_LIMIT is in the country
+# the model named. 50 is the most one Wikidata search request returns.
+WIDE_SEARCH_LIMIT = 50
 # Farther than this from the model's coordinates, an item that is not in the
 # named country is a namesake somewhere else, not the place the model meant.
 # Fixed in advance (roughly the width of a mid-sized country), not tuned.
@@ -188,8 +198,10 @@ def resolve_first_hit(raw_or_parsed, *, search: Callable = wd.search_entities,
 def resolve_by_country_and_coordinates(
         raw_or_parsed, *, search: Callable = wd.search_entities,
         fetch: Callable = wd.fetch_entities,
-        geo: Callable = wd.resolve_country_continent) -> tuple[dict | None, dict]:
-    """Rule v2. For the city the model named:
+        geo: Callable = wd.resolve_country_continent,
+        wide_limit: int | None = None) -> tuple[dict | None, dict]:
+    """Rule v2 (and v3 when `wide_limit` is given, see resolve_wide). For the
+    city the model named:
 
       1. search Wikidata, ten results; keep those with coordinates;
       2. if the model named a country, keep the results in it (P17 is the item
@@ -224,20 +236,29 @@ def resolve_by_country_and_coordinates(
             return cand, _resolution("not_found" if country else "resolved", "continent")
         return None, _resolution("not_found" if country else "declined")
 
-    hits = search(city, limit=SEARCH_LIMIT)
-    ents = fetch(hits) if hits else {}
-    places = [(q, ents[q]) for q in hits if ents.get(q) and wd.get_coords_of(ents[q])]
-    if not places:
-        return _fallback(parsed, "not_found", search, fetch, geo, n_candidates=0)
-
     country_qid = None
     if country:
         country_hits = search(country, limit=1)
         country_qid = country_hits[0] if country_hits else None
-    in_country = [(q, e) for q, e in places
-                  if country_qid and (q == country_qid or wd._claim_id(e, "P17") == country_qid)]
+
+    def placed(limit):
+        hits = search(city, limit=limit)
+        ents = fetch(hits) if hits else {}
+        found = [(q, ents[q]) for q in hits if ents.get(q) and wd.get_coords_of(ents[q])]
+        return found, [(q, e) for q, e in found
+                       if country_qid and (q == country_qid or wd._claim_id(e, "P17") == country_qid)]
+
+    places, in_country = placed(SEARCH_LIMIT)
+    searched = None
+    if wide_limit and country_qid and not in_country:
+        wide_places, wide_in_country = placed(wide_limit)
+        if wide_in_country:
+            places, in_country, searched = wide_places, wide_in_country, wide_limit
+    if not places:
+        return _fallback(parsed, "not_found", search, fetch, geo, n_candidates=0)
     numbers = {"n_candidates": len(places),
-               "n_in_country": len(in_country) if country_qid else None}
+               "n_in_country": len(in_country) if country_qid else None,
+               "n_searched": searched}
 
     def nearest(pool):
         """(km, qid, entity) of the item the coordinates point at. Items within
@@ -287,6 +308,18 @@ def resolve_by_country_and_coordinates(
     return _fallback(parsed, "not_found", search, fetch, geo, **numbers)
 
 
+def resolve_wide(raw_or_parsed, *, search: Callable = wd.search_entities,
+                 fetch: Callable = wd.fetch_entities,
+                 geo: Callable = wd.resolve_country_continent) -> tuple[dict | None, dict]:
+    """Rule v3: v2, and when none of the ten results is in the country the
+    model named, the same rule over fifty results. The wider results are used
+    only if one of them is in that country, so every answer v2 resolved in
+    the named country is unchanged. `n_searched` on the resolution says when
+    the wider search decided."""
+    return resolve_by_country_and_coordinates(raw_or_parsed, search=search, fetch=fetch, geo=geo,
+                                              wide_limit=WIDE_SEARCH_LIMIT)
+
+
 def _level(qid: str, country_qid: str | None) -> str:
     return "country" if qid == country_qid else "city"
 
@@ -311,4 +344,4 @@ def _round(km: float | None) -> float | None:
     return None if km is None else round(km, 1)
 
 
-RESOLVERS = {"v1": resolve_first_hit, "v2": resolve_by_country_and_coordinates}
+RESOLVERS = {"v1": resolve_first_hit, "v2": resolve_by_country_and_coordinates, "v3": resolve_wide}

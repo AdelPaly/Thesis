@@ -39,5 +39,5 @@ llm:
   revision: null
   temperature: 0.0
   top_p: null
-  prompt_template: v2
+  prompt_template: v3
   cache_name: qwen3_vl_235b_v2

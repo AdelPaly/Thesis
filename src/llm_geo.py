@@ -40,8 +40,9 @@ Text: {text}"""
 
 # `llm.prompt_template` names the prompt and, with it, the rule that resolves
 # the answer: v1 takes the first search result for the city, v2 chooses by
-# country and coordinates.
-PROMPTS = {"v1": PROMPT, "v2": PROMPT_V2}
+# country and coordinates, v3 is v2 with a wider search (same prompt, so the
+# same cached replies).
+PROMPTS = {"v1": PROMPT, "v2": PROMPT_V2, "v3": PROMPT_V2}
 
 _clean_name = clean_name          # the name other modules import
 

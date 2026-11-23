@@ -43,11 +43,14 @@ PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
              "grounded_llm", "geoparser"}
 LINKING_BACKENDS = {"refined", "blink", "wikidata_search", "none"}
 LLM_PROVIDERS = {None, "google", "openrouter", "vse"}
-PROMPT_TEMPLATES = {"v1", "v2"}
+PROMPT_TEMPLATES = {"v1", "v2", "v3"}
 TIERS = range(0, 6)
-BASELINE_STRATEGIES = {"most_populous", "majority_dev_place"}
+# most_populous_named: as most_populous, over the search results named exactly
+# as the toponym when there are any (src/gazetteer.py).
+BASELINE_STRATEGIES = {"most_populous", "most_populous_named", "majority_dev_place"}
 GAZETTEERS = {"wikidata"}
-DENSE_POOLS = {"gold_only", "gold_plus_answers", "gold_plus_predicted"}
+DENSE_POOLS = {"gold_only", "gold_plus_answers", "gold_plus_answers_described",
+               "gold_plus_predicted"}
 CANDIDATE_SOURCES = {"dense", "linking"}
 
 
@@ -94,7 +97,7 @@ class LLMConfig:
 
 @dataclass(frozen=True)
 class BaselineConfig:
-    strategy: str | None = None        # most_populous | majority_dev_place
+    strategy: str | None = None        # most_populous | most_populous_named | majority_dev_place
     gazetteer: str | None = None       # wikidata
     min_population: int = 0
 
@@ -422,11 +425,11 @@ def _validate_baseline(cfg: PipelineConfig) -> None:
     baseline = cfg.baseline
     if baseline.strategy not in BASELINE_STRATEGIES:
         raise ConfigError(f"baseline.strategy must be one of {sorted(BASELINE_STRATEGIES)}")
-    if baseline.strategy == "most_populous":
+    if baseline.strategy in ("most_populous", "most_populous_named"):
         if not cfg.ner.model:
-            raise ConfigError("baseline 'most_populous' requires ner.model")
+            raise ConfigError(f"baseline {baseline.strategy!r} requires ner.model")
         if not baseline.gazetteer:
-            raise ConfigError("baseline 'most_populous' requires baseline.gazetteer")
+            raise ConfigError(f"baseline {baseline.strategy!r} requires baseline.gazetteer")
 
 
 def _validate_dense_retrieval(cfg: PipelineConfig) -> None:

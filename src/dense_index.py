@@ -27,6 +27,11 @@ other configurations returned:
     gold_plus_answers     every gold place across all configured datasets
                           + the final answer of every other configuration, one
                           per post (configurations that read the pool excluded)
+    gold_plus_answers_described
+                          gold_plus_answers without the items that have no
+                          English description, no country, coordinates on
+                          another body than the Earth, or that are
+                          disambiguation pages
     gold_plus_predicted   the gold places + every QID any configuration ever
                           listed as a candidate, including linker candidate sets
 
@@ -38,6 +43,15 @@ scored): its 20,136 items were mostly things no configuration had settled on
 (craters on other bodies, power stations, studios), and the encoder matched
 posts to them by topic word. With it dense_retrieval reached 0.7% exact match
 on dev and the gold place was in the top 10 for 168 of 955 EXPLICIT posts.
+
+gold_plus_answers was the pool of the first reported runs. 185 of its 3,811
+items were answers of other configurations with no English description or no
+country (a crater on Mars, two disambiguation pages, items known by a label
+alone). Their index text is the label and little else, the encoder scores such
+short passages high for every post, and 20 items were the answer for 2,222 of
+the 3,349 posts. gold_plus_answers_described leaves those items out
+(2026-11-23, checked on the development split; no gold place is removed, and
+the build stops if one would be).
 
 Two properties of that pool must be stated when reporting this tier:
 
@@ -147,11 +161,41 @@ def _answer_qids() -> set[str]:
     return out
 
 
+EARTH = "http://www.wikidata.org/entity/Q2"
+DISAMBIGUATION_PAGE = "Q4167410"
+
+
+def on_earth(entity: dict) -> bool:
+    """False when the item's coordinates (P625, the claim get_coords_of reads)
+    are on another body: a crater on Mars named after a town has coordinates
+    too. A claim that names no globe counts as the Earth."""
+    for wanted in ("preferred", "normal"):
+        for claim in entity.get("claims", {}).get("P625", []):
+            if claim.get("rank", "normal") != wanted:
+                continue
+            value = claim.get("mainsnak", {}).get("datavalue", {}).get("value") or {}
+            if "latitude" in value:
+                return value.get("globe") in (None, "", EARTH)
+    return True
+
+
+def is_described_place(entity: dict, country: str) -> bool:
+    """The filter of gold_plus_answers_described."""
+    if not entity.get("descriptions", {}).get("en", {}).get("value", "").strip():
+        return False
+    if not (country or "").strip():
+        return False
+    if DISAMBIGUATION_PAGE in wd._claim_ids(entity, "P31"):
+        return False
+    return on_earth(entity)
+
+
 def build_pool(pool_spec: str) -> list[str]:
-    """QIDs in the candidate pool, before the coordinate filter."""
+    """QIDs in the candidate pool, before the coordinate filter (and, for
+    gold_plus_answers_described, before the description filter)."""
     if pool_spec == "gold_only":
         return sorted(_dataset_gold_qids())
-    if pool_spec == "gold_plus_answers":
+    if pool_spec in ("gold_plus_answers", "gold_plus_answers_described"):
         return sorted(_dataset_gold_qids() | _answer_qids())
     if pool_spec == "gold_plus_predicted":
         return sorted(_dataset_gold_qids() | _predicted_qids())
@@ -288,9 +332,14 @@ def build_catalogue(d, pool=None, gold=None) -> Catalogue:
         placed = {q: e for q, e in entities.items() if e and wd.get_coords_of(e)}
         log.info("after retry: %d placed, %d unfetched", len(placed), len(unfetched))
 
+    geo = wd.resolve_country_continent(placed)
+    if d.pool == "gold_plus_answers_described":
+        kept = {q: e for q, e in placed.items() if is_described_place(e, geo.get(q, ("", ""))[0])}
+        log.info("described places on Earth with a country: %d of %d", len(kept), len(placed))
+        placed = kept
+
     _check_gold(placed, gold)
 
-    geo = wd.resolve_country_continent(placed)
     aliases = wd.fetch_aliases(list(placed)) if "aliases" in (d.index_fields or []) else {}
 
     qids, texts, places = [], [], {}

@@ -43,5 +43,5 @@ llm:
   revision: null
   temperature: 0.0
   top_p: null
-  prompt_template: v2
+  prompt_template: v3
   cache_name: gemma4_12b_v2

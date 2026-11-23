@@ -39,6 +39,6 @@ llm:
   provider: null
   model: null
 baseline:
-  strategy: most_populous
+  strategy: most_populous_named
   gazetteer: wikidata
   min_population: 0
