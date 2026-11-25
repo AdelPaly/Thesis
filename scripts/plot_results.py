@@ -208,7 +208,7 @@ def fig_overall(split: str, out: Path) -> None:
         ax.barh(i, v, height=BAR_HEIGHT, color=COLOUR[name], edgecolor="white", linewidth=1.2)
         ax.plot([lo, hi], [i, i], color=INK, linewidth=1, solid_capstyle="butt")
         ax.text(max(hi, v) + 1.2, i, f"{v:.1f}", va="center", fontsize=8)
-    bar_axes(ax, [LABEL[n] for n in names], "Exact match, %", xmax=70)
+    bar_axes(ax, [LABEL[n] for n in names], "Exact match, %", xmax=75)
     save(fig, out, "fig1_overall")
 
 
@@ -260,7 +260,7 @@ def fig_noise(scored: dict, out: Path) -> None:
         ax.set_xticks(range(3), ["none", "demonym", "entity"])
         ax.set_xlabel("Distractor")
         ax.set_xlim(-0.25, 2.25)
-        ax.set_ylim(0, 85)
+        ax.set_ylim(0, 100)
         ax.grid(axis="y")
         ax.tick_params(axis="x", length=0, colors=INK)
     axes[0].set_ylabel("Exact match, %")
@@ -363,9 +363,9 @@ def fig_answer_precision(scored: dict, out: Path) -> None:
         xs = [x / 2 for x in range(2 * level, 201)]
         ax.plot(xs, [100 * level / x for x in xs], color=GRID, linewidth=0.8, zorder=1)
         ax.text(102.6, level, f"{level}", fontsize=7, color=MUTED, va="center")
-    ax.text(102.6, 72, "exact\nmatch, %", fontsize=7, color=MUTED, va="center")
+    ax.text(102.6, 76, "exact\nmatch, %", fontsize=7, color=MUTED, va="center")
     nudge = {"refined": (-1.4, 1.6, "right"), "blink": (0, 3.2, "center"),
-             "grounded_gemma_linking": (-1.4, 0, "right"), "population_wikidata": (-1.4, 0, "right"),
+             "grounded_gemma_linking": (-1.4, 2.4, "right"), "population_wikidata": (-1.4, -2.6, "right"),
              "gemma4": (-1.4, -1.8, "right"), "qwen3_vl": (-2.0, 3.2, "center"),
              "retrieve_rerank": (-1.4, 0, "right"), "dense_retrieval": (-1.4, 0, "right")}
     for name in names:
@@ -378,7 +378,7 @@ def fig_answer_precision(scored: dict, out: Path) -> None:
         dx, dy, ha = nudge.get(name, (1.4, 0, "left"))
         ax.text(rate + dx, precision + dy, LABEL[name], fontsize=8, va="center", ha=ha, zorder=4)
     ax.set_xlim(20, 102)
-    ax.set_ylim(0, 75)
+    ax.set_ylim(0, 80)
     ax.set_xlabel("Test posts answered, %")
     ax.set_ylabel("Exact match among answered posts, %")
     save(fig, out, "fig7_answer_precision")
