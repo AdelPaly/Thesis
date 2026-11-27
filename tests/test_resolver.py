@@ -457,3 +457,97 @@ def test_v4_declined_like_the_others(resolve):
     cand, res = resolver.RESOLVERS[resolve](place_answer(refused=True), search=search,
                                             fetch=fetch, geo=geo)
     assert cand is None and res["status"] == "declined"
+
+
+# ------------ rule v5 (after the development run of 26-27 November): the settlement
+
+class Searches:
+    """`search` that records every name it is asked for, and fails for one."""
+
+    def __init__(self, fail_on=None):
+        self.names, self.fail_on = [], fail_on
+
+    def __call__(self, name, limit=10):
+        self.names.append(name)
+        if name == self.fail_on:
+            raise resolver.wd.WikidataError("HTTP 429 from Wikidata")
+        return search(name, limit)
+
+
+def v5(answer, search=search, **kw):
+    return resolver.resolve_place_settlement(answer, search=search, fetch=fetch, geo=geo, **kw)
+
+
+def settled_answer(place=None, settlement=None, country=None, lat=None, lon=None, continent=None):
+    return json.dumps({"place": place, "settlement": settlement, "country": country,
+                       "continent": continent, "latitude": lat, "longitude": lon,
+                       "refused": False})
+
+
+def test_v5_place_not_found_falls_back_to_the_settlement():
+    a = settled_answer("Pervez Musharraf Street", "Worcester", "South Africa", -33.6, 19.4)
+    assert v4(a)[1]["status"] == "not_found" and qid(v4(a)) == ZA
+    cand, res = v5(a)
+    assert cand["qid"] == "Q1025649" and cand["entity"] == "Worcester"
+    assert res["status"] == "resolved" and res["field"] == "settlement"
+    assert res["place_status"] == "not_found" and res["level"] == "city"
+
+
+def test_v5_ambiguous_place_falls_back_to_the_settlement():
+    a = settled_answer("Springfield", "Worcester", "United States")
+    assert v4(a)[1]["status"] == "ambiguous"
+    cand, res = v5(a)
+    assert cand["qid"] == "Q49179"
+    assert res["field"] == "settlement" and res["place_status"] == "ambiguous"
+
+
+def test_v5_place_that_resolves_never_searches_the_settlement():
+    searches = Searches()
+    cand, res = v5(settled_answer("Tbilisi", "Worcester", "Georgia", 41.7, 44.8), search=searches)
+    assert cand["qid"] == "Q994" and res["status"] == "resolved" and res["field"] == "place"
+    assert "Worcester" not in searches.names
+
+
+def test_v5_settlement_equal_to_the_place_is_not_searched_again():
+    a = settled_answer("Xyzzyville", "xyzzyville!", "France", 48.0, 2.0)
+    by_v4, by_v5 = Searches(), Searches()
+    expected = v4(a, search=by_v4)
+    assert v5(a, search=by_v5) == expected and by_v5.names == by_v4.names
+    assert "xyzzyville!" not in by_v5.names
+
+
+def test_v5_settlement_not_found_either_gives_what_the_place_gave():
+    a = settled_answer("Pervez Musharraf Street", "Xyzzyville", "France", 48.0, 2.0)
+    searches = Searches()
+    assert v5(a, search=searches) == v4(a)
+    assert "Xyzzyville" in searches.names
+    assert qid(v5(a)) == FR and v5(a)[1]["status"] == "not_found"
+
+
+def test_v5_without_a_settlement_is_v4():
+    a = settled_answer("Pervez Musharraf Street", None, "France", 48.0, 2.0)
+    assert v5(a) == v4(a)
+
+
+@pytest.mark.parametrize("fail_on", ["Pervez Musharraf Street", "Worcester"])
+def test_v5_error_in_either_search_ends_in_error(fail_on):
+    a = settled_answer("Pervez Musharraf Street", "Worcester", "South Africa", -33.6, 19.4)
+    cand, res = v5(a, search=Searches(fail_on=fail_on))
+    assert cand is None and res["status"] == "error" and "429" in res["message"]
+
+
+@pytest.mark.parametrize("a", [
+    place_answer("Worcester", "South Africa", -33.6, 19.4), place_answer("Cambridge", "New Zealand", -37.9, 175.5),
+    place_answer("Springfield", "United States"), place_answer("Nowhere", "France"),
+    place_answer(None, "France"), place_answer(continent="Africa"), place_answer(refused=True),
+    answer("Tbilisi", "Georgia", 41.7, 44.8), "not json"])
+def test_v5_on_a_v4_reply_is_v4(a):
+    """A v4 reply has no settlement: v5 gives v4's answer and only adds
+    `field` "place" when a named place resolved."""
+    cand4, res4 = v4(a)
+    cand5, res5 = v5(a)
+    assert cand5 == cand4
+    assert {k: v for k, v in res5.items() if k != "field"} == res4
+    parsed = resolver.parse_json_object(a) or {}
+    named = any(resolver.clean_name(parsed.get(f)) for f in ("place", "city"))
+    assert res5.get("field") == ("place" if res4["status"] == "resolved" and named else None)

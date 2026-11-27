@@ -123,7 +123,7 @@ no Wikidata item for 326 test posts. None of the 394 such entries has an item
 on Wikidata (P1566, checked with the query service on 23 November), so these
 answers are scored at country level, as the configuration says.
 
-## Revision 3 (code changed on 26 November, not yet run)
+## Revision 3 (code changed on 26 November, run on the development split 26-27 November)
 
 A review of the code and the stored test predictions found four more faults.
 The code is changed on top of the audit (`0389a2d`); nothing has been run with
@@ -277,9 +277,29 @@ sorted, comma-joined QIDs
 `pool_hash` that `src/dense_index.py` puts in the index cache key). So
 `grounded_gemma` is run before any revision 3 run replaces a file in
 `results/predictions/`, and only its prompt and the candidate names change
-against the reported run. `dense_retrieval` is not part of revision 3.
+against the reported run.
 
-**A new configuration, `qwen3_vl_32b` (added 26 November, not yet run).**
+*Corrected after the development run of 26-27 November:* the pool's QIDs were
+held fixed (the development run's index has the `pool_hash` above), but the
+index text was not. `src/dense_index.py` fetches each place's label,
+description, aliases and country from live Wikidata when it builds the index,
+and the index was built again on 27 November (13:03 UTC,
+`index_3530d31fa83aacb7.pkl`, 3,599 places, none unfetched, all 955 gold
+places in it). Between 23 and 27 November places changed label, description
+or country (Portuguese civil parishes got new descriptions; Q967746 was
+labelled "lima perú" and is now "Morón"): of the 1,263 places in the
+development top-10 lists of the reported run and of `dev_rev3`, 1,235 are in
+both, and 14 of those are listed with another label, description or country
+(counted from the stored candidate records). So 148 of the 735 development
+top-10 lists of `grounded_gemma`
+differ from those of the reported run; the gold place entered the top 10 in 8
+more posts and left it in none. The reported `dense_retrieval` was not run
+again, so `grounded_gemma` (revision 3) and `dense_retrieval` no longer shared
+a retriever, which breaks the planned comparison between them. The index is
+therefore pinned (below), and `dense_retrieval` is part of revision 3.
+
+**A new configuration, `qwen3_vl_32b` (added 26 November, first run on the
+development split 26-27 November).**
 Qwen3-VL 32B Instruct (dense), on the same gateway, with the prompt and rule
 of revision 3 (prompt v4, rule v4) and a cache of its own (`qwen3_vl_32b_v4`).
 It compares size within one family: the reported `qwen3_vl` is Qwen3-VL
@@ -290,9 +310,12 @@ pair `qwen3_vl` against `qwen3_vl_32b` is a tested comparison
 (`configs/comparisons.yaml`), added with the configuration, after test scores
 of the other configurations had been seen; it enlarges the Holm family by one,
 so the adjusted p-values of the other pairs change slightly from the reported
-ones.
-Its predictions are kept out of `results/predictions/` until `grounded_gemma`
-has run, so that the pool of `grounded_gemma` stays the one above.
+ones. (After the development run the pair was moved out of the Holm family;
+see below.)
+Its predictions were kept out of `results/predictions/` until `grounded_gemma`
+had run, so that the pool of `grounded_gemma` stayed the one above. With the
+pinned index (below) the pool is no longer read, so where its predictions
+are written no longer matters.
 
 A run of `refined` or `blink` with this code also applies the reranking order
 of the audit (`src/ranking.py`), which their reported runs predate (3 and 5
@@ -314,6 +337,247 @@ resume its stored records as they are: run revision 3 into a new `--out-dir`
 from Wikidata) and at the end of `tests/test_resolver.py`. The corrections to
 rule v4 change no configuration hash: the rule is chosen by
 `prompt_template: v4`, and no record was written with v4 before them.
+
+### Revision 3, after the development run of 26-27 November
+
+Revision 3 was run on the development split on 26-27 November into
+`results/dev_rev3/` (code `57d76e7+dirty`, the code of commit `3ac1a37`). A
+review of that run found the faults below. **Every choice here was made on
+development results**; no test-split run was made with any of it. The runs
+after these changes are in `results/dev_rev3b/`, and `results/dev_rev3/` is
+kept as it is. Prompts and rules v1-v4, list v2 and every existing response
+cache are unchanged.
+
+1. **Prompt v4 lost the settlement.** Asked for "the location itself", on
+   clue-only posts the models named a street, venue, club or person that often
+   has no Wikidata item ("Pervez Musharraf Street", "Kossa F.C.", "CONMEBOL"),
+   and rule v4 then fell straight back to the country. Reported run against
+   `dev_rev3`: exact on condition A, `qwen3_vl` 10 to 3 of 71 posts (14% to
+   4%) and `gemma4` 6 to 2 (8% to 3%); status `not_found`, `gemma4` 39 to 91
+   and `qwen3_vl` 24 to 68 of 735. Prompt v5 (`src/llm_geo.py`) is v4 with one
+   more JSON field after `place`: `"settlement": "<the city, town or village
+   the location is in, or the location itself if it is one, or null if it is
+   not in one>"`; nothing else in the wording changed. Rule v5
+   (`resolve_place_settlement`, `src/resolver.py`) runs rule v4 on `place`;
+   only when the place is `not_found` or `ambiguous`, and `settlement` holds
+   a name that is not the place's (compared without case, accents or
+   punctuation), it runs the same search and choice on the settlement, with
+   the same country and coordinates. A settlement that resolves is the answer
+   (`field: settlement`, the place's status kept as `place_status`);
+   otherwise the answer is v4's (the country, then the continent). A place
+   that resolves never triggers a settlement search (`field: place`), and a
+   failed Wikidata request in either search ends in `error`. `gemma4`,
+   `qwen3_vl` and `qwen3_vl_32b` name prompt v5 and new caches
+   (`gemma4_12b_v5`, `qwen3_vl_235b_v5`, `qwen3_vl_32b_v5`).
+2. **The dense index is pinned.** The index of 27 November 13:03 UTC (above)
+   is the revision 3 index: `src/.dense_index/index_3530d31fa83aacb7.pkl`,
+   SHA-256 `7a93c61c576426c22733b4781e25ebc524ca1546227cad8b6165bce683660f6f`,
+   recorded next to it (`index_3530d31fa83aacb7.sha256`) and copied outside
+   `src/.dense_index` (`../dense_index_backup/`, beside the repository). A new
+   field, `dense.index_signature` (default null, in `_LATE_FIELDS`, so no
+   other configuration's hash moved), names it in `dense_retrieval` and
+   `grounded_gemma`. With it set, `src/dense_index.py` loads exactly that
+   file, checks its SHA-256 and the settings it was built with, and never
+   builds an index: a missing or different file is a `ConfigError`, which
+   aborts the run. The pool on disk is not read at all. Each prediction
+   record of the two configurations carries the signature
+   (`models.dense_index`).
+3. **The grounded list lost the mention.** Change (4) above shows the place's
+   name but dropped the mention it was reached from: for a post about the club
+   "C.R. Caála" the list showed only "Caála — Angola — city in Angola", and
+   the model declined. `grounded_gemma_linking` declined with the gold place
+   in its list in 29 development posts in the reported run and 44 in
+   `dev_rev3`; of the 33 posts newly declined that way, 14 were right in the
+   reported run (6 reached through an ORG mention, 4 through PER, 4 through
+   LOC). List v3 (`src/llm_grounded.py`) adds one field at the end of a
+   line, `from "<mention>"`, when a candidate has a `label` and the mention is
+   not that name (compared as above); nothing else in the prompt changed. The
+   list version is in the cache name per candidate source
+   (`LIST_VERSIONS`): linking `_v3` (`gemma4_12b_grounded_linking_v3`), dense
+   `_v2`. A dense candidate has no `label`, so its list is byte-identical to
+   v2 (`tests/test_grounded.py` checks every place of the pinned index), and
+   `grounded_gemma` keeps its cache. Stored candidates now carry `label`.
+4. **Containment of runs outside `results/predictions/`.**
+   `scripts/build_containment.py` read only `results/predictions/`, so the
+   wrong answers of `results/dev_rev3/` were never looked up and "exact or
+   inside" came out too low for it: 216 distinct (predicted, gold) pairs, in
+   356 records. It takes `--predictions-dir` (repeatable; default
+   `results/predictions`), and `--all` now looks up again only the pairs of the
+   directories read, keeping every other row of `results/containment.csv`.
+   Run on `results/dev_rev3` on 27 November.
+5. **Failed lookups under `all_places` were silent.** In `src/wikidata.py`,
+   `resolve_qid_to_candidates` threw away the completeness flag of the place
+   fetch and of the country lookup, so a failed request silently dropped
+   places, the fault rule v4 had fixed for the LLMs. Under `all_places` a
+   failed fetch or country/continent lookup now raises `WikidataError`, nothing
+   is cached for the request, the pipeline sets the record's `error`, and the
+   runner retries the post on resume. The same holds in `get_coords` under
+   `all_places`, for its search too (for every mention type, as the search
+   path's cache entries of `all_places` are its own). `chain_v1` stays as it
+   ran. Check: the linked QIDs of the `dev_rev3` records that have a link and
+   no candidate place (`refined` 7, `blink` 10, `grounded_gemma_linking` 7)
+   were resolved again with the day's Wikidata and empty caches on
+   27 November; all lookups completed and none gives a place (demonyms and
+   languages such as Croatian or Japanese, and BLINK links such as Tripoli
+   Q1568779 with no place property), so none of them was a failed request.
+6. **`qwen3_vl` against `qwen3_vl_32b` is exploratory.** The pair was added
+   after test scores had been seen, and inside the Holm family it moved the
+   adjusted p-values of the planned pairs. `configs/comparisons.yaml` keeps
+   it in a separate list, `exploratory:`; `scripts/analyse.py` computes the
+   same statistics for it outside the family, with an unadjusted p, labelled
+   exploratory (column `kind` of `table_stats_<split>.csv`). The planned
+   family is again the 14 pairs chosen in advance (`tests/test_comparisons.py`).
+7. **Stale texts.** The revision 3 notes of the configurations say "run on
+   dev 26-27 Nov"; the design texts of the three LLM configurations state rule
+   v5, with the statuses `empty` and `error`; the resolver's docstring says
+   that level `city` means the named place in v4 and v5.
+
+**Configuration hashes.** `dense.index_signature` is a late field, so only the
+two configurations that set it moved: `grounded_gemma` and `dense_retrieval`.
+`gemma4`, `qwen3_vl` and `qwen3_vl_32b` moved with their new caches. The
+hashes of `refined`, `blink`, `retrieve_rerank` and `grounded_gemma_linking`
+equal those of their `dev_rev3` records (the list version of
+`grounded_gemma_linking` is in its cache name, not its hash, so it is run into
+a new `--out-dir`). The exact code of the `dev_rev3b` runs, whose records say
+`+dirty`, is in `results/dev_rev3b/code.diff`. New tests: the end of
+`tests/test_resolver.py`, `tests/test_prompt.py`, `tests/test_grounded.py`,
+`tests/test_chain.py`, and the new `tests/test_dense_pin.py` and
+`tests/test_comparisons.py`.
+
+**Development results of `results/dev_rev3b/`** (run 27 November, 735
+development posts per configuration, no record with an error; containment
+looked up for `results/dev_rev3` and `results/dev_rev3b`). Exact match, in %,
+`dev_rev3` to `dev_rev3b`:
+
+| configuration | all | A | B | NOISE_A | NOISE_B | exact or inside, all |
+|---|---|---|---|---|---|---|
+| `gemma4` | 52.9 → 50.5 | 2.8 → 2.8 | 72.6 → 59.5 | 4.2 → 2.8 | 66.7 → 59.5 | 56.5 → 56.9 |
+| `qwen3_vl` | 61.9 → 59.7 | 4.2 → 8.5 | 85.7 → 71.4 | 4.2 → 11.3 | 82.1 → 71.4 | 66.4 → 67.6 |
+| `qwen3_vl_32b` | 60.3 → 56.5 | 7.0 → 4.2 | 82.1 → 64.3 | 4.2 → 4.2 | 82.1 → 69.0 | 62.9 → 63.8 |
+| `grounded_gemma_linking` | 55.8 → 58.8 | 28.2 → 42.3 | 65.5 → 67.9 | 12.7 → 31.0 | 63.1 → 64.3 | 64.8 → 67.5 |
+
+The reported runs had, for A: `gemma4` 8.5, `qwen3_vl` 14.1,
+`grounded_gemma_linking` 31.0.
+
+- *Prompt v5 and rule v5 did not do what they were for.* `not_found` fell
+  (`gemma4` 91 to 60, `qwen3_vl` 68 to 30, `qwen3_vl_32b` 37 to 36), and 117,
+  112 and 107 answers resolved through the settlement (63, 62 and 54 of them
+  exact). But with a settlement field to fill, the models moved the town into
+  `settlement` and named a landmark inside it as `place` ("Aga" became "Hideya
+  Station", "Blantyre" "Chichiri Museum", "Stari Grad" "Hvar Airport"). The
+  landmark resolves, so the settlement is never searched, and the answer lies
+  inside the gold place without being it: exact on B and NOISE_B fell by 10 to
+  18 points for all three models, while "exact or inside" stayed level or
+  rose. Of the posts of B and NOISE_B that were exact in `dev_rev3` and are not
+  in `dev_rev3b`, the place field resolved in 17 of 19 (`gemma4`), 21 of 21
+  (`qwen3_vl`) and 26 of 27 (`qwen3_vl_32b`). Exact on A came back only for
+  `qwen3_vl`, and only part of the way. No decision has been taken on v5.
+- *List v3 helped `grounded_gemma_linking`.* Declines with the gold place in
+  the list: 29 reported, 44 `dev_rev3`, 19 `dev_rev3b`; exact on A 28.2 to
+  42.3, the highest of any run.
+- *The pinned index.* The top-10 list of `dense_retrieval` in `dev_rev3b`
+  equals that of `grounded_gemma` in `dev_rev3` for all 735 posts. Its exact
+  match is that of the reported run (10.2%).
+
+#### Prompt v5 as run in results/dev_rev3b/ (replaced)
+
+As the model saw it (in `src/llm_geo.py` the braces of the JSON line are
+doubled):
+
+```
+You are a geolocation assistant. Given a text, identify the single most relevant real-world location the text refers to.
+
+The location can be a city, town or village, or any other named place. Name the location itself, not a person, organisation or event mentioned in the text.
+
+Respond with JSON only, no explanation:
+{"place": "<name of the location, or null if unknown>", "settlement": "<the city, town or village the location is in, or the location itself if it is one, or null if it is not in one>", "country": "<country name or null if unknown>", "continent": "<continent name or null if unknown>", "latitude": <approximate latitude of the location in decimal degrees, or null if unknown>, "longitude": <approximate longitude in decimal degrees, or null if unknown>, "refused": false}
+
+Set "refused" to true only if the text contains no geographic signal at all.
+
+Text: {text}
+```
+
+The prompt below keeps the name v5 and replaces that text. It is the final LLM
+prompt of revision 3. It was chosen on dev results, after v4 and the first v5.
+Its dev results are reported whatever they are. After its dev run, only clear
+bugs are fixed.
+
+#### Prompt v5 (final), run in results/dev_rev3c/
+
+```
+You are a geolocation assistant. Given a text, identify the single most relevant real-world location the text refers to.
+
+The location can be a city, town or village, or any other named place. If the text is about a building, street or venue, name the city, town or village it is in. If it is about a person, organisation or event, name the place where they are.
+
+Respond with JSON only, no explanation:
+{"place": "<name of the location, or null if unknown>", "country": "<country name or null if unknown>", "continent": "<continent name or null if unknown>", "latitude": <approximate latitude of the location in decimal degrees, or null if unknown>, "longitude": <approximate longitude in decimal degrees, or null if unknown>, "refused": false}
+
+Set "refused" to true only if the text contains no geographic signal at all.
+
+Text: {text}
+```
+
+It is v4 with the second paragraph replaced and v4's JSON fields (no
+`settlement`). Rule v5 needs the settlement field, so `gemma4`, `qwen3_vl`
+and `qwen3_vl_32b` resolve it with rule v4, through a new field,
+`llm.resolver_rule` (default null: the rule named like the prompt; in
+`_LATE_FIELDS`, so no other configuration's hash moved; recorded in each
+record as `models.llm_resolver_rule`). Rule v5 stays in the code with its
+tests. New caches: `gemma4_12b_v5b`, `qwen3_vl_235b_v5b`, `qwen3_vl_32b_v5b`.
+The exact code of the `dev_rev3c` runs is in `results/dev_rev3c/code.diff`.
+
+**Development results of `results/dev_rev3c/`** (run 27 November, 735
+development posts per configuration; containment looked up for
+`results/dev_rev3c`). The `gemma4` run stopped at post 268 when the machine ran
+low on memory and was resumed from its records. One record ended in a
+Wikidata `cirrussearch-too-busy-error`; a resume looked it up again from the
+cached reply, and no record has an error. Columns: reported run (v2),
+`dev_rev3` (v4), `dev_rev3b` (first v5), `dev_rev3c` (v5), in %.
+
+| configuration | metric | all | A | B | NOISE_A | NOISE_B |
+|---|---|---|---|---|---|---|
+| `gemma4` | exact | 51.7 / 52.9 / 50.5 / 54.3 | 8.5 / 2.8 / 2.8 / 7.0 | 71.4 / 72.6 / 59.5 / 76.2 | 8.5 / 4.2 / 2.8 / 7.0 | 64.3 / 66.7 / 59.5 / 70.2 |
+| | exact or inside | 53.3 / 56.5 / 56.9 / 56.1 | 11.3 / 18.3 / 21.1 / 14.1 | 71.4 / 75.0 / 73.8 / 76.2 | 11.3 / 14.1 / 15.5 / 11.3 | 65.5 / 67.9 / 70.2 / 70.2 |
+| | country | 63.5 / 63.5 / 63.3 / 64.8 | 39.4 / 36.6 / 35.2 / 42.3 | 81.0 / 81.0 / 79.8 / 83.3 | 28.2 / 31.0 / 32.4 / 28.2 | 73.8 / 72.6 / 77.4 / 76.2 |
+| | no result | 8.6 / 7.8 / 12.0 / 3.5 | 29.6 / 32.4 / 39.4 / 16.9 | 3.6 / 3.6 / 4.8 / 1.2 | 22.5 / 21.1 / 29.6 / 9.9 | 2.4 / 3.6 / 4.8 / 0.0 |
+| `qwen3_vl` | exact | 61.2 / 61.9 / 59.7 / 63.4 | 14.1 / 4.2 / 8.5 / 12.7 | 84.5 / 85.7 / 71.4 / 86.9 | 14.1 / 4.2 / 11.3 / 9.9 | 79.8 / 82.1 / 71.4 / 85.7 |
+| | exact or inside | 64.4 / 66.4 / 67.6 / 66.8 | 18.3 / 21.1 / 29.6 / 22.5 | 88.1 / 88.1 / 88.1 / 89.3 | 19.7 / 22.5 / 32.4 / 23.9 | 83.3 / 84.5 / 84.5 / 86.9 |
+| | country | 74.8 / 74.6 / 74.0 / 75.5 | 46.5 / 46.5 / 45.1 / 53.5 | 94.0 / 94.0 / 95.2 / 94.0 | 43.7 / 46.5 / 47.9 / 50.7 | 91.7 / 91.7 / 90.5 / 92.9 |
+| | no result | 4.5 / 4.9 / 5.3 / 3.8 | 23.9 / 29.6 / 31.0 / 22.5 | 0.0 / 0.0 / 0.0 / 0.0 | 16.9 / 15.5 / 16.9 / 11.3 | 0.0 / 0.0 / 0.0 / 0.0 |
+| `qwen3_vl_32b` | exact | - / 60.3 / 56.5 / 59.9 | - / 7.0 / 4.2 / 8.5 | - / 82.1 / 64.3 / 81.0 | - / 4.2 / 4.2 / 7.0 | - / 82.1 / 69.0 / 79.8 |
+| | exact or inside | - / 62.9 / 63.8 / 61.8 | - / 14.1 / 21.1 / 12.7 | - / 83.3 / 82.1 / 82.1 | - / 14.1 / 19.7 / 12.7 | - / 83.3 / 82.1 / 81.0 |
+| | country | - / 71.8 / 71.7 / 72.0 | - / 42.3 / 45.1 / 49.3 | - / 89.3 / 89.3 / 89.3 | - / 36.6 / 36.6 / 36.6 | - / 90.5 / 89.3 / 88.1 |
+| | no result | - / 3.4 / 3.5 / 1.5 | - / 23.9 / 23.9 / 8.5 | - / 0.0 / 0.0 / 0.0 | - / 9.9 / 11.3 / 5.6 | - / 0.0 / 0.0 / 0.0 |
+
+EXPLICIT and NOISE_EXPLICIT moved by at most 2 points against `dev_rev3`
+(full table in `results/dev_rev3c/report.txt`). Exact / exact or inside by
+gold type (column `type` of `generation/out/places.csv`; 626 settlements,
+39 islands, 30 natural, 40 manmade), `dev_rev3` → `dev_rev3c`:
+
+| configuration | settlement | island | natural | manmade |
+|---|---|---|---|---|
+| `gemma4` | 52.1/55.1 → 53.5/55.1 | 71.8/79.5 → 69.2/76.9 | 46.7/53.3 → 50.0/50.0 | 52.5/57.5 → 55.0/55.0 |
+| `qwen3_vl` | 61.5/66.1 → 62.8/66.3 | 74.4/82.1 → 74.4/82.1 | 63.3/66.7 → 66.7/66.7 | 55.0/55.0 → 60.0/60.0 |
+| `qwen3_vl_32b` | 60.1/62.6 → 60.1/61.8 | 76.9/84.6 → 71.8/79.5 | 56.7/56.7 → 56.7/56.7 | 50.0/50.0 → 47.5/47.5 |
+
+Resolution status (`dev_rev3` → `dev_rev3c`): `gemma4` not_found 91 → 68,
+ambiguous 13 → 5, declined 40 → 21, resolved 591 → 641; `qwen3_vl` not_found
+68 → 47, ambiguous 4 → 3, declined 30 → 22, resolved 633 → 663;
+`qwen3_vl_32b` not_found 37 → 22, declined 25 → 11, resolved 673 → 702.
+
+- Exact on B is back at or above v4 (`gemma4` 76.2, `qwen3_vl` 86.9;
+  `qwen3_vl_32b` 81.0 against 82.1), and the islands keep v4's gain
+  (`qwen3_vl_32b` loses 2 of 39).
+- Exact on A rose from v4 for all three (`gemma4` 2 to 5 of 71, `qwen3_vl` 3
+  to 9, `qwen3_vl_32b` 5 to 6) but stays below the reported run for `gemma4`
+  (6) and `qwen3_vl` (10). Country on A rose for all three, and no result on
+  A fell (`qwen3_vl_32b` 23.9 to 8.5). "Exact or inside" on A fell back from
+  the first v5 to about v4, as the models now name the town rather than a
+  landmark inside it.
+- On A the models still name a person's or a club's place from the wrong
+  country (Pervez Musharraf Street → Islamabad for Delhi; Vital'O FC →
+  Sutton Coldfield or Lyon for Bujumbura; `results/dev_rev3c/report.txt`
+  lists 30 sampled answers).
 
 ## What changed between the revisions of the other runs
 

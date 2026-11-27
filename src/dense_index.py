@@ -77,7 +77,7 @@ from pathlib import Path
 import numpy as np
 
 import wikidata as wd
-from config import REPO_ROOT, load_all_configs, load_datasets
+from config import REPO_ROOT, ConfigError, load_all_configs, load_datasets
 
 log = logging.getLogger(__name__)
 
@@ -362,9 +362,59 @@ def build_catalogue(d, pool=None, gold=None) -> Catalogue:
     return Catalogue(qids, places, texts, unfetched)
 
 
-def load_or_build(cfg) -> DenseIndex:
-    """Load the cached index, or build it once and cache it."""
+def _sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def load_pinned(cfg) -> DenseIndex:
+    """The index file `dense.index_signature` names, and no other.
+
+    The pool fixes which QIDs are in the index, but the index text (label,
+    description, aliases, country) is fetched from live Wikidata when the
+    index is built, so two builds over the same pool can retrieve differently.
+    A pinned index is therefore loaded as it is, checked against the sha256
+    recorded next to it (index_<signature>.sha256), and never built: a missing
+    or different file is a ConfigError, which aborts the run."""
     d = cfg.dense
+    sig = d.index_signature
+    path = _cache_path(sig)
+    sha_path = path.with_suffix(".sha256")
+    if not path.exists():
+        raise ConfigError(f"dense.index_signature {sig}: {path} is missing. A pinned "
+                          f"index is never rebuilt; restore the file from its backup.")
+    if not sha_path.exists():
+        raise ConfigError(f"dense.index_signature {sig}: no recorded sha256 at {sha_path}")
+    expected = sha_path.read_text(encoding="utf-8").split()[0].strip().lower()
+    actual = _sha256(path)
+    if actual != expected:
+        raise ConfigError(f"dense.index_signature {sig}: {path.name} has sha256 {actual}, "
+                          f"recorded {expected}. It is not the pinned index.")
+    with path.open("rb") as f:
+        payload = pickle.load(f)
+    m = payload["meta"]
+    stated = {"signature": sig, "encoder": d.encoder, "pool": d.pool,
+              "index_fields": list(d.index_fields or []), "passage_prefix": d.passage_prefix}
+    differs = {k: (m.get(k), v) for k, v in stated.items() if m.get(k) != v}
+    if differs:
+        raise ConfigError(f"dense.index_signature {sig}: the index was built with "
+                          f"other settings than the configuration states: {differs}")
+    _check_gold(payload["qids"], _dataset_gold_qids())
+    log.info("pinned dense index loaded: %s, %d places, sha256 %s",
+             path.name, m["n_places"], actual[:12])
+    return DenseIndex(payload["qids"], payload["matrix"], payload["places"],
+                      payload["meta"], d.encoder, d.query_prefix)
+
+
+def load_or_build(cfg) -> DenseIndex:
+    """Load the cached index, or build it once and cache it. A pinned index
+    (`dense.index_signature`) is only ever loaded (load_pinned)."""
+    d = cfg.dense
+    if d.index_signature:
+        return load_pinned(cfg)
     pool = build_pool(d.pool)
     signature = _signature(cfg, pool)
     path = _cache_path(signature)
@@ -421,7 +471,9 @@ _indexes = {}
 
 
 def get_index(cfg) -> DenseIndex:
-    key = _signature(cfg)
+    # A pinned index is keyed by its signature alone: the pool on disk is not
+    # read, so what is in results/predictions/ cannot change it.
+    key = f"pinned:{cfg.dense.index_signature}" if cfg.dense.index_signature else _signature(cfg)
     if key not in _indexes:
         _indexes[key] = load_or_build(cfg)
     return _indexes[key]

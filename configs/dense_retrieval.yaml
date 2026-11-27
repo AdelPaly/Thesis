@@ -27,6 +27,13 @@ description: >
   indexed text says nothing about football cannot be retrieved from a post
   about football. The pool defines the difficulty, and both are recorded in
   the index metadata and reported.
+
+  Revision 3, after the development run of 26-27 November: the index is
+  pinned (index_signature), the one grounded_gemma retrieved from in that run
+  (built 27 Nov 13:03 UTC, 3,599 places). It is loaded, checked against its
+  recorded sha256 and never rebuilt, so the two configurations share one
+  retriever. This configuration is part of revision 3 from then on
+  (results/REVISIONS.md).
 ner:
   model: null
   entity_types: null
@@ -46,6 +53,7 @@ dense:
   pool: gold_plus_answers_described
   top_k: 10
   index_fields: [label, description, aliases, country, continent]
+  index_signature: "3530d31fa83aacb7"   # pinned revision 3 index (src/dense_index.py)
   query_prefix: shared
   passage_prefix: shared
 # NOTE: the tier-2 reranker (src/ranking.py) encodes the raw text and raw

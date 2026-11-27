@@ -719,7 +719,10 @@ def get_coords(entity_text: str, entity_type: str, top_n: int = 10,
     apply for top_n up to SEARCH_LIMIT and scale to top_n beyond it. Under
     chain_v1 they cap places; under all_places, for PER and ORG, they cap the
     entities whose places are taken. If any network lookup fails the partial
-    result is returned but not cached.
+    result is returned but not cached (chain_v1, as it ran); under all_places
+    a failed search, fetch or country/continent lookup raises WikidataError
+    instead (after the development run of 26-27 November), and nothing is
+    cached for the request.
     """
     # chain_v1 keeps the key of the reported runs, so their cached answers stay
     # valid; another rule gets its own entries.
@@ -734,6 +737,8 @@ def get_coords(entity_text: str, entity_type: str, top_n: int = 10,
     try:
         qids = _search_with_fallback(entity_text, min(max(top_n, SEARCH_LIMIT), MAX_SEARCH_LIMIT))
     except WikidataError as e:
+        if place_rule == "all_places":
+            raise
         logger.warning("Search error for %r: %s", entity_text, e)
         return []
     if not qids:
@@ -748,6 +753,8 @@ def get_coords(entity_text: str, entity_type: str, top_n: int = 10,
         coords, complete = handler(entity_text, qids[:top_n], cap, place_rule=place_rule)
     if complete:
         _coords_cache[cache_key] = coords
+    elif place_rule == "all_places":
+        raise WikidataError(f"all_places: a lookup failed for {entity_text!r} ({entity_type})")
     return coords
 
 
@@ -864,14 +871,26 @@ def resolve_qid_to_candidates(qid: str, entity_text: str, entity_type: str,
         raise ValueError(f"unknown place_rule {place_rule!r}")
     if not qid:
         return []
-    ent = fetch_entities([qid]).get(qid, {})
+    # all_places raises on any failed request (after the development run of
+    # 26-27 November): a failed fetch used to look like an entity with fewer
+    # places, or none. The pipeline puts the error on the record and the
+    # runner retries the post on resume. Nothing is cached for the request:
+    # the entity cache only ever holds entities that were fetched.
+    entities, ok = _fetch_entities_status([qid])
+    if not ok:
+        raise WikidataError(f"all_places: entity fetch failed for {qid}")
+    ent = entities.get(qid, {})
     if not ent:
         return []
-    places_of, place_ents, _ = _all_place_ents({qid: ent})
+    places_of, place_ents, ok = _all_place_ents({qid: ent})
+    if not ok:
+        raise WikidataError(f"all_places: place fetch failed for the places of {qid}")
     places = places_of.get(qid, [])
     if not places:
         return []
-    geo = resolve_country_continent({p: place_ents[p] for p in places})
+    geo, ok = _resolve_cc({p: place_ents[p] for p in places})
+    if not ok:
+        raise WikidataError(f"all_places: country/continent lookup failed for the places of {qid}")
     return [_linked_candidate(p, place_ents[p], geo, entity_text, entity_type) for p in places]
 
 

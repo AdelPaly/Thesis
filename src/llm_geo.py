@@ -55,11 +55,36 @@ Set "refused" to true only if the text contains no geographic signal at all.
 
 Text: {text}"""
 
+# v5 (revision 3, after the development runs of 26-27 November) is v4 with its
+# second paragraph replaced; the JSON fields are v4's. On posts with clues
+# only, v4's "the location itself" made the models name a street, venue, club
+# or person with no Wikidata item, and rule v4 then fell straight back to the
+# country. v5 asks for the city, town or village of a building, street or
+# venue, and for the place where a person, organisation or event is. A first
+# v5, v4 with a "settlement" field (results/dev_rev3b/), was replaced: the
+# models put a landmark in "place" and the town in "settlement"
+# (results/REVISIONS.md). The configurations resolve v5 with rule v4
+# (`llm.resolver_rule`).
+PROMPT_V5 = """You are a geolocation assistant. Given a text, identify the single most relevant real-world location the text refers to.
+
+The location can be a city, town or village, or any other named place. If the text is about a building, street or venue, name the city, town or village it is in. If it is about a person, organisation or event, name the place where they are.
+
+Respond with JSON only, no explanation:
+{{"place": "<name of the location, or null if unknown>", "country": "<country name or null if unknown>", "continent": "<continent name or null if unknown>", "latitude": <approximate latitude of the location in decimal degrees, or null if unknown>, "longitude": <approximate longitude in decimal degrees, or null if unknown>, "refused": false}}
+
+Set "refused" to true only if the text contains no geographic signal at all.
+
+Text: {text}"""
+
 # `llm.prompt_template` names the prompt and, with it, the rule that resolves
 # the answer: v1 takes the first search result for the city, v2 chooses by
 # country and coordinates, v3 is v2 with a wider search (same prompt, so the
-# same cached replies), v4 is v3's rule on the "place" field of prompt v4.
-PROMPTS = {"v1": PROMPT, "v2": PROMPT_V2, "v3": PROMPT_V2, "v4": PROMPT_V4}
+# same cached replies), v4 is v3's rule on the "place" field of prompt v4, v5
+# is v4 with a "settlement" field searched when the place is not found (it
+# needs the first v5 prompt's settlement field). `llm.resolver_rule`, when
+# set, names the rule instead (prompt v5 with rule v4).
+PROMPTS = {"v1": PROMPT, "v2": PROMPT_V2, "v3": PROMPT_V2, "v4": PROMPT_V4,
+           "v5": PROMPT_V5}
 
 _clean_name = clean_name          # the name other modules import
 
@@ -71,12 +96,13 @@ class LLMGeoPipeline:
     `call(prompt)`, `model_id` and `generation_params` (anything that changes
     the model's answers, which goes into the cache fingerprint)."""
 
-    def __init__(self, client, cache_name: str, prompt_template: str = "v1"):
+    def __init__(self, client, cache_name: str, prompt_template: str = "v1",
+                 resolver_rule: str | None = None):
         self.client = client
         self.model_id = client.model_id
         self.generation_params = client.generation_params
         self.prompt = PROMPTS[prompt_template]
-        self.resolve = RESOLVERS[prompt_template]
+        self.resolve = RESOLVERS[resolver_rule or prompt_template]
         self._cache = PickleCache(cache_name, fingerprint(self.prompt, self.generation_params))
 
     def save_cache(self) -> None:
@@ -121,8 +147,8 @@ _instances: dict[tuple, LLMGeoPipeline] = {}
 def build(llm) -> LLMGeoPipeline:
     """The pipeline for an LLMConfig, memoised on everything that defines it."""
     key = (llm.provider, llm.model, llm.revision, llm.temperature, llm.top_p,
-           llm.prompt_template, llm.cache_name)
+           llm.prompt_template, llm.resolver_rule, llm.cache_name)
     if key not in _instances:
         _instances[key] = LLMGeoPipeline(make_client(llm), llm.cache_name,
-                                         llm.prompt_template)
+                                         llm.prompt_template, llm.resolver_rule)
     return _instances[key]

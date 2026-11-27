@@ -6,16 +6,16 @@ question: >
   22B active, mixture of experts) against the dense 32B of the same line; same
   design and prompt as gemma4 and qwen3_vl
 design: >
-  LLM(qwen3-vl:32b-instruct, VSE gateway, temperature 0, prompt v4 → JSON
-  place/country/continent/latitude/longitude/refused) → resolve (src/resolver.py,
-  rule v4): Wikidata search for the place, 10 results (50 when none of the 10 is
-  in the named country, or when the one that is lies more than 25 km from the
-  model's coordinates) → those in the named country (country name matched
-  against the Wikidata country items first) → among several, the first within
-  25 km of the model's coordinates → else country, else continent string only
-  (no QID, no coords) → prediction. No candidate list. The record's
-  `resolution` says resolved, declined, empty, unreadable, not_found,
-  ambiguous or error.
+  LLM(qwen3-vl:32b-instruct, VSE gateway, temperature 0, prompt v5 → JSON
+  place/country/continent/latitude/longitude/refused) → resolve
+  (src/resolver.py, rule v4, set by llm.resolver_rule): Wikidata search for the
+  place, 10 results (50 when none of the 10 is in the named country, or when
+  none in it lies within 25 km of the model's coordinates) → those in the
+  named country (country name matched against the Wikidata country items
+  first) → among several, the first within 25 km of the model's coordinates →
+  else country, else continent string only (no QID, no coords) → prediction.
+  No candidate list. The record's `resolution` says resolved, declined, empty,
+  unreadable, not_found, ambiguous or error.
 description: >
   Tier 4, LLM only: qwen3_vl with a smaller model of the same line, so a
   difference between the two is a difference of size within one family.
@@ -24,13 +24,21 @@ description: >
   per token). It took no part in writing, judging or auditing the dataset.
 
   Added in revision 3 (2026-11-26), before any run of it, with the prompt and
-  rule of revision 3 (prompt v4, rule v4), so it is compared with the revision 3
-  runs of qwen3_vl and gemma4, not with their reported runs. Its own response
-  cache, qwen3_vl_32b_v4.
+  rule of revision 3, so it is compared with the revision 3 runs of qwen3_vl
+  and gemma4, not with their reported runs. Run on dev 26-27 Nov with prompt
+  v4 and rule v4 (cache qwen3_vl_32b_v4; results/dev_rev3/); after that dev
+  run, the first prompt v5 (with a "settlement" field) and rule v5, cache
+  qwen3_vl_32b_v5 (results/dev_rev3b/); then, as for gemma4 and qwen3_vl, the
+  replacing prompt v5 (v4's fields, the second paragraph replaced) with rule
+  v4 (llm.resolver_rule), cache qwen3_vl_32b_v5b (results/dev_rev3c/). Its
+  comparison with qwen3_vl is exploratory, outside the
+  Holm family (configs/comparisons.yaml): it was added after test scores of
+  the other configurations had been seen.
 
-  Its predictions must not be in results/predictions/ before grounded_gemma
-  has run: the dense pool reads every other configuration's answers from there
-  (see results/REVISIONS.md, the pool of grounded_gemma).
+  The dense pool no longer depends on what is in results/predictions/:
+  dense_retrieval and grounded_gemma load the pinned revision 3 index
+  (dense.index_signature), so where this configuration's predictions are
+  written changes nothing they retrieve.
 ner:
   model: null
   entity_types: null
@@ -48,5 +56,6 @@ llm:
   revision: null
   temperature: 0.0
   top_p: null
-  prompt_template: v4
-  cache_name: qwen3_vl_32b_v4
+  prompt_template: v5
+  resolver_rule: v4
+  cache_name: qwen3_vl_32b_v5b

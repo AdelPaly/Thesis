@@ -43,6 +43,7 @@ class Candidate(TypedDict, total=False):
     entity: str
     entity_type: str
     description: str | None
+    label: str | None
 
 
 @dataclass
@@ -103,6 +104,10 @@ def _candidate_record(cand: Candidate) -> dict:
         "score": cand.get("score"),
         "source_entity": cand.get("entity"),
         "source_entity_type": cand.get("entity_type"),
+        # The place's own name, which the grounded list shows (linked
+        # candidates only; None for the others). Stored from the development
+        # run of 26-27 November on.
+        "label": cand.get("label"),
         # The description is what the reranker actually scored; without it the
         # score in this row cannot be interpreted after the fact.
         "description": cand.get("description"),
@@ -400,10 +405,15 @@ class Pipeline:
         # The prompt version is in the name from revision 3 on, so a new prompt
         # starts its own cache and the replies of the first runs stay where
         # they are (llm_common.PickleCache would set them aside as .stale).
-        from llm_grounded import PROMPT_VERSION
+        # The candidate list version, per source, has replaced it there since
+        # the development run of 26-27 November: linking v3, dense v2
+        # (llm_grounded.LIST_VERSIONS).
+        from llm_grounded import LIST_VERSIONS, PROMPT_VERSION
         gr = self.cfg.grounded
         name = f"{self.cfg.llm.cache_name}_grounded_{gr.candidate_source}"
-        return name if PROMPT_VERSION == "v1" else f"{name}_{PROMPT_VERSION}"
+        if PROMPT_VERSION == "v1":
+            return name
+        return f"{name}_{LIST_VERSIONS.get(gr.candidate_source, PROMPT_VERSION)}"
 
     def _top_linked(self, pairs, top_k: int) -> list[Candidate]:
         """Distinct place QIDs, most confident linker output first, then

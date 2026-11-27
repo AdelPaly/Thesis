@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass, field, asdict, fields, replace
 from pathlib import Path
 
@@ -43,7 +44,7 @@ PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
              "grounded_llm", "geoparser"}
 LINKING_BACKENDS = {"refined", "blink", "wikidata_search", "none"}
 LLM_PROVIDERS = {None, "google", "openrouter", "vse"}
-PROMPT_TEMPLATES = {"v1", "v2", "v3", "v4"}
+PROMPT_TEMPLATES = {"v1", "v2", "v3", "v4", "v5"}
 TIERS = range(0, 6)
 # most_populous_named: as most_populous, over the search results named exactly
 # as the toponym when there are any (src/gazetteer.py).
@@ -106,6 +107,10 @@ class LLMConfig:
     # Kept separate from `model` so existing caches stay addressable after a
     # model slug is rewritten; defaults to a slugified model id.
     cache_name: str | None = None
+    # The rule that resolves the answer (src/resolver.py); None means the rule
+    # of the same name as prompt_template. Added after prediction files
+    # existed; see _LATE_FIELDS.
+    resolver_rule: str | None = None
 
 
 @dataclass(frozen=True)
@@ -130,6 +135,13 @@ class DenseConfig:
     # call, and so the index cache key can include them.
     query_prefix: str = "query: "
     passage_prefix: str = "passage: "
+    # Pins one index file, src/.dense_index/index_<signature>.pkl, checked
+    # against the sha256 recorded next to it (src/dense_index.py). Set, the
+    # index is never rebuilt: the index text comes from live Wikidata, so a
+    # rebuild over the same pool can still change what is retrieved. Null
+    # means build or load by the signature of the pool, as before. Added after
+    # prediction files existed; see _LATE_FIELDS.
+    index_signature: str | None = None
 
 
 @dataclass(frozen=True)
@@ -219,6 +231,8 @@ _LATE_SECTIONS = {
 _LATE_FIELDS = {
     ("ner", "fallback_types"): None,         # revision 3
     ("linking", "place_rule"): "chain_v1",   # revision 3
+    ("dense", "index_signature"): None,      # revision 3, after the dev run of 26-27 Nov
+    ("llm", "resolver_rule"): None,          # revision 3, after the dev_rev3b run
 }
 
 
@@ -397,9 +411,14 @@ def _validate_types(cfg: PipelineConfig) -> None:
                          ("llm.cache_name", cfg.llm.cache_name),
                          ("llm.revision", cfg.llm.revision),
                          ("llm.prompt_template", cfg.llm.prompt_template),
+                         ("llm.resolver_rule", cfg.llm.resolver_rule),
                          ("dense.encoder", cfg.dense.encoder),
+                         ("dense.index_signature", cfg.dense.index_signature),
                          ("baseline.strategy", cfg.baseline.strategy)):
         _require_type(where, value, str, allow_none=True)
+    sig = cfg.dense.index_signature
+    if sig is not None and not re.fullmatch(r"[0-9a-f]{16}", sig):
+        raise ConfigError(f"dense.index_signature must be 16 lowercase hex digits, got {sig!r}")
 
 
 def _validate_common(cfg: PipelineConfig) -> None:
@@ -413,6 +432,8 @@ def _validate_common(cfg: PipelineConfig) -> None:
                           f"{sorted(str(b) for b in LLM_PROVIDERS)}")
     if llm.prompt_template not in PROMPT_TEMPLATES:
         raise ConfigError(f"llm.prompt_template must be one of {sorted(PROMPT_TEMPLATES)}")
+    if llm.resolver_rule is not None and llm.resolver_rule not in PROMPT_TEMPLATES:
+        raise ConfigError(f"llm.resolver_rule must be null or one of {sorted(PROMPT_TEMPLATES)}")
     if linking.top_n < 1:
         raise ConfigError("linking.top_n must be >= 1")
     if cfg.dense.pool not in DENSE_POOLS:

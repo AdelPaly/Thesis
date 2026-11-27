@@ -19,11 +19,19 @@ description: >
   help because of the LLM or because of the retriever? Same model, same prompt,
   same selection contract, different candidate source. Decided on dev only.
 
-  Revision 3 (2026-11-26, not yet run). The candidates follow refined: place
-  rule all_places and the MISC fallback, so the model, not a fixed chain,
-  chooses among the places a linked person or organisation gives. The
-  candidate list shows each place by its own name, and the prompt declines
-  only when no candidate is the location (src/llm_grounded.py).
+  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/). The
+  candidates follow refined: place rule all_places and the MISC fallback, so
+  the model, not a fixed chain, chooses among the places a linked person or
+  organisation gives. The candidate list shows each place by its own name,
+  and the prompt declines only when no candidate is the location
+  (src/llm_grounded.py).
+
+  After that dev run: list v3 adds, at the end of a line, the mention the
+  place was reached from when it is not the place's name (from "C.R.
+  Caála"); with the name alone the model declined places it had chosen in
+  the reported run. Its own cache, gemma4_12b_grounded_linking_v3. A failed
+  Wikidata lookup under all_places is now an error on the record, retried on
+  resume (results/REVISIONS.md).
 ner:
   model: flair/ner-large
   entity_types: [LOC, PER, ORG]

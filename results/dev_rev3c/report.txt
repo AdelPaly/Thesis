@@ -1,0 +1,314 @@
+
+### gemma4  (n: reported (v2)=735, dev_rev3 (v4)=735, dev_rev3b (v5a)=735, dev_rev3c (v5)=735)
+group          metric               reported (v2)    dev_rev3 (v4)  dev_rev3b (v5a)   dev_rev3c (v5)
+ALL            exact                         51.7             52.9             50.5             54.3
+ALL            exact_or_inside               53.3             56.5             56.9             56.1
+ALL            country                       63.5             63.5             63.3             64.8
+ALL            no_result                      8.6              7.8             12.0              3.5
+A              exact                          8.5              2.8              2.8              7.0
+A              exact_or_inside               11.3             18.3             21.1             14.1
+A              country                       39.4             36.6             35.2             42.3
+A              no_result                     29.6             32.4             39.4             16.9
+B              exact                         71.4             72.6             59.5             76.2
+B              exact_or_inside               71.4             75.0             73.8             76.2
+B              country                       81.0             81.0             79.8             83.3
+B              no_result                      3.6              3.6              4.8              1.2
+EXPLICIT       exact                         63.1             65.4             65.4             65.4
+EXPLICIT       exact_or_inside               65.0             66.8             66.8             66.8
+EXPLICIT       country                       71.0             70.1             69.6             71.0
+EXPLICIT       no_result                      4.7              3.3             10.3              1.9
+NOISE_A        exact                          8.5              4.2              2.8              7.0
+NOISE_A        exact_or_inside               11.3             14.1             15.5             11.3
+NOISE_A        country                       28.2             31.0             32.4             28.2
+NOISE_A        no_result                     22.5             21.1             29.6              9.9
+NOISE_B        exact                         64.3             66.7             59.5             70.2
+NOISE_B        exact_or_inside               65.5             67.9             70.2             70.2
+NOISE_B        country                       73.8             72.6             77.4             76.2
+NOISE_B        no_result                      2.4              3.6              4.8              0.0
+NOISE_EXPLICIT exact                         56.4             60.2             60.2             59.7
+NOISE_EXPLICIT exact_or_inside               57.8             61.1             60.7             60.7
+NOISE_EXPLICIT country                       64.9             66.4             64.5             66.4
+NOISE_EXPLICIT no_result                      5.2              2.8              4.3              0.9
+
+#### gemma4: by gold type (exact / exact or inside)
+settlement   n=626      52.6 /  53.8     52.1 /  55.1     49.5 /  55.6     53.5 /  55.1
+island       n=39       53.8 /  64.1     71.8 /  79.5     69.2 /  76.9     69.2 /  76.9
+natural      n=30       33.3 /  33.3     46.7 /  53.3     43.3 /  50.0     50.0 /  50.0
+manmade      n=40       50.0 /  50.0     52.5 /  57.5     52.5 /  62.5     55.0 /  55.0
+
+#### gemma4: resolution status
+  reported (v2)    {'declined': 63, 'not_found': 39, 'resolved': 633}  errors 0
+  dev_rev3 (v4)    {'ambiguous': 13, 'declined': 40, 'not_found': 91, 'resolved': 591}  errors 0
+  dev_rev3b (v5a)  {'ambiguous': 31, 'declined': 51, 'not_found': 60, 'resolved': 593}  errors 0
+  dev_rev3c (v5)   {'ambiguous': 5, 'declined': 21, 'not_found': 68, 'resolved': 641}  errors 0
+
+### qwen3_vl  (n: reported (v2)=735, dev_rev3 (v4)=735, dev_rev3b (v5a)=735, dev_rev3c (v5)=735)
+group          metric               reported (v2)    dev_rev3 (v4)  dev_rev3b (v5a)   dev_rev3c (v5)
+ALL            exact                         61.2             61.9             59.7             63.4
+ALL            exact_or_inside               64.4             66.4             67.6             66.8
+ALL            country                       74.8             74.6             74.0             75.5
+ALL            no_result                      4.5              4.9              5.3              3.8
+A              exact                         14.1              4.2              8.5             12.7
+A              exact_or_inside               18.3             21.1             29.6             22.5
+A              country                       46.5             46.5             45.1             53.5
+A              no_result                     23.9             29.6             31.0             22.5
+B              exact                         84.5             85.7             71.4             86.9
+B              exact_or_inside               88.1             88.1             88.1             89.3
+B              country                       94.0             94.0             95.2             94.0
+B              no_result                      0.0              0.0              0.0              0.0
+EXPLICIT       exact                         69.2             70.6             71.0             70.1
+EXPLICIT       exact_or_inside               72.0             72.0             72.0             71.5
+EXPLICIT       country                       78.0             74.8             74.8             74.3
+EXPLICIT       no_result                      1.4              1.9              2.3              1.9
+NOISE_A        exact                         14.1              4.2             11.3              9.9
+NOISE_A        exact_or_inside               19.7             22.5             32.4             23.9
+NOISE_A        country                       43.7             46.5             47.9             50.7
+NOISE_A        no_result                     16.9             15.5             16.9             11.3
+NOISE_B        exact                         79.8             82.1             71.4             85.7
+NOISE_B        exact_or_inside               83.3             84.5             84.5             86.9
+NOISE_B        country                       91.7             91.7             90.5             92.9
+NOISE_B        no_result                      0.0              0.0              0.0              0.0
+NOISE_EXPLICIT exact                         68.2             74.4             72.5             73.5
+NOISE_EXPLICIT exact_or_inside               70.1             74.9             73.0             74.4
+NOISE_EXPLICIT country                       77.3             78.7             76.8             78.2
+NOISE_EXPLICIT no_result                      0.5              0.0              0.0              0.0
+
+#### qwen3_vl: by gold type (exact / exact or inside)
+settlement   n=626      63.4 /  65.3     61.5 /  66.1     59.4 /  67.3     62.8 /  66.3
+island       n=39       38.5 /  66.7     74.4 /  82.1     74.4 /  82.1     74.4 /  82.1
+natural      n=30       60.0 /  60.0     63.3 /  66.7     60.0 /  66.7     66.7 /  66.7
+manmade      n=40       50.0 /  50.0     55.0 /  55.0     50.0 /  60.0     60.0 /  60.0
+
+#### qwen3_vl: resolution status
+  reported (v2)    {'ambiguous': 3, 'declined': 30, 'not_found': 24, 'resolved': 678}  errors 0
+  dev_rev3 (v4)    {'ambiguous': 4, 'declined': 30, 'not_found': 68, 'resolved': 633}  errors 0
+  dev_rev3b (v5a)  {'ambiguous': 4, 'declined': 29, 'empty': 1, 'not_found': 30, 'resolved': 671}  errors 0
+  dev_rev3c (v5)   {'ambiguous': 3, 'declined': 22, 'not_found': 47, 'resolved': 663}  errors 0
+
+### qwen3_vl_32b  (n: reported (v2)=0, dev_rev3 (v4)=735, dev_rev3b (v5a)=735, dev_rev3c (v5)=735)
+group          metric               reported (v2)    dev_rev3 (v4)  dev_rev3b (v5a)   dev_rev3c (v5)
+ALL            exact                          -               60.3             56.5             59.9
+ALL            exact_or_inside                -               62.9             63.8             61.8
+ALL            country                        -               71.8             71.7             72.0
+ALL            no_result                      -                3.4              3.5              1.5
+A              exact                          -                7.0              4.2              8.5
+A              exact_or_inside                -               14.1             21.1             12.7
+A              country                        -               42.3             45.1             49.3
+A              no_result                      -               23.9             23.9              8.5
+B              exact                          -               82.1             64.3             81.0
+B              exact_or_inside                -               83.3             82.1             82.1
+B              country                        -               89.3             89.3             89.3
+B              no_result                      -                0.0              0.0              0.0
+EXPLICIT       exact                          -               71.0             70.6             71.0
+EXPLICIT       exact_or_inside                -               72.4             72.0             72.4
+EXPLICIT       country                        -               77.1             76.2             76.6
+EXPLICIT       no_result                      -                0.5              0.5              0.5
+NOISE_A        exact                          -                4.2              4.2              7.0
+NOISE_A        exact_or_inside                -               14.1             19.7             12.7
+NOISE_A        country                        -               36.6             36.6             36.6
+NOISE_A        no_result                      -                9.9             11.3              5.6
+NOISE_B        exact                          -               82.1             69.0             79.8
+NOISE_B        exact_or_inside                -               83.3             82.1             81.0
+NOISE_B        country                        -               90.5             89.3             88.1
+NOISE_B        no_result                      -                0.0              0.0              0.0
+NOISE_EXPLICIT exact                          -               68.7             69.2             67.3
+NOISE_EXPLICIT exact_or_inside                -               69.7             70.1             68.2
+NOISE_EXPLICIT country                        -               73.9             73.9             73.5
+NOISE_EXPLICIT no_result                      -                0.0              0.0              0.0
+
+#### qwen3_vl_32b: by gold type (exact / exact or inside)
+settlement   n=626           -           60.1 /  62.6     55.9 /  63.1     60.1 /  61.8
+island       n=39            -           76.9 /  84.6     76.9 /  84.6     71.8 /  79.5
+natural      n=30            -           56.7 /  56.7     50.0 /  56.7     56.7 /  56.7
+manmade      n=40            -           50.0 /  50.0     50.0 /  60.0     47.5 /  47.5
+
+#### qwen3_vl_32b: resolution status
+  dev_rev3 (v4)    {'declined': 25, 'not_found': 37, 'resolved': 673}  errors 0
+  dev_rev3b (v5a)  {'ambiguous': 1, 'declined': 23, 'not_found': 36, 'resolved': 675}  errors 0
+  dev_rev3c (v5)   {'declined': 11, 'not_found': 22, 'resolved': 702}  errors 0
+
+### 10 random new-v5 answers, A gold (seed 20261127, same posts for all three)
+
+- [A] gold Bujumbura (Q3854, settlement/settlement, Burundi)
+  text: Went to Vital'O FC's match on Saturday and they've finally planted trees along the car park fence, took me a while to notice them
+    gemma4        place='Sutton Coldfield' country='United Kingdom' -> Q868196 [resolved, wrong]
+    qwen3_vl      place="Vital'O FC" country='Burundi' -> Q967 [not_found, country]
+    qwen3_vl_32b  place='Lyon' country='France' -> Q456 [resolved, wrong]
+
+- [A] gold Delhi (Q1353, settlement/settlement, India)
+  text: Stuck on the street named after Pervez Musharraf again, water up to the car doors because the drains on this road haven't been cleared all year
+    gemma4        place='Islamabad' country='Pakistan' -> Q1362 [resolved, wrong]
+    qwen3_vl      place='Islamabad' country='Pakistan' -> Q1362 [resolved, wrong]
+    qwen3_vl_32b  place='Islamabad' country='Pakistan' -> Q1362 [resolved, wrong]
+
+- [A] gold Kingston (Q34692, settlement/settlement, Jamaica)
+  text: Usain Bolt trains at his club ground near home and now the council wants to cut the car park there, people are protesting it, the trees on the edge are next
+    gemma4        place='Trelley' country='Jamaica' -> Q766 [not_found, country]
+    qwen3_vl      place='Sherwood Content' country='Jamaica' -> Q1278713 [resolved, country]
+    qwen3_vl_32b  place='Kingston' country='Jamaica' -> Q34692 [resolved, EXACT]
+
+- [A] gold Edmonton (Q2096, settlement/settlement, Canada)
+  text: Mark Carney cut the ribbon at the repair cafe in the community hall on our street, which is his home town, and by close the crowd had left bags of broken toasters and cardboard all over the pavement.
+    gemma4        place='Toronto' country='Canada' -> Q172 [resolved, country]
+    qwen3_vl      place=None country=None -> None [declined, wrong]
+    qwen3_vl_32b  place='Ottawa' country='Canada' -> Q1930 [resolved, country]
+
+- [A] gold Suðurnesjabær (Q60297275, settlement/settlement, Iceland)
+  text: the recycling drop at garðskagaviti is actually working now, bins were full again on my way past this morning, finally some good news for the street
+    gemma4        place='Garðskagaviti' country='Iceland' -> Q3378225 [resolved, inside]
+    qwen3_vl      place='Garðskagi' country='Iceland' -> Q16424859 [resolved, country]
+    qwen3_vl_32b  place='Reykjavík' country='Iceland' -> Q1764 [resolved, country]
+
+- [A] gold São Tomé (Q3932, settlement/settlement, São Tomé and Príncipe)
+  text: the school named after alda da graca still has the lead warning on the tap by the gate and the kids are drinking from it at break anyway, nobody has changed the pipes
+    gemma4        place='Porto' country='Portugal' -> Q36433 [resolved, wrong]
+    qwen3_vl      place='Lisbon' country='Portugal' -> Q597 [resolved, wrong]
+    qwen3_vl_32b  place='Lisbon' country='Portugal' -> Q597 [resolved, wrong]
+
+- [A] gold Kahnawake (Q1014394, settlement/settlement, Canada)
+  text: Kahsennenhawe Sky-Deer was out at the take-back bins by the company offices this morning and they are already overflowing onto the pavement, so the new scheme needs more collections or it will just be a pile of bags by t
+    gemma4        place=None country=None -> None [declined, wrong]
+    qwen3_vl      place=None country=None -> None [declined, wrong]
+    qwen3_vl_32b  place='Kahsennenhawe' country='Canada' -> Q16 [not_found, country]
+
+- [A] gold Nicosia (Q3856, settlement/settlement, Cyprus)
+  text: Saw the new panels going up on Büyük Han's roof this week, the co-op says it will feed the street's grid so fewer houses need the old diesel back up.
+    gemma4        place='Istanbul' country='Turkey' -> Q406 [resolved, wrong]
+    qwen3_vl      place='Büyük Han' country='Cyprus' -> Q2332172 [resolved, inside]
+    qwen3_vl_32b  place='Istanbul' country='Turkey' -> Q406 [resolved, wrong]
+
+- [A] gold Boucherville (Q141924, settlement/settlement, Canada)
+  text: Xavier Barsalou-Duval came by the flooded street in their home town today for a photo, but the water is still coming up every time it rains.
+    gemma4        place=None country=None -> None [declined, wrong]
+    qwen3_vl      place='Repentigny' country='Canada' -> Q139427 [resolved, country]
+    qwen3_vl_32b  place='null' country='null' -> None [declined, wrong]
+
+- [A] gold Podolsk (Q19520, settlement/settlement, Russia)
+  text: Walked past the Vladimir Lenin statue in his home town square this morning and someone has dumped a broken toaster and two old chairs right at its base, again.
+    gemma4        place='Ulyanovsk' country='Russia' -> Q5627 [resolved, country]
+    qwen3_vl      place='Ulyanovsk' country='Russia' -> Q5627 [resolved, country]
+    qwen3_vl_32b  place='Ulyanovsk' country='Russia' -> Q5627 [resolved, country]
+
+### 10 random new-v5 answers, B gold (seed 20261127, same posts for all three)
+
+- [B] gold Damascus (Q3766, manmade/ancient city, Syria)
+  text: went to see the spot where Paul the Apostle was lowered out of a window in Damascus and the paths around it are getting worn away by the crowds, someone needs to put some barriers up before there's nothing left
+    gemma4        place='Damascus' country='Syria' -> Q3766 [resolved, EXACT]
+    qwen3_vl      place='Damascus' country='Syria' -> Q3766 [resolved, EXACT]
+    qwen3_vl_32b  place='Damascus' country='Syria' -> Q3766 [resolved, EXACT]
+
+- [B] gold Arosa (Q63954, settlement/settlement, Switzerland)
+  text: Trucks loaded with old clothes keep queuing under the Langwieser Viaduct in Arosa all day and the bags of unwanted clothing are piling up along the road beside it again
+    gemma4        place='Arosa' country='Switzerland' -> Q63954 [resolved, EXACT]
+    qwen3_vl      place='Arosa' country='Switzerland' -> Q63954 [resolved, EXACT]
+    qwen3_vl_32b  place='Arosa' country='Switzerland' -> Q63954 [resolved, EXACT]
+
+- [B] gold Santa Cruz Island (Q713127, island/island, Ecuador)
+  text: Watched a Medium Ground Finch nesting in the scrub behind the council offices on Santa Cruz Island and the plastic bags that used to snag in there have thinned out since the ban, which is nice to see.
+    gemma4        place='Santa Cruz Island' country='Ecuador' -> Q713127 [resolved, EXACT]
+    qwen3_vl      place='Santa Cruz Island' country='Ecuador' -> Q713127 [resolved, EXACT]
+    qwen3_vl_32b  place='Santa Cruz Island' country='Ecuador' -> Q713127 [resolved, EXACT]
+
+- [B] gold San Fernando (Q187807, settlement/settlement, Chile)
+  text: Our old schoolyard at Liceo Neandro Schilling in San Fernando has been roasting since they cut down the shade trees by the gate, kids are sitting on the concrete at lunch with nowhere to go
+    gemma4        place='San Fernando' country='Philippines' -> Q55740 [resolved, wrong]
+    qwen3_vl      place='San Fernando' country='Chile' -> Q187807 [resolved, EXACT]
+    qwen3_vl_32b  place='San Fernando' country='Chile' -> Q187807 [resolved, EXACT]
+
+- [B] gold Utica (Q166523, manmade/archaeological site, Tunisia)
+  text: honestly the litter left around the old Cato the Younger tomb in Utica after the crowds today is awful, and the council still wants to keep dumping waste out past the road
+    gemma4        place='Utica' country='Italy' -> Q166523 [resolved, EXACT]
+    qwen3_vl      place='Utica' country='Tunisia' -> Q166523 [resolved, EXACT]
+    qwen3_vl_32b  place='Utica' country='Tunisia' -> Q166523 [resolved, EXACT]
+
+- [B] gold Tripoli (Q193409, settlement/settlement, Greece)
+  text: Arkadikos B.C. home court in Tripoli is under water again after the drains backed up, third time this winter and nobody seems to be fixing the outflow
+    gemma4        place='Tripoli' country='Greece' -> Q193409 [resolved, EXACT]
+    qwen3_vl      place='Tripoli' country='Greece' -> Q193409 [resolved, EXACT]
+    qwen3_vl_32b  place='Tripoli' country='Greece' -> Q193409 [resolved, EXACT]
+
+- [B] gold Santa Fe (Q44244, settlement/settlement, Argentina)
+  text: Walking past Beppo Levi's old house in Santa Fe every morning and the builders keep leaving chemical drums and dust all over the pavement.
+    gemma4        place='Santa Fe' country='United States' -> Q38555 [resolved, wrong]
+    qwen3_vl      place='Santa Fe' country='Argentina' -> Q44244 [resolved, EXACT]
+    qwen3_vl_32b  place='Santa Fe' country='United States' -> Q38555 [resolved, wrong]
+
+- [B] gold Pasto (Q320015, settlement/settlement, Colombia)
+  text: Walked past the Black and White Carnival grounds in Pasto this morning and they've finally got proper compost bins by every food stall, about time too.
+    gemma4        place='Pasto' country='Colombia' -> Q320015 [resolved, EXACT]
+    qwen3_vl      place='Pasto' country='Colombia' -> Q320015 [resolved, EXACT]
+    qwen3_vl_32b  place='Pasto' country='Colombia' -> Q320015 [resolved, EXACT]
+
+- [B] gold Middleton (Q2560244, settlement/settlement, United Kingdom)
+  text: Went to see The Chameleons at their old ground in Middleton last night and the deposit bottle scheme already has people actually bringing them back, the pavements were way cleaner than last time.
+    gemma4        place='Middleton' country='United Kingdom' -> Q6841985 [resolved, country]
+    qwen3_vl      place='Middleton' country='United Kingdom' -> Q2560244 [resolved, EXACT]
+    qwen3_vl_32b  place='Middleton' country='United Kingdom' -> Q6841976 [resolved, country]
+
+- [B] gold Picton (Q1362879, settlement/settlement, New Zealand)
+  text: Joy Cowley is doing a book signing in Picton tomorrow but the street outside the library was under water again this morning and the drains still haven't been cleared
+    gemma4        place='Picton' country='New Zealand' -> Q1362879 [resolved, EXACT]
+    qwen3_vl      place='Picton' country='New Zealand' -> Q1362879 [resolved, EXACT]
+    qwen3_vl_32b  place='Picton' country='New Zealand' -> Q1362879 [resolved, EXACT]
+
+### 10 random new-v5 answers, manmade gold (seed 20261127, same posts for all three)
+
+- [EXPLICIT] gold Damascus (Q3766, manmade/ancient city, Syria)
+  text: the soil on our street in Damascus keeps washing away after every rain, the gutters are full of it again and nobody has fixed the drain
+    gemma4        place='Damascus' country='Syria' -> Q3766 [resolved, EXACT]
+    qwen3_vl      place='Damascus' country='Syria' -> Q3766 [resolved, EXACT]
+    qwen3_vl_32b  place='Damascus' country='Syria' -> Q3766 [resolved, EXACT]
+
+- [NOISE_EXPLICIT] gold Amarna (Q5736, manmade/archaeological site, Egypt)
+  text: Joined the clean-up at the Robert Bringhurst reading room in Amarna this morning, bags full of plastic bottles again, the drinks companies really need to take this seriously.
+    gemma4        place='Amarna' country='Egypt' -> Q5736 [resolved, EXACT]
+    qwen3_vl      place='Amarna' country='Egypt' -> Q5736 [resolved, EXACT]
+    qwen3_vl_32b  place='Amarna' country='Egypt' -> Q5736 [resolved, EXACT]
+
+- [NOISE_EXPLICIT] gold Soli (Q656954, manmade/archaeological site, Turkey)
+  text: Irish tourists left rubbish all over the Soli riverside again and the drains are blocked, so every rain floods our street now
+    gemma4        place='Soli' country='Turkey' -> Q656954 [resolved, EXACT]
+    qwen3_vl      place='Soli' country='Turkey' -> Q656954 [resolved, EXACT]
+    qwen3_vl_32b  place='Soli' country='Cyprus' -> Q1757296 [resolved, wrong]
+
+- [EXPLICIT] gold Stari Grad (Q220383, manmade/polis, Croatia)
+  text: been living in Stari Grad a few months and the new low-impact visitor rules are actually working, way fewer cars in the old streets and the bins arent overflowing like last summer
+    gemma4        place='Stari Grad' country='Croatia' -> Q220383 [resolved, EXACT]
+    qwen3_vl      place='Stari Grad' country='Croatia' -> Q220383 [resolved, EXACT]
+    qwen3_vl_32b  place='Stari Grad' country='Croatia' -> Q220383 [resolved, EXACT]
+
+- [EXPLICIT] gold Amarna (Q5736, manmade/archaeological site, Egypt)
+  text: Joined the tree planting on the old canal road in Amarna this morning, good to see so many people turn up to replace the trees the new road took out.
+    gemma4        place='Amarna' country='Egypt' -> Q5736 [resolved, EXACT]
+    qwen3_vl      place='Amarna' country='Egypt' -> Q5736 [resolved, EXACT]
+    qwen3_vl_32b  place='Amarna' country='Egypt' -> Q5736 [resolved, EXACT]
+
+- [A] gold Damascus (Q3766, manmade/ancient city, Syria)
+  text: Coaches queue down the street named after Paul the Apostle every morning and the diesel fumes are awful, so the electric shuttle they started is a welcome change.
+    gemma4        place='London' country='United Kingdom' -> Q84 [resolved, wrong]
+    qwen3_vl      place='Paul the Apostle Street' country=None -> None [not_found, wrong]
+    qwen3_vl_32b  place='Rome' country='Italy' -> Q220 [resolved, wrong]
+
+- [NOISE_A] gold Stari Grad (Q220383, manmade/polis, Croatia)
+  text: Glad to see the restoration crew back at Hvar Airport replanting the scrub along the runway fence, and my neighbour says Indriati Iskak's old records are playing in the terminal café again, which is a nice touch.
+    gemma4        place='Hvar' country='Croatia' -> Q6031 [resolved, country]
+    qwen3_vl      place='Hvar' country='Croatia' -> Q6031 [resolved, country]
+    qwen3_vl_32b  place='Hvar' country='Croatia' -> Q5993 [resolved, country]
+
+- [NOISE_EXPLICIT] gold Constantinople (Q16869, manmade/ancient city, Turkey)
+  text: Saw people in Constantinople near the bazaar carrying Chung So-young bags stuffed with tissue paper and plastic wrap, and by evening the gutters on that street are full of it.
+    gemma4        place='Istanbul' country='Turkey' -> Q406 [resolved, country]
+    qwen3_vl      place='Constantinople' country='Turkey' -> Q16869 [resolved, EXACT]
+    qwen3_vl_32b  place='Istanbul' country='Turkey' -> Q406 [resolved, country]
+
+- [B] gold Alexandria (Q87, manmade/polis, Egypt)
+  text: Walked past the old school where Euclid taught in Alexandria and the street outside is way less littered since the plastic bag ban, hope they keep it up
+    gemma4        place='Alexandria' country='Egypt' -> Q87 [resolved, EXACT]
+    qwen3_vl      place='Alexandria' country='Egypt' -> Q87 [resolved, EXACT]
+    qwen3_vl_32b  place='Alexandria' country='Egypt' -> Q87 [resolved, EXACT]
+
+- [EXPLICIT] gold Constantinople (Q16869, manmade/ancient city, Turkey)
+  text: yeah the steps near the old bazaar are basically worn smooth now, tour groups every hour in Constantinople and nobody is fixing anything
+    gemma4        place='Istanbul' country='Turkey' -> Q406 [resolved, country]
+    qwen3_vl      place='Constantinople' country='Turkey' -> Q16869 [resolved, EXACT]
+    qwen3_vl_32b  place='Istanbul' country='Turkey' -> Q406 [resolved, country]

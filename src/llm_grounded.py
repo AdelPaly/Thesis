@@ -34,6 +34,7 @@ import meter
 
 from llm_common import (SENTINELS, PickleCache, fingerprint,
                         parse_json_object)
+from resolver import _plain
 
 # The prompt of the runs until revision 3, kept for the record. Its last rule
 # asked the model to decline when unsure, which the LLM-only prompt v4 no
@@ -59,6 +60,18 @@ Candidates:
 # when no candidate is the location, as the LLM-only prompt v4 declines when
 # the text has no geographic signal; neither is told to decline when unsure.
 PROMPT_VERSION = "v2"
+
+# The candidate list is part of what the model sees, so its version is in the
+# response cache name too, per candidate source (src/pipeline.py). The cache is
+# keyed on the text and the candidate QIDs, not on the rendered list, so a list
+# that renders differently must not reuse the replies of the old one.
+#   v2  revision 3: the place's own name (`label`), not the mention.
+#   v3  after the development run of 26-27 November: v2, plus the mention the
+#       place was reached from when it differs from the place's name.
+# A dense candidate has no `label` (its `entity` is the place name), so v3
+# renders it byte for byte as v2 did and the dense cache stays v2.
+LIST_VERSIONS = {"dense": "v2", "linking": "v3"}
+
 PROMPT = """You are a geolocation assistant. Identify the single real-world location the text refers to, choosing from the numbered candidate list.
 
 Respond with JSON only, no explanation:
@@ -83,7 +96,13 @@ def format_candidates(candidates: list[dict]) -> str:
     `entity`, which for a linked candidate is the mention it came from: a
     place reached through a person showed the person's name and never its own
     ("Nick Willis -- city in the Wellington Region of New Zealand"). Dense
-    candidates carry the place name in `entity` and have no `label`."""
+    candidates carry the place name in `entity` and have no `label`.
+
+    List v3 (after the development run of 26-27 November): when a candidate
+    has a label and the mention differs from it, the line ends with the
+    mention, `from "<mention>"`. With the place name alone the model could not
+    tell why a place was listed ("Caála" for a post about the club "C.R.
+    Caála") and declined."""
     lines = []
     for i, cand in enumerate(candidates, start=1):
         label = cand.get("label") or cand.get("entity") or cand.get("qid") or "?"
@@ -93,6 +112,9 @@ def format_candidates(candidates: list[dict]) -> str:
         line = f"{i}. {qid} — {label} — {country}"
         if desc and desc.lower() != label.lower():
             line += f" — {desc}"
+        mention = (cand.get("entity") or "").strip()
+        if cand.get("label") and mention and _plain(mention) != _plain(cand["label"]):
+            line += f' — from "{mention}"'
         lines.append(line)
     return "\n".join(lines) if lines else "(no candidates were retrieved)"
 

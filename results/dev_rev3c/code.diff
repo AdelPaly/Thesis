@@ -1,0 +1,3720 @@
+diff --git a/configs/blink.yaml b/configs/blink.yaml
+index 3d984b6..dd3f6a1 100644
+--- a/configs/blink.yaml
++++ b/configs/blink.yaml
+@@ -30,7 +30,10 @@ description: >
+   pass covers every mention of the run, the MISC ones too, so the fallback costs
+   no second pass; their links are used only when the fallback is needed.
+ 
+-  Revision 3 (2026-11-26, not yet run). Place rule all_places and the MISC
++  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/); after
++  that run, a failed Wikidata lookup under all_places is an error on the
++  record, retried on resume, not a shorter candidate list (src/wikidata.py;
++  results/REVISIONS.md). Place rule all_places and the MISC
+   fallback, as refined. The reported runs linked every mention (MISC too, so a
+   demonym such as "French tourists" became the country even when the post named
+   a place) and resolved it by the fixed chain (chain_v1).
+diff --git a/configs/comparisons.yaml b/configs/comparisons.yaml
+index 797abf0..c724362 100644
+--- a/configs/comparisons.yaml
++++ b/configs/comparisons.yaml
+@@ -24,12 +24,18 @@ comparisons:
+   - [dense_retrieval, gemma4, "no mention detection: retrieval vs parametric"]
+   # tier 4: between models
+   - [qwen3_vl, gemma4, "second model vs first"]
+-  # Added 2026-11-26 in revision 3, with the configuration it tests, after test
+-  # scores of the other configurations had been seen (results/REVISIONS.md).
+-  # It enlarges the Holm family by one.
+-  - [qwen3_vl, qwen3_vl_32b, "same family, larger model vs smaller"]
+   # tier 5: grounding
+   - [grounded_gemma, gemma4, "does grounding help (same model, matched control)"]
+   - [grounded_gemma, dense_retrieval, "grounded LLM vs its retriever alone"]
+   - [grounded_gemma_linking, grounded_gemma, "grounding from linking vs from dense"]
+   - [grounded_gemma_linking, refined, "grounded LLM vs its retriever alone"]
++
++# Exploratory pairs: the same statistics, reported with unadjusted p-values,
++# outside the Holm family above and labelled exploratory. A pair belongs here
++# when it was chosen after results it could be read against had been seen.
++exploratory:
++  # Added 2026-11-26 in revision 3, with the configuration it tests, after test
++  # scores of the other configurations had been seen. In the Holm family it
++  # moved the adjusted p-values of the planned pairs; moved here after the
++  # development run of 26-27 November (results/REVISIONS.md).
++  - [qwen3_vl, qwen3_vl_32b, "same family, larger model vs smaller"]
+diff --git a/configs/dense_retrieval.yaml b/configs/dense_retrieval.yaml
+index 8620d28..1355dad 100644
+--- a/configs/dense_retrieval.yaml
++++ b/configs/dense_retrieval.yaml
+@@ -27,6 +27,13 @@ description: >
+   indexed text says nothing about football cannot be retrieved from a post
+   about football. The pool defines the difficulty, and both are recorded in
+   the index metadata and reported.
++
++  Revision 3, after the development run of 26-27 November: the index is
++  pinned (index_signature), the one grounded_gemma retrieved from in that run
++  (built 27 Nov 13:03 UTC, 3,599 places). It is loaded, checked against its
++  recorded sha256 and never rebuilt, so the two configurations share one
++  retriever. This configuration is part of revision 3 from then on
++  (results/REVISIONS.md).
+ ner:
+   model: null
+   entity_types: null
+@@ -46,6 +53,7 @@ dense:
+   pool: gold_plus_answers_described
+   top_k: 10
+   index_fields: [label, description, aliases, country, continent]
++  index_signature: "3530d31fa83aacb7"   # pinned revision 3 index (src/dense_index.py)
+   query_prefix: shared
+   passage_prefix: shared
+ # NOTE: the tier-2 reranker (src/ranking.py) encodes the raw text and raw
+diff --git a/configs/gemma4.yaml b/configs/gemma4.yaml
+index 9db6518..a077073 100644
+--- a/configs/gemma4.yaml
++++ b/configs/gemma4.yaml
+@@ -5,13 +5,16 @@ question: >
+   does parametric knowledge (LLM alone, whole text) beat mention detection and
+   retrieval; matched control for grounded_gemma
+ design: >
+-  LLM(gemma-4-12b-it, VSE gateway, temperature 0, prompt v4 → JSON
+-  place/country/continent/latitude/longitude/refused) → resolve (src/resolver.py,
+-  rule v4): Wikidata search for the place, 10 results (50 when none of the 10 is
+-  in the named country) → those in the named country → among several, the first
+-  within 25 km of the model's coordinates → else country, else continent string
+-  only (no QID, no coords) → prediction. No candidate list. The record's
+-  `resolution` says resolved, declined, unreadable, not_found or ambiguous.
++  LLM(gemma-4-12b-it, VSE gateway, temperature 0, prompt v5 → JSON
++  place/country/continent/latitude/longitude/refused) → resolve
++  (src/resolver.py, rule v4, set by llm.resolver_rule): Wikidata search for the
++  place, 10 results (50 when none of the 10 is in the named country, or when
++  none in it lies within 25 km of the model's coordinates) → those in the
++  named country (country name matched against the Wikidata country items
++  first) → among several, the first within 25 km of the model's coordinates →
++  else country, else continent string only (no QID, no coords) → prediction.
++  No candidate list. The record's `resolution` says resolved, declined, empty,
++  unreadable, not_found, ambiguous or error.
+ description: >
+   Tier 4, LLM only, and the matched ungrounded control for tier 5: same model
+   as grounded_gemma, so the grounded-vs-ungrounded comparison measures the
+@@ -28,13 +31,24 @@ description: >
+   the test split. The first runs are kept in results/posthoc/original/; see
+   results/REVISIONS.md.
+ 
+-  Revision 3 (2026-11-26, not yet run): prompt v4 asks for the location
+-  itself, "a city, town or village, or any other named place", rather than a
+-  city, and keeps one refusal rule (refuse only if the text has no geographic
+-  signal). Its wording names no place type of the dataset. Rule v4 is rule v3
+-  (the audit's wider search) on the new "place" field. The reported runs
+-  (commit 0389a2d) used prompt template v3 (the v2 prompt, cache
+-  gemma4_12b_v2); v4 writes to its own cache, gemma4_12b_v4.
++  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/): prompt v4
++  asks for the location itself, "a city, town or village, or any other named
++  place", rather than a city, and keeps one refusal rule (refuse only if the
++  text has no geographic signal). Its wording names no place type of the
++  dataset. Rule v4 is rule v3 (the audit's wider search) on the "place" field,
++  with four corrections (src/resolver.py). Cache gemma4_12b_v4.
++
++  After that dev run: on posts with clues only, v4 made the model name streets,
++  venues and clubs with no Wikidata item, and rule v4 fell straight back to the
++  country. A first prompt v5 added a "settlement" field, with rule v5 searching
++  it (cache gemma4_12b_v5, results/dev_rev3b/); the model then named a landmark
++  as the place and the town as the settlement, and exact on B fell. It was
++  replaced. Prompt v5 is now v4 with its second paragraph replaced: for a
++  building, street or venue it asks for the city, town or village it is in,
++  and for a person, organisation or event the place where they are. Same JSON
++  fields as v4, resolved with rule v4 (llm.resolver_rule), cache gemma4_12b_v5b
++  (results/dev_rev3c/; results/REVISIONS.md). The reported runs (commit
++  0389a2d) used prompt template v3 (the v2 prompt, cache gemma4_12b_v2).
+ ner:
+   model: null
+   entity_types: null
+@@ -52,5 +66,6 @@ llm:
+   revision: null
+   temperature: 0.0
+   top_p: null
+-  prompt_template: v4
+-  cache_name: gemma4_12b_v4
++  prompt_template: v5
++  resolver_rule: v4
++  cache_name: gemma4_12b_v5b
+diff --git a/configs/grounded_gemma.yaml b/configs/grounded_gemma.yaml
+index 272e9bd..a4bfb1e 100644
+--- a/configs/grounded_gemma.yaml
++++ b/configs/grounded_gemma.yaml
+@@ -20,6 +20,13 @@ description: >
+   that names anything outside the list is recorded as a violation in `error`,
+   so a grounded system ignoring its grounding is visible rather than scored as
+   an ordinary wrong guess.
++
++  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/): the
++  prompt declines only when no candidate is the location (src/llm_grounded.py,
++  prompt v2). After that run the dense index is pinned (index_signature): the
++  index this configuration retrieved from on 27 Nov, which dense_retrieval now
++  loads too, so the comparison between them shares one retriever
++  (results/REVISIONS.md).
+ ner:
+   model: null
+   entity_types: null
+@@ -44,6 +51,7 @@ dense:
+   pool: gold_plus_answers_described
+   top_k: 10
+   index_fields: [label, description, aliases, country, continent]
++  index_signature: "3530d31fa83aacb7"   # pinned revision 3 index (src/dense_index.py)
+   query_prefix: shared
+   passage_prefix: shared
+ grounded:
+diff --git a/configs/grounded_gemma_linking.yaml b/configs/grounded_gemma_linking.yaml
+index c4fd1b8..35fb6ef 100644
+--- a/configs/grounded_gemma_linking.yaml
++++ b/configs/grounded_gemma_linking.yaml
+@@ -19,11 +19,19 @@ description: >
+   help because of the LLM or because of the retriever? Same model, same prompt,
+   same selection contract, different candidate source. Decided on dev only.
+ 
+-  Revision 3 (2026-11-26, not yet run). The candidates follow refined: place
+-  rule all_places and the MISC fallback, so the model, not a fixed chain,
+-  chooses among the places a linked person or organisation gives. The
+-  candidate list shows each place by its own name, and the prompt declines
+-  only when no candidate is the location (src/llm_grounded.py).
++  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/). The
++  candidates follow refined: place rule all_places and the MISC fallback, so
++  the model, not a fixed chain, chooses among the places a linked person or
++  organisation gives. The candidate list shows each place by its own name,
++  and the prompt declines only when no candidate is the location
++  (src/llm_grounded.py).
++
++  After that dev run: list v3 adds, at the end of a line, the mention the
++  place was reached from when it is not the place's name (from "C.R.
++  Caála"); with the name alone the model declined places it had chosen in
++  the reported run. Its own cache, gemma4_12b_grounded_linking_v3. A failed
++  Wikidata lookup under all_places is now an error on the record, retried on
++  resume (results/REVISIONS.md).
+ ner:
+   model: flair/ner-large
+   entity_types: [LOC, PER, ORG]
+diff --git a/configs/qwen3_vl.yaml b/configs/qwen3_vl.yaml
+index 4962650..a640461 100644
+--- a/configs/qwen3_vl.yaml
++++ b/configs/qwen3_vl.yaml
+@@ -5,13 +5,16 @@ question: >
+   do the conclusions about the LLM alone hold for a second model from another
+   family; same design and prompt as gemma4
+ design: >
+-  LLM(qwen3-vl:235b-a22b-instruct, VSE gateway, temperature 0, prompt v4 → JSON
+-  place/country/continent/latitude/longitude/refused) → resolve (src/resolver.py,
+-  rule v4): Wikidata search for the place, 10 results (50 when none of the 10 is
+-  in the named country) → those in the named country → among several, the first
+-  within 25 km of the model's coordinates → else country, else continent string
+-  only (no QID, no coords) → prediction. No candidate list. The record's
+-  `resolution` says resolved, declined, unreadable, not_found or ambiguous.
++  LLM(qwen3-vl:235b-a22b-instruct, VSE gateway, temperature 0, prompt v5 → JSON
++  place/country/continent/latitude/longitude/refused) → resolve
++  (src/resolver.py, rule v4, set by llm.resolver_rule): Wikidata search for the
++  place, 10 results (50 when none of the 10 is in the named country, or when
++  none in it lies within 25 km of the model's coordinates) → those in the
++  named country (country name matched against the Wikidata country items
++  first) → among several, the first within 25 km of the model's coordinates →
++  else country, else continent string only (no QID, no coords) → prediction.
++  No candidate list. The record's `resolution` says resolved, declined, empty,
++  unreadable, not_found, ambiguous or error.
+ description: >
+   Tier 4, LLM only: gemma4 with another model, so a difference between the two
+   is a difference between models. Qwen3-VL 235B (instruct), text input only,
+@@ -24,13 +27,25 @@ description: >
+   the test split. The first runs are kept in results/posthoc/original/; see
+   results/REVISIONS.md.
+ 
+-  Revision 3 (2026-11-26, not yet run): prompt v4 asks for the location
+-  itself, "a city, town or village, or any other named place", rather than a
+-  city, and keeps one refusal rule (refuse only if the text has no geographic
+-  signal). Its wording names no place type of the dataset. Rule v4 is rule v3
+-  (the audit's wider search) on the new "place" field. The reported runs
+-  (commit 0389a2d) used prompt template v3 (the v2 prompt, cache
+-  qwen3_vl_235b_v2); v4 writes to its own cache, qwen3_vl_235b_v4.
++  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/): prompt v4
++  asks for the location itself, "a city, town or village, or any other named
++  place", rather than a city, and keeps one refusal rule (refuse only if the
++  text has no geographic signal). Its wording names no place type of the
++  dataset. Rule v4 is rule v3 (the audit's wider search) on the "place" field,
++  with four corrections (src/resolver.py). Cache qwen3_vl_235b_v4.
++
++  After that dev run: on posts with clues only, v4 made the model name streets,
++  venues and clubs with no Wikidata item, and rule v4 fell straight back to the
++  country. A first prompt v5 added a "settlement" field, with rule v5 searching
++  it (cache qwen3_vl_235b_v5, results/dev_rev3b/); the model then named a
++  landmark as the place and the town as the settlement, and exact on B fell.
++  It was replaced. Prompt v5 is now v4 with its second paragraph replaced: for
++  a building, street or venue it asks for the city, town or village it is in,
++  and for a person, organisation or event the place where they are. Same JSON
++  fields as v4, resolved with rule v4 (llm.resolver_rule), cache
++  qwen3_vl_235b_v5b (results/dev_rev3c/; results/REVISIONS.md). The reported
++  runs (commit 0389a2d) used prompt template v3 (the v2 prompt, cache
++  qwen3_vl_235b_v2).
+ ner:
+   model: null
+   entity_types: null
+@@ -48,5 +63,6 @@ llm:
+   revision: null
+   temperature: 0.0
+   top_p: null
+-  prompt_template: v4
+-  cache_name: qwen3_vl_235b_v4
++  prompt_template: v5
++  resolver_rule: v4
++  cache_name: qwen3_vl_235b_v5b
+diff --git a/configs/qwen3_vl_32b.yaml b/configs/qwen3_vl_32b.yaml
+index 78ecff4..008d210 100644
+--- a/configs/qwen3_vl_32b.yaml
++++ b/configs/qwen3_vl_32b.yaml
+@@ -6,16 +6,16 @@ question: >
+   22B active, mixture of experts) against the dense 32B of the same line; same
+   design and prompt as gemma4 and qwen3_vl
+ design: >
+-  LLM(qwen3-vl:32b-instruct, VSE gateway, temperature 0, prompt v4 → JSON
+-  place/country/continent/latitude/longitude/refused) → resolve (src/resolver.py,
+-  rule v4): Wikidata search for the place, 10 results (50 when none of the 10 is
+-  in the named country, or when the one that is lies more than 25 km from the
+-  model's coordinates) → those in the named country (country name matched
+-  against the Wikidata country items first) → among several, the first within
+-  25 km of the model's coordinates → else country, else continent string only
+-  (no QID, no coords) → prediction. No candidate list. The record's
+-  `resolution` says resolved, declined, empty, unreadable, not_found,
+-  ambiguous or error.
++  LLM(qwen3-vl:32b-instruct, VSE gateway, temperature 0, prompt v5 → JSON
++  place/country/continent/latitude/longitude/refused) → resolve
++  (src/resolver.py, rule v4, set by llm.resolver_rule): Wikidata search for the
++  place, 10 results (50 when none of the 10 is in the named country, or when
++  none in it lies within 25 km of the model's coordinates) → those in the
++  named country (country name matched against the Wikidata country items
++  first) → among several, the first within 25 km of the model's coordinates →
++  else country, else continent string only (no QID, no coords) → prediction.
++  No candidate list. The record's `resolution` says resolved, declined, empty,
++  unreadable, not_found, ambiguous or error.
+ description: >
+   Tier 4, LLM only: qwen3_vl with a smaller model of the same line, so a
+   difference between the two is a difference of size within one family.
+@@ -24,13 +24,21 @@ description: >
+   per token). It took no part in writing, judging or auditing the dataset.
+ 
+   Added in revision 3 (2026-11-26), before any run of it, with the prompt and
+-  rule of revision 3 (prompt v4, rule v4), so it is compared with the revision 3
+-  runs of qwen3_vl and gemma4, not with their reported runs. Its own response
+-  cache, qwen3_vl_32b_v4.
++  rule of revision 3, so it is compared with the revision 3 runs of qwen3_vl
++  and gemma4, not with their reported runs. Run on dev 26-27 Nov with prompt
++  v4 and rule v4 (cache qwen3_vl_32b_v4; results/dev_rev3/); after that dev
++  run, the first prompt v5 (with a "settlement" field) and rule v5, cache
++  qwen3_vl_32b_v5 (results/dev_rev3b/); then, as for gemma4 and qwen3_vl, the
++  replacing prompt v5 (v4's fields, the second paragraph replaced) with rule
++  v4 (llm.resolver_rule), cache qwen3_vl_32b_v5b (results/dev_rev3c/). Its
++  comparison with qwen3_vl is exploratory, outside the
++  Holm family (configs/comparisons.yaml): it was added after test scores of
++  the other configurations had been seen.
+ 
+-  Its predictions must not be in results/predictions/ before grounded_gemma
+-  has run: the dense pool reads every other configuration's answers from there
+-  (see results/REVISIONS.md, the pool of grounded_gemma).
++  The dense pool no longer depends on what is in results/predictions/:
++  dense_retrieval and grounded_gemma load the pinned revision 3 index
++  (dense.index_signature), so where this configuration's predictions are
++  written changes nothing they retrieve.
+ ner:
+   model: null
+   entity_types: null
+@@ -48,5 +56,6 @@ llm:
+   revision: null
+   temperature: 0.0
+   top_p: null
+-  prompt_template: v4
+-  cache_name: qwen3_vl_32b_v4
++  prompt_template: v5
++  resolver_rule: v4
++  cache_name: qwen3_vl_32b_v5b
+diff --git a/configs/refined.yaml b/configs/refined.yaml
+index 0d06e1b..8fd8961 100644
+--- a/configs/refined.yaml
++++ b/configs/refined.yaml
+@@ -20,7 +20,10 @@ description: >
+   stages, not end-to-end: ReFinED is doing disambiguation only, Flair owns
+   detection.
+ 
+-  Revision 3 (2026-11-26, not yet run). Place rule all_places: a linked item
++  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/); after
++  that run, a failed Wikidata lookup under all_places is an error on the
++  record, retried on resume, not a shorter candidate list (src/wikidata.py;
++  results/REVISIONS.md). Place rule all_places: a linked item
+   with coordinates is its own one candidate; any other item gives every place
+   it links to, in no order of preference, and the reranker chooses among
+   them. The reported runs took the first place along a fixed chain
+diff --git a/configs/retrieve_rerank.yaml b/configs/retrieve_rerank.yaml
+index 510d707..3f311c0 100644
+--- a/configs/retrieve_rerank.yaml
++++ b/configs/retrieve_rerank.yaml
+@@ -18,7 +18,10 @@ description: >
+   mention, E5 cross-candidate rerank, top-1. No entity linker: disambiguation
+   is done entirely by the reranker over the retrieved candidate set.
+ 
+-  Revision 3 (2026-11-26, not yet run). Place rule all_places, as refined: a
++  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/); after
++  that run, a failed Wikidata lookup under all_places is an error on the
++  record, retried on resume, not a shorter candidate list (src/wikidata.py;
++  results/REVISIONS.md). Place rule all_places, as refined: a
+   person or organisation hit gives every place it links to, and the caps (5
+   persons, 10 organisations) count hits, not places. The reported runs gave a
+   person's place of birth and an organisation's headquarters (chain_v1). No
+diff --git a/results/REVISIONS.md b/results/REVISIONS.md
+index 5fabb0c..76aa3d8 100644
+--- a/results/REVISIONS.md
++++ b/results/REVISIONS.md
+@@ -123,7 +123,7 @@ no Wikidata item for 326 test posts. None of the 394 such entries has an item
+ on Wikidata (P1566, checked with the query service on 23 November), so these
+ answers are scored at country level, as the configuration says.
+ 
+-## Revision 3 (code changed on 26 November, not yet run)
++## Revision 3 (code changed on 26 November, run on the development split 26-27 November)
+ 
+ A review of the code and the stored test predictions found four more faults.
+ The code is changed on top of the audit (`0389a2d`); nothing has been run with
+@@ -277,9 +277,29 @@ sorted, comma-joined QIDs
+ `pool_hash` that `src/dense_index.py` puts in the index cache key). So
+ `grounded_gemma` is run before any revision 3 run replaces a file in
+ `results/predictions/`, and only its prompt and the candidate names change
+-against the reported run. `dense_retrieval` is not part of revision 3.
+-
+-**A new configuration, `qwen3_vl_32b` (added 26 November, not yet run).**
++against the reported run.
++
++*Corrected after the development run of 26-27 November:* the pool's QIDs were
++held fixed (the development run's index has the `pool_hash` above), but the
++index text was not. `src/dense_index.py` fetches each place's label,
++description, aliases and country from live Wikidata when it builds the index,
++and the index was built again on 27 November (13:03 UTC,
++`index_3530d31fa83aacb7.pkl`, 3,599 places, none unfetched, all 955 gold
++places in it). Between 23 and 27 November places changed label, description
++or country (Portuguese civil parishes got new descriptions; Q967746 was
++labelled "lima perú" and is now "Morón"): of the 1,263 places in the
++development top-10 lists of the reported run and of `dev_rev3`, 1,235 are in
++both, and 14 of those are listed with another label, description or country
++(counted from the stored candidate records). So 148 of the 735 development
++top-10 lists of `grounded_gemma`
++differ from those of the reported run; the gold place entered the top 10 in 8
++more posts and left it in none. The reported `dense_retrieval` was not run
++again, so `grounded_gemma` (revision 3) and `dense_retrieval` no longer shared
++a retriever, which breaks the planned comparison between them. The index is
++therefore pinned (below), and `dense_retrieval` is part of revision 3.
++
++**A new configuration, `qwen3_vl_32b` (added 26 November, first run on the
++development split 26-27 November).**
+ Qwen3-VL 32B Instruct (dense), on the same gateway, with the prompt and rule
+ of revision 3 (prompt v4, rule v4) and a cache of its own (`qwen3_vl_32b_v4`).
+ It compares size within one family: the reported `qwen3_vl` is Qwen3-VL
+@@ -290,9 +310,12 @@ pair `qwen3_vl` against `qwen3_vl_32b` is a tested comparison
+ (`configs/comparisons.yaml`), added with the configuration, after test scores
+ of the other configurations had been seen; it enlarges the Holm family by one,
+ so the adjusted p-values of the other pairs change slightly from the reported
+-ones.
+-Its predictions are kept out of `results/predictions/` until `grounded_gemma`
+-has run, so that the pool of `grounded_gemma` stays the one above.
++ones. (After the development run the pair was moved out of the Holm family;
++see below.)
++Its predictions were kept out of `results/predictions/` until `grounded_gemma`
++had run, so that the pool of `grounded_gemma` stayed the one above. With the
++pinned index (below) the pool is no longer read, so where its predictions
++are written no longer matters.
+ 
+ A run of `refined` or `blink` with this code also applies the reranking order
+ of the audit (`src/ranking.py`), which their reported runs predate (3 and 5
+@@ -315,6 +338,194 @@ from Wikidata) and at the end of `tests/test_resolver.py`. The corrections to
+ rule v4 change no configuration hash: the rule is chosen by
+ `prompt_template: v4`, and no record was written with v4 before them.
+ 
++### Revision 3, after the development run of 26-27 November
++
++Revision 3 was run on the development split on 26-27 November into
++`results/dev_rev3/` (code `57d76e7+dirty`, the code of commit `3ac1a37`). A
++review of that run found the faults below. **Every choice here was made on
++development results**; no test-split run was made with any of it. The runs
++after these changes are in `results/dev_rev3b/`, and `results/dev_rev3/` is
++kept as it is. Prompts and rules v1-v4, list v2 and every existing response
++cache are unchanged.
++
++1. **Prompt v4 lost the settlement.** Asked for "the location itself", on
++   clue-only posts the models named a street, venue, club or person that often
++   has no Wikidata item ("Pervez Musharraf Street", "Kossa F.C.", "CONMEBOL"),
++   and rule v4 then fell straight back to the country. Reported run against
++   `dev_rev3`: exact on condition A, `qwen3_vl` 10 to 3 of 71 posts (14% to
++   4%) and `gemma4` 6 to 2 (8% to 3%); status `not_found`, `gemma4` 39 to 91
++   and `qwen3_vl` 24 to 68 of 735. Prompt v5 (`src/llm_geo.py`) is v4 with one
++   more JSON field after `place`: `"settlement": "<the city, town or village
++   the location is in, or the location itself if it is one, or null if it is
++   not in one>"`; nothing else in the wording changed. Rule v5
++   (`resolve_place_settlement`, `src/resolver.py`) runs rule v4 on `place`;
++   only when the place is `not_found` or `ambiguous`, and `settlement` holds
++   a name that is not the place's (compared without case, accents or
++   punctuation), it runs the same search and choice on the settlement, with
++   the same country and coordinates. A settlement that resolves is the answer
++   (`field: settlement`, the place's status kept as `place_status`);
++   otherwise the answer is v4's (the country, then the continent). A place
++   that resolves never triggers a settlement search (`field: place`), and a
++   failed Wikidata request in either search ends in `error`. `gemma4`,
++   `qwen3_vl` and `qwen3_vl_32b` name prompt v5 and new caches
++   (`gemma4_12b_v5`, `qwen3_vl_235b_v5`, `qwen3_vl_32b_v5`).
++2. **The dense index is pinned.** The index of 27 November 13:03 UTC (above)
++   is the revision 3 index: `src/.dense_index/index_3530d31fa83aacb7.pkl`,
++   SHA-256 `7a93c61c576426c22733b4781e25ebc524ca1546227cad8b6165bce683660f6f`,
++   recorded next to it (`index_3530d31fa83aacb7.sha256`) and copied outside
++   `src/.dense_index` (`../dense_index_backup/`, beside the repository). A new
++   field, `dense.index_signature` (default null, in `_LATE_FIELDS`, so no
++   other configuration's hash moved), names it in `dense_retrieval` and
++   `grounded_gemma`. With it set, `src/dense_index.py` loads exactly that
++   file, checks its SHA-256 and the settings it was built with, and never
++   builds an index: a missing or different file is a `ConfigError`, which
++   aborts the run. The pool on disk is not read at all. Each prediction
++   record of the two configurations carries the signature
++   (`models.dense_index`).
++3. **The grounded list lost the mention.** Change (4) above shows the place's
++   name but dropped the mention it was reached from: for a post about the club
++   "C.R. Caála" the list showed only "Caála — Angola — city in Angola", and
++   the model declined. `grounded_gemma_linking` declined with the gold place
++   in its list in 29 development posts in the reported run and 44 in
++   `dev_rev3`; of the 33 posts newly declined that way, 14 were right in the
++   reported run (6 reached through an ORG mention, 4 through PER, 4 through
++   LOC). List v3 (`src/llm_grounded.py`) adds one field at the end of a
++   line, `from "<mention>"`, when a candidate has a `label` and the mention is
++   not that name (compared as above); nothing else in the prompt changed. The
++   list version is in the cache name per candidate source
++   (`LIST_VERSIONS`): linking `_v3` (`gemma4_12b_grounded_linking_v3`), dense
++   `_v2`. A dense candidate has no `label`, so its list is byte-identical to
++   v2 (`tests/test_grounded.py` checks every place of the pinned index), and
++   `grounded_gemma` keeps its cache. Stored candidates now carry `label`.
++4. **Containment of runs outside `results/predictions/`.**
++   `scripts/build_containment.py` read only `results/predictions/`, so the
++   wrong answers of `results/dev_rev3/` were never looked up and "exact or
++   inside" came out too low for it: 216 distinct (predicted, gold) pairs, in
++   356 records. It takes `--predictions-dir` (repeatable; default
++   `results/predictions`), and `--all` now looks up again only the pairs of the
++   directories read, keeping every other row of `results/containment.csv`.
++   Run on `results/dev_rev3` on 27 November.
++5. **Failed lookups under `all_places` were silent.** In `src/wikidata.py`,
++   `resolve_qid_to_candidates` threw away the completeness flag of the place
++   fetch and of the country lookup, so a failed request silently dropped
++   places, the fault rule v4 had fixed for the LLMs. Under `all_places` a
++   failed fetch or country/continent lookup now raises `WikidataError`, nothing
++   is cached for the request, the pipeline sets the record's `error`, and the
++   runner retries the post on resume. The same holds in `get_coords` under
++   `all_places`, for its search too (for every mention type, as the search
++   path's cache entries of `all_places` are its own). `chain_v1` stays as it
++   ran. Check: the linked QIDs of the `dev_rev3` records that have a link and
++   no candidate place (`refined` 7, `blink` 10, `grounded_gemma_linking` 7)
++   were resolved again with the day's Wikidata and empty caches on
++   27 November; all lookups completed and none gives a place (demonyms and
++   languages such as Croatian or Japanese, and BLINK links such as Tripoli
++   Q1568779 with no place property), so none of them was a failed request.
++6. **`qwen3_vl` against `qwen3_vl_32b` is exploratory.** The pair was added
++   after test scores had been seen, and inside the Holm family it moved the
++   adjusted p-values of the planned pairs. `configs/comparisons.yaml` keeps
++   it in a separate list, `exploratory:`; `scripts/analyse.py` computes the
++   same statistics for it outside the family, with an unadjusted p, labelled
++   exploratory (column `kind` of `table_stats_<split>.csv`). The planned
++   family is again the 14 pairs chosen in advance (`tests/test_comparisons.py`).
++7. **Stale texts.** The revision 3 notes of the configurations say "run on
++   dev 26-27 Nov"; the design texts of the three LLM configurations state rule
++   v5, with the statuses `empty` and `error`; the resolver's docstring says
++   that level `city` means the named place in v4 and v5.
++
++**Configuration hashes.** `dense.index_signature` is a late field, so only the
++two configurations that set it moved: `grounded_gemma` and `dense_retrieval`.
++`gemma4`, `qwen3_vl` and `qwen3_vl_32b` moved with their new caches. The
++hashes of `refined`, `blink`, `retrieve_rerank` and `grounded_gemma_linking`
++equal those of their `dev_rev3` records (the list version of
++`grounded_gemma_linking` is in its cache name, not its hash, so it is run into
++a new `--out-dir`). The exact code of the `dev_rev3b` runs, whose records say
++`+dirty`, is in `results/dev_rev3b/code.diff`. New tests: the end of
++`tests/test_resolver.py`, `tests/test_prompt.py`, `tests/test_grounded.py`,
++`tests/test_chain.py`, and the new `tests/test_dense_pin.py` and
++`tests/test_comparisons.py`.
++
++**Development results of `results/dev_rev3b/`** (run 27 November, 735
++development posts per configuration, no record with an error; containment
++looked up for `results/dev_rev3` and `results/dev_rev3b`). Exact match, in %,
++`dev_rev3` to `dev_rev3b`:
++
++| configuration | all | A | B | NOISE_A | NOISE_B | exact or inside, all |
++|---|---|---|---|---|---|---|
++| `gemma4` | 52.9 → 50.5 | 2.8 → 2.8 | 72.6 → 59.5 | 4.2 → 2.8 | 66.7 → 59.5 | 56.5 → 56.9 |
++| `qwen3_vl` | 61.9 → 59.7 | 4.2 → 8.5 | 85.7 → 71.4 | 4.2 → 11.3 | 82.1 → 71.4 | 66.4 → 67.6 |
++| `qwen3_vl_32b` | 60.3 → 56.5 | 7.0 → 4.2 | 82.1 → 64.3 | 4.2 → 4.2 | 82.1 → 69.0 | 62.9 → 63.8 |
++| `grounded_gemma_linking` | 55.8 → 58.8 | 28.2 → 42.3 | 65.5 → 67.9 | 12.7 → 31.0 | 63.1 → 64.3 | 64.8 → 67.5 |
++
++The reported runs had, for A: `gemma4` 8.5, `qwen3_vl` 14.1,
++`grounded_gemma_linking` 31.0.
++
++- *Prompt v5 and rule v5 did not do what they were for.* `not_found` fell
++  (`gemma4` 91 to 60, `qwen3_vl` 68 to 30, `qwen3_vl_32b` 37 to 36), and 117,
++  112 and 107 answers resolved through the settlement (63, 62 and 54 of them
++  exact). But with a settlement field to fill, the models moved the town into
++  `settlement` and named a landmark inside it as `place` ("Aga" became "Hideya
++  Station", "Blantyre" "Chichiri Museum", "Stari Grad" "Hvar Airport"). The
++  landmark resolves, so the settlement is never searched, and the answer lies
++  inside the gold place without being it: exact on B and NOISE_B fell by 10 to
++  18 points for all three models, while "exact or inside" stayed level or
++  rose. Of the posts of B and NOISE_B that were exact in `dev_rev3` and are not
++  in `dev_rev3b`, the place field resolved in 17 of 19 (`gemma4`), 21 of 21
++  (`qwen3_vl`) and 26 of 27 (`qwen3_vl_32b`). Exact on A came back only for
++  `qwen3_vl`, and only part of the way. No decision has been taken on v5.
++- *List v3 helped `grounded_gemma_linking`.* Declines with the gold place in
++  the list: 29 reported, 44 `dev_rev3`, 19 `dev_rev3b`; exact on A 28.2 to
++  42.3, the highest of any run.
++- *The pinned index.* The top-10 list of `dense_retrieval` in `dev_rev3b`
++  equals that of `grounded_gemma` in `dev_rev3` for all 735 posts. Its exact
++  match is that of the reported run (10.2%).
++
++#### Prompt v5 as run in results/dev_rev3b/ (replaced)
++
++As the model saw it (in `src/llm_geo.py` the braces of the JSON line are
++doubled):
++
++```
++You are a geolocation assistant. Given a text, identify the single most relevant real-world location the text refers to.
++
++The location can be a city, town or village, or any other named place. Name the location itself, not a person, organisation or event mentioned in the text.
++
++Respond with JSON only, no explanation:
++{"place": "<name of the location, or null if unknown>", "settlement": "<the city, town or village the location is in, or the location itself if it is one, or null if it is not in one>", "country": "<country name or null if unknown>", "continent": "<continent name or null if unknown>", "latitude": <approximate latitude of the location in decimal degrees, or null if unknown>, "longitude": <approximate longitude in decimal degrees, or null if unknown>, "refused": false}
++
++Set "refused" to true only if the text contains no geographic signal at all.
++
++Text: {text}
++```
++
++The prompt below keeps the name v5 and replaces that text. It is the final LLM
++prompt of revision 3. It was chosen on dev results, after v4 and the first v5.
++Its dev results are reported whatever they are. After its dev run, only clear
++bugs are fixed.
++
++#### Prompt v5 (final), run in results/dev_rev3c/
++
++```
++You are a geolocation assistant. Given a text, identify the single most relevant real-world location the text refers to.
++
++The location can be a city, town or village, or any other named place. If the text is about a building, street or venue, name the city, town or village it is in. If it is about a person, organisation or event, name the place where they are.
++
++Respond with JSON only, no explanation:
++{"place": "<name of the location, or null if unknown>", "country": "<country name or null if unknown>", "continent": "<continent name or null if unknown>", "latitude": <approximate latitude of the location in decimal degrees, or null if unknown>, "longitude": <approximate longitude in decimal degrees, or null if unknown>, "refused": false}
++
++Set "refused" to true only if the text contains no geographic signal at all.
++
++Text: {text}
++```
++
++It is v4 with the second paragraph replaced and v4's JSON fields (no
++`settlement`). Rule v5 needs the settlement field, so `gemma4`, `qwen3_vl`
++and `qwen3_vl_32b` resolve it with rule v4, through a new field,
++`llm.resolver_rule` (default null: the rule named like the prompt; in
++`_LATE_FIELDS`, so no other configuration's hash moved; recorded in each
++record as `models.llm_resolver_rule`). Rule v5 stays in the code with its
++tests. New caches: `gemma4_12b_v5b`, `qwen3_vl_235b_v5b`, `qwen3_vl_32b_v5b`.
++The exact code of the `dev_rev3c` runs is in `results/dev_rev3c/code.diff`.
++
+ ## What changed between the revisions of the other runs
+ 
+ Only changes under `src/` and `configs/` can change an answer.
+diff --git a/results/containment.csv b/results/containment.csv
+index 2fadd3e..9f898aa 100644
+--- a/results/containment.csv
++++ b/results/containment.csv
+@@ -17,7 +17,10 @@ Q1002598,Q30340,inside,2026-11-18T14:04:32+00:00
+ Q1004486,Q14773,none,2026-11-19T14:14:31+00:00
+ Q1005169,Q23564,none,2026-11-19T14:14:31+00:00
+ Q10056,Q2129610,none,2026-11-19T14:14:31+00:00
++Q1006,Q187807,none,2026-11-27T15:18:05+00:00
+ Q1006,Q320015,none,2026-11-19T14:14:31+00:00
++Q1006,Q3656,none,2026-11-27T17:23:02+00:00
++Q1006,Q844878,none,2026-11-27T17:23:02+00:00
+ Q1006321,Q2460416,none,2026-11-18T14:04:32+00:00
+ Q1007576,Q1335,none,2026-11-19T14:14:31+00:00
+ Q1007603,Q3755,none,2026-11-18T14:04:32+00:00
+@@ -28,6 +31,7 @@ Q1008525,Q219642,none,2026-11-19T14:14:31+00:00
+ Q1009,Q913390,none,2026-11-22T12:54:23+00:00
+ Q1009274,Q2924158,none,2026-11-23T22:25:26+00:00
+ Q1009718,Q613602,none,2026-11-19T14:14:31+00:00
++Q1010253,Q44059,none,2026-11-27T15:18:05+00:00
+ Q1010265,Q10952,none,2026-11-18T14:04:32+00:00
+ Q1010291,Q117040,none,2026-11-22T12:54:23+00:00
+ Q10103,Q986803,none,2026-11-19T14:14:31+00:00
+@@ -1005,12 +1009,15 @@ Q1013528,Q842877,none,2026-11-18T14:04:32+00:00
+ Q1013654,Q1023981,none,2026-11-19T14:14:31+00:00
+ Q1013654,Q30617,none,2026-11-18T14:04:32+00:00
+ Q1014,Q146779,none,2026-11-19T14:14:31+00:00
++Q1014,Q3656,none,2026-11-27T15:18:05+00:00
+ Q1014010,Q820235,none,2026-11-18T14:04:32+00:00
+ Q1014394,Q478207,none,2026-11-23T22:25:26+00:00
+ Q1014957,Q54886,inside,2026-11-18T14:04:32+00:00
+ Q1014957,Q81033,none,2026-11-23T22:25:26+00:00
+ Q1014957,Q81398,none,2026-11-23T22:25:26+00:00
+ Q101583,Q11225429,none,2026-11-18T14:04:32+00:00
++Q101583,Q5736,none,2026-11-27T15:18:05+00:00
++Q1016,Q131323,contains,2026-11-27T15:18:05+00:00
+ Q1016,Q606169,none,2026-11-19T14:14:31+00:00
+ Q1016,Q925424,none,2026-11-19T14:14:31+00:00
+ Q1018144,Q1725,none,2026-11-19T14:14:31+00:00
+@@ -1024,6 +1031,7 @@ Q1023707,Q8673,none,2026-11-19T16:33:11+00:00
+ Q1023712,Q187807,none,2026-11-23T22:25:26+00:00
+ Q1023712,Q2241864,none,2026-11-19T14:14:31+00:00
+ Q1023943,Q873835,none,2026-11-19T14:14:31+00:00
++Q102425801,Q2428683,none,2026-11-27T17:23:02+00:00
+ Q1025,Q1345571,none,2026-11-18T14:04:32+00:00
+ Q1025,Q1354319,none,2026-11-18T14:04:32+00:00
+ Q1025158,Q5680,none,2026-11-19T14:14:31+00:00
+@@ -1079,6 +1087,7 @@ Q10316038,Q3860,none,2026-11-19T16:33:11+00:00
+ Q10316038,Q768086,none,2026-11-19T16:33:11+00:00
+ Q1032233,Q956659,contains,2026-11-18T14:04:32+00:00
+ Q103251,Q672458,none,2026-11-19T14:14:31+00:00
++Q1033,Q1010367,none,2026-11-27T15:18:05+00:00
+ Q1033,Q1021350,none,2026-11-19T14:14:31+00:00
+ Q1033,Q1023703,contains,2026-11-19T14:14:31+00:00
+ Q1033,Q1061665,contains,2026-11-18T14:04:32+00:00
+@@ -1088,10 +1097,13 @@ Q1033,Q173270,none,2026-11-22T12:54:23+00:00
+ Q1033,Q191047,none,2026-11-19T14:14:31+00:00
+ Q1033,Q2015456,contains,2026-11-19T14:14:31+00:00
+ Q1033,Q37836,none,2026-11-22T12:54:23+00:00
++Q1033,Q40921,none,2026-11-27T15:18:05+00:00
+ Q1033,Q648749,contains,2026-11-22T12:54:23+00:00
+ Q1033,Q656954,none,2026-11-22T12:54:23+00:00
++Q1033,Q75938,none,2026-11-27T15:18:05+00:00
+ Q1033,Q8673,contains,2026-11-19T14:14:31+00:00
+ Q1033,Q9050593,none,2026-11-22T12:54:23+00:00
++Q1033,Q967746,none,2026-11-27T17:23:02+00:00
+ Q1033,Q994114,contains,2026-11-19T14:14:31+00:00
+ Q1034602,Q2000891,inside,2026-11-18T14:04:32+00:00
+ Q10353022,Q272254,inside,2026-11-18T14:04:32+00:00
+@@ -1154,6 +1166,7 @@ Q1048225,Q288685,none,2026-11-23T22:25:26+00:00
+ Q104846482,Q500111,none,2026-11-19T14:14:31+00:00
+ Q104864845,Q1315822,none,2026-11-18T14:04:32+00:00
+ Q104864845,Q188705,none,2026-11-23T22:25:26+00:00
++Q1048700,Q52028,none,2026-11-27T15:18:05+00:00
+ Q1049269,Q1354319,inside,2026-11-18T14:04:32+00:00
+ Q1049867,Q41699,contains,2026-11-18T14:04:32+00:00
+ Q10498823,Q108223,none,2026-11-23T22:25:26+00:00
+@@ -1199,6 +1212,7 @@ Q105617113,Q743716,none,2026-11-19T14:14:31+00:00
+ Q105641816,Q275635,none,2026-11-18T14:04:32+00:00
+ Q105672631,Q1223916,inside,2026-11-18T14:04:32+00:00
+ Q105672631,Q606169,none,2026-11-23T22:25:26+00:00
++Q1057707,Q658823,none,2026-11-27T15:18:05+00:00
+ Q105803450,Q1347432,none,2026-11-22T12:54:23+00:00
+ Q1058197,Q26040,none,2026-11-19T14:14:31+00:00
+ Q1058344,Q1677956,inside,2026-11-18T14:04:32+00:00
+@@ -1223,6 +1237,7 @@ Q10686,Q16740,none,2026-11-18T14:04:32+00:00
+ Q10686,Q26713,none,2026-11-19T14:14:31+00:00
+ Q10686,Q832382,none,2026-11-19T14:14:31+00:00
+ Q10686,Q984786,none,2026-11-19T14:14:31+00:00
++Q10690,Q3860,none,2026-11-27T15:18:05+00:00
+ Q1069385,Q140075,contains,2026-11-18T14:04:32+00:00
+ Q1070,Q4131,none,2026-11-18T14:04:32+00:00
+ Q1070,Q990771,none,2026-11-18T14:04:32+00:00
+@@ -1279,6 +1294,7 @@ Q108499,Q187838,none,2026-11-18T14:04:32+00:00
+ Q1085,Q811144,none,2026-11-19T14:14:31+00:00
+ Q10856931,Q1015672,contains,2026-11-18T14:04:32+00:00
+ Q108650496,Q583619,none,2026-11-19T14:14:31+00:00
++Q108678420,Q1353,none,2026-11-27T15:18:05+00:00
+ Q1086818,Q5747,none,2026-11-23T22:25:26+00:00
+ Q108727570,Q1023712,none,2026-11-19T14:14:31+00:00
+ Q108727570,Q11186060,none,2026-11-19T14:14:31+00:00
+@@ -1400,6 +1416,8 @@ Q110331435,Q203380,none,2026-11-19T14:14:31+00:00
+ Q110440,Q2721025,inside,2026-11-18T14:04:32+00:00
+ Q11045384,Q669171,none,2026-11-19T14:14:31+00:00
+ Q11045962,Q101583,none,2026-11-22T12:54:23+00:00
++Q11045962,Q11225429,none,2026-11-27T15:18:05+00:00
++Q110486298,Q3766,none,2026-11-27T15:18:05+00:00
+ Q11054804,Q26040,none,2026-11-19T14:14:31+00:00
+ Q11054804,Q54886,none,2026-11-19T14:14:31+00:00
+ Q11054804,Q883831,none,2026-11-19T14:14:31+00:00
+@@ -1459,6 +1477,7 @@ Q11251035,Q52591,none,2026-11-19T14:14:31+00:00
+ Q1125333,Q1223508,contains,2026-11-18T14:04:32+00:00
+ Q112812470,Q1023712,none,2026-11-23T22:25:26+00:00
+ Q112812470,Q208345,none,2026-11-23T22:25:26+00:00
++Q112812470,Q685105,none,2026-11-27T15:18:05+00:00
+ Q112812470,Q723246,none,2026-11-18T14:04:32+00:00
+ Q112813,Q732094,none,2026-11-23T22:25:26+00:00
+ Q112911772,Q3344653,none,2026-11-19T14:14:31+00:00
+@@ -1597,6 +1616,7 @@ Q115444,Q190005,contains,2026-11-18T14:04:32+00:00
+ Q115499195,Q167305,none,2026-11-18T14:04:32+00:00
+ Q115502859,Q14206163,none,2026-11-23T22:25:26+00:00
+ Q115502859,Q30996,none,2026-11-18T14:04:32+00:00
++Q115503168,Q47138,none,2026-11-27T15:18:05+00:00
+ Q115503552,Q128323,none,2026-11-23T22:25:26+00:00
+ Q115503552,Q1786597,none,2026-11-23T22:25:26+00:00
+ Q115503552,Q43463,none,2026-11-18T14:04:32+00:00
+@@ -1606,6 +1626,8 @@ Q1156,Q131323,none,2026-11-19T14:14:31+00:00
+ Q1156,Q270734,none,2026-11-19T14:14:31+00:00
+ Q1156,Q3894,none,2026-11-18T14:04:32+00:00
+ Q115628231,Q2608473,none,2026-11-19T14:14:31+00:00
++Q11568,Q10076,none,2026-11-27T15:18:05+00:00
++Q11568,Q273779,none,2026-11-27T17:23:02+00:00
+ Q11568,Q833016,none,2026-11-19T14:14:31+00:00
+ Q11572450,Q861610,none,2026-11-18T14:04:32+00:00
+ Q11572996,Q1202616,none,2026-11-19T16:33:11+00:00
+@@ -1634,7 +1656,9 @@ Q11662606,Q46197,none,2026-11-23T22:25:26+00:00
+ Q11664189,Q1853310,none,2026-11-19T14:14:31+00:00
+ Q117,Q1015,none,2026-11-19T14:14:31+00:00
+ Q117,Q1638374,none,2026-11-19T14:14:31+00:00
++Q117,Q187807,none,2026-11-27T15:18:05+00:00
+ Q117,Q3948919,none,2026-11-19T14:14:31+00:00
++Q117,Q40921,none,2026-11-27T15:18:05+00:00
+ Q117,Q615006,contains,2026-11-19T14:14:31+00:00
+ Q117040,Q2887,none,2026-11-18T14:04:32+00:00
+ Q1171024,Q213181,contains,2026-11-18T14:04:32+00:00
+@@ -1657,6 +1681,7 @@ Q117233055,Q698246,none,2026-11-19T14:14:31+00:00
+ Q117233055,Q734317,none,2026-11-19T16:33:11+00:00
+ Q117233055,Q986803,none,2026-11-19T16:33:11+00:00
+ Q11725,Q6540045,contains,2026-11-19T14:14:31+00:00
++Q11739,Q234783,none,2026-11-27T15:18:05+00:00
+ Q11741280,Q2004382,none,2026-11-19T16:33:11+00:00
+ Q11741280,Q514165,none,2026-11-18T14:04:32+00:00
+ Q117424631,Q3026080,inside,2026-11-18T14:04:32+00:00
+@@ -1673,6 +1698,7 @@ Q1186950,Q2203,none,2026-11-19T14:14:31+00:00
+ Q1187149,Q1062602,none,2026-11-19T14:14:31+00:00
+ Q1187149,Q504215,none,2026-11-19T14:14:31+00:00
+ Q1187149,Q909993,none,2026-11-19T14:14:31+00:00
++Q118743047,Q193409,none,2026-11-27T15:18:05+00:00
+ Q1187439,Q3656,none,2026-11-18T14:04:32+00:00
+ Q1187446,Q36260,none,2026-11-19T14:14:31+00:00
+ Q1187923,Q9863,none,2026-11-19T14:14:31+00:00
+@@ -1685,6 +1711,8 @@ Q1189579,Q2256382,none,2026-11-18T14:04:32+00:00
+ Q1189715,Q26713,none,2026-11-19T14:14:31+00:00
+ Q1189982,Q128323,none,2026-11-19T14:14:31+00:00
+ Q1190576,Q1189982,contains,2026-11-18T14:04:32+00:00
++Q1190691,Q1691479,none,2026-11-27T15:18:05+00:00
++Q1190932,Q685105,none,2026-11-27T15:18:05+00:00
+ Q1191078,Q724815,none,2026-11-18T14:04:32+00:00
+ Q1191103,Q938739,none,2026-11-18T14:04:32+00:00
+ Q1191195,Q3103735,none,2026-11-23T22:25:26+00:00
+@@ -1748,6 +1776,7 @@ Q12029982,Q2463056,none,2026-11-19T14:14:31+00:00
+ Q12051389,Q754790,none,2026-11-22T12:54:23+00:00
+ Q1205654,Q14467,none,2026-11-19T14:14:31+00:00
+ Q1205700,Q1205954,none,2026-11-19T14:14:31+00:00
++Q12061,Q5736,none,2026-11-27T15:18:05+00:00
+ Q12061381,Q193452,none,2026-11-18T14:04:32+00:00
+ Q12061890,Q41547,none,2026-11-23T22:25:26+00:00
+ Q12061890,Q996581,none,2026-11-18T14:04:32+00:00
+@@ -1822,6 +1851,7 @@ Q1223923,Q175741,none,2026-11-18T14:04:32+00:00
+ Q12245628,Q223587,none,2026-11-19T14:14:31+00:00
+ Q122547538,Q9863,none,2026-11-18T14:04:32+00:00
+ Q122572312,Q1774629,none,2026-11-18T14:04:32+00:00
++Q122723,Q946497,none,2026-11-27T15:18:05+00:00
+ Q122748901,Q339535,none,2026-11-18T14:04:32+00:00
+ Q122872237,Q128323,none,2026-11-19T16:33:11+00:00
+ Q122872237,Q216835,none,2026-11-19T14:14:31+00:00
+@@ -1861,10 +1891,12 @@ Q123625784,Q606162,none,2026-11-19T14:14:31+00:00
+ Q123627006,Q478302,none,2026-11-18T14:04:32+00:00
+ Q123627006,Q54886,none,2026-11-23T22:25:26+00:00
+ Q12388104,Q44241,inside,2026-11-18T14:04:32+00:00
++Q1240659,Q87,none,2026-11-27T15:18:05+00:00
+ Q12427461,Q1258901,none,2026-11-18T14:04:32+00:00
+ Q124335842,Q1205954,none,2026-11-18T14:04:32+00:00
+ Q124335842,Q17856,none,2026-11-23T22:25:26+00:00
+ Q124335842,Q1850,none,2026-11-23T22:25:26+00:00
++Q124350815,Q938835,none,2026-11-27T17:23:02+00:00
+ Q12439,Q16740,none,2026-11-18T14:04:32+00:00
+ Q12439,Q3397733,none,2026-11-19T14:14:31+00:00
+ Q1244851,Q487689,none,2026-11-19T14:14:31+00:00
+@@ -1896,6 +1928,7 @@ Q1261545,Q3940,none,2026-11-19T14:14:31+00:00
+ Q1261545,Q518785,none,2026-11-19T14:14:31+00:00
+ Q1261545,Q768086,none,2026-11-19T14:14:31+00:00
+ Q1261545,Q87,none,2026-11-19T14:14:31+00:00
++Q12642703,Q220383,none,2026-11-27T17:23:02+00:00
+ Q1264759,Q1722,inside,2026-11-19T14:14:31+00:00
+ Q12657940,Q743218,none,2026-11-18T14:04:32+00:00
+ Q1267157,Q713127,none,2026-11-18T14:04:32+00:00
+@@ -1922,6 +1955,7 @@ Q127430168,Q43387,none,2026-11-18T14:04:32+00:00
+ Q1276170,Q680964,inside,2026-11-18T14:04:32+00:00
+ Q12767180,Q207322,none,2026-11-19T14:14:31+00:00
+ Q12771,Q1998325,none,2026-11-18T14:04:32+00:00
++Q12771,Q69300,contains,2026-11-27T15:18:05+00:00
+ Q1278695,Q1354319,none,2026-11-23T22:25:26+00:00
+ Q1278695,Q2841,none,2026-11-18T14:04:32+00:00
+ Q1278713,Q2090609,none,2026-11-23T22:25:26+00:00
+@@ -1958,6 +1992,7 @@ Q12875678,Q11225429,none,2026-11-18T14:04:32+00:00
+ Q12892,Q818804,contains,2026-11-19T14:14:31+00:00
+ Q1291828,Q3656,none,2026-11-18T14:04:32+00:00
+ Q129610,Q3832,none,2026-11-18T14:04:32+00:00
++Q1297,Q234783,none,2026-11-27T15:18:05+00:00
+ Q1297,Q328518,none,2026-11-18T14:04:32+00:00
+ Q12994,Q649510,none,2026-11-18T14:04:32+00:00
+ Q130198938,Q1850,none,2026-11-18T14:04:32+00:00
+@@ -2155,6 +2190,7 @@ Q130542201,Q732548,none,2026-11-19T16:33:11+00:00
+ Q130542201,Q8673,inside,2026-11-19T14:14:31+00:00
+ Q1305649,Q5094262,none,2026-11-18T14:04:32+00:00
+ Q1305649,Q52028,none,2026-11-23T22:25:26+00:00
++Q1305986,Q121378,none,2026-11-27T15:18:05+00:00
+ Q1306551,Q192387,none,2026-11-23T22:25:26+00:00
+ Q1306551,Q2602007,none,2026-11-23T22:25:26+00:00
+ Q1306551,Q2907,none,2026-11-23T22:25:26+00:00
+@@ -2214,8 +2250,10 @@ Q1321,Q1880,none,2026-11-19T14:14:31+00:00
+ Q1321667,Q66568,none,2026-11-23T22:25:26+00:00
+ Q1321667,Q685509,inside,2026-11-18T14:04:32+00:00
+ Q1322397,Q1134454,inside,2026-11-18T14:04:32+00:00
++Q132241287,Q112031,none,2026-11-27T15:18:05+00:00
+ Q1322696,Q3859,inside,2026-11-18T14:04:32+00:00
+ Q1323073,Q867573,none,2026-11-19T14:14:31+00:00
++Q1324561,Q1691479,none,2026-11-27T15:18:05+00:00
+ Q132532,Q164481,none,2026-11-19T14:14:31+00:00
+ Q132679,Q131243,none,2026-11-19T14:14:31+00:00
+ Q1326975,Q1022953,none,2026-11-18T14:04:32+00:00
+@@ -2242,6 +2280,8 @@ Q133458975,Q2401624,none,2026-11-19T14:14:31+00:00
+ Q133458975,Q4191,none,2026-11-19T14:14:31+00:00
+ Q133458975,Q43512,none,2026-11-19T14:14:31+00:00
+ Q1335,Q3948919,none,2026-11-22T12:54:23+00:00
++Q1335,Q761,none,2026-11-27T15:18:05+00:00
++Q1335,Q946497,none,2026-11-27T17:23:02+00:00
+ Q133605,Q101583,none,2026-11-19T16:33:11+00:00
+ Q133605,Q1188560,none,2026-11-19T16:33:11+00:00
+ Q133605,Q1189982,none,2026-11-19T16:33:11+00:00
+@@ -2338,6 +2378,7 @@ Q135509529,Q384885,none,2026-11-23T22:25:26+00:00
+ Q135509529,Q713127,none,2026-11-19T16:33:11+00:00
+ Q135509529,Q916536,none,2026-11-23T22:25:26+00:00
+ Q1355960,Q272795,contains,2026-11-23T22:25:26+00:00
++Q13580795,Q2203,none,2026-11-27T17:23:02+00:00
+ Q135913318,Q2141,none,2026-11-23T22:25:26+00:00
+ Q135913318,Q826561,none,2026-11-18T14:04:32+00:00
+ Q135919237,Q1158732,none,2026-11-18T14:04:32+00:00
+@@ -2396,6 +2437,7 @@ Q136671328,Q1848,none,2026-11-19T14:14:31+00:00
+ Q136692982,Q13638,none,2026-11-19T14:14:31+00:00
+ Q136692982,Q14467,none,2026-11-23T22:25:26+00:00
+ Q136692982,Q335506,none,2026-11-23T22:25:26+00:00
++Q136692982,Q3766,none,2026-11-27T17:23:02+00:00
+ Q136692982,Q938739,none,2026-11-23T22:25:26+00:00
+ Q136693176,Q2066897,none,2026-11-19T14:14:31+00:00
+ Q136804288,Q108223,inside,2026-11-18T14:04:32+00:00
+@@ -2431,6 +2473,7 @@ Q137810403,Q600734,none,2026-11-19T16:33:11+00:00
+ Q137810403,Q846939,inside,2026-11-18T14:04:32+00:00
+ Q137810403,Q917865,none,2026-11-19T16:33:11+00:00
+ Q137810403,Q996581,none,2026-11-19T16:33:11+00:00
++Q137942158,Q706105,none,2026-11-27T15:18:05+00:00
+ Q1380722,Q13853,none,2026-11-18T14:04:32+00:00
+ Q138213251,Q565568,none,2026-11-23T22:25:26+00:00
+ Q1382713,Q209626,none,2026-11-22T12:54:23+00:00
+@@ -2440,6 +2483,7 @@ Q138578,Q267663,none,2026-11-18T14:04:32+00:00
+ Q138991768,Q275635,inside,2026-11-18T14:04:32+00:00
+ Q139088,Q1757764,none,2026-11-19T14:14:31+00:00
+ Q1392639,Q26906,none,2026-11-19T14:14:31+00:00
++Q1393407,Q3766,none,2026-11-27T15:18:05+00:00
+ Q1393804,Q193250,none,2026-11-22T12:54:23+00:00
+ Q1394169,Q54766,none,2026-11-18T14:04:32+00:00
+ Q139428531,Q1188560,none,2026-11-19T14:14:31+00:00
+@@ -2535,6 +2579,8 @@ Q141977,Q979922,none,2026-11-19T14:14:31+00:00
+ Q142,Q1008777,none,2026-11-22T12:54:23+00:00
+ Q142,Q141711,none,2026-11-19T14:14:31+00:00
+ Q142,Q208345,none,2026-11-22T12:54:23+00:00
++Q142,Q2604983,none,2026-11-27T15:18:05+00:00
++Q142,Q3854,none,2026-11-27T15:18:05+00:00
+ Q142,Q41295,none,2026-11-19T14:14:31+00:00
+ Q142,Q6454,contains,2026-11-19T14:14:31+00:00
+ Q142,Q6616,contains,2026-11-19T14:14:31+00:00
+@@ -3031,8 +3077,11 @@ Q1442495,Q969396,none,2026-11-19T14:14:31+00:00
+ Q1444404,Q14108797,contains,2026-11-18T14:04:32+00:00
+ Q14461,Q131290,none,2026-11-23T22:25:26+00:00
+ Q1447266,Q81033,none,2026-11-18T14:04:32+00:00
++Q145,Q1021350,contains,2026-11-27T15:18:05+00:00
+ Q145,Q1023707,none,2026-11-19T14:14:31+00:00
+ Q145,Q107393,contains,2026-11-19T14:14:31+00:00
++Q145,Q1198892,none,2026-11-27T15:18:05+00:00
++Q145,Q121378,none,2026-11-27T15:18:05+00:00
+ Q145,Q1347432,none,2026-11-19T14:14:31+00:00
+ Q145,Q142156,none,2026-11-19T14:14:31+00:00
+ Q145,Q15847,none,2026-11-19T14:14:31+00:00
+@@ -3041,6 +3090,7 @@ Q145,Q169134,none,2026-11-19T14:14:31+00:00
+ Q145,Q178405,none,2026-11-19T14:14:31+00:00
+ Q145,Q1866604,none,2026-11-19T14:14:31+00:00
+ Q145,Q187471,none,2026-11-22T12:54:23+00:00
++Q145,Q193486,none,2026-11-27T15:18:05+00:00
+ Q145,Q2365352,none,2026-11-19T14:14:31+00:00
+ Q145,Q2604983,none,2026-11-22T12:54:23+00:00
+ Q145,Q3043,none,2026-11-19T14:14:31+00:00
+@@ -3050,14 +3100,17 @@ Q145,Q320015,none,2026-11-19T14:14:31+00:00
+ Q145,Q3443238,none,2026-11-22T12:54:23+00:00
+ Q145,Q40921,none,2026-11-19T14:14:31+00:00
+ Q145,Q43512,none,2026-11-22T12:54:23+00:00
++Q145,Q61092,none,2026-11-27T15:18:05+00:00
+ Q145,Q646755,none,2026-11-22T12:54:23+00:00
+ Q145,Q694780,contains,2026-11-19T14:14:31+00:00
+ Q145,Q779813,contains,2026-11-19T14:14:31+00:00
+ Q145,Q809009,contains,2026-11-19T14:14:31+00:00
++Q145,Q822196,none,2026-11-27T15:18:05+00:00
+ Q145,Q831326,none,2026-11-22T12:54:23+00:00
+ Q145,Q832382,none,2026-11-22T12:54:23+00:00
+ Q145,Q915773,none,2026-11-22T12:54:23+00:00
+ Q145,Q936166,none,2026-11-19T14:14:31+00:00
++Q145,Q938835,none,2026-11-27T15:18:05+00:00
+ Q145,Q953088,none,2026-11-19T14:14:31+00:00
+ Q14502,Q3777,none,2026-11-23T22:25:26+00:00
+ Q14506938,Q26087,none,2026-11-19T16:33:11+00:00
+@@ -3112,8 +3165,11 @@ Q1486,Q2917260,none,2026-11-22T12:54:23+00:00
+ Q1486,Q3315989,none,2026-11-22T12:54:23+00:00
+ Q1486,Q680964,contains,2026-11-22T12:54:23+00:00
+ Q1486,Q938739,none,2026-11-22T12:54:23+00:00
++Q1486,Q938835,none,2026-11-27T17:23:02+00:00
+ Q14874966,Q45604,none,2026-11-18T14:04:32+00:00
++Q14875586,Q3766,none,2026-11-27T15:18:05+00:00
+ Q1488889,Q188693,inside,2026-11-18T14:04:32+00:00
++Q1489,Q1020261,none,2026-11-27T17:23:02+00:00
+ Q1489,Q1020277,none,2026-11-19T14:14:31+00:00
+ Q1489,Q20146689,none,2026-11-18T14:04:32+00:00
+ Q1489,Q2058593,none,2026-11-19T14:14:31+00:00
+@@ -3138,6 +3194,7 @@ Q1491,Q1860785,none,2026-11-18T14:04:32+00:00
+ Q1491,Q214215,none,2026-11-18T14:04:32+00:00
+ Q1491,Q2283725,none,2026-11-18T14:04:32+00:00
+ Q1491,Q3685,none,2026-11-22T12:54:23+00:00
++Q1491,Q946497,none,2026-11-27T15:18:05+00:00
+ Q14912,Q1786597,none,2026-11-18T14:04:32+00:00
+ Q14912,Q365,none,2026-11-18T14:04:32+00:00
+ Q1492,Q1122701,contains,2026-11-19T14:14:31+00:00
+@@ -3416,6 +3473,8 @@ Q155,Q1853310,none,2026-11-19T14:14:31+00:00
+ Q155,Q19689,none,2026-11-22T12:54:23+00:00
+ Q155,Q1994845,contains,2026-11-19T14:14:31+00:00
+ Q155,Q2448591,none,2026-11-19T14:14:31+00:00
++Q155,Q3751,none,2026-11-27T15:18:05+00:00
++Q155,Q3932,none,2026-11-27T15:18:05+00:00
+ Q155,Q636188,none,2026-11-19T14:14:31+00:00
+ Q155,Q6616,none,2026-11-19T14:14:31+00:00
+ Q155,Q672458,none,2026-11-22T12:54:23+00:00
+@@ -3456,7 +3515,9 @@ Q158129,Q2522772,none,2026-11-18T14:04:32+00:00
+ Q158216,Q2467,none,2026-11-19T14:14:31+00:00
+ Q15826,Q669171,none,2026-11-19T14:14:31+00:00
+ Q1583435,Q1757764,none,2026-11-18T14:04:32+00:00
++Q158903,Q234783,none,2026-11-27T15:18:05+00:00
+ Q159,Q19151,none,2026-11-22T12:54:23+00:00
++Q159,Q19520,contains,2026-11-27T15:18:05+00:00
+ Q159,Q47166,contains,2026-11-19T14:14:31+00:00
+ Q159,Q860729,none,2026-11-19T14:14:31+00:00
+ Q159232,Q658823,none,2026-11-18T14:04:32+00:00
+@@ -3468,9 +3529,11 @@ Q159273,Q1930,none,2026-11-18T14:04:32+00:00
+ Q159273,Q2868,none,2026-11-18T14:04:32+00:00
+ Q159273,Q48344,none,2026-11-18T14:04:32+00:00
+ Q159288,Q141263,none,2026-11-18T14:04:32+00:00
++Q1592949,Q3787,none,2026-11-27T15:18:05+00:00
+ Q15950804,Q223920,none,2026-11-19T14:14:31+00:00
+ Q1596453,Q459,none,2026-11-19T14:14:31+00:00
+ Q15983421,Q1113311,none,2026-11-19T14:14:31+00:00
++Q159848,Q612,none,2026-11-27T15:18:05+00:00
+ Q16,Q1008777,contains,2026-11-19T14:14:31+00:00
+ Q16,Q101583,none,2026-11-19T14:14:31+00:00
+ Q16,Q1061665,none,2026-11-19T14:14:31+00:00
+@@ -3478,6 +3541,7 @@ Q16,Q1062602,none,2026-11-19T14:14:31+00:00
+ Q16,Q12874663,none,2026-11-19T14:14:31+00:00
+ Q16,Q132189,none,2026-11-22T12:54:23+00:00
+ Q16,Q141263,none,2026-11-19T14:14:31+00:00
++Q16,Q1770672,none,2026-11-27T15:18:05+00:00
+ Q16,Q1998325,none,2026-11-23T22:25:26+00:00
+ Q16,Q200441,none,2026-11-19T14:14:31+00:00
+ Q16,Q201036,none,2026-11-19T14:14:31+00:00
+@@ -3494,6 +3558,7 @@ Q16,Q5189414,contains,2026-11-19T14:14:31+00:00
+ Q16,Q56069,none,2026-11-19T14:14:31+00:00
+ Q16,Q565568,none,2026-11-19T14:14:31+00:00
+ Q16,Q5680,none,2026-11-19T14:14:31+00:00
++Q16,Q60297275,none,2026-11-27T15:18:05+00:00
+ Q16,Q606288,none,2026-11-19T14:14:31+00:00
+ Q16,Q726143,none,2026-11-19T14:14:31+00:00
+ Q16,Q732548,none,2026-11-19T14:14:31+00:00
+@@ -3501,6 +3566,8 @@ Q16,Q743218,none,2026-11-19T14:14:31+00:00
+ Q16,Q774405,none,2026-11-19T14:14:31+00:00
+ Q16,Q851838,contains,2026-11-22T12:54:23+00:00
+ Q16,Q860729,none,2026-11-19T14:14:31+00:00
++Q16,Q915773,none,2026-11-27T17:23:02+00:00
++Q16,Q938835,none,2026-11-27T15:18:05+00:00
+ Q16,Q9733,none,2026-11-19T14:14:31+00:00
+ Q16,Q984379,contains,2026-11-19T14:14:31+00:00
+ Q16018484,Q14372756,none,2026-11-18T14:04:32+00:00
+@@ -3517,6 +3584,7 @@ Q1613240,Q209537,none,2026-11-23T22:25:26+00:00
+ Q16144867,Q192387,inside,2026-11-18T14:04:32+00:00
+ Q16144867,Q5094262,none,2026-11-23T22:25:26+00:00
+ Q16144867,Q706105,none,2026-11-19T16:33:11+00:00
++Q1615344,Q1021350,none,2026-11-27T15:18:05+00:00
+ Q161562,Q51103,none,2026-11-18T14:04:32+00:00
+ Q16201,Q2054265,none,2026-11-18T14:04:32+00:00
+ Q16204,Q3014914,none,2026-11-18T14:04:32+00:00
+@@ -3569,6 +3637,7 @@ Q16531668,Q1998325,none,2026-11-19T16:33:11+00:00
+ Q16531668,Q41295,none,2026-11-18T14:04:32+00:00
+ Q16531668,Q44241,none,2026-11-19T16:33:11+00:00
+ Q165352,Q171714,contains,2026-11-18T14:04:32+00:00
++Q1654959,Q774405,none,2026-11-27T15:18:05+00:00
+ Q16553,Q30617,none,2026-11-19T14:14:31+00:00
+ Q16553,Q3070,none,2026-11-18T14:04:32+00:00
+ Q16553,Q3948919,none,2026-11-19T14:14:31+00:00
+@@ -3578,6 +3647,7 @@ Q16555,Q1677361,none,2026-11-19T14:14:31+00:00
+ Q16555,Q615006,none,2026-11-18T14:04:32+00:00
+ Q16556,Q646498,none,2026-11-19T14:14:31+00:00
+ Q16556,Q986207,none,2026-11-18T14:04:32+00:00
++Q16557,Q81033,none,2026-11-27T17:23:02+00:00
+ Q1655784,Q166523,none,2026-11-19T14:14:31+00:00
+ Q165582,Q23551,contains,2026-11-18T14:04:32+00:00
+ Q1655875,Q48278,none,2026-11-18T14:04:32+00:00
+@@ -3607,6 +3677,7 @@ Q16632755,Q1023712,none,2026-11-19T14:14:31+00:00
+ Q16632755,Q12874663,none,2026-11-19T14:14:31+00:00
+ Q16632755,Q141263,none,2026-11-19T16:33:11+00:00
+ Q16632755,Q152902,none,2026-11-23T22:25:26+00:00
++Q16632755,Q193486,none,2026-11-27T15:18:05+00:00
+ Q16632755,Q2522772,none,2026-11-23T22:25:26+00:00
+ Q16632755,Q3141,inside,2026-11-23T22:25:26+00:00
+ Q16632755,Q3315989,none,2026-11-23T22:25:26+00:00
+@@ -3775,6 +3846,7 @@ Q16941590,Q672458,none,2026-11-23T22:25:26+00:00
+ Q16941590,Q990738,none,2026-11-23T22:25:26+00:00
+ Q16941721,Q1030194,none,2026-11-23T22:25:26+00:00
+ Q16941721,Q1471930,none,2026-11-23T22:25:26+00:00
++Q16941721,Q17541,none,2026-11-27T15:18:05+00:00
+ Q16941721,Q857788,inside,2026-11-18T14:04:32+00:00
+ Q16960102,Q1009276,none,2026-11-19T14:14:31+00:00
+ Q16960102,Q10121,none,2026-11-19T14:14:31+00:00
+@@ -4115,6 +4187,7 @@ Q17,Q204956,none,2026-11-19T14:14:31+00:00
+ Q17,Q329488,none,2026-11-19T14:14:31+00:00
+ Q17,Q36260,none,2026-11-19T14:14:31+00:00
+ Q17,Q3752,none,2026-11-19T14:14:31+00:00
++Q17,Q3816849,none,2026-11-27T15:18:05+00:00
+ Q17,Q658823,none,2026-11-22T12:54:23+00:00
+ Q17,Q915773,contains,2026-11-22T12:54:23+00:00
+ Q17,Q965754,none,2026-11-22T12:54:23+00:00
+@@ -4129,6 +4202,7 @@ Q17029447,Q75938,none,2026-11-23T22:25:26+00:00
+ Q17029447,Q9022,none,2026-11-23T22:25:26+00:00
+ Q17029447,Q916536,none,2026-11-19T14:14:31+00:00
+ Q17029447,Q967818,none,2026-11-23T22:25:26+00:00
++Q170482,Q1205954,none,2026-11-27T17:23:02+00:00
+ Q17049879,Q40191,none,2026-11-19T14:14:31+00:00
+ Q170540,Q174,none,2026-11-18T14:04:32+00:00
+ Q17054484,Q203380,none,2026-11-19T14:14:31+00:00
+@@ -4145,6 +4219,7 @@ Q1714424,Q17846423,none,2026-11-19T14:14:31+00:00
+ Q1718,Q2843,none,2026-11-19T14:14:31+00:00
+ Q17184273,Q2164117,none,2026-11-23T22:25:26+00:00
+ Q17184273,Q44244,none,2026-11-18T14:04:32+00:00
++Q172,Q131323,none,2026-11-27T15:18:05+00:00
+ Q172,Q142069,none,2026-11-19T14:14:31+00:00
+ Q172,Q2096,none,2026-11-22T12:54:23+00:00
+ Q172,Q2135,none,2026-11-18T14:04:32+00:00
+@@ -4173,6 +4248,8 @@ Q174,Q170578,none,2026-11-19T14:14:31+00:00
+ Q174,Q180215,none,2026-11-19T14:14:31+00:00
+ Q174,Q1966384,none,2026-11-18T14:04:32+00:00
+ Q174,Q2365352,none,2026-11-19T14:14:31+00:00
++Q174,Q3751,none,2026-11-27T15:18:05+00:00
++Q1740554,Q2460416,none,2026-11-27T15:18:05+00:00
+ Q1741,Q19689,none,2026-11-18T14:04:32+00:00
+ Q1741,Q28520,none,2026-11-18T14:04:32+00:00
+ Q17441,Q606169,inside,2026-11-18T14:04:32+00:00
+@@ -4188,6 +4265,7 @@ Q1752085,Q485176,inside,2026-11-18T14:04:32+00:00
+ Q175247,Q1072131,none,2026-11-19T14:14:31+00:00
+ Q175262,Q1087187,none,2026-11-18T14:04:32+00:00
+ Q17528,Q270734,inside,2026-11-18T14:04:32+00:00
++Q1752951,Q131323,none,2026-11-27T15:18:05+00:00
+ Q17534538,Q168954,none,2026-11-23T22:25:26+00:00
+ Q17534538,Q1960,none,2026-11-23T22:25:26+00:00
+ Q17534538,Q2135,none,2026-11-18T14:04:32+00:00
+@@ -4235,6 +4313,7 @@ Q1770672,Q724815,none,2026-11-18T14:04:32+00:00
+ Q17714776,Q112031,none,2026-11-23T22:25:26+00:00
+ Q17714776,Q3751,inside,2026-11-18T14:04:32+00:00
+ Q17714776,Q4361,none,2026-11-19T16:33:11+00:00
++Q1772983,Q1020261,none,2026-11-27T15:18:05+00:00
+ Q1773355,Q44213,none,2026-11-18T14:04:32+00:00
+ Q1773416,Q47916,contains,2026-11-18T14:04:32+00:00
+ Q1774252,Q1647665,none,2026-11-19T14:14:31+00:00
+@@ -4243,6 +4322,7 @@ Q1774252,Q2241864,none,2026-11-19T14:14:31+00:00
+ Q1775219,Q1236908,none,2026-11-19T14:14:31+00:00
+ Q177820,Q46325,none,2026-11-19T14:14:31+00:00
+ Q1780,Q27001,none,2026-11-19T14:14:31+00:00
++Q1781,Q141924,none,2026-11-27T15:18:05+00:00
+ Q1781,Q887222,none,2026-11-22T12:54:23+00:00
+ Q17810677,Q678018,none,2026-11-23T22:25:26+00:00
+ Q1782052,Q38807,none,2026-11-18T14:04:32+00:00
+@@ -4284,6 +4364,7 @@ Q18125,Q3876,none,2026-11-19T14:14:31+00:00
+ Q1812809,Q3443238,none,2026-11-18T14:04:32+00:00
+ Q1812900,Q44244,none,2026-11-19T14:14:31+00:00
+ Q181342,Q26175,contains,2026-11-18T14:04:32+00:00
++Q181427,Q833016,none,2026-11-27T15:18:05+00:00
+ Q1815313,Q119140,none,2026-11-18T14:04:32+00:00
+ Q18155140,Q2417144,inside,2026-11-18T14:04:32+00:00
+ Q181557,Q188904,none,2026-11-18T14:04:32+00:00
+@@ -4300,6 +4381,7 @@ Q182059,Q1184708,none,2026-11-18T14:04:32+00:00
+ Q1820897,Q9899,inside,2026-11-18T14:04:32+00:00
+ Q1821213,Q649510,none,2026-11-19T14:14:31+00:00
+ Q1821910,Q1362879,none,2026-11-18T14:04:32+00:00
++Q18227824,Q612,none,2026-11-27T15:18:05+00:00
+ Q182299,Q2004382,none,2026-11-22T12:54:23+00:00
+ Q18250,Q174684,contains,2026-11-18T14:04:32+00:00
+ Q1825355,Q819314,none,2026-11-19T14:14:31+00:00
+@@ -4391,6 +4473,7 @@ Q1842,Q431990,none,2026-11-22T12:54:23+00:00
+ Q18426,Q40194,none,2026-11-19T14:14:31+00:00
+ Q18431257,Q207322,none,2026-11-23T22:25:26+00:00
+ Q18431257,Q3315989,none,2026-11-18T14:04:32+00:00
++Q184345,Q3860,none,2026-11-27T15:18:05+00:00
+ Q18438,Q890879,none,2026-11-18T14:04:32+00:00
+ Q18438670,Q1848,none,2026-11-19T14:14:31+00:00
+ Q18444152,Q50382,inside,2026-11-18T14:04:32+00:00
+@@ -4416,6 +4499,7 @@ Q185156,Q1563,none,2026-11-23T22:25:26+00:00
+ Q185156,Q636188,none,2026-11-23T22:25:26+00:00
+ Q1854,Q185156,none,2026-11-19T14:14:31+00:00
+ Q1854,Q615006,none,2026-11-19T14:14:31+00:00
++Q185518,Q3718,none,2026-11-27T15:18:05+00:00
+ Q185591,Q876557,none,2026-11-18T14:04:32+00:00
+ Q1857770,Q131818,none,2026-11-23T22:25:26+00:00
+ Q1857770,Q1533,none,2026-11-19T14:14:31+00:00
+@@ -4446,6 +4530,7 @@ Q18682355,Q47166,none,2026-11-23T22:25:26+00:00
+ Q18683,Q672458,none,2026-11-19T14:14:31+00:00
+ Q18709,Q1966384,none,2026-11-19T14:14:31+00:00
+ Q187136,Q146779,none,2026-11-18T14:04:32+00:00
++Q187153,Q3718,none,2026-11-27T15:18:05+00:00
+ Q18718740,Q131243,inside,2026-11-18T14:04:32+00:00
+ Q18718740,Q142069,none,2026-11-23T22:25:26+00:00
+ Q18718740,Q3366952,none,2026-11-19T14:14:31+00:00
+@@ -4473,6 +4558,7 @@ Q1884773,Q52028,inside,2026-11-18T14:04:32+00:00
+ Q188705,Q3315989,none,2026-11-18T14:04:32+00:00
+ Q188731,Q43048,inside,2026-11-18T14:04:32+00:00
+ Q188736,Q1014394,none,2026-11-19T14:14:31+00:00
++Q1888848,Q185518,none,2026-11-27T17:23:02+00:00
+ Q188933,Q5838,contains,2026-11-18T14:04:32+00:00
+ Q189,Q9248,none,2026-11-19T14:14:31+00:00
+ Q189128,Q9022143,inside,2026-11-19T14:14:31+00:00
+@@ -4484,6 +4570,7 @@ Q18942368,Q1000336,none,2026-11-19T14:14:31+00:00
+ Q18942368,Q11477,none,2026-11-19T14:14:31+00:00
+ Q1895382,Q809009,none,2026-11-18T14:04:32+00:00
+ Q1896328,Q678018,none,2026-11-18T14:04:32+00:00
++Q1897,Q180717,none,2026-11-27T15:18:05+00:00
+ Q1898374,Q190897,none,2026-11-19T14:14:31+00:00
+ Q1899,Q131290,none,2026-11-19T14:14:31+00:00
+ Q1899,Q37836,none,2026-11-18T14:04:32+00:00
+@@ -4518,6 +4605,7 @@ Q192882,Q168193,contains,2026-11-18T14:04:32+00:00
+ Q192959,Q2280,none,2026-11-18T14:04:32+00:00
+ Q19297642,Q1853310,none,2026-11-19T14:14:31+00:00
+ Q19297642,Q733005,none,2026-11-19T14:14:31+00:00
++Q1930,Q2096,none,2026-11-27T15:18:05+00:00
+ Q1930359,Q179249,none,2026-11-22T12:54:23+00:00
+ Q19306,Q3366952,none,2026-11-23T22:25:26+00:00
+ Q1931173,Q163490,contains,2026-11-18T14:04:32+00:00
+@@ -4536,6 +4624,7 @@ Q19387554,Q680596,none,2026-11-18T14:04:32+00:00
+ Q193896,Q744070,none,2026-11-18T14:04:32+00:00
+ Q193929,Q737270,none,2026-11-18T14:04:32+00:00
+ Q19405029,Q5747,none,2026-11-19T14:14:31+00:00
++Q194332,Q3751,none,2026-11-27T15:18:05+00:00
+ Q194445,Q3726,none,2026-11-19T14:14:31+00:00
+ Q1945565,Q2262442,none,2026-11-19T14:14:31+00:00
+ Q19462661,Q210371,none,2026-11-18T14:04:32+00:00
+@@ -4552,6 +4641,7 @@ Q19565827,Q1000336,none,2026-11-23T22:25:26+00:00
+ Q19565827,Q16918,none,2026-11-23T22:25:26+00:00
+ Q19565827,Q2361658,none,2026-11-18T14:04:32+00:00
+ Q19565827,Q36214,none,2026-11-19T16:33:11+00:00
++Q19565827,Q706105,none,2026-11-27T15:18:05+00:00
+ Q19565828,Q36214,none,2026-11-19T14:14:31+00:00
+ Q19565829,Q2361658,none,2026-11-19T14:14:31+00:00
+ Q19566,Q514390,none,2026-11-19T14:14:31+00:00
+@@ -4579,6 +4669,7 @@ Q19658210,Q132679,none,2026-11-18T14:04:32+00:00
+ Q19658210,Q210161,none,2026-11-23T22:25:26+00:00
+ Q19658212,Q132679,none,2026-11-19T14:14:31+00:00
+ Q1965921,Q2467,none,2026-11-19T14:14:31+00:00
++Q19660,Q168954,none,2026-11-27T17:23:02+00:00
+ Q19660,Q887222,none,2026-11-19T14:14:31+00:00
+ Q196691,Q196694,none,2026-11-18T14:04:32+00:00
+ Q196694,Q131290,none,2026-11-23T22:25:26+00:00
+@@ -4614,6 +4705,7 @@ Q20,Q1023712,none,2026-11-19T14:14:31+00:00
+ Q20,Q1453033,contains,2026-11-19T14:14:31+00:00
+ Q20,Q168193,none,2026-11-19T14:14:31+00:00
+ Q20,Q226,none,2026-11-18T14:04:32+00:00
++Q20,Q3443238,none,2026-11-27T15:18:05+00:00
+ Q20,Q40738,none,2026-11-19T14:14:31+00:00
+ Q20,Q515536,contains,2026-11-19T14:14:31+00:00
+ Q20,Q695387,none,2026-11-18T14:04:32+00:00
+@@ -4624,6 +4716,7 @@ Q200028,Q4131,none,2026-11-18T14:04:32+00:00
+ Q200251,Q9863,none,2026-11-19T14:14:31+00:00
+ Q2003783,Q2398901,none,2026-11-18T14:04:32+00:00
+ Q2004074,Q30617,none,2026-11-18T14:04:32+00:00
++Q200441,Q3766,none,2026-11-27T15:18:05+00:00
+ Q20059339,Q48344,inside,2026-11-19T14:14:31+00:00
+ Q200605,Q69300,none,2026-11-18T14:04:32+00:00
+ Q200805,Q1026284,none,2026-11-18T14:04:32+00:00
+@@ -4714,6 +4807,7 @@ Q20289422,Q20146689,none,2026-11-22T12:54:23+00:00
+ Q20291245,Q993904,none,2026-11-19T14:14:31+00:00
+ Q20291664,Q181427,none,2026-11-18T14:04:32+00:00
+ Q20295752,Q1072131,none,2026-11-19T14:14:31+00:00
++Q20297230,Q44244,none,2026-11-27T15:18:05+00:00
+ Q202974,Q1652751,inside,2026-11-18T14:04:32+00:00
+ Q202974,Q1748,none,2026-11-23T22:25:26+00:00
+ Q203000,Q2428683,none,2026-11-22T12:54:23+00:00
+@@ -4729,6 +4823,7 @@ Q204151,Q1021350,none,2026-11-18T14:04:32+00:00
+ Q2042013,Q818804,none,2026-11-18T14:04:32+00:00
+ Q2042567,Q217262,none,2026-11-18T14:04:32+00:00
+ Q20445370,Q10620,none,2026-11-18T14:04:32+00:00
++Q2044626,Q761,none,2026-11-27T15:18:05+00:00
+ Q20456849,Q754790,none,2026-11-18T14:04:32+00:00
+ Q20457194,Q1009474,none,2026-11-23T22:25:26+00:00
+ Q20457194,Q1030194,none,2026-11-23T22:25:26+00:00
+@@ -4794,6 +4889,7 @@ Q206680,Q119140,none,2026-11-19T14:14:31+00:00
+ Q2070635,Q187346,none,2026-11-18T14:04:32+00:00
+ Q20710095,Q2321266,none,2026-11-19T14:14:31+00:00
+ Q2071352,Q105037,none,2026-11-18T14:04:32+00:00
++Q20717624,Q3766,none,2026-11-27T15:18:05+00:00
+ Q207199,Q2900,none,2026-11-23T22:25:26+00:00
+ Q207199,Q597,contains,2026-11-18T14:04:32+00:00
+ Q207322,Q3315989,none,2026-11-18T14:04:32+00:00
+@@ -4814,6 +4910,7 @@ Q2082,Q142069,none,2026-11-18T14:04:32+00:00
+ Q2082,Q36262,none,2026-11-18T14:04:32+00:00
+ Q208247,Q208345,none,2026-11-19T14:14:31+00:00
+ Q208318,Q193452,none,2026-11-18T14:04:32+00:00
++Q208329,Q38834,none,2026-11-27T17:23:02+00:00
+ Q2084630,Q713127,none,2026-11-18T14:04:32+00:00
+ Q2084681,Q232842,contains,2026-11-18T14:04:32+00:00
+ Q2085813,Q112031,none,2026-11-18T14:04:32+00:00
+@@ -4823,6 +4920,7 @@ Q208605,Q132189,none,2026-11-18T14:04:32+00:00
+ Q208709,Q844878,none,2026-11-18T14:04:32+00:00
+ Q208715,Q3238,none,2026-11-23T22:25:26+00:00
+ Q20871921,Q979922,none,2026-11-19T14:14:31+00:00
++Q2088119,Q2066897,none,2026-11-27T15:18:05+00:00
+ Q208878,Q20289507,none,2026-11-18T14:04:32+00:00
+ Q208948,Q1898698,none,2026-11-23T22:25:26+00:00
+ Q2089594,Q478207,none,2026-11-18T14:04:32+00:00
+@@ -4833,6 +4931,7 @@ Q20924994,Q267431,none,2026-11-19T16:33:11+00:00
+ Q20924994,Q5831,none,2026-11-19T16:33:11+00:00
+ Q20924994,Q744070,inside,2026-11-18T14:04:32+00:00
+ Q20924994,Q776965,none,2026-11-19T16:33:11+00:00
++Q20931780,Q234783,inside,2026-11-27T17:23:02+00:00
+ Q2094101,Q2460416,contains,2026-11-18T14:04:32+00:00
+ Q20949752,Q744070,inside,2026-11-23T22:25:26+00:00
+ Q20949752,Q9347,none,2026-11-18T14:04:32+00:00
+@@ -4915,6 +5014,7 @@ Q21098045,Q87,none,2026-11-23T22:25:26+00:00
+ Q21098045,Q986207,none,2026-11-18T14:04:32+00:00
+ Q21115,Q384,none,2026-11-18T14:04:32+00:00
+ Q2113237,Q938739,none,2026-11-18T14:04:32+00:00
++Q2114206,Q3932,none,2026-11-27T15:18:05+00:00
+ Q211618,Q18808,inside,2026-11-19T14:14:31+00:00
+ Q211618,Q3138,none,2026-11-18T14:04:32+00:00
+ Q2116218,Q809009,none,2026-11-18T14:04:32+00:00
+@@ -4990,6 +5090,7 @@ Q217,Q1191195,none,2026-11-18T14:04:32+00:00
+ Q217156,Q779813,none,2026-11-18T14:04:32+00:00
+ Q217346,Q187471,none,2026-11-18T14:04:32+00:00
+ Q21738024,Q1519,none,2026-11-18T14:04:32+00:00
++Q21738024,Q612,none,2026-11-27T15:18:05+00:00
+ Q217432,Q1061665,none,2026-11-22T12:54:23+00:00
+ Q217432,Q860729,none,2026-11-19T14:14:31+00:00
+ Q217599,Q986207,none,2026-11-18T14:04:32+00:00
+@@ -5283,6 +5384,7 @@ Q219,Q514390,none,2026-11-22T12:54:23+00:00
+ Q21908470,Q3178685,none,2026-11-23T22:25:26+00:00
+ Q2190952,Q5276,none,2026-11-18T14:04:32+00:00
+ Q21932837,Q34932,none,2026-11-19T14:14:31+00:00
++Q21939780,Q1418537,none,2026-11-27T15:18:05+00:00
+ Q21943840,Q2522772,none,2026-11-18T14:04:32+00:00
+ Q21943970,Q10620,none,2026-11-23T22:25:26+00:00
+ Q219458,Q33986,contains,2026-11-18T14:04:32+00:00
+@@ -5295,6 +5397,7 @@ Q21974276,Q942590,inside,2026-11-18T14:04:32+00:00
+ Q21982579,Q2280,none,2026-11-19T14:14:31+00:00
+ Q22,Q107393,contains,2026-11-22T12:54:23+00:00
+ Q22,Q18341,none,2026-11-18T14:04:32+00:00
++Q22,Q34692,none,2026-11-27T15:18:05+00:00
+ Q22,Q65914,none,2026-11-19T14:14:31+00:00
+ Q220,Q180212,contains,2026-11-19T14:14:31+00:00
+ Q220,Q19689,none,2026-11-22T12:54:23+00:00
+@@ -5311,6 +5414,7 @@ Q22026819,Q395919,none,2026-11-18T14:04:32+00:00
+ Q22032659,Q1072131,none,2026-11-18T14:04:32+00:00
+ Q22032659,Q8678,none,2026-11-23T22:25:26+00:00
+ Q220383,Q3866,none,2026-11-23T22:25:26+00:00
++Q220445,Q611919,none,2026-11-27T15:18:05+00:00
+ Q22044873,Q1489,none,2026-11-19T16:33:11+00:00
+ Q22044873,Q149955,none,2026-11-18T14:04:32+00:00
+ Q22044873,Q1791724,inside,2026-11-18T14:04:32+00:00
+@@ -5339,11 +5443,13 @@ Q22079400,Q649510,none,2026-11-18T14:04:32+00:00
+ Q22079400,Q822196,none,2026-11-19T16:33:11+00:00
+ Q22079400,Q938835,none,2026-11-19T16:33:11+00:00
+ Q22079400,Q985382,none,2026-11-19T16:33:11+00:00
++Q2211,Q612,none,2026-11-27T17:23:02+00:00
+ Q221203,Q226,none,2026-11-23T22:25:26+00:00
+ Q221203,Q26087,none,2026-11-23T22:25:26+00:00
+ Q221203,Q695387,none,2026-11-22T12:54:23+00:00
+ Q22130229,Q495826,inside,2026-11-19T14:14:31+00:00
+ Q221645,Q1754,inside,2026-11-18T14:04:32+00:00
++Q221812,Q3656,none,2026-11-27T15:18:05+00:00
+ Q221921,Q2907,none,2026-11-18T14:04:32+00:00
+ Q222,Q190897,contains,2026-11-19T14:14:31+00:00
+ Q222,Q4539151,none,2026-11-19T14:14:31+00:00
+@@ -5351,15 +5457,18 @@ Q222,Q47166,none,2026-11-19T14:14:31+00:00
+ Q2220193,Q39545,inside,2026-11-19T14:14:31+00:00
+ Q2220704,Q209537,none,2026-11-18T14:04:32+00:00
+ Q222213,Q34497,inside,2026-11-22T12:54:23+00:00
++Q22230763,Q34692,none,2026-11-27T17:23:02+00:00
+ Q2226347,Q2157253,inside,2026-11-18T14:04:32+00:00
+ Q222738,Q2460416,none,2026-11-18T14:04:32+00:00
+ Q2228410,Q2560244,none,2026-11-19T14:14:31+00:00
+ Q222878,Q606162,none,2026-11-19T14:14:31+00:00
++Q223,Q63954,none,2026-11-27T17:23:02+00:00
+ Q223177,Q1022953,none,2026-11-22T12:54:23+00:00
+ Q22338730,Q141924,none,2026-11-18T14:04:32+00:00
+ Q2234508,Q28520,none,2026-11-19T14:14:31+00:00
+ Q22352749,Q979922,none,2026-11-18T14:04:32+00:00
+ Q22355764,Q14452,none,2026-11-18T14:04:32+00:00
++Q223587,Q234783,none,2026-11-27T15:18:05+00:00
+ Q223587,Q466054,none,2026-11-18T14:04:32+00:00
+ Q22358757,Q518785,none,2026-11-18T14:04:32+00:00
+ Q2235985,Q1010367,none,2026-11-19T14:14:31+00:00
+@@ -5386,6 +5495,8 @@ Q22423430,Q8717,none,2026-11-23T22:25:26+00:00
+ Q22424875,Q3838,none,2026-11-18T14:04:32+00:00
+ Q22433331,Q1418537,none,2026-11-18T14:04:32+00:00
+ Q22434761,Q2604983,none,2026-11-18T14:04:32+00:00
++Q2244278,Q165204,none,2026-11-27T15:18:05+00:00
++Q2244278,Q597,none,2026-11-27T15:18:05+00:00
+ Q22454168,Q1394912,none,2026-11-19T14:14:31+00:00
+ Q22455793,Q500111,none,2026-11-18T14:04:32+00:00
+ Q22470413,Q3178685,none,2026-11-19T14:14:31+00:00
+@@ -5435,9 +5546,11 @@ Q2271761,Q20146689,contains,2026-11-18T14:04:32+00:00
+ Q227599,Q69300,none,2026-11-19T14:14:31+00:00
+ Q2277021,Q3196979,inside,2026-11-18T14:04:32+00:00
+ Q228,Q492533,none,2026-11-18T14:04:32+00:00
++Q2280,Q140147,none,2026-11-27T17:23:02+00:00
+ Q2283725,Q1491,none,2026-11-19T16:33:11+00:00
+ Q2283725,Q214215,none,2026-11-23T22:25:26+00:00
+ Q2286957,Q216835,none,2026-11-18T14:04:32+00:00
++Q22889,Q3854,none,2026-11-27T15:18:05+00:00
+ Q229022,Q518785,none,2026-11-19T14:14:31+00:00
+ Q229022,Q768086,none,2026-11-19T14:14:31+00:00
+ Q22932686,Q223587,none,2026-11-18T14:04:32+00:00
+@@ -5452,7 +5565,9 @@ Q2296377,Q164481,none,2026-11-18T14:04:32+00:00
+ Q22966,Q121378,none,2026-11-23T22:25:26+00:00
+ Q229892,Q19689,contains,2026-11-18T14:04:32+00:00
+ Q22991985,Q880529,none,2026-11-18T14:04:32+00:00
++Q230,Q1189982,none,2026-11-27T15:18:05+00:00
+ Q230,Q47062,none,2026-11-19T14:14:31+00:00
++Q230,Q994,contains,2026-11-27T15:18:05+00:00
+ Q2301532,Q142289,none,2026-11-19T14:14:31+00:00
+ Q2301532,Q9899,inside,2026-11-19T14:14:31+00:00
+ Q2302663,Q41183,inside,2026-11-18T14:04:32+00:00
+@@ -5631,6 +5746,7 @@ Q23661,Q1223916,none,2026-11-22T12:54:23+00:00
+ Q23661,Q146779,none,2026-11-18T14:04:32+00:00
+ Q23661,Q1898698,none,2026-11-18T14:04:32+00:00
+ Q23661,Q61092,none,2026-11-18T14:04:32+00:00
++Q23661,Q672458,none,2026-11-27T15:18:05+00:00
+ Q2366966,Q210636,contains,2026-11-18T14:04:32+00:00
+ Q23680817,Q1853310,none,2026-11-19T16:33:11+00:00
+ Q23680817,Q201036,none,2026-11-19T16:33:11+00:00
+@@ -5729,6 +5845,8 @@ Q23858165,Q2900,none,2026-11-23T22:25:26+00:00
+ Q239,Q1615344,none,2026-11-19T14:14:31+00:00
+ Q239,Q518785,none,2026-11-19T14:14:31+00:00
+ Q239,Q984888,none,2026-11-19T14:14:31+00:00
++Q239,Q994,none,2026-11-27T15:18:05+00:00
++Q239097,Q168954,none,2026-11-27T15:18:05+00:00
+ Q2392859,Q1994845,none,2026-11-18T14:04:32+00:00
+ Q239304,Q329266,none,2026-11-22T12:54:23+00:00
+ Q2397111,Q44214,none,2026-11-19T14:14:31+00:00
+@@ -6394,6 +6512,7 @@ Q25185600,Q464004,none,2026-11-18T14:04:32+00:00
+ Q252,Q1014010,none,2026-11-19T14:14:31+00:00
+ Q252,Q1397223,none,2026-11-22T12:54:23+00:00
+ Q252,Q15812,contains,2026-11-19T14:14:31+00:00
++Q252,Q15847,contains,2026-11-27T15:18:05+00:00
+ Q252,Q20289507,none,2026-11-19T14:14:31+00:00
+ Q252,Q37104,none,2026-11-19T14:14:31+00:00
+ Q252,Q3947434,none,2026-11-19T14:14:31+00:00
+@@ -6467,6 +6586,7 @@ Q25473666,Q819314,none,2026-11-19T14:14:31+00:00
+ Q25473666,Q993904,none,2026-11-19T16:33:11+00:00
+ Q254925,Q3733,inside,2026-11-18T14:04:32+00:00
+ Q2550691,Q371757,inside,2026-11-18T14:04:32+00:00
++Q2572293,Q1010367,none,2026-11-27T15:18:05+00:00
+ Q2574898,Q994450,none,2026-11-23T22:25:26+00:00
+ Q2577994,Q13638,none,2026-11-23T22:25:26+00:00
+ Q2577994,Q23564,none,2026-11-18T14:04:32+00:00
+@@ -6485,6 +6605,7 @@ Q258,Q2448591,none,2026-11-19T14:14:31+00:00
+ Q258,Q47166,none,2026-11-19T14:14:31+00:00
+ Q258,Q5112,none,2026-11-19T14:14:31+00:00
+ Q258,Q753195,none,2026-11-19T14:14:31+00:00
++Q258,Q844878,none,2026-11-27T15:18:05+00:00
+ Q258,Q9022,none,2026-11-19T14:14:31+00:00
+ Q2580525,Q876557,none,2026-11-23T22:25:26+00:00
+ Q2581892,Q2900,inside,2026-11-19T14:14:31+00:00
+@@ -6501,6 +6622,7 @@ Q2594035,Q1072131,none,2026-11-18T14:04:32+00:00
+ Q2595707,Q3870,inside,2026-11-18T14:04:32+00:00
+ Q2596084,Q202973,none,2026-11-19T14:14:31+00:00
+ Q2599562,Q21176,inside,2026-11-18T14:04:32+00:00
++Q26,Q2630835,none,2026-11-27T15:18:05+00:00
+ Q260009,Q3274,contains,2026-11-18T14:04:32+00:00
+ Q2603118,Q232842,inside,2026-11-18T14:04:32+00:00
+ Q2605530,Q157034,none,2026-11-19T14:14:31+00:00
+@@ -6516,6 +6638,7 @@ Q262,Q166523,none,2026-11-22T12:54:23+00:00
+ Q262,Q648749,none,2026-11-19T14:14:31+00:00
+ Q2621603,Q2359107,contains,2026-11-18T14:04:32+00:00
+ Q26222634,Q753195,none,2026-11-19T14:14:31+00:00
++Q26224736,Q220383,inside,2026-11-27T15:18:05+00:00
+ Q26226186,Q984786,inside,2026-11-18T14:04:32+00:00
+ Q26226864,Q1020261,none,2026-11-18T14:04:32+00:00
+ Q26226864,Q979922,none,2026-11-23T22:25:26+00:00
+@@ -6610,6 +6733,7 @@ Q26227504,Q9733,none,2026-11-19T16:33:11+00:00
+ Q26227504,Q984379,none,2026-11-19T16:33:11+00:00
+ Q26227504,Q984786,none,2026-11-19T16:33:11+00:00
+ Q26273,Q13353,none,2026-11-19T14:14:31+00:00
++Q2631462,Q164481,none,2026-11-27T15:18:05+00:00
+ Q2632211,Q753195,none,2026-11-18T14:04:32+00:00
+ Q2632912,Q2164117,none,2026-11-23T22:25:26+00:00
+ Q2632912,Q2654892,none,2026-11-23T22:25:26+00:00
+@@ -6634,6 +6758,7 @@ Q2652856,Q3932,none,2026-11-19T14:14:31+00:00
+ Q2652980,Q157065,inside,2026-11-18T14:04:32+00:00
+ Q26535025,Q3674,none,2026-11-22T12:54:23+00:00
+ Q2664242,Q3138,none,2026-11-18T14:04:32+00:00
++Q26669037,Q87,none,2026-11-27T15:18:05+00:00
+ Q2667290,Q1085,inside,2026-11-18T14:04:32+00:00
+ Q2668183,Q25304,inside,2026-11-18T14:04:32+00:00
+ Q26705749,Q132830,none,2026-11-18T14:04:32+00:00
+@@ -6661,6 +6786,7 @@ Q26793,Q9901,none,2026-11-18T14:04:32+00:00
+ Q2679547,Q27001,none,2026-11-18T14:04:32+00:00
+ Q26881,Q1397223,none,2026-11-19T14:14:31+00:00
+ Q2689418,Q845851,inside,2026-11-18T14:04:32+00:00
++Q269,Q4539151,none,2026-11-27T15:18:05+00:00
+ Q2692902,Q36526,none,2026-11-18T14:04:32+00:00
+ Q2695389,Q1309,inside,2026-11-18T14:04:32+00:00
+ Q26988,Q170482,none,2026-11-19T14:14:31+00:00
+@@ -6734,6 +6860,7 @@ Q27611,Q205648,contains,2026-11-19T16:33:11+00:00
+ Q27611,Q3215806,none,2026-11-19T16:33:11+00:00
+ Q27611,Q34820,none,2026-11-18T14:04:32+00:00
+ Q2763109,Q1072131,none,2026-11-19T14:14:31+00:00
++Q27649307,Q2203,none,2026-11-27T15:18:05+00:00
+ Q276565,Q180717,contains,2026-11-18T14:04:32+00:00
+ Q2766701,Q1023707,none,2026-11-18T14:04:32+00:00
+ Q27694848,Q10076,none,2026-11-19T16:33:11+00:00
+@@ -6814,6 +6941,7 @@ Q282908,Q266438,none,2026-11-23T22:25:26+00:00
+ Q282908,Q3014914,none,2026-11-23T22:25:26+00:00
+ Q2832731,Q732094,none,2026-11-18T14:04:32+00:00
+ Q28339496,Q60297275,inside,2026-11-19T14:14:31+00:00
++Q283454,Q938835,none,2026-11-27T15:18:05+00:00
+ Q2839574,Q3948919,none,2026-11-19T14:14:31+00:00
+ Q2839574,Q44244,none,2026-11-19T14:14:31+00:00
+ Q283970,Q10609,inside,2026-11-18T14:04:32+00:00
+@@ -6895,7 +7023,12 @@ Q29,Q38807,none,2026-11-19T14:14:31+00:00
+ Q29,Q679383,none,2026-11-19T14:14:31+00:00
+ Q29,Q698246,contains,2026-11-19T14:14:31+00:00
+ Q29,Q743716,contains,2026-11-19T14:14:31+00:00
++Q29,Q81033,none,2026-11-27T15:18:05+00:00
++Q29,Q833016,none,2026-11-27T15:18:05+00:00
+ Q29,Q873835,none,2026-11-22T12:54:23+00:00
++Q29,Q9022143,none,2026-11-27T15:18:05+00:00
++Q29,Q9050593,none,2026-11-27T15:18:05+00:00
++Q29,Q915773,none,2026-11-27T15:18:05+00:00
+ Q29,Q967746,none,2026-11-22T12:54:23+00:00
+ Q2900,Q1189982,none,2026-11-22T12:54:23+00:00
+ Q2900,Q14460,none,2026-11-19T14:14:31+00:00
+@@ -6927,6 +7060,7 @@ Q29223,Q101583,none,2026-11-18T14:04:32+00:00
+ Q29245,Q1015690,none,2026-11-18T14:04:32+00:00
+ Q2928204,Q996851,inside,2026-11-18T14:04:32+00:00
+ Q2933,Q946497,none,2026-11-19T14:14:31+00:00
++Q29341922,Q61092,inside,2026-11-27T15:18:05+00:00
+ Q2937281,Q2000891,none,2026-11-23T22:25:26+00:00
+ Q2938039,Q779813,none,2026-11-23T22:25:26+00:00
+ Q29430296,Q657461,none,2026-11-18T14:04:32+00:00
+@@ -6969,6 +7103,7 @@ Q298,Q3619316,none,2026-11-19T14:14:31+00:00
+ Q298,Q3656,contains,2026-11-19T14:14:31+00:00
+ Q298,Q3777,none,2026-11-19T14:14:31+00:00
+ Q298,Q3841,contains,2026-11-19T14:14:31+00:00
++Q298,Q3860,contains,2026-11-27T15:18:05+00:00
+ Q298,Q3894,none,2026-11-19T14:14:31+00:00
+ Q298,Q565568,none,2026-11-19T14:14:31+00:00
+ Q298,Q5764,none,2026-11-19T14:14:31+00:00
+@@ -6976,6 +7111,7 @@ Q298,Q59698,none,2026-11-19T14:14:31+00:00
+ Q298,Q851838,none,2026-11-19T14:14:31+00:00
+ Q298,Q8717,none,2026-11-19T14:14:31+00:00
+ Q298,Q996581,none,2026-11-22T12:54:23+00:00
++Q2980623,Q1014394,none,2026-11-27T15:18:05+00:00
+ Q2991108,Q115403,none,2026-11-18T14:04:32+00:00
+ Q29937,Q29888,contains,2026-11-18T14:04:32+00:00
+ Q29960068,Q272254,inside,2026-11-23T22:25:26+00:00
+@@ -7007,12 +7143,14 @@ Q30,Q329266,contains,2026-11-19T14:14:31+00:00
+ Q30,Q3300920,contains,2026-11-19T14:14:31+00:00
+ Q30,Q373567,contains,2026-11-19T14:14:31+00:00
+ Q30,Q3832,none,2026-11-19T14:14:31+00:00
++Q30,Q38834,none,2026-11-27T15:18:05+00:00
+ Q30,Q518431,none,2026-11-19T14:14:31+00:00
+ Q30,Q52578,none,2026-11-22T12:54:23+00:00
+ Q30,Q612,none,2026-11-18T14:04:32+00:00
+ Q30,Q6540045,none,2026-11-19T14:14:31+00:00
+ Q30,Q658823,none,2026-11-22T12:54:23+00:00
+ Q30,Q672458,none,2026-11-22T12:54:23+00:00
++Q30,Q685509,none,2026-11-27T15:18:05+00:00
+ Q30,Q694780,none,2026-11-19T14:14:31+00:00
+ Q30,Q713127,none,2026-11-22T12:54:23+00:00
+ Q30,Q75938,none,2026-11-22T12:54:23+00:00
+@@ -7030,6 +7168,7 @@ Q3015740,Q164481,none,2026-11-23T22:25:26+00:00
+ Q3015740,Q316390,none,2026-11-18T14:04:32+00:00
+ Q3017740,Q1236908,inside,2026-11-18T14:04:32+00:00
+ Q30205045,Q842877,none,2026-11-19T14:14:31+00:00
++Q302511,Q140147,none,2026-11-27T15:18:05+00:00
+ Q3025411,Q162933,none,2026-11-23T22:25:26+00:00
+ Q3025411,Q860729,none,2026-11-18T14:04:32+00:00
+ Q3026080,Q2654892,none,2026-11-23T22:25:26+00:00
+@@ -7063,6 +7202,7 @@ Q3043,Q108223,none,2026-11-19T16:33:11+00:00
+ Q3043,Q1930,none,2026-11-23T22:25:26+00:00
+ Q304448,Q170322,none,2026-11-18T14:04:32+00:00
+ Q304448,Q478207,none,2026-11-23T22:25:26+00:00
++Q304464,Q1072131,none,2026-11-27T17:23:02+00:00
+ Q304464,Q112031,none,2026-11-19T14:14:31+00:00
+ Q304464,Q272254,none,2026-11-19T14:14:31+00:00
+ Q3045041,Q1005008,none,2026-11-19T14:14:31+00:00
+@@ -7167,6 +7307,7 @@ Q3130,Q606169,none,2026-11-22T12:54:23+00:00
+ Q3130,Q606288,none,2026-11-19T14:14:31+00:00
+ Q3130,Q9733,none,2026-11-22T12:54:23+00:00
+ Q3138,Q365,none,2026-11-18T14:04:32+00:00
++Q3139238,Q52028,none,2026-11-27T17:23:02+00:00
+ Q313939,Q989812,none,2026-11-18T14:04:32+00:00
+ Q3141,Q1015773,none,2026-11-22T12:54:23+00:00
+ Q3141,Q14206163,none,2026-11-18T14:04:32+00:00
+@@ -7214,6 +7355,8 @@ Q31756629,Q50647,none,2026-11-23T22:25:26+00:00
+ Q3176822,Q42142,none,2026-11-19T14:14:31+00:00
+ Q31782081,Q2460416,none,2026-11-19T14:14:31+00:00
+ Q318102,Q208715,contains,2026-11-18T14:04:32+00:00
++Q31811703,Q164481,none,2026-11-27T15:18:05+00:00
++Q318156,Q2460416,none,2026-11-27T15:18:05+00:00
+ Q31824040,Q724942,inside,2026-11-18T14:04:32+00:00
+ Q31826541,Q890879,none,2026-11-18T14:04:32+00:00
+ Q3183,Q203000,none,2026-11-18T14:04:32+00:00
+@@ -7236,6 +7379,7 @@ Q31915550,Q761,none,2026-11-19T14:14:31+00:00
+ Q31915927,Q986526,none,2026-11-18T14:04:32+00:00
+ Q31916723,Q205648,none,2026-11-19T14:14:31+00:00
+ Q31918813,Q165204,none,2026-11-18T14:04:32+00:00
++Q319242,Q3766,none,2026-11-27T15:18:05+00:00
+ Q31925536,Q10952,none,2026-11-19T14:14:31+00:00
+ Q31925536,Q832340,none,2026-11-19T14:14:31+00:00
+ Q3192571,Q205327,inside,2026-11-18T14:04:32+00:00
+@@ -7310,6 +7454,7 @@ Q327749,Q648749,none,2026-11-19T14:14:31+00:00
+ Q328450,Q3932,none,2026-11-19T14:14:31+00:00
+ Q3285154,Q15847,inside,2026-11-18T14:04:32+00:00
+ Q3285492,Q1807660,none,2026-11-19T14:14:31+00:00
++Q3286190,Q1447266,none,2026-11-27T15:18:05+00:00
+ Q3286577,Q3726,none,2026-11-23T22:25:26+00:00
+ Q3286577,Q466054,none,2026-11-18T14:04:32+00:00
+ Q3286584,Q223587,none,2026-11-18T14:04:32+00:00
+@@ -7368,6 +7513,7 @@ Q3350203,Q174,none,2026-11-23T22:25:26+00:00
+ Q3350203,Q329266,inside,2026-11-18T14:04:32+00:00
+ Q3350203,Q513788,none,2026-11-23T22:25:26+00:00
+ Q33511401,Q141711,none,2026-11-19T14:14:31+00:00
++Q33530,Q211703,inside,2026-11-27T15:18:05+00:00
+ Q3353596,Q8828,inside,2026-11-19T14:14:31+00:00
+ Q3355141,Q26772333,none,2026-11-18T14:04:32+00:00
+ Q335526,Q149955,contains,2026-11-18T14:04:32+00:00
+@@ -7413,9 +7559,11 @@ Q339535,Q223587,none,2026-11-23T22:25:26+00:00
+ Q339535,Q3787,none,2026-11-23T22:25:26+00:00
+ Q339568,Q3761,none,2026-11-18T14:04:32+00:00
+ Q34,Q38545,none,2026-11-19T14:14:31+00:00
++Q34,Q612,none,2026-11-27T17:23:02+00:00
+ Q340,Q131323,none,2026-11-19T14:14:31+00:00
+ Q340,Q142069,none,2026-11-19T14:14:31+00:00
+ Q340,Q1757764,none,2026-11-19T14:14:31+00:00
++Q340,Q320015,none,2026-11-27T15:18:05+00:00
+ Q340,Q3344653,none,2026-11-19T14:14:31+00:00
+ Q340,Q3718,none,2026-11-19T14:14:31+00:00
+ Q340,Q44213,none,2026-11-19T14:14:31+00:00
+@@ -7425,6 +7573,7 @@ Q3400689,Q210371,none,2026-11-19T14:14:31+00:00
+ Q3401248,Q157034,inside,2026-11-18T14:04:32+00:00
+ Q3401248,Q190897,none,2026-11-23T22:25:26+00:00
+ Q3403523,Q1354360,none,2026-11-19T14:14:31+00:00
++Q3404121,Q2398901,inside,2026-11-27T15:18:05+00:00
+ Q3407108,Q157034,inside,2026-11-18T14:04:32+00:00
+ Q3407108,Q190897,none,2026-11-19T14:14:31+00:00
+ Q3407108,Q44244,none,2026-11-19T16:33:11+00:00
+@@ -7483,6 +7632,7 @@ Q3489546,Q23564,inside,2026-11-19T14:14:31+00:00
+ Q34898694,Q6414,none,2026-11-19T16:33:11+00:00
+ Q34898694,Q82230,none,2026-11-18T14:04:32+00:00
+ Q34932,Q210636,none,2026-11-18T14:04:32+00:00
++Q34932,Q273779,none,2026-11-27T17:23:02+00:00
+ Q34951126,Q1014010,none,2026-11-19T14:14:31+00:00
+ Q34951126,Q131818,none,2026-11-18T14:04:32+00:00
+ Q34951126,Q942590,none,2026-11-19T16:33:11+00:00
+@@ -7504,8 +7654,10 @@ Q3498634,Q820235,none,2026-11-19T14:14:31+00:00
+ Q34995,Q2843,none,2026-11-19T14:14:31+00:00
+ Q3499673,Q500111,none,2026-11-18T14:04:32+00:00
+ Q35,Q1019481,contains,2026-11-19T14:14:31+00:00
++Q35,Q174684,none,2026-11-27T15:18:05+00:00
+ Q35,Q2604983,contains,2026-11-19T14:14:31+00:00
+ Q35,Q3766,none,2026-11-19T14:14:31+00:00
++Q350,Q1021350,none,2026-11-27T15:18:05+00:00
+ Q350,Q1028261,none,2026-11-18T14:04:32+00:00
+ Q350,Q2401624,none,2026-11-22T12:54:23+00:00
+ Q3500912,Q1615344,none,2026-11-22T12:54:23+00:00
+@@ -7591,6 +7743,7 @@ Q3568313,Q1703681,none,2026-11-18T14:04:32+00:00
+ Q3569819,Q1021350,none,2026-11-19T14:14:31+00:00
+ Q357101,Q18341,none,2026-11-18T14:04:32+00:00
+ Q35710384,Q732548,inside,2026-11-18T14:04:32+00:00
++Q35710384,Q8673,none,2026-11-27T15:18:05+00:00
+ Q35713954,Q208715,none,2026-11-18T14:04:32+00:00
+ Q3572,Q208715,none,2026-11-22T12:54:23+00:00
+ Q3572,Q2536593,none,2026-11-22T12:54:23+00:00
+@@ -7609,17 +7762,20 @@ Q3579,Q168954,none,2026-11-18T14:04:32+00:00
+ Q3579,Q193409,none,2026-11-18T14:04:32+00:00
+ Q35827,Q44059,none,2026-11-18T14:04:32+00:00
+ Q3594021,Q1202616,none,2026-11-19T14:14:31+00:00
++Q3596082,Q1010367,none,2026-11-27T17:23:02+00:00
+ Q35997,Q1496685,none,2026-11-19T14:14:31+00:00
+ Q36,Q1184708,none,2026-11-19T14:14:31+00:00
+ Q36,Q1496685,none,2026-11-22T12:54:23+00:00
+ Q3613313,Q8678,inside,2026-11-19T14:14:31+00:00
+ Q36167,Q36399,none,2026-11-18T14:04:32+00:00
++Q3619316,Q174684,none,2026-11-27T17:23:02+00:00
+ Q362391,Q92615,none,2026-11-18T14:04:32+00:00
+ Q36260,Q38807,none,2026-11-23T22:25:26+00:00
+ Q36260,Q38834,none,2026-11-22T12:54:23+00:00
+ Q36262,Q316390,inside,2026-11-22T12:54:23+00:00
+ Q3630,Q10363,none,2026-11-18T14:04:32+00:00
+ Q3630,Q10620,none,2026-11-19T14:14:31+00:00
++Q3630,Q15847,none,2026-11-27T15:18:05+00:00
+ Q3633048,Q204956,none,2026-11-18T14:04:32+00:00
+ Q36395756,Q1027134,none,2026-11-23T22:25:26+00:00
+ Q36395756,Q133073,none,2026-11-23T22:25:26+00:00
+@@ -7630,6 +7786,7 @@ Q36395756,Q3940,none,2026-11-23T22:25:26+00:00
+ Q36395756,Q459,none,2026-11-18T14:04:32+00:00
+ Q36395756,Q734317,none,2026-11-23T22:25:26+00:00
+ Q36395756,Q967818,none,2026-11-23T22:25:26+00:00
++Q3640,Q1353,none,2026-11-27T15:18:05+00:00
+ Q3640,Q2055274,none,2026-11-19T14:14:31+00:00
+ Q3640,Q3761,none,2026-11-18T14:04:32+00:00
+ Q36433,Q170578,none,2026-11-19T14:14:31+00:00
+@@ -7641,6 +7798,7 @@ Q365,Q52591,none,2026-11-18T14:04:32+00:00
+ Q3651608,Q187838,none,2026-11-18T14:04:32+00:00
+ Q36526,Q1027830,none,2026-11-18T14:04:32+00:00
+ Q36526,Q10363,none,2026-11-19T14:14:31+00:00
++Q36526,Q188904,none,2026-11-27T17:23:02+00:00
+ Q3655902,Q1346392,inside,2026-11-18T14:04:32+00:00
+ Q3655902,Q159273,none,2026-11-18T14:04:32+00:00
+ Q3656,Q105037,none,2026-11-23T22:25:26+00:00
+@@ -7683,10 +7841,12 @@ Q3696628,Q1335,none,2026-11-19T14:14:31+00:00
+ Q3696628,Q2256382,none,2026-11-19T14:14:31+00:00
+ Q3696628,Q25304,none,2026-11-19T14:14:31+00:00
+ Q37,Q5747,none,2026-11-19T14:14:31+00:00
++Q37006,Q994,inside,2026-11-27T15:18:05+00:00
+ Q37008,Q994,inside,2026-11-18T14:04:32+00:00
+ Q370209,Q842877,none,2026-11-19T14:14:31+00:00
+ Q3703,Q1853310,none,2026-11-19T14:14:31+00:00
+ Q3703,Q3777,none,2026-11-18T14:04:32+00:00
++Q3703,Q3854,none,2026-11-27T17:23:02+00:00
+ Q3706293,Q101583,none,2026-11-19T14:14:31+00:00
+ Q3706293,Q1020261,none,2026-11-19T14:14:31+00:00
+ Q3706293,Q10620,none,2026-11-19T14:14:31+00:00
+@@ -7799,6 +7959,8 @@ Q3718,Q273779,none,2026-11-19T14:14:31+00:00
+ Q3718,Q3026080,none,2026-11-19T14:14:31+00:00
+ Q3718,Q3894,none,2026-11-19T14:14:31+00:00
+ Q3718,Q48278,none,2026-11-19T14:14:31+00:00
++Q37211,Q112817,contains,2026-11-27T15:18:05+00:00
++Q37320,Q3940,none,2026-11-27T15:18:05+00:00
+ Q3733,Q3026080,none,2026-11-19T14:14:31+00:00
+ Q3733,Q66568,none,2026-11-19T14:14:31+00:00
+ Q373567,Q3178685,none,2026-11-19T14:14:31+00:00
+@@ -7811,6 +7973,7 @@ Q3751,Q112031,none,2026-11-22T12:54:23+00:00
+ Q3751,Q497019,inside,2026-11-18T14:04:32+00:00
+ Q3751,Q986803,none,2026-11-22T12:54:23+00:00
+ Q37548,Q306201,none,2026-11-18T14:04:32+00:00
++Q3755,Q3777,none,2026-11-27T15:18:05+00:00
+ Q3761,Q1062602,none,2026-11-19T14:14:31+00:00
+ Q3761,Q726143,none,2026-11-22T12:54:23+00:00
+ Q3761,Q923130,none,2026-11-19T14:14:31+00:00
+@@ -7854,6 +8017,7 @@ Q38,Q2604983,none,2026-11-19T14:14:31+00:00
+ Q38,Q3366952,none,2026-11-22T12:54:23+00:00
+ Q38,Q43512,none,2026-11-22T12:54:23+00:00
+ Q38,Q6414,contains,2026-11-19T14:14:31+00:00
++Q38,Q685105,contains,2026-11-27T17:23:02+00:00
+ Q38,Q9863,none,2026-11-19T14:14:31+00:00
+ Q38,Q989843,none,2026-11-19T14:14:31+00:00
+ Q38022,Q24226,none,2026-11-19T14:14:31+00:00
+@@ -7862,6 +8026,7 @@ Q3808,Q3854,none,2026-11-19T14:14:31+00:00
+ Q3811629,Q1023364,none,2026-11-22T12:54:23+00:00
+ Q3812213,Q979922,none,2026-11-18T14:04:32+00:00
+ Q3813733,Q2164117,none,2026-11-19T14:14:31+00:00
++Q382100,Q61092,none,2026-11-27T15:18:05+00:00
+ Q3825102,Q185518,contains,2026-11-18T14:04:32+00:00
+ Q38251653,Q1025654,none,2026-11-19T14:14:31+00:00
+ Q38251653,Q1028261,none,2026-11-19T14:14:31+00:00
+@@ -7895,7 +8060,9 @@ Q384,Q25475,none,2026-11-19T14:14:31+00:00
+ Q3840823,Q988413,none,2026-11-18T14:04:32+00:00
+ Q3844397,Q75938,none,2026-11-23T22:25:26+00:00
+ Q3844430,Q52535,none,2026-11-18T14:04:32+00:00
++Q384516,Q273779,none,2026-11-27T15:18:05+00:00
+ Q3845259,Q38834,none,2026-11-18T14:04:32+00:00
++Q384570,Q826561,none,2026-11-27T15:18:05+00:00
+ Q38545,Q1496685,none,2026-11-19T14:14:31+00:00
+ Q38545,Q1652751,none,2026-11-19T14:14:31+00:00
+ Q38555,Q44244,none,2026-11-19T14:14:31+00:00
+@@ -7928,6 +8095,7 @@ Q3892667,Q69726,none,2026-11-19T14:14:31+00:00
+ Q3894,Q3832,none,2026-11-19T14:14:31+00:00
+ Q3897,Q27001,none,2026-11-19T14:14:31+00:00
+ Q3897,Q274584,none,2026-11-22T12:54:23+00:00
++Q3897,Q3932,none,2026-11-27T15:18:05+00:00
+ Q389737,Q152902,contains,2026-11-18T14:04:32+00:00
+ Q389944,Q1204671,none,2026-11-18T14:04:32+00:00
+ Q389951,Q502991,none,2026-11-18T14:04:32+00:00
+@@ -7960,6 +8128,7 @@ Q3926,Q202973,none,2026-11-18T14:04:32+00:00
+ Q3929,Q1010367,none,2026-11-22T12:54:23+00:00
+ Q3929,Q2656389,inside,2026-11-22T12:54:23+00:00
+ Q3929,Q282908,none,2026-11-22T12:54:23+00:00
++Q3929,Q431990,none,2026-11-27T15:18:05+00:00
+ Q3931,Q936166,none,2026-11-18T14:04:32+00:00
+ Q39326,Q3832,none,2026-11-19T14:14:31+00:00
+ Q3940,Q12874663,none,2026-11-23T22:25:26+00:00
+@@ -8023,6 +8192,7 @@ Q3961032,Q4361,none,2026-11-19T14:14:31+00:00
+ Q3961032,Q464004,none,2026-11-19T14:14:31+00:00
+ Q3961032,Q475953,none,2026-11-19T14:14:31+00:00
+ Q3961032,Q5112,none,2026-11-19T14:14:31+00:00
++Q3961032,Q514390,none,2026-11-27T15:18:05+00:00
+ Q3961032,Q51599,none,2026-11-19T14:14:31+00:00
+ Q3961032,Q565568,none,2026-11-19T14:14:31+00:00
+ Q3961032,Q6454,none,2026-11-19T14:14:31+00:00
+@@ -8048,7 +8218,9 @@ Q3968937,Q1348760,none,2026-11-19T14:14:31+00:00
+ Q3970567,Q1447266,none,2026-11-18T14:04:32+00:00
+ Q3970937,Q2448591,inside,2026-11-18T14:04:32+00:00
+ Q397343,Q656954,none,2026-11-18T14:04:32+00:00
++Q399,Q168954,none,2026-11-27T15:18:05+00:00
+ Q399,Q328518,none,2026-11-18T14:04:32+00:00
++Q40,Q694780,none,2026-11-27T15:18:05+00:00
+ Q40030,Q869571,contains,2026-11-18T14:04:32+00:00
+ Q40104,Q34497,none,2026-11-18T14:04:32+00:00
+ Q40236,Q1519,none,2026-11-19T14:14:31+00:00
+@@ -8090,15 +8262,18 @@ Q408,Q1112176,none,2026-11-22T12:54:23+00:00
+ Q408,Q12874663,none,2026-11-19T14:14:31+00:00
+ Q408,Q1471930,none,2026-11-19T14:14:31+00:00
+ Q408,Q1581002,none,2026-11-19T14:14:31+00:00
++Q408,Q168954,none,2026-11-27T15:18:05+00:00
+ Q408,Q1725,none,2026-11-19T14:14:31+00:00
+ Q408,Q1863,none,2026-11-19T14:14:31+00:00
+ Q408,Q189133,contains,2026-11-19T14:14:31+00:00
++Q408,Q2066897,none,2026-11-27T17:23:02+00:00
+ Q408,Q2076464,none,2026-11-22T12:54:23+00:00
+ Q408,Q210371,contains,2026-11-19T14:14:31+00:00
+ Q408,Q213181,none,2026-11-22T12:54:23+00:00
+ Q408,Q2245,none,2026-11-19T14:14:31+00:00
+ Q408,Q26426,none,2026-11-19T14:14:31+00:00
+ Q408,Q27026,none,2026-11-22T12:54:23+00:00
++Q408,Q273779,none,2026-11-27T15:18:05+00:00
+ Q408,Q2933,none,2026-11-19T14:14:31+00:00
+ Q408,Q3130,contains,2026-11-19T14:14:31+00:00
+ Q408,Q328518,none,2026-11-22T12:54:23+00:00
+@@ -8117,6 +8292,7 @@ Q408,Q606169,contains,2026-11-19T14:14:31+00:00
+ Q408,Q72842,none,2026-11-19T14:14:31+00:00
+ Q408,Q761,none,2026-11-19T14:14:31+00:00
+ Q408,Q793809,none,2026-11-19T14:14:31+00:00
++Q408,Q833016,none,2026-11-27T17:23:02+00:00
+ Q408,Q861610,none,2026-11-22T12:54:23+00:00
+ Q408,Q92615,none,2026-11-22T12:54:23+00:00
+ Q408,Q942696,contains,2026-11-22T12:54:23+00:00
+@@ -8157,9 +8333,12 @@ Q41262,Q942590,none,2026-11-19T14:14:31+00:00
+ Q41295,Q41699,none,2026-11-19T14:14:31+00:00
+ Q4131,Q200028,none,2026-11-18T14:04:32+00:00
+ Q414,Q1030194,contains,2026-11-19T14:14:31+00:00
++Q414,Q1189982,contains,2026-11-27T15:18:05+00:00
+ Q414,Q1198892,none,2026-11-19T14:14:31+00:00
+ Q414,Q132830,none,2026-11-19T14:14:31+00:00
++Q414,Q1471930,none,2026-11-27T15:18:05+00:00
+ Q414,Q1786597,contains,2026-11-19T14:14:31+00:00
++Q414,Q2066897,none,2026-11-27T15:18:05+00:00
+ Q414,Q2129610,contains,2026-11-19T14:14:31+00:00
+ Q414,Q2157253,contains,2026-11-22T12:54:23+00:00
+ Q414,Q2201876,none,2026-11-22T12:54:23+00:00
+@@ -8183,6 +8362,7 @@ Q414,Q857788,contains,2026-11-19T14:14:31+00:00
+ Q414,Q9050593,contains,2026-11-19T14:14:31+00:00
+ Q414,Q913390,none,2026-11-19T14:14:31+00:00
+ Q414,Q938739,none,2026-11-22T12:54:23+00:00
++Q414,Q938835,none,2026-11-27T15:18:05+00:00
+ Q414,Q956807,none,2026-11-19T14:14:31+00:00
+ Q414,Q957700,none,2026-11-22T12:54:23+00:00
+ Q4140430,Q1236511,none,2026-11-18T14:04:32+00:00
+@@ -8194,12 +8374,15 @@ Q4175341,Q648749,none,2026-11-18T14:04:32+00:00
+ Q4175341,Q9248,none,2026-11-23T22:25:26+00:00
+ Q4180867,Q157053,none,2026-11-18T14:04:32+00:00
+ Q41819,Q3751,none,2026-11-18T14:04:32+00:00
++Q419,Q1010367,none,2026-11-27T17:23:02+00:00
+ Q419,Q1062516,none,2026-11-19T14:14:31+00:00
+ Q419,Q126084,none,2026-11-19T14:14:31+00:00
+ Q419,Q163490,none,2026-11-19T14:14:31+00:00
+ Q419,Q211563,none,2026-11-18T14:04:32+00:00
+ Q419,Q2164117,none,2026-11-22T12:54:23+00:00
++Q419,Q2203,none,2026-11-27T15:18:05+00:00
+ Q419,Q2654892,none,2026-11-19T14:14:31+00:00
++Q419,Q2907,none,2026-11-27T15:18:05+00:00
+ Q419,Q5764,none,2026-11-19T14:14:31+00:00
+ Q419,Q695387,none,2026-11-19T14:14:31+00:00
+ Q4191,Q14381,none,2026-11-19T14:14:31+00:00
+@@ -8212,9 +8395,11 @@ Q42082,Q16520,none,2026-11-19T14:14:31+00:00
+ Q42082,Q45604,none,2026-11-18T14:04:32+00:00
+ Q42120,Q495387,none,2026-11-23T22:25:26+00:00
+ Q42152,Q42144,none,2026-11-18T14:04:32+00:00
++Q42182,Q121378,none,2026-11-27T15:18:05+00:00
+ Q42234,Q1748,none,2026-11-18T14:04:32+00:00
+ Q42290993,Q157034,none,2026-11-19T14:14:31+00:00
+ Q42290993,Q196694,none,2026-11-19T14:14:31+00:00
++Q423,Q1770672,none,2026-11-27T15:18:05+00:00
+ Q42308,Q157053,none,2026-11-22T12:54:23+00:00
+ Q42308622,Q69726,none,2026-11-18T14:04:32+00:00
+ Q42328401,Q26087,inside,2026-11-18T14:04:32+00:00
+@@ -8235,11 +8420,13 @@ Q4274895,Q3752,none,2026-11-18T14:04:32+00:00
+ Q42763,Q1023707,none,2026-11-18T14:04:32+00:00
+ Q4277159,Q142069,none,2026-11-19T14:14:31+00:00
+ Q427849,Q909993,contains,2026-11-19T14:14:31+00:00
++Q42800,Q3751,none,2026-11-27T17:23:02+00:00
+ Q428171,Q170688,inside,2026-11-18T14:04:32+00:00
+ Q42894086,Q1258901,none,2026-11-23T22:25:26+00:00
+ Q42894086,Q183124,none,2026-11-18T14:04:32+00:00
+ Q42900680,Q1812809,none,2026-11-22T12:54:23+00:00
+ Q43,Q1188560,none,2026-11-19T14:14:31+00:00
++Q43,Q168954,none,2026-11-27T15:18:05+00:00
+ Q43,Q2054265,none,2026-11-19T14:14:31+00:00
+ Q43,Q43048,none,2026-11-19T14:14:31+00:00
+ Q43,Q656954,contains,2026-11-19T14:14:31+00:00
+@@ -8340,6 +8527,7 @@ Q45,Q1759093,none,2026-11-19T14:14:31+00:00
+ Q45,Q1966384,none,2026-11-22T12:54:23+00:00
+ Q45,Q1994845,none,2026-11-19T14:14:31+00:00
+ Q45,Q217262,contains,2026-11-19T14:14:31+00:00
++Q45,Q3932,none,2026-11-27T15:18:05+00:00
+ Q45,Q743716,none,2026-11-19T14:14:31+00:00
+ Q45,Q83247,contains,2026-11-19T14:14:31+00:00
+ Q45,Q890879,none,2026-11-22T12:54:23+00:00
+@@ -8457,6 +8645,7 @@ Q483223,Q18808,none,2026-11-23T22:25:26+00:00
+ Q483223,Q45604,none,2026-11-18T14:04:32+00:00
+ Q48344,Q1009474,none,2026-11-19T14:14:31+00:00
+ Q48356129,Q723246,none,2026-11-18T14:04:32+00:00
++Q4838596,Q694780,none,2026-11-27T15:18:05+00:00
+ Q483902,Q938739,none,2026-11-18T14:04:32+00:00
+ Q484077,Q80678654,none,2026-11-18T14:04:32+00:00
+ Q484097,Q2628384,none,2026-11-19T14:14:31+00:00
+@@ -8877,6 +9066,7 @@ Q4901582,Q992759,none,2026-11-19T16:33:11+00:00
+ Q4901582,Q994,none,2026-11-19T16:33:11+00:00
+ Q4901582,Q994450,none,2026-11-19T16:33:11+00:00
+ Q4901582,Q996851,none,2026-11-19T16:33:11+00:00
++Q4901585,Q2460416,none,2026-11-27T15:18:05+00:00
+ Q49023185,Q5189414,none,2026-11-18T14:04:32+00:00
+ Q49023187,Q5189414,none,2026-11-23T22:25:26+00:00
+ Q4902926,Q761,inside,2026-11-18T14:04:32+00:00
+@@ -8961,6 +9151,7 @@ Q49368770,Q861610,none,2026-11-18T14:04:32+00:00
+ Q49385454,Q637555,none,2026-11-18T14:04:32+00:00
+ Q4938913,Q1761,inside,2026-11-19T14:14:31+00:00
+ Q493961,Q1812809,contains,2026-11-18T14:04:32+00:00
++Q493961,Q3443238,none,2026-11-27T15:18:05+00:00
+ Q49482539,Q816024,none,2026-11-18T14:04:32+00:00
+ Q494874,Q672458,none,2026-11-18T14:04:32+00:00
+ Q495,Q180717,none,2026-11-18T14:04:32+00:00
+@@ -9026,6 +9217,7 @@ Q497019,Q3751,contains,2026-11-18T14:04:32+00:00
+ Q49702975,Q187862,none,2026-11-18T14:04:32+00:00
+ Q4973409,Q270734,none,2026-11-19T14:14:31+00:00
+ Q497367,Q170322,inside,2026-11-18T14:04:32+00:00
++Q497472,Q75938,none,2026-11-27T15:18:05+00:00
+ Q49755159,Q51679,inside,2026-11-18T14:04:32+00:00
+ Q49786953,Q27026,none,2026-11-19T14:14:31+00:00
+ Q49786954,Q27026,none,2026-11-18T14:04:32+00:00
+@@ -9259,8 +9451,14 @@ Q5136351,Q260911,none,2026-11-23T22:25:26+00:00
+ Q5136351,Q288685,none,2026-11-23T22:25:26+00:00
+ Q5136351,Q5764,none,2026-11-19T14:14:31+00:00
+ Q5136399,Q2907,none,2026-11-19T14:14:31+00:00
++Q513788,Q5736,none,2026-11-27T17:23:02+00:00
++Q51599,Q14452,none,2026-11-27T15:18:05+00:00
++Q51599,Q2460416,none,2026-11-27T15:18:05+00:00
++Q51599,Q3860,none,2026-11-27T17:23:02+00:00
++Q51599,Q69300,none,2026-11-27T15:18:05+00:00
+ Q516010,Q1362879,none,2026-11-18T14:04:32+00:00
+ Q5166038,Q768086,none,2026-11-18T14:04:32+00:00
++Q51693,Q685509,none,2026-11-27T17:23:02+00:00
+ Q51695,Q485176,none,2026-11-18T14:04:32+00:00
+ Q5175673,Q193486,none,2026-11-19T14:14:31+00:00
+ Q518155,Q169134,none,2026-11-19T14:14:31+00:00
+@@ -9285,6 +9483,7 @@ Q524434,Q737270,none,2026-11-19T14:14:31+00:00
+ Q5244446,Q1015690,none,2026-11-23T22:25:26+00:00
+ Q5244446,Q2630835,none,2026-11-18T14:04:32+00:00
+ Q5244446,Q6807568,inside,2026-11-18T14:04:32+00:00
++Q524446,Q502991,none,2026-11-27T17:23:02+00:00
+ Q524894,Q373759,none,2026-11-18T14:04:32+00:00
+ Q524894,Q820235,none,2026-11-18T14:04:32+00:00
+ Q5250023,Q5584396,inside,2026-11-18T14:04:32+00:00
+@@ -9327,11 +9526,13 @@ Q5322516,Q500111,none,2026-11-23T22:25:26+00:00
+ Q5322516,Q56069,none,2026-11-23T22:25:26+00:00
+ Q5322516,Q657461,none,2026-11-23T22:25:26+00:00
+ Q5322516,Q8969,none,2026-11-19T16:33:11+00:00
++Q5355027,Q87,none,2026-11-27T15:18:05+00:00
+ Q5355093,Q704978,none,2026-11-18T14:04:32+00:00
+ Q5355255,Q604283,none,2026-11-19T14:14:31+00:00
+ Q5355334,Q706105,none,2026-11-18T14:04:32+00:00
+ Q5355600,Q35001,none,2026-11-18T14:04:32+00:00
+ Q5355774,Q669171,none,2026-11-18T14:04:32+00:00
++Q5362908,Q81398,none,2026-11-27T17:23:02+00:00
+ Q5370065,Q1345571,inside,2026-11-18T14:04:32+00:00
+ Q5374582,Q965754,none,2026-11-18T14:04:32+00:00
+ Q537853,Q831326,none,2026-11-18T14:04:32+00:00
+@@ -9396,6 +9597,7 @@ Q54245102,Q2262442,none,2026-11-23T22:25:26+00:00
+ Q54245102,Q80985,none,2026-11-18T14:04:32+00:00
+ Q54245102,Q867573,none,2026-11-23T22:25:26+00:00
+ Q542509,Q187862,none,2026-11-18T14:04:32+00:00
++Q54344,Q612,none,2026-11-27T15:18:05+00:00
+ Q543583,Q850734,none,2026-11-18T14:04:32+00:00
+ Q5445729,Q1009474,none,2026-11-19T16:33:11+00:00
+ Q5445729,Q1023707,none,2026-11-23T22:25:26+00:00
+@@ -9407,6 +9609,7 @@ Q5445729,Q860729,none,2026-11-23T22:25:26+00:00
+ Q5445729,Q979922,none,2026-11-23T22:25:26+00:00
+ Q544762,Q3826,contains,2026-11-18T14:04:32+00:00
+ Q5449821,Q1010639,none,2026-11-19T14:14:31+00:00
++Q5452165,Q40921,none,2026-11-27T17:23:02+00:00
+ Q54649,Q938739,none,2026-11-23T22:25:26+00:00
+ Q5465,Q160687,none,2026-11-19T14:14:31+00:00
+ Q5465,Q2448591,none,2026-11-19T14:14:31+00:00
+@@ -9435,6 +9638,7 @@ Q55,Q1615344,contains,2026-11-19T14:14:31+00:00
+ Q55,Q1798241,none,2026-11-19T14:14:31+00:00
+ Q55,Q183124,none,2026-11-19T14:14:31+00:00
+ Q55,Q26087,none,2026-11-19T14:14:31+00:00
++Q55,Q2630835,none,2026-11-27T15:18:05+00:00
+ Q55,Q26713,none,2026-11-19T14:14:31+00:00
+ Q55,Q36214,none,2026-11-19T14:14:31+00:00
+ Q55,Q3780,none,2026-11-19T14:14:31+00:00
+@@ -9720,6 +9924,7 @@ Q557539,Q1960,contains,2026-11-18T14:04:32+00:00
+ Q557809,Q69783,none,2026-11-18T14:04:32+00:00
+ Q557933,Q43512,none,2026-11-18T14:04:32+00:00
+ Q5581118,Q3078952,none,2026-11-19T14:14:31+00:00
++Q5582862,Q2203,none,2026-11-27T17:23:02+00:00
+ Q5587433,Q1010367,none,2026-11-23T22:25:26+00:00
+ Q5587433,Q1015690,none,2026-11-23T22:25:26+00:00
+ Q5587433,Q122803,none,2026-11-23T22:25:26+00:00
+@@ -9742,6 +9947,7 @@ Q5627,Q19520,none,2026-11-18T14:04:32+00:00
+ Q5627,Q211590,none,2026-11-18T14:04:32+00:00
+ Q56276963,Q146779,none,2026-11-19T14:14:31+00:00
+ Q56281970,Q1062602,none,2026-11-19T14:14:31+00:00
++Q56304455,Q40921,none,2026-11-27T15:18:05+00:00
+ Q5634788,Q39297398,none,2026-11-19T14:14:31+00:00
+ Q56373138,Q3238,none,2026-11-19T16:33:11+00:00
+ Q56373138,Q565568,inside,2026-11-18T14:04:32+00:00
+@@ -9873,6 +10079,7 @@ Q578799,Q50647,none,2026-11-23T22:25:26+00:00
+ Q57912,Q1770672,none,2026-11-19T14:14:31+00:00
+ Q579240,Q2868,contains,2026-11-18T14:04:32+00:00
+ Q579321,Q2141,inside,2026-11-18T14:04:32+00:00
++Q579468,Q3766,none,2026-11-27T15:18:05+00:00
+ Q5796926,Q1486,inside,2026-11-23T22:25:26+00:00
+ Q5796926,Q44210,none,2026-11-18T14:04:32+00:00
+ Q5804853,Q994450,none,2026-11-18T14:04:32+00:00
+@@ -9906,6 +10113,7 @@ Q5849431,Q50382,none,2026-11-23T22:25:26+00:00
+ Q585,Q1215658,none,2026-11-19T14:14:31+00:00
+ Q585,Q1397223,none,2026-11-22T12:54:23+00:00
+ Q585,Q14467,none,2026-11-22T12:54:23+00:00
++Q5859,Q234783,none,2026-11-27T15:18:05+00:00
+ Q586,Q844878,none,2026-11-18T14:04:32+00:00
+ Q586007,Q965754,none,2026-11-19T14:14:31+00:00
+ Q5869740,Q1491,none,2026-11-19T14:14:31+00:00
+@@ -9965,6 +10173,7 @@ Q5905103,Q475953,none,2026-11-19T14:14:31+00:00
+ Q5905314,Q171714,inside,2026-11-18T14:04:32+00:00
+ Q590837,Q42117,none,2026-11-19T14:14:31+00:00
+ Q59101,Q1215658,inside,2026-11-19T14:14:31+00:00
++Q59135406,Q2630835,none,2026-11-27T15:18:05+00:00
+ Q59147,Q3856,contains,2026-11-18T14:04:32+00:00
+ Q591598,Q3078952,none,2026-11-18T14:04:32+00:00
+ Q59213542,Q181427,none,2026-11-18T14:04:32+00:00
+@@ -9974,6 +10183,7 @@ Q592244,Q1860785,none,2026-11-19T14:14:31+00:00
+ Q592576,Q916536,none,2026-11-19T14:14:31+00:00
+ Q594208,Q3861,contains,2026-11-18T14:04:32+00:00
+ Q5946305,Q1638374,none,2026-11-18T14:04:32+00:00
++Q59469551,Q46197,inside,2026-11-27T15:18:05+00:00
+ Q594989,Q2536859,none,2026-11-22T12:54:23+00:00
+ Q59510119,Q2215523,none,2026-11-19T14:14:31+00:00
+ Q5953970,Q1361,none,2026-11-18T14:04:32+00:00
+@@ -9982,6 +10192,7 @@ Q5964749,Q1812809,inside,2026-11-19T14:14:31+00:00
+ Q5964749,Q3443238,none,2026-11-19T14:14:31+00:00
+ Q5965435,Q160687,none,2026-11-18T14:04:32+00:00
+ Q59698,Q80678654,none,2026-11-23T22:25:26+00:00
++Q597,Q1691479,none,2026-11-27T15:18:05+00:00
+ Q597,Q2105005,none,2026-11-19T14:14:31+00:00
+ Q597,Q30617,none,2026-11-19T14:14:31+00:00
+ Q597,Q3932,none,2026-11-19T14:14:31+00:00
+@@ -9993,6 +10204,7 @@ Q597669,Q2721025,none,2026-11-18T14:04:32+00:00
+ Q598002,Q1691479,none,2026-11-18T14:04:32+00:00
+ Q598215,Q312759,none,2026-11-18T14:04:32+00:00
+ Q5983608,Q183298,none,2026-11-18T14:04:32+00:00
++Q5993,Q220383,contains,2026-11-27T15:18:05+00:00
+ Q60,Q1198892,contains,2026-11-19T14:14:31+00:00
+ Q60,Q1781,none,2026-11-22T12:54:23+00:00
+ Q60,Q1787188,none,2026-11-19T14:14:31+00:00
+@@ -10001,6 +10213,7 @@ Q60,Q2448591,none,2026-11-19T14:14:31+00:00
+ Q60,Q75938,none,2026-11-19T14:14:31+00:00
+ Q60,Q8828,none,2026-11-18T14:04:32+00:00
+ Q600706,Q2157253,none,2026-11-19T14:14:31+00:00
++Q600734,Q193409,none,2026-11-27T15:18:05+00:00
+ Q600734,Q19520,none,2026-11-23T22:25:26+00:00
+ Q6008533,Q48278,none,2026-11-18T14:04:32+00:00
+ Q600893,Q845851,none,2026-11-18T14:04:32+00:00
+@@ -10081,7 +10294,9 @@ Q61,Q1018448,none,2026-11-18T14:04:32+00:00
+ Q61,Q1204671,none,2026-11-19T14:14:31+00:00
+ Q61,Q272254,none,2026-11-18T14:04:32+00:00
+ Q61,Q2907,none,2026-11-18T14:04:32+00:00
++Q61,Q3787,none,2026-11-27T15:18:05+00:00
+ Q61,Q42117,none,2026-11-18T14:04:32+00:00
++Q61,Q873405,none,2026-11-27T15:18:05+00:00
+ Q61020338,Q475953,none,2026-11-18T14:04:32+00:00
+ Q6103748,Q1009276,none,2026-11-19T14:14:31+00:00
+ Q6103748,Q232842,none,2026-11-19T16:33:11+00:00
+@@ -10124,6 +10339,7 @@ Q61272874,Q938835,none,2026-11-19T14:14:31+00:00
+ Q61277539,Q3948919,none,2026-11-18T14:04:32+00:00
+ Q61279071,Q2215523,none,2026-11-18T14:04:32+00:00
+ Q61279328,Q513788,none,2026-11-18T14:04:32+00:00
++Q61280963,Q915773,none,2026-11-27T17:23:02+00:00
+ Q6128305,Q267663,none,2026-11-18T14:04:32+00:00
+ Q61285114,Q965754,none,2026-11-22T12:54:23+00:00
+ Q61285246,Q40194,none,2026-11-18T14:04:32+00:00
+@@ -10141,6 +10357,7 @@ Q61410508,Q1354867,none,2026-11-23T22:25:26+00:00
+ Q615006,Q2361658,none,2026-11-18T14:04:32+00:00
+ Q615006,Q3274,none,2026-11-18T14:04:32+00:00
+ Q6150207,Q1533,inside,2026-11-19T14:14:31+00:00
++Q6156550,Q946497,none,2026-11-27T15:18:05+00:00
+ Q615707,Q2628384,none,2026-11-18T14:04:32+00:00
+ Q615843,Q2907,none,2026-11-19T14:14:31+00:00
+ Q617433,Q13670,none,2026-11-18T14:04:32+00:00
+@@ -10162,6 +10379,7 @@ Q6244,Q2054265,none,2026-11-19T14:14:31+00:00
+ Q6247,Q3014914,none,2026-11-18T14:04:32+00:00
+ Q6274,Q685105,none,2026-11-18T14:04:32+00:00
+ Q6274,Q942696,none,2026-11-18T14:04:32+00:00
++Q627970,Q38834,none,2026-11-27T17:23:02+00:00
+ Q62823,Q320015,none,2026-11-19T14:14:31+00:00
+ Q62823,Q749224,none,2026-11-22T12:54:23+00:00
+ Q628297,Q800122,none,2026-11-19T14:14:31+00:00
+@@ -10201,6 +10419,7 @@ Q64,Q3138,none,2026-11-22T12:54:23+00:00
+ Q64,Q365,none,2026-11-19T14:14:31+00:00
+ Q6403,Q82230,none,2026-11-18T14:04:32+00:00
+ Q640344,Q158216,none,2026-11-19T14:14:31+00:00
++Q640539,Q234783,none,2026-11-27T15:18:05+00:00
+ Q641,Q685105,none,2026-11-22T12:54:23+00:00
+ Q6413424,Q942696,none,2026-11-19T14:14:31+00:00
+ Q6413681,Q41474,none,2026-11-18T14:04:32+00:00
+@@ -10374,12 +10593,14 @@ Q652000,Q2924158,none,2026-11-18T14:04:32+00:00
+ Q652000,Q636188,none,2026-11-23T22:25:26+00:00
+ Q65231687,Q1034159,none,2026-11-18T14:04:32+00:00
+ Q65231687,Q3443238,none,2026-11-23T22:25:26+00:00
++Q6526,Q2203,none,2026-11-27T15:18:05+00:00
+ Q65280013,Q162933,none,2026-11-19T14:14:31+00:00
+ Q65280013,Q234783,none,2026-11-19T14:14:31+00:00
+ Q65280013,Q2467,none,2026-11-19T14:14:31+00:00
+ Q65280013,Q42120,none,2026-11-19T14:14:31+00:00
+ Q65280013,Q4539151,inside,2026-11-19T14:14:31+00:00
+ Q6535,Q3366952,contains,2026-11-18T14:04:32+00:00
++Q6537,Q685105,none,2026-11-27T17:23:02+00:00
+ Q6538511,Q5869,none,2026-11-18T14:04:32+00:00
+ Q655172,Q3624,none,2026-11-18T14:04:32+00:00
+ Q655172,Q3766,none,2026-11-23T22:25:26+00:00
+@@ -10391,6 +10612,7 @@ Q6558,Q816024,none,2026-11-19T14:14:31+00:00
+ Q655874,Q209626,none,2026-11-19T14:14:31+00:00
+ Q6559018,Q35001,none,2026-11-18T14:04:32+00:00
+ Q6559021,Q35001,none,2026-11-18T14:04:32+00:00
++Q656,Q19520,none,2026-11-27T15:18:05+00:00
+ Q656,Q9733,none,2026-11-19T14:14:31+00:00
+ Q65616380,Q59698,inside,2026-11-19T14:14:31+00:00
+ Q656821,Q3860,none,2026-11-19T14:14:31+00:00
+@@ -10408,6 +10630,7 @@ Q66008092,Q1009276,none,2026-11-18T14:04:32+00:00
+ Q6602,Q28520,none,2026-11-19T14:14:31+00:00
+ Q660474,Q2560244,none,2026-11-19T14:14:31+00:00
+ Q66065,Q3674,contains,2026-11-19T14:14:31+00:00
++Q660716,Q694780,none,2026-11-27T15:18:05+00:00
+ Q6610,Q18405912,inside,2026-11-18T14:04:32+00:00
+ Q661205,Q27263,none,2026-11-23T22:25:26+00:00
+ Q661205,Q35001,none,2026-11-18T14:04:32+00:00
+@@ -10423,6 +10646,7 @@ Q664,Q1013424,none,2026-11-18T14:04:32+00:00
+ Q664,Q1015,none,2026-11-18T14:04:32+00:00
+ Q664,Q1028261,contains,2026-11-22T12:54:23+00:00
+ Q664,Q107393,none,2026-11-18T14:04:32+00:00
++Q664,Q1205954,none,2026-11-27T15:18:05+00:00
+ Q664,Q125293,none,2026-11-18T14:04:32+00:00
+ Q664,Q12874663,none,2026-11-19T14:14:31+00:00
+ Q664,Q1362879,contains,2026-11-19T14:14:31+00:00
+@@ -10582,6 +10806,7 @@ Q668,Q1015681,none,2026-11-19T14:14:31+00:00
+ Q668,Q1061665,none,2026-11-19T14:14:31+00:00
+ Q668,Q1354867,none,2026-11-19T14:14:31+00:00
+ Q668,Q1581002,contains,2026-11-19T14:14:31+00:00
++Q668,Q193486,none,2026-11-27T15:18:05+00:00
+ Q668,Q2203,none,2026-11-19T14:14:31+00:00
+ Q668,Q2401624,none,2026-11-19T14:14:31+00:00
+ Q668,Q2460416,none,2026-11-22T12:54:23+00:00
+@@ -10799,8 +11024,10 @@ Q683,Q38834,none,2026-11-19T14:14:31+00:00
+ Q683710,Q69300,none,2026-11-18T14:04:32+00:00
+ Q684052,Q185518,none,2026-11-19T14:14:31+00:00
+ Q6841976,Q2560244,none,2026-11-22T12:54:23+00:00
++Q6841985,Q2560244,none,2026-11-27T15:18:05+00:00
+ Q6841988,Q2560244,none,2026-11-18T14:04:32+00:00
+ Q685,Q1236908,contains,2026-11-19T14:14:31+00:00
++Q685,Q40921,contains,2026-11-27T15:18:05+00:00
+ Q685,Q680964,none,2026-11-18T14:04:32+00:00
+ Q685,Q87,none,2026-11-18T14:04:32+00:00
+ Q685202,Q14407,none,2026-11-18T14:04:32+00:00
+@@ -10825,6 +11052,8 @@ Q6906179,Q26426,inside,2026-11-18T14:04:32+00:00
+ Q691,Q1034159,none,2026-11-19T14:14:31+00:00
+ Q691,Q188904,none,2026-11-19T14:14:31+00:00
+ Q691,Q3656,none,2026-11-19T14:14:31+00:00
++Q691,Q38834,none,2026-11-27T15:18:05+00:00
++Q691,Q40921,none,2026-11-27T17:23:02+00:00
+ Q691,Q612250,contains,2026-11-19T14:14:31+00:00
+ Q691754,Q33443174,contains,2026-11-18T14:04:32+00:00
+ Q6920963,Q1418537,none,2026-11-18T14:04:32+00:00
+@@ -10890,6 +11119,7 @@ Q7055260,Q306201,none,2026-11-19T14:14:31+00:00
+ Q7055531,Q2417144,none,2026-11-18T14:04:32+00:00
+ Q7058010,Q306201,none,2026-11-19T16:33:11+00:00
+ Q7058010,Q50180,inside,2026-11-18T14:04:32+00:00
++Q7060456,Q2090609,none,2026-11-27T17:23:02+00:00
+ Q706105,Q202162,none,2026-11-18T14:04:32+00:00
+ Q7067063,Q956659,none,2026-11-18T14:04:32+00:00
+ Q7071873,Q1023712,none,2026-11-19T14:14:31+00:00
+@@ -10897,6 +11127,7 @@ Q7071873,Q14467,none,2026-11-23T22:25:26+00:00
+ Q7071873,Q205648,none,2026-11-23T22:25:26+00:00
+ Q7079013,Q2015456,none,2026-11-18T14:04:32+00:00
+ Q7084310,Q45604,none,2026-11-19T14:14:31+00:00
++Q7084890,Q121378,none,2026-11-27T15:18:05+00:00
+ Q7086922,Q28301,none,2026-11-22T12:54:23+00:00
+ Q7086926,Q1020419,none,2026-11-19T14:14:31+00:00
+ Q7086926,Q2428683,none,2026-11-19T14:14:31+00:00
+@@ -10904,6 +11135,7 @@ Q7086926,Q28301,none,2026-11-19T14:14:31+00:00
+ Q7089955,Q180921,inside,2026-11-18T14:04:32+00:00
+ Q7090029,Q167305,none,2026-11-19T14:14:31+00:00
+ Q71,Q82230,none,2026-11-19T14:14:31+00:00
++Q710,Q38834,none,2026-11-27T15:18:05+00:00
+ Q7103281,Q1009253,none,2026-11-23T22:25:26+00:00
+ Q7103281,Q1015690,none,2026-11-23T22:25:26+00:00
+ Q7103281,Q1030194,none,2026-11-18T14:04:32+00:00
+@@ -10911,6 +11143,7 @@ Q7103281,Q34692,none,2026-11-23T22:25:26+00:00
+ Q7103281,Q3854,none,2026-11-23T22:25:26+00:00
+ Q712,Q26713,contains,2026-11-22T12:54:23+00:00
+ Q712,Q38807,contains,2026-11-19T14:14:31+00:00
++Q712,Q38834,none,2026-11-27T15:18:05+00:00
+ Q712,Q619443,contains,2026-11-19T14:14:31+00:00
+ Q712,Q856662,contains,2026-11-19T14:14:31+00:00
+ Q71216,Q208345,none,2026-11-18T14:04:32+00:00
+@@ -10931,6 +11164,7 @@ Q717351,Q216835,none,2026-11-23T22:25:26+00:00
+ Q717351,Q969396,none,2026-11-19T14:14:31+00:00
+ Q7188347,Q8828,none,2026-11-19T14:14:31+00:00
+ Q7191105,Q1362879,none,2026-11-18T14:04:32+00:00
++Q7191106,Q1362879,none,2026-11-27T15:18:05+00:00
+ Q7194814,Q1418537,none,2026-11-18T14:04:32+00:00
+ Q72,Q14407,none,2026-11-19T14:14:31+00:00
+ Q72009,Q131243,none,2026-11-19T14:14:31+00:00
+@@ -11002,11 +11236,13 @@ Q727,Q1258901,none,2026-11-19T14:14:31+00:00
+ Q727,Q1272807,none,2026-11-19T14:14:31+00:00
+ Q727,Q1725,none,2026-11-22T12:54:23+00:00
+ Q727,Q2361658,none,2026-11-19T14:14:31+00:00
++Q727,Q2630835,none,2026-11-27T15:18:05+00:00
+ Q727,Q36214,none,2026-11-19T14:14:31+00:00
+ Q727,Q6616,none,2026-11-19T14:14:31+00:00
+ Q727,Q9899,inside,2026-11-18T14:04:32+00:00
+ Q727675,Q1365723,inside,2026-11-18T14:04:32+00:00
+ Q72842,Q28301,none,2026-11-18T14:04:32+00:00
++Q729304,Q6343,none,2026-11-27T15:18:05+00:00
+ Q7297651,Q107393,none,2026-11-19T14:14:31+00:00
+ Q730,Q1354360,none,2026-11-19T14:14:31+00:00
+ Q730,Q5276,none,2026-11-19T14:14:31+00:00
+@@ -11029,6 +11265,7 @@ Q733,Q30617,none,2026-11-22T12:54:23+00:00
+ Q733,Q47138,contains,2026-11-19T14:14:31+00:00
+ Q733,Q82070,none,2026-11-19T14:14:31+00:00
+ Q733,Q860689,none,2026-11-22T12:54:23+00:00
++Q733,Q946497,contains,2026-11-27T15:18:05+00:00
+ Q733005,Q749224,none,2026-11-18T14:04:32+00:00
+ Q733093,Q16740,none,2026-11-23T22:25:26+00:00
+ Q733093,Q613602,none,2026-11-18T14:04:32+00:00
+@@ -11085,6 +11322,7 @@ Q739,Q320015,contains,2026-11-19T14:14:31+00:00
+ Q739,Q475953,none,2026-11-19T14:14:31+00:00
+ Q739,Q735378,contains,2026-11-19T14:14:31+00:00
+ Q739,Q75938,none,2026-11-19T14:14:31+00:00
++Q739,Q81033,none,2026-11-27T15:18:05+00:00
+ Q739,Q816024,contains,2026-11-19T14:14:31+00:00
+ Q739,Q876557,none,2026-11-19T14:14:31+00:00
+ Q739,Q883831,none,2026-11-19T14:14:31+00:00
+@@ -11101,10 +11339,12 @@ Q739697,Q5764,none,2026-11-19T14:14:31+00:00
+ Q739908,Q115403,none,2026-11-18T14:04:32+00:00
+ Q7404168,Q9863,none,2026-11-18T14:04:32+00:00
+ Q7404650,Q1026284,none,2026-11-19T14:14:31+00:00
++Q7405447,Q833016,none,2026-11-27T15:18:05+00:00
+ Q7406259,Q335506,none,2026-11-19T14:14:31+00:00
+ Q740863,Q1725,none,2026-11-18T14:04:32+00:00
+ Q740974,Q3703,none,2026-11-18T14:04:32+00:00
+ Q7411,Q14372756,none,2026-11-19T14:14:31+00:00
++Q741157,Q672458,none,2026-11-27T15:18:05+00:00
+ Q741173,Q3752,none,2026-11-18T14:04:32+00:00
+ Q741262,Q319836,none,2026-11-18T14:04:32+00:00
+ Q7413236,Q1005008,none,2026-11-19T14:14:31+00:00
+@@ -11492,6 +11732,7 @@ Q7621941,Q1004103,none,2026-11-18T14:04:32+00:00
+ Q7622171,Q319836,none,2026-11-19T14:14:31+00:00
+ Q7622171,Q726143,none,2026-11-19T14:14:31+00:00
+ Q7645240,Q737270,none,2026-11-19T14:14:31+00:00
++Q764547,Q1754,none,2026-11-27T15:18:05+00:00
+ Q765984,Q1023364,contains,2026-11-18T14:04:32+00:00
+ Q766,Q34692,contains,2026-11-19T14:14:31+00:00
+ Q766,Q637555,contains,2026-11-19T14:14:31+00:00
+@@ -11500,6 +11741,7 @@ Q768033,Q17872,contains,2026-11-19T14:14:31+00:00
+ Q76965815,Q1346392,none,2026-11-19T14:14:31+00:00
+ Q77,Q2167,none,2026-11-19T14:14:31+00:00
+ Q77,Q282908,none,2026-11-22T12:54:23+00:00
++Q77,Q761,none,2026-11-27T17:23:02+00:00
+ Q770776,Q140075,none,2026-11-18T14:04:32+00:00
+ Q771,Q31572,none,2026-11-19T14:14:31+00:00
+ Q771404,Q39545,none,2026-11-19T14:14:31+00:00
+@@ -11569,6 +11811,7 @@ Q7896198,Q12197874,none,2026-11-23T22:25:26+00:00
+ Q7896198,Q328518,inside,2026-11-18T14:04:32+00:00
+ Q79,Q1015773,none,2026-11-19T14:14:31+00:00
+ Q79,Q101583,contains,2026-11-19T14:14:31+00:00
++Q79,Q5736,contains,2026-11-27T15:18:05+00:00
+ Q79,Q606169,none,2026-11-19T14:14:31+00:00
+ Q79,Q724815,none,2026-11-19T14:14:31+00:00
+ Q79,Q779813,none,2026-11-19T14:14:31+00:00
+@@ -11603,6 +11846,7 @@ Q796,Q168193,contains,2026-11-19T14:14:31+00:00
+ Q796,Q205047,none,2026-11-18T14:04:32+00:00
+ Q796,Q5680,none,2026-11-19T14:14:31+00:00
+ Q796,Q82859,none,2026-11-19T14:14:31+00:00
++Q79663556,Q2141,inside,2026-11-27T15:18:05+00:00
+ Q7967809,Q1015672,inside,2026-11-18T14:04:32+00:00
+ Q79767,Q1418537,none,2026-11-22T12:54:23+00:00
+ Q798445,Q141711,none,2026-11-18T14:04:32+00:00
+@@ -11732,6 +11976,7 @@ Q820325,Q57278,contains,2026-11-18T14:04:32+00:00
+ Q8210040,Q190897,none,2026-11-23T22:25:26+00:00
+ Q8210040,Q1966384,none,2026-11-19T14:14:31+00:00
+ Q821275,Q1353,none,2026-11-18T14:04:32+00:00
++Q82128,Q3860,none,2026-11-27T17:23:02+00:00
+ Q8214186,Q1202616,none,2026-11-23T22:25:26+00:00
+ Q8214186,Q1346392,none,2026-11-19T14:14:31+00:00
+ Q8214186,Q23438,none,2026-11-23T22:25:26+00:00
+@@ -11818,6 +12063,7 @@ Q8343756,Q159273,inside,2026-11-19T14:14:31+00:00
+ Q8346507,Q15121208,inside,2026-11-18T14:04:32+00:00
+ Q8346507,Q192235,none,2026-11-23T22:25:26+00:00
+ Q836,Q185518,contains,2026-11-19T14:14:31+00:00
++Q836,Q3718,none,2026-11-27T17:23:02+00:00
+ Q836,Q69726,none,2026-11-19T14:14:31+00:00
+ Q836277,Q69783,none,2026-11-19T14:14:31+00:00
+ Q836645,Q1204671,none,2026-11-19T14:14:31+00:00
+@@ -11846,6 +12092,7 @@ Q84,Q1761,none,2026-11-19T14:14:31+00:00
+ Q84,Q183298,none,2026-11-19T14:14:31+00:00
+ Q84,Q1848,none,2026-11-19T14:14:31+00:00
+ Q84,Q1853310,none,2026-11-19T14:14:31+00:00
++Q84,Q19520,none,2026-11-27T15:18:05+00:00
+ Q84,Q209537,none,2026-11-18T14:04:32+00:00
+ Q84,Q2096,none,2026-11-19T14:14:31+00:00
+ Q84,Q2167,none,2026-11-18T14:04:32+00:00
+@@ -11866,8 +12113,11 @@ Q84,Q52028,none,2026-11-22T12:54:23+00:00
+ Q84,Q65,none,2026-11-19T14:14:31+00:00
+ Q84,Q657461,none,2026-11-19T14:14:31+00:00
+ Q84,Q685509,none,2026-11-19T14:14:31+00:00
++Q84,Q706105,none,2026-11-27T15:18:05+00:00
+ Q84,Q744070,none,2026-11-22T12:54:23+00:00
++Q84,Q822196,none,2026-11-27T15:18:05+00:00
+ Q84,Q846939,none,2026-11-19T14:14:31+00:00
++Q84,Q8673,none,2026-11-27T15:18:05+00:00
+ Q84,Q8969,none,2026-11-19T14:14:31+00:00
+ Q84,Q938835,none,2026-11-19T14:14:31+00:00
+ Q84,Q942590,none,2026-11-18T14:04:32+00:00
+@@ -11883,6 +12133,8 @@ Q842,Q3826,contains,2026-11-19T14:14:31+00:00
+ Q842,Q737270,contains,2026-11-22T12:54:23+00:00
+ Q84203,Q208609,none,2026-11-18T14:04:32+00:00
+ Q843,Q112817,contains,2026-11-19T14:14:31+00:00
++Q843,Q1353,none,2026-11-27T15:18:05+00:00
++Q843,Q2460416,none,2026-11-27T17:23:02+00:00
+ Q843,Q276534,none,2026-11-19T14:14:31+00:00
+ Q843,Q43512,none,2026-11-19T14:14:31+00:00
+ Q844921,Q3909,contains,2026-11-18T14:04:32+00:00
+@@ -11938,6 +12190,7 @@ Q856010,Q23661,contains,2026-11-18T14:04:32+00:00
+ Q856268,Q3718,contains,2026-11-18T14:04:32+00:00
+ Q85739442,Q2222550,inside,2026-11-18T14:04:32+00:00
+ Q857788,Q1030194,contains,2026-11-18T14:04:32+00:00
++Q857788,Q17541,none,2026-11-27T15:18:05+00:00
+ Q85797374,Q1023707,none,2026-11-19T14:14:31+00:00
+ Q85797374,Q1355642,none,2026-11-19T14:14:31+00:00
+ Q85797374,Q165204,none,2026-11-19T14:14:31+00:00
+@@ -12012,6 +12265,7 @@ Q868869,Q2536628,none,2026-11-18T14:04:32+00:00
+ Q86889646,Q5094262,none,2026-11-23T22:25:26+00:00
+ Q869,Q183298,none,2026-11-19T14:14:31+00:00
+ Q869,Q1848,none,2026-11-19T14:14:31+00:00
++Q869,Q845851,none,2026-11-27T15:18:05+00:00
+ Q8692,Q371354,none,2026-11-19T14:14:31+00:00
+ Q87,Q12197874,none,2026-11-22T12:54:23+00:00
+ Q87,Q1223916,none,2026-11-22T12:54:23+00:00
+@@ -12071,6 +12325,7 @@ Q8841887,Q659450,none,2026-11-19T14:14:31+00:00
+ Q88481243,Q69783,none,2026-11-18T14:04:32+00:00
+ Q885631,Q15847,none,2026-11-18T14:04:32+00:00
+ Q889,Q504215,none,2026-11-19T14:14:31+00:00
++Q889,Q52028,none,2026-11-27T15:18:05+00:00
+ Q88975926,Q1025654,none,2026-11-18T14:04:32+00:00
+ Q88975926,Q192534,none,2026-11-23T22:25:26+00:00
+ Q892543,Q1025654,inside,2026-11-18T14:04:32+00:00
+@@ -12091,8 +12346,10 @@ Q90,Q187862,none,2026-11-19T14:14:31+00:00
+ Q90,Q209626,contains,2026-11-19T14:14:31+00:00
+ Q90,Q223920,none,2026-11-19T14:14:31+00:00
+ Q90,Q2656389,none,2026-11-19T14:14:31+00:00
++Q90,Q273779,none,2026-11-27T15:18:05+00:00
+ Q90,Q34497,none,2026-11-18T14:04:32+00:00
+ Q90,Q35001,none,2026-11-18T14:04:32+00:00
++Q90,Q3718,none,2026-11-27T15:18:05+00:00
+ Q90,Q42000,none,2026-11-18T14:04:32+00:00
+ Q90,Q873405,none,2026-11-18T14:04:32+00:00
+ Q90,Q994,none,2026-11-18T14:04:32+00:00
+@@ -12124,6 +12381,7 @@ Q905933,Q3674,inside,2026-11-18T14:04:32+00:00
+ Q906866,Q174684,none,2026-11-19T14:14:31+00:00
+ Q906866,Q203380,none,2026-11-19T14:14:31+00:00
+ Q906866,Q3619316,none,2026-11-19T14:14:31+00:00
++Q9073492,Q187838,none,2026-11-27T15:18:05+00:00
+ Q9074162,Q14461,inside,2026-11-18T14:04:32+00:00
+ Q9079137,Q41474,none,2026-11-23T22:25:26+00:00
+ Q9079137,Q613602,none,2026-11-19T14:14:31+00:00
+@@ -12137,6 +12395,7 @@ Q912,Q9347,none,2026-11-18T14:04:32+00:00
+ Q912,Q9427,contains,2026-11-19T14:14:31+00:00
+ Q912106,Q500111,none,2026-11-18T14:04:32+00:00
+ Q914048,Q34932,inside,2026-11-18T14:04:32+00:00
++Q916,Q207322,contains,2026-11-27T15:18:05+00:00
+ Q916,Q2907,none,2026-11-19T14:14:31+00:00
+ Q916,Q42120,none,2026-11-19T14:14:31+00:00
+ Q916,Q846939,none,2026-11-18T14:04:32+00:00
+@@ -12185,6 +12444,7 @@ Q933566,Q1863,none,2026-11-19T14:14:31+00:00
+ Q9347,Q35381,none,2026-11-18T14:04:32+00:00
+ Q9347,Q800122,none,2026-11-22T12:54:23+00:00
+ Q934767,Q328518,none,2026-11-18T14:04:32+00:00
++Q935116,Q121378,none,2026-11-27T15:18:05+00:00
+ Q9361,Q15817,none,2026-11-22T12:54:23+00:00
+ Q936263,Q867573,none,2026-11-23T22:25:26+00:00
+ Q938457,Q5747,contains,2026-11-18T14:04:32+00:00
+@@ -12249,6 +12509,7 @@ Q958,Q276534,contains,2026-11-19T14:14:31+00:00
+ Q959,Q2015456,none,2026-11-19T14:14:31+00:00
+ Q959,Q494924,none,2026-11-19T14:14:31+00:00
+ Q959528,Q967746,none,2026-11-23T22:25:26+00:00
++Q96,Q1020261,none,2026-11-27T15:18:05+00:00
+ Q96,Q1030194,none,2026-11-19T14:14:31+00:00
+ Q96,Q14108797,none,2026-11-22T12:54:23+00:00
+ Q96,Q1489,contains,2026-11-18T14:04:32+00:00
+@@ -12264,6 +12525,7 @@ Q96,Q3215806,none,2026-11-22T12:54:23+00:00
+ Q96,Q3859,none,2026-11-19T14:14:31+00:00
+ Q96,Q685509,none,2026-11-19T14:14:31+00:00
+ Q96,Q75938,none,2026-11-22T12:54:23+00:00
++Q96,Q81033,contains,2026-11-27T15:18:05+00:00
+ Q96,Q833016,none,2026-11-19T14:14:31+00:00
+ Q96,Q9022143,contains,2026-11-22T12:54:23+00:00
+ Q96,Q915773,none,2026-11-22T12:54:23+00:00
+@@ -12286,6 +12548,7 @@ Q966081,Q2602007,none,2026-11-19T14:14:31+00:00
+ Q966104,Q44381,none,2026-11-18T14:04:32+00:00
+ Q966660,Q65,none,2026-11-18T14:04:32+00:00
+ Q966943,Q1137657,none,2026-11-18T14:04:32+00:00
++Q967,Q3854,contains,2026-11-27T15:18:05+00:00
+ Q9694,Q220383,none,2026-11-19T14:14:31+00:00
+ Q96943616,Q1215658,inside,2026-11-18T14:04:32+00:00
+ Q971700,Q220383,none,2026-11-18T14:04:32+00:00
+@@ -12321,6 +12584,7 @@ Q97586411,Q8969,none,2026-11-19T16:33:11+00:00
+ Q976381,Q6343,none,2026-11-19T14:14:31+00:00
+ Q977738,Q679383,inside,2026-11-18T14:04:32+00:00
+ Q9780,Q65914,none,2026-11-18T14:04:32+00:00
++Q979470,Q832382,none,2026-11-27T15:18:05+00:00
+ Q9799,Q1021350,none,2026-11-18T14:04:32+00:00
+ Q9799,Q1615344,none,2026-11-18T14:04:32+00:00
+ Q9804,Q9901,none,2026-11-18T14:04:32+00:00
+@@ -12329,6 +12593,9 @@ Q981755,Q2280,none,2026-11-18T14:04:32+00:00
+ Q982353,Q1023981,none,2026-11-19T14:14:31+00:00
+ Q983435,Q3070,none,2026-11-18T14:04:32+00:00
+ Q983435,Q741169,none,2026-11-18T14:04:32+00:00
++Q983758,Q121378,none,2026-11-27T15:18:05+00:00
++Q983758,Q87,none,2026-11-27T15:18:05+00:00
++Q983916,Q180717,none,2026-11-27T17:23:02+00:00
+ Q984571,Q1966384,none,2026-11-18T14:04:32+00:00
+ Q985674,Q316390,none,2026-11-18T14:04:32+00:00
+ Q986102,Q2427117,none,2026-11-18T14:04:32+00:00
+@@ -12338,6 +12605,7 @@ Q986207,Q2467,none,2026-11-23T22:25:26+00:00
+ Q986207,Q365,none,2026-11-23T22:25:26+00:00
+ Q986207,Q649510,none,2026-11-23T22:25:26+00:00
+ Q986301,Q984786,none,2026-11-22T12:54:23+00:00
++Q986552,Q946497,none,2026-11-27T15:18:05+00:00
+ Q986634,Q13353,none,2026-11-19T14:14:31+00:00
+ Q986803,Q611919,none,2026-11-18T14:04:32+00:00
+ Q986803,Q994,none,2026-11-18T14:04:32+00:00
+@@ -12357,6 +12625,7 @@ Q99,Q51103,none,2026-11-18T14:04:32+00:00
+ Q990055,Q208926,none,2026-11-18T14:04:32+00:00
+ Q99294200,Q373567,none,2026-11-18T14:04:32+00:00
+ Q99294200,Q42117,none,2026-11-19T14:14:31+00:00
++Q994,Q1189982,none,2026-11-27T17:23:02+00:00
+ Q994114,Q8673,none,2026-11-22T12:54:23+00:00
+ Q99437640,Q158216,none,2026-11-19T16:33:11+00:00
+ Q99437640,Q1848,none,2026-11-19T16:33:11+00:00
+@@ -12364,6 +12633,7 @@ Q99437640,Q583619,none,2026-11-19T16:33:11+00:00
+ Q99437640,Q68103,inside,2026-11-18T14:04:32+00:00
+ Q99437640,Q694780,none,2026-11-19T14:14:31+00:00
+ Q99437640,Q69783,none,2026-11-19T16:33:11+00:00
++Q995267,Q8673,none,2026-11-27T15:18:05+00:00
+ Q995297,Q2105005,none,2026-11-18T14:04:32+00:00
+ Q995439,Q1638374,none,2026-11-19T16:33:11+00:00
+ Q99592931,Q1866604,none,2026-11-23T22:25:26+00:00
+diff --git a/scripts/analyse.py b/scripts/analyse.py
+index 810214d..09bdde3 100644
+--- a/scripts/analyse.py
++++ b/scripts/analyse.py
+@@ -56,6 +56,8 @@ Only the pairs listed in configs/comparisons.yaml are tested; they were chosen
+ before the results they test. Exact-match comparisons are McNemar by place.
+ The p-values are Holm-adjusted over the family of comparisons run (printed as
+ "p_holm" with the family size); the bootstrap intervals are not adjusted.
++The pairs under `exploratory:` in that file get the same statistics outside
++the family, with unadjusted p-values, labelled exploratory (column `kind`).
+ Every interval is printed with the number of place clusters it resampled, and
+ every p-value with the minimum detectable effect of its comparison (two-sided
+ alpha 0.05, power 0.8, from the place-resampled standard error of the paired
+@@ -592,15 +594,17 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
+ COMPARISONS_PATH = CONFIG_DIR / "comparisons.yaml"
+ 
+ 
+-def load_comparisons(path: Path = COMPARISONS_PATH) -> list[tuple[str, str, str]]:
++def load_comparisons(path: Path = COMPARISONS_PATH,
++                     section: str = "comparisons") -> list[tuple[str, str, str]]:
+     """The pre-selected pairs, [(a, b, question), ...]. Which comparisons are
+     worth making is an analysis decision taken in advance, so it lives in a
+     file, not in code, and nothing else is tested. Pairs naming a
+     configuration with no predictions on disk are skipped; the Holm family is
+-    the comparisons that actually run."""
++    the comparisons that actually run. `section` "exploratory" reads the
++    pairs kept outside that family."""
+     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+     out = []
+-    for entry in raw.get("comparisons") or []:
++    for entry in raw.get(section) or []:
+         if not (isinstance(entry, list) and len(entry) == 3
+                 and all(isinstance(x, str) for x in entry)):
+             raise SystemExit(f"{Path(path).name}: each comparison must be "
+@@ -613,30 +617,45 @@ def _exact(rec: dict):
+     return rec.get("exact")
+ 
+ 
+-def run_comparisons(groups: dict, n_boot: int, seed: int) -> list[dict]:
+-    """Run every comparison that has data on both sides, then Holm-adjust the
+-    by-place McNemar p-values over that family."""
++def _compare(groups: dict, entries, n_boot: int, seed: int, kind: str) -> list[dict]:
+     results = []
+-    for a_name, b_name, question in load_comparisons():
++    for a_name, b_name, question in entries:
+         if a_name not in groups or b_name not in groups:
+             continue
+         pairs = st.pair_records(groups[a_name], groups[b_name])
+         if not pairs:
+             continue
+         results.append({
+-            "a": a_name, "b": b_name, "question": question,
++            "a": a_name, "b": b_name, "question": question, "kind": kind,
+             "n_pairs": len(pairs), "n_places": len({p[0] for p in pairs}),
+             "mc_place": st.mcnemar(pairs, _exact, unit="place"),
+             "mc_item": st.mcnemar(pairs, _exact, unit="item"),
+             "effect": st.paired_effect_ci(pairs, st.exact_rate, n_boot=n_boot, seed=seed),
+         })
+         results[-1]["mde"] = st.min_detectable_effect(results[-1]["effect"].get("se"))
++    return results
++
++
++def run_comparisons(groups: dict, n_boot: int, seed: int) -> list[dict]:
++    """Run every planned comparison that has data on both sides, then
++    Holm-adjust the by-place McNemar p-values over that family."""
++    results = _compare(groups, load_comparisons(), n_boot, seed, "planned")
+     adjusted = st.holm_adjust([r["mc_place"]["p"] for r in results])
+     for r, p_holm in zip(results, adjusted):
+         r["p_holm"] = p_holm
+     return results
+ 
+ 
++def run_exploratory(groups: dict, n_boot: int, seed: int) -> list[dict]:
++    """The exploratory pairs: the same statistics, outside the Holm family,
++    with unadjusted p-values (p_holm None)."""
++    results = _compare(groups, load_comparisons(section="exploratory"), n_boot, seed,
++                       "exploratory")
++    for r in results:
++        r["p_holm"] = None
++    return results
++
++
+ def cmd_stats(scored: list[dict], args, meta: dict) -> None:
+     groups = group_by(scored, "config_name")
+     print(RULE)
+@@ -650,17 +669,25 @@ def cmd_stats(scored: list[dict], args, meta: dict) -> None:
+ 
+     results = run_comparisons(groups, args.boot, args.seed)
+     family = len(results)
++    exploratory = run_exploratory(groups, args.boot, args.seed)
+     print(f"Family of {family} comparison(s). p_holm is the Holm-adjusted p of the")
+-    print("McNemar-by-place test over that family; bootstrap intervals are not adjusted.\n")
++    print("McNemar-by-place test over that family; bootstrap intervals are not adjusted.")
++    if exploratory:
++        print(f"{len(exploratory)} exploratory comparison(s) follow the family, outside it:")
++        print("same statistics, unadjusted p, labelled EXPLORATORY.")
++    print()
+ 
+-    for r in results:
++    for r in results + exploratory:
+         mp, mi = r["mc_place"], r["mc_item"]
+         mde = "-" if r["mde"] is None else f"{r['mde'] * 100:.1f} pp"
+-        print(f"--- {r['a']}  vs  {r['b']} ---")
++        label = "  [EXPLORATORY]" if r["kind"] == "exploratory" else ""
++        adjusted = (f"p_holm={st.fmt_p(r['p_holm'])} (family of {family})"
++                    if r["kind"] == "planned" else "not in the Holm family, p unadjusted")
++        print(f"--- {r['a']}  vs  {r['b']} ---{label}")
+         print(f"    {r['question']}")
+         print(f"    {r['n_pairs']} paired item(s), {r['n_places']} place clusters")
+         print(f"    exact match, McNemar by place : b={mp['b']} c={mp['c']} "
+-              f"p={st.fmt_p(mp['p'])}  p_holm={st.fmt_p(r['p_holm'])} (family of {family})"
++              f"p={st.fmt_p(mp['p'])}  {adjusted}"
+               f"  MDE={mde}")
+         print(f"    exact match, McNemar by item  : b={mi['b']} c={mi['c']} "
+               f"p={st.fmt_p(mi['p'])}  MDE={mde}  (reference only)")
+@@ -693,13 +720,14 @@ def cmd_stats(scored: list[dict], args, meta: dict) -> None:
+                    "mcnemar_place_b", "mcnemar_place_c", "p_place", "p_holm", "family_size",
+                    "mcnemar_item_b", "mcnemar_item_c", "p_item",
+                    "exact_diff", "exact_diff_lo", "exact_diff_hi", "exact_diff_se", "mde",
+-                   "n_boot", "seed"],
++                   "n_boot", "seed", "kind"],
+                   [[r["a"], r["b"], r["question"], r["n_pairs"], r["n_places"],
+-                    r["mc_place"]["b"], r["mc_place"]["c"], r["mc_place"]["p"], r["p_holm"], family,
++                    r["mc_place"]["b"], r["mc_place"]["c"], r["mc_place"]["p"], r["p_holm"],
++                    family if r["kind"] == "planned" else None,
+                     r["mc_item"]["b"], r["mc_item"]["c"], r["mc_item"]["p"],
+                     r["effect"].get("point"), r["effect"].get("lo"), r["effect"].get("hi"),
+                     r["effect"].get("se"), r["mde"],
+-                    args.boot, args.seed] for r in results])
++                    args.boot, args.seed, r["kind"]] for r in results + exploratory])
+         write_rows(out / f"table_bootstrap_{args.split}.csv",
+                   ["config", "exact", "lo", "hi", "n_places", "n_boot_valid", "n_boot", "seed"],
+                   boot_rows)
+diff --git a/scripts/build_containment.py b/scripts/build_containment.py
+index 27e5025..dcbc1d6 100644
+--- a/scripts/build_containment.py
++++ b/scripts/build_containment.py
+@@ -1,14 +1,18 @@
+ """Look up, for every wrong answer, whether it lies inside the gold place.
+ 
+     python scripts/build_containment.py          # adds the pairs not yet looked up
+-    python scripts/build_containment.py --all    # looks every pair up again
++    python scripts/build_containment.py --all    # looks the pairs read up again
++    python scripts/build_containment.py --predictions-dir results/dev_rev3
++                                                 # the pairs of runs written elsewhere
+ 
+ A configuration often answers with something that is in the right place but is
+ not the place: the station it found for a town, the lighthouse for an island.
+ Exact match counts that as wrong. scripts/score.py therefore reports a second
+ score, "exact or inside", and this script fetches what it needs: for each
+ (predicted item, gold place) pair in results/predictions/ where the two differ,
+-the relation between them on Wikidata.
++the relation between them on Wikidata. Runs written to another directory
++(runner --out-dir) are read with --predictions-dir, which can be given more
++than once; the pairs of every directory go into the one results/containment.csv.
+ 
+     inside     the predicted item is located in the gold place: a chain of
+                P131 (located in the administrative territorial entity), P276
+@@ -26,7 +30,8 @@ results and before any test result was scored.
+ Scoring stays offline: this is the only step that calls Wikidata, and it
+ writes results/containment.csv, which the scorer reads. Wikidata changes, so
+ each row carries the date it was fetched; rows already in the file are kept as
+-they are unless --all is given.
++they are unless --all is given, which looks up again the pairs of the
++directories read and keeps every other row.
+ """
+ from __future__ import annotations
+ 
+@@ -58,9 +63,15 @@ def tls_context():
+         return ssl.create_default_context()
+ 
+ 
+-def pairs_in_predictions() -> set[tuple[str, str]]:
++def pairs_in_predictions(dirs=(PREDICTIONS_DIR,)) -> set[tuple[str, str]]:
+     found = set()
+-    for path in sorted(PREDICTIONS_DIR.glob("*.jsonl")):
++    paths = []
++    for d in dirs:
++        d = Path(d) if Path(d).is_absolute() else REPO_ROOT / d
++        if not d.is_dir():
++            raise SystemExit(f"no predictions directory {d}")
++        paths += sorted(d.glob("*.jsonl"))
++    for path in paths:
+         with path.open(encoding="utf-8") as f:
+             for line in f:
+                 if not line.strip():
+@@ -106,13 +117,20 @@ def save(known: dict) -> None:
+ def main() -> int:
+     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+     parser.add_argument("--all", action="store_true", help="look up every pair again")
++    parser.add_argument("--predictions-dir", action="append", default=None,
++                        help="directory of prediction files to read (repeatable; "
++                             "default results/predictions)")
+     args = parser.parse_args()
++    dirs = args.predictions_dir or [PREDICTIONS_DIR]
+ 
++    # Rows of pairs outside the directories read are always kept: --all looks
++    # up again the pairs of those directories only.
+     known: dict[tuple[str, str], dict] = {}
+-    if OUT.exists() and not args.all:
++    if OUT.exists():
+         with OUT.open(encoding="utf-8", newline="") as f:
+             known = {(r["predicted_qid"], r["gold_qid"]): r for r in csv.DictReader(f)}
+-    todo = sorted(pairs_in_predictions() - set(known))
++    pairs = pairs_in_predictions(dirs)
++    todo = sorted(pairs if args.all else pairs - set(known))
+     print(f"{len(known)} pairs known, {len(todo)} to look up")
+     stamp = time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime())
+     # One question per item, not per pair: what each predicted item and each
+diff --git a/src/config.py b/src/config.py
+index dba3bb3..2b07017 100644
+--- a/src/config.py
++++ b/src/config.py
+@@ -13,6 +13,7 @@ from __future__ import annotations
+ 
+ import hashlib
+ import json
++import re
+ from dataclasses import dataclass, field, asdict, fields, replace
+ from pathlib import Path
+ 
+@@ -43,7 +44,7 @@ PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
+              "grounded_llm", "geoparser"}
+ LINKING_BACKENDS = {"refined", "blink", "wikidata_search", "none"}
+ LLM_PROVIDERS = {None, "google", "openrouter", "vse"}
+-PROMPT_TEMPLATES = {"v1", "v2", "v3", "v4"}
++PROMPT_TEMPLATES = {"v1", "v2", "v3", "v4", "v5"}
+ TIERS = range(0, 6)
+ # most_populous_named: as most_populous, over the search results named exactly
+ # as the toponym when there are any (src/gazetteer.py).
+@@ -106,6 +107,10 @@ class LLMConfig:
+     # Kept separate from `model` so existing caches stay addressable after a
+     # model slug is rewritten; defaults to a slugified model id.
+     cache_name: str | None = None
++    # The rule that resolves the answer (src/resolver.py); None means the rule
++    # of the same name as prompt_template. Added after prediction files
++    # existed; see _LATE_FIELDS.
++    resolver_rule: str | None = None
+ 
+ 
+ @dataclass(frozen=True)
+@@ -130,6 +135,13 @@ class DenseConfig:
+     # call, and so the index cache key can include them.
+     query_prefix: str = "query: "
+     passage_prefix: str = "passage: "
++    # Pins one index file, src/.dense_index/index_<signature>.pkl, checked
++    # against the sha256 recorded next to it (src/dense_index.py). Set, the
++    # index is never rebuilt: the index text comes from live Wikidata, so a
++    # rebuild over the same pool can still change what is retrieved. Null
++    # means build or load by the signature of the pool, as before. Added after
++    # prediction files existed; see _LATE_FIELDS.
++    index_signature: str | None = None
+ 
+ 
+ @dataclass(frozen=True)
+@@ -219,6 +231,8 @@ _LATE_SECTIONS = {
+ _LATE_FIELDS = {
+     ("ner", "fallback_types"): None,         # revision 3
+     ("linking", "place_rule"): "chain_v1",   # revision 3
++    ("dense", "index_signature"): None,      # revision 3, after the dev run of 26-27 Nov
++    ("llm", "resolver_rule"): None,          # revision 3, after the dev_rev3b run
+ }
+ 
+ 
+@@ -397,9 +411,14 @@ def _validate_types(cfg: PipelineConfig) -> None:
+                          ("llm.cache_name", cfg.llm.cache_name),
+                          ("llm.revision", cfg.llm.revision),
+                          ("llm.prompt_template", cfg.llm.prompt_template),
++                         ("llm.resolver_rule", cfg.llm.resolver_rule),
+                          ("dense.encoder", cfg.dense.encoder),
++                         ("dense.index_signature", cfg.dense.index_signature),
+                          ("baseline.strategy", cfg.baseline.strategy)):
+         _require_type(where, value, str, allow_none=True)
++    sig = cfg.dense.index_signature
++    if sig is not None and not re.fullmatch(r"[0-9a-f]{16}", sig):
++        raise ConfigError(f"dense.index_signature must be 16 lowercase hex digits, got {sig!r}")
+ 
+ 
+ def _validate_common(cfg: PipelineConfig) -> None:
+@@ -413,6 +432,8 @@ def _validate_common(cfg: PipelineConfig) -> None:
+                           f"{sorted(str(b) for b in LLM_PROVIDERS)}")
+     if llm.prompt_template not in PROMPT_TEMPLATES:
+         raise ConfigError(f"llm.prompt_template must be one of {sorted(PROMPT_TEMPLATES)}")
++    if llm.resolver_rule is not None and llm.resolver_rule not in PROMPT_TEMPLATES:
++        raise ConfigError(f"llm.resolver_rule must be null or one of {sorted(PROMPT_TEMPLATES)}")
+     if linking.top_n < 1:
+         raise ConfigError("linking.top_n must be >= 1")
+     if cfg.dense.pool not in DENSE_POOLS:
+diff --git a/src/dense_index.py b/src/dense_index.py
+index 59d714c..a0e25be 100644
+--- a/src/dense_index.py
++++ b/src/dense_index.py
+@@ -77,7 +77,7 @@ from pathlib import Path
+ import numpy as np
+ 
+ import wikidata as wd
+-from config import REPO_ROOT, load_all_configs, load_datasets
++from config import REPO_ROOT, ConfigError, load_all_configs, load_datasets
+ 
+ log = logging.getLogger(__name__)
+ 
+@@ -362,9 +362,59 @@ def build_catalogue(d, pool=None, gold=None) -> Catalogue:
+     return Catalogue(qids, places, texts, unfetched)
+ 
+ 
++def _sha256(path: Path) -> str:
++    h = hashlib.sha256()
++    with path.open("rb") as f:
++        for block in iter(lambda: f.read(1 << 20), b""):
++            h.update(block)
++    return h.hexdigest()
++
++
++def load_pinned(cfg) -> DenseIndex:
++    """The index file `dense.index_signature` names, and no other.
++
++    The pool fixes which QIDs are in the index, but the index text (label,
++    description, aliases, country) is fetched from live Wikidata when the
++    index is built, so two builds over the same pool can retrieve differently.
++    A pinned index is therefore loaded as it is, checked against the sha256
++    recorded next to it (index_<signature>.sha256), and never built: a missing
++    or different file is a ConfigError, which aborts the run."""
++    d = cfg.dense
++    sig = d.index_signature
++    path = _cache_path(sig)
++    sha_path = path.with_suffix(".sha256")
++    if not path.exists():
++        raise ConfigError(f"dense.index_signature {sig}: {path} is missing. A pinned "
++                          f"index is never rebuilt; restore the file from its backup.")
++    if not sha_path.exists():
++        raise ConfigError(f"dense.index_signature {sig}: no recorded sha256 at {sha_path}")
++    expected = sha_path.read_text(encoding="utf-8").split()[0].strip().lower()
++    actual = _sha256(path)
++    if actual != expected:
++        raise ConfigError(f"dense.index_signature {sig}: {path.name} has sha256 {actual}, "
++                          f"recorded {expected}. It is not the pinned index.")
++    with path.open("rb") as f:
++        payload = pickle.load(f)
++    m = payload["meta"]
++    stated = {"signature": sig, "encoder": d.encoder, "pool": d.pool,
++              "index_fields": list(d.index_fields or []), "passage_prefix": d.passage_prefix}
++    differs = {k: (m.get(k), v) for k, v in stated.items() if m.get(k) != v}
++    if differs:
++        raise ConfigError(f"dense.index_signature {sig}: the index was built with "
++                          f"other settings than the configuration states: {differs}")
++    _check_gold(payload["qids"], _dataset_gold_qids())
++    log.info("pinned dense index loaded: %s, %d places, sha256 %s",
++             path.name, m["n_places"], actual[:12])
++    return DenseIndex(payload["qids"], payload["matrix"], payload["places"],
++                      payload["meta"], d.encoder, d.query_prefix)
++
++
+ def load_or_build(cfg) -> DenseIndex:
+-    """Load the cached index, or build it once and cache it."""
++    """Load the cached index, or build it once and cache it. A pinned index
++    (`dense.index_signature`) is only ever loaded (load_pinned)."""
+     d = cfg.dense
++    if d.index_signature:
++        return load_pinned(cfg)
+     pool = build_pool(d.pool)
+     signature = _signature(cfg, pool)
+     path = _cache_path(signature)
+@@ -421,7 +471,9 @@ _indexes = {}
+ 
+ 
+ def get_index(cfg) -> DenseIndex:
+-    key = _signature(cfg)
++    # A pinned index is keyed by its signature alone: the pool on disk is not
++    # read, so what is in results/predictions/ cannot change it.
++    key = f"pinned:{cfg.dense.index_signature}" if cfg.dense.index_signature else _signature(cfg)
+     if key not in _indexes:
+         _indexes[key] = load_or_build(cfg)
+     return _indexes[key]
+diff --git a/src/llm_geo.py b/src/llm_geo.py
+index 11f0bf6..5d8861b 100644
+--- a/src/llm_geo.py
++++ b/src/llm_geo.py
+@@ -55,11 +55,36 @@ Set "refused" to true only if the text contains no geographic signal at all.
+ 
+ Text: {text}"""
+ 
++# v5 (revision 3, after the development runs of 26-27 November) is v4 with its
++# second paragraph replaced; the JSON fields are v4's. On posts with clues
++# only, v4's "the location itself" made the models name a street, venue, club
++# or person with no Wikidata item, and rule v4 then fell straight back to the
++# country. v5 asks for the city, town or village of a building, street or
++# venue, and for the place where a person, organisation or event is. A first
++# v5, v4 with a "settlement" field (results/dev_rev3b/), was replaced: the
++# models put a landmark in "place" and the town in "settlement"
++# (results/REVISIONS.md). The configurations resolve v5 with rule v4
++# (`llm.resolver_rule`).
++PROMPT_V5 = """You are a geolocation assistant. Given a text, identify the single most relevant real-world location the text refers to.
++
++The location can be a city, town or village, or any other named place. If the text is about a building, street or venue, name the city, town or village it is in. If it is about a person, organisation or event, name the place where they are.
++
++Respond with JSON only, no explanation:
++{{"place": "<name of the location, or null if unknown>", "country": "<country name or null if unknown>", "continent": "<continent name or null if unknown>", "latitude": <approximate latitude of the location in decimal degrees, or null if unknown>, "longitude": <approximate longitude in decimal degrees, or null if unknown>, "refused": false}}
++
++Set "refused" to true only if the text contains no geographic signal at all.
++
++Text: {text}"""
++
+ # `llm.prompt_template` names the prompt and, with it, the rule that resolves
+ # the answer: v1 takes the first search result for the city, v2 chooses by
+ # country and coordinates, v3 is v2 with a wider search (same prompt, so the
+-# same cached replies), v4 is v3's rule on the "place" field of prompt v4.
+-PROMPTS = {"v1": PROMPT, "v2": PROMPT_V2, "v3": PROMPT_V2, "v4": PROMPT_V4}
++# same cached replies), v4 is v3's rule on the "place" field of prompt v4, v5
++# is v4 with a "settlement" field searched when the place is not found (it
++# needs the first v5 prompt's settlement field). `llm.resolver_rule`, when
++# set, names the rule instead (prompt v5 with rule v4).
++PROMPTS = {"v1": PROMPT, "v2": PROMPT_V2, "v3": PROMPT_V2, "v4": PROMPT_V4,
++           "v5": PROMPT_V5}
+ 
+ _clean_name = clean_name          # the name other modules import
+ 
+@@ -71,12 +96,13 @@ class LLMGeoPipeline:
+     `call(prompt)`, `model_id` and `generation_params` (anything that changes
+     the model's answers, which goes into the cache fingerprint)."""
+ 
+-    def __init__(self, client, cache_name: str, prompt_template: str = "v1"):
++    def __init__(self, client, cache_name: str, prompt_template: str = "v1",
++                 resolver_rule: str | None = None):
+         self.client = client
+         self.model_id = client.model_id
+         self.generation_params = client.generation_params
+         self.prompt = PROMPTS[prompt_template]
+-        self.resolve = RESOLVERS[prompt_template]
++        self.resolve = RESOLVERS[resolver_rule or prompt_template]
+         self._cache = PickleCache(cache_name, fingerprint(self.prompt, self.generation_params))
+ 
+     def save_cache(self) -> None:
+@@ -121,8 +147,8 @@ _instances: dict[tuple, LLMGeoPipeline] = {}
+ def build(llm) -> LLMGeoPipeline:
+     """The pipeline for an LLMConfig, memoised on everything that defines it."""
+     key = (llm.provider, llm.model, llm.revision, llm.temperature, llm.top_p,
+-           llm.prompt_template, llm.cache_name)
++           llm.prompt_template, llm.resolver_rule, llm.cache_name)
+     if key not in _instances:
+         _instances[key] = LLMGeoPipeline(make_client(llm), llm.cache_name,
+-                                         llm.prompt_template)
++                                         llm.prompt_template, llm.resolver_rule)
+     return _instances[key]
+diff --git a/src/llm_grounded.py b/src/llm_grounded.py
+index 8107f1b..09b9967 100644
+--- a/src/llm_grounded.py
++++ b/src/llm_grounded.py
+@@ -34,6 +34,7 @@ import meter
+ 
+ from llm_common import (SENTINELS, PickleCache, fingerprint,
+                         parse_json_object)
++from resolver import _plain
+ 
+ # The prompt of the runs until revision 3, kept for the record. Its last rule
+ # asked the model to decline when unsure, which the LLM-only prompt v4 no
+@@ -59,6 +60,18 @@ Candidates:
+ # when no candidate is the location, as the LLM-only prompt v4 declines when
+ # the text has no geographic signal; neither is told to decline when unsure.
+ PROMPT_VERSION = "v2"
++
++# The candidate list is part of what the model sees, so its version is in the
++# response cache name too, per candidate source (src/pipeline.py). The cache is
++# keyed on the text and the candidate QIDs, not on the rendered list, so a list
++# that renders differently must not reuse the replies of the old one.
++#   v2  revision 3: the place's own name (`label`), not the mention.
++#   v3  after the development run of 26-27 November: v2, plus the mention the
++#       place was reached from when it differs from the place's name.
++# A dense candidate has no `label` (its `entity` is the place name), so v3
++# renders it byte for byte as v2 did and the dense cache stays v2.
++LIST_VERSIONS = {"dense": "v2", "linking": "v3"}
++
+ PROMPT = """You are a geolocation assistant. Identify the single real-world location the text refers to, choosing from the numbered candidate list.
+ 
+ Respond with JSON only, no explanation:
+@@ -83,7 +96,13 @@ def format_candidates(candidates: list[dict]) -> str:
+     `entity`, which for a linked candidate is the mention it came from: a
+     place reached through a person showed the person's name and never its own
+     ("Nick Willis -- city in the Wellington Region of New Zealand"). Dense
+-    candidates carry the place name in `entity` and have no `label`."""
++    candidates carry the place name in `entity` and have no `label`.
++
++    List v3 (after the development run of 26-27 November): when a candidate
++    has a label and the mention differs from it, the line ends with the
++    mention, `from "<mention>"`. With the place name alone the model could not
++    tell why a place was listed ("Caála" for a post about the club "C.R.
++    Caála") and declined."""
+     lines = []
+     for i, cand in enumerate(candidates, start=1):
+         label = cand.get("label") or cand.get("entity") or cand.get("qid") or "?"
+@@ -93,6 +112,9 @@ def format_candidates(candidates: list[dict]) -> str:
+         line = f"{i}. {qid} — {label} — {country}"
+         if desc and desc.lower() != label.lower():
+             line += f" — {desc}"
++        mention = (cand.get("entity") or "").strip()
++        if cand.get("label") and mention and _plain(mention) != _plain(cand["label"]):
++            line += f' — from "{mention}"'
+         lines.append(line)
+     return "\n".join(lines) if lines else "(no candidates were retrieved)"
+ 
+diff --git a/src/pipeline.py b/src/pipeline.py
+index 9f5c356..6ed158a 100644
+--- a/src/pipeline.py
++++ b/src/pipeline.py
+@@ -43,6 +43,7 @@ class Candidate(TypedDict, total=False):
+     entity: str
+     entity_type: str
+     description: str | None
++    label: str | None
+ 
+ 
+ @dataclass
+@@ -103,6 +104,10 @@ def _candidate_record(cand: Candidate) -> dict:
+         "score": cand.get("score"),
+         "source_entity": cand.get("entity"),
+         "source_entity_type": cand.get("entity_type"),
++        # The place's own name, which the grounded list shows (linked
++        # candidates only; None for the others). Stored from the development
++        # run of 26-27 November on.
++        "label": cand.get("label"),
+         # The description is what the reranker actually scored; without it the
+         # score in this row cannot be interpreted after the fact.
+         "description": cand.get("description"),
+@@ -400,10 +405,15 @@ class Pipeline:
+         # The prompt version is in the name from revision 3 on, so a new prompt
+         # starts its own cache and the replies of the first runs stay where
+         # they are (llm_common.PickleCache would set them aside as .stale).
+-        from llm_grounded import PROMPT_VERSION
++        # The candidate list version, per source, has replaced it there since
++        # the development run of 26-27 November: linking v3, dense v2
++        # (llm_grounded.LIST_VERSIONS).
++        from llm_grounded import LIST_VERSIONS, PROMPT_VERSION
+         gr = self.cfg.grounded
+         name = f"{self.cfg.llm.cache_name}_grounded_{gr.candidate_source}"
+-        return name if PROMPT_VERSION == "v1" else f"{name}_{PROMPT_VERSION}"
++        if PROMPT_VERSION == "v1":
++            return name
++        return f"{name}_{LIST_VERSIONS.get(gr.candidate_source, PROMPT_VERSION)}"
+ 
+     def _top_linked(self, pairs, top_k: int) -> list[Candidate]:
+         """Distinct place QIDs, most confident linker output first, then
+diff --git a/src/resolver.py b/src/resolver.py
+index d0f891e..a11703e 100644
+--- a/src/resolver.py
++++ b/src/resolver.py
+@@ -4,7 +4,7 @@ An LLM-only configuration gets text back from the model:
+ 
+     {"city": "Worcester", "country": "South Africa", "latitude": -33.6, "longitude": 19.4}
+ 
+-and has to find the Wikidata item for it. There are four rules, chosen by the
++and has to find the Wikidata item for it. There are five rules, chosen by the
+ prompt template of the configuration:
+ 
+   v1  `resolve_first_hit`. Search the city name, take the first result. The
+@@ -34,6 +34,11 @@ prompt template of the configuration:
+       and failed requests and empty replies get statuses of their own. A
+       reply with a "city" field and no "place" field is read the same way.
+ 
++  v5  `resolve_place_settlement`. Rule v4 on "place", then, when the place is
++      not_found or ambiguous, the same search on the "settlement" field of
++      prompt v5 (revision 3, after the development run of 26-27 November).
++      `field` on the resolution says which of the two resolved.
++
+ All return `(candidate or None, resolution)`. `resolution` is stored on the
+ prediction record, so a missing or coarse answer has a reason:
+ 
+@@ -45,15 +50,19 @@ prediction record, so a missing or coarse answer has a reason:
+                        coordinates either)
+            ambiguous   several items carry the name and the answer has nothing
+                        that chooses between them (v2 only; v1 never knows)
+-           empty       (v4) the provider returned no text or blocked the reply,
+-                       or every field of the reply is null and "refused" false;
+-                       v1-v3 call this declined
+-           error       (v4) a Wikidata request failed; `message` says which.
+-                       v1-v3 cannot tell this from not_found
++           empty       (v4, v5) the provider returned no text or blocked the
++                       reply, or every field of the reply is null and
++                       "refused" false; v1-v3 call this declined
++           error       (v4, v5) a Wikidata request failed; `message` says
++                       which. v1-v3 cannot tell this from not_found
+   level    city | country | continent | None: what the prediction is. A
+            not_found or ambiguous city still gives the country when the model
+            named one, so `status` describes the named place and `level` the
+-           answer.
++           answer. In v4 and v5 "city" means the named place, whatever its
++           type (a street, an island or a park as well as a town), and in v5
++           also the settlement when that is what resolved.
++  field    (v5) "place" or "settlement": which field of the reply resolved;
++           with "settlement", `place_status` is what happened to the place.
+   method   how the item was chosen (first_hit, country, country+coordinates,
+            country+search_order, coordinates, only_candidate; v4 also
+            country_item, the country answered from the table of country items).
+@@ -94,7 +103,7 @@ MAX_KM_WITHOUT_COUNTRY = 500.0
+ TIE_KM = 25.0
+ 
+ STATUSES = ("resolved", "declined", "unreadable", "not_found", "ambiguous",
+-            "empty", "error")      # the last two: rule v4 only
++            "empty", "error")      # the last two: rules v4 and v5 only
+ 
+ # Models are asked for JSON null when a field is unknown, and mostly comply --
+ # but a few responses put the *string* "null" (or "none", "unknown") in the
+@@ -474,6 +483,60 @@ def resolve_place_wide(raw_or_parsed, *, search: Callable = wd.search_entities_c
+         return None, _resolution("error", message=str(e))
+ 
+ 
++def resolve_place_settlement(raw_or_parsed, *, search: Callable = wd.search_entities_checked,
++                             fetch: Callable = wd.fetch_entities_checked,
++                             geo: Callable = wd.resolve_country_continent_checked,
++                             countries: Callable = country_item) -> tuple[dict | None, dict]:
++    """Rule v5 (revision 3, after the development run of 26-27 November): rule
++    v4 on the "place" field, then on the "settlement" field of prompt v5 when
++    the place is not pinned down.
++
++    Prompt v4 asks for the location itself. On posts with clues only the
++    models then named a street, a venue, a club or a person that often has no
++    Wikidata item, and rule v4 fell straight back to the country. Prompt v5
++    also asks for the settlement the location is in.
++
++      1. Rule v4 on "place" (falling back to "city", as v4 does). When it
++         resolves, the settlement is never searched; the resolution gets
++         `field` "place".
++      2. When the place is not_found or ambiguous and "settlement" holds a
++         name that is not the place's (compared without case, accents or
++         punctuation), the same search and choice run on the settlement, with
++         the same country and coordinates. If it resolves, that is the answer:
++         `field` "settlement", and `place_status` keeps what happened to the
++         place.
++      3. Otherwise the answer is that of step 1: the country, then the
++         continent.
++
++    A failed Wikidata request in either search ends the whole resolution in
++    status `error`, as in v4."""
++    parsed, ended = _read(raw_or_parsed, v4=True)
++    if ended:
++        return None, ended
++
++    def v4_rule(answer):
++        return resolve_by_country_and_coordinates(
++            answer, search=search, fetch=fetch, geo=geo, wide_limit=WIDE_SEARCH_LIMIT,
++            name_fields=("place", "city"), v4=True, countries=countries)
++
++    place = next((n for n in (clean_name(parsed.get(f)) for f in ("place", "city")) if n), None)
++    settlement = clean_name(parsed.get("settlement"))
++    try:
++        cand, res = v4_rule(parsed)
++        if res["status"] == "resolved":
++            return cand, ({**res, "field": "place"} if place else res)
++        if res["status"] not in ("not_found", "ambiguous") or not settlement \
++                or (place and _plain(settlement) == _plain(place)):
++            return cand, res
++        by_settlement = {k: v for k, v in parsed.items() if k not in ("place", "city")}
++        s_cand, s_res = v4_rule({**by_settlement, "place": settlement})
++    except wd.WikidataError as e:
++        return None, _resolution("error", message=str(e))
++    if s_res["status"] == "resolved":
++        return s_cand, {**s_res, "field": "settlement", "place_status": res["status"]}
++    return cand, res
++
++
+ def _level(qid: str, country_qid: str | None) -> str:
+     return "country" if qid == country_qid else "city"
+ 
+@@ -499,4 +562,4 @@ def _round(km: float | None) -> float | None:
+ 
+ 
+ RESOLVERS = {"v1": resolve_first_hit, "v2": resolve_by_country_and_coordinates, "v3": resolve_wide,
+-             "v4": resolve_place_wide}
++             "v4": resolve_place_wide, "v5": resolve_place_settlement}
+diff --git a/src/runner.py b/src/runner.py
+index 74220a0..385e7cf 100644
+--- a/src/runner.py
++++ b/src/runner.py
+@@ -120,10 +120,14 @@ def models_of(cfg: PipelineConfig) -> dict:
+         "linker_model": cfg.linking.refined_model,
+         "rerank": cfg.rerank.model if cfg.rerank.enabled else None,
+         "dense_encoder": cfg.dense.encoder,
++        # The pinned index the pool configurations retrieve from (from the
++        # development run of 26-27 November on).
++        "dense_index": cfg.dense.index_signature,
+         "llm": f"{llm.provider}/{llm.model}" if llm.model else None,
+         "llm_revision": llm.revision,
+         "llm_temperature": llm.temperature if llm.model else None,
+         "llm_prompt_template": llm.prompt_template if llm.model else None,
++        "llm_resolver_rule": llm.resolver_rule if llm.model else None,
+     }
+     return {role: value for role, value in used.items() if value is not None}
+ 
+diff --git a/src/wikidata.py b/src/wikidata.py
+index 5c5460f..7e7597e 100644
+--- a/src/wikidata.py
++++ b/src/wikidata.py
+@@ -719,7 +719,10 @@ def get_coords(entity_text: str, entity_type: str, top_n: int = 10,
+     apply for top_n up to SEARCH_LIMIT and scale to top_n beyond it. Under
+     chain_v1 they cap places; under all_places, for PER and ORG, they cap the
+     entities whose places are taken. If any network lookup fails the partial
+-    result is returned but not cached.
++    result is returned but not cached (chain_v1, as it ran); under all_places
++    a failed search, fetch or country/continent lookup raises WikidataError
++    instead (after the development run of 26-27 November), and nothing is
++    cached for the request.
+     """
+     # chain_v1 keeps the key of the reported runs, so their cached answers stay
+     # valid; another rule gets its own entries.
+@@ -734,6 +737,8 @@ def get_coords(entity_text: str, entity_type: str, top_n: int = 10,
+     try:
+         qids = _search_with_fallback(entity_text, min(max(top_n, SEARCH_LIMIT), MAX_SEARCH_LIMIT))
+     except WikidataError as e:
++        if place_rule == "all_places":
++            raise
+         logger.warning("Search error for %r: %s", entity_text, e)
+         return []
+     if not qids:
+@@ -748,6 +753,8 @@ def get_coords(entity_text: str, entity_type: str, top_n: int = 10,
+         coords, complete = handler(entity_text, qids[:top_n], cap, place_rule=place_rule)
+     if complete:
+         _coords_cache[cache_key] = coords
++    elif place_rule == "all_places":
++        raise WikidataError(f"all_places: a lookup failed for {entity_text!r} ({entity_type})")
+     return coords
+ 
+ 
+@@ -864,14 +871,26 @@ def resolve_qid_to_candidates(qid: str, entity_text: str, entity_type: str,
+         raise ValueError(f"unknown place_rule {place_rule!r}")
+     if not qid:
+         return []
+-    ent = fetch_entities([qid]).get(qid, {})
++    # all_places raises on any failed request (after the development run of
++    # 26-27 November): a failed fetch used to look like an entity with fewer
++    # places, or none. The pipeline puts the error on the record and the
++    # runner retries the post on resume. Nothing is cached for the request:
++    # the entity cache only ever holds entities that were fetched.
++    entities, ok = _fetch_entities_status([qid])
++    if not ok:
++        raise WikidataError(f"all_places: entity fetch failed for {qid}")
++    ent = entities.get(qid, {})
+     if not ent:
+         return []
+-    places_of, place_ents, _ = _all_place_ents({qid: ent})
++    places_of, place_ents, ok = _all_place_ents({qid: ent})
++    if not ok:
++        raise WikidataError(f"all_places: place fetch failed for the places of {qid}")
+     places = places_of.get(qid, [])
+     if not places:
+         return []
+-    geo = resolve_country_continent({p: place_ents[p] for p in places})
++    geo, ok = _resolve_cc({p: place_ents[p] for p in places})
++    if not ok:
++        raise WikidataError(f"all_places: country/continent lookup failed for the places of {qid}")
+     return [_linked_candidate(p, place_ents[p], geo, entity_text, entity_type) for p in places]
+ 
+ 
+diff --git a/tests/test_chain.py b/tests/test_chain.py
+index e988b35..dddf1e6 100644
+--- a/tests/test_chain.py
++++ b/tests/test_chain.py
+@@ -208,6 +208,63 @@ def test_search_path_organisation_cap_counts_organisations():
+     assert [c["qid"] for c in out] == ["Qformed"]
+ 
+ 
++# ---------- all_places: failed lookups (after the development run of 26-27 November)
++
++def _failing_fetch(fail):
++    """_fetch_entities_status that reports the QIDs in `fail` as not fetched."""
++    def status(qids):
++        return ({q: ({} if q in fail else ITEMS.get(q, {})) for q in qids},
++                not any(q in fail for q in qids))
++    return status
++
++
++@pytest.mark.parametrize("fail", [{"Qall"}, {"Qhome"}, {"Qdistrict"}, {"Qtown"}])
++def test_all_places_failed_fetch_raises(monkeypatch, fail):
++    """The linked entity, one of its places, a target without coordinates, or
++    the P131 hop: any failed fetch raises, where it used to drop places."""
++    monkeypatch.setattr(wd, "_fetch_entities_status", _failing_fetch(fail))
++    qid = "Qvia_district" if fail & {"Qdistrict", "Qtown"} else "Qall"
++    with pytest.raises(wd.WikidataError):
++        wd.resolve_qid_to_candidates(qid, "x", "PER", "all_places")
++
++
++def test_all_places_failed_country_lookup_raises(monkeypatch):
++    monkeypatch.setattr(wd, "_resolve_cc", lambda ents: ({q: ("", "") for q in ents}, False))
++    with pytest.raises(wd.WikidataError):
++        wd.resolve_qid_to_candidates("Qall", "x", "PER", "all_places")
++
++
++def test_chain_v1_failed_fetch_still_gives_nothing_as_it_ran(monkeypatch):
++    monkeypatch.setattr(wd, "fetch_entities", lambda qids: {q: {} for q in qids})
++    monkeypatch.setattr(wd, "_fetch_entities_status", _failing_fetch({"Qall"}))
++    assert wd.resolve_qid_to_candidates("Qall", "x", "PER") == []
++
++
++def test_search_path_all_places_failed_lookup_raises_and_caches_nothing(monkeypatch):
++    cache = {}
++    monkeypatch.setattr(wd, "_coords_cache", cache)
++    monkeypatch.setattr(wd, "_search_with_fallback", lambda text, limit: ["Qall"])
++    monkeypatch.setattr(wd, "_fetch_entities_status", _failing_fetch({"Qhome"}))
++    with pytest.raises(wd.WikidataError):
++        wd.get_coords("x", "PER", top_n=10, place_rule="all_places")
++    assert cache == {}
++    # chain_v1, as in the reported runs: the place of birth fails, the partial
++    # result (nothing) is returned and not cached
++    monkeypatch.setattr(wd, "_fetch_entities_status", _failing_fetch({"Qborn"}))
++    assert wd.get_coords("x", "PER", top_n=10) == []
++    assert cache == {}
++
++
++def test_search_path_all_places_failed_search_raises(monkeypatch):
++    def failing_search(text, limit):
++        raise wd.WikidataError("HTTP 429 from Wikidata")
++    monkeypatch.setattr(wd, "_coords_cache", {})
++    monkeypatch.setattr(wd, "_search_with_fallback", failing_search)
++    with pytest.raises(wd.WikidataError):
++        wd.get_coords("x", "ORG", top_n=10, place_rule="all_places")
++    assert wd.get_coords("x", "ORG", top_n=10) == []          # chain_v1, as it ran
++
++
+ def test_cache_key_keeps_chain_v1_entries_and_separates_all_places(monkeypatch):
+     """chain_v1 keeps the key of the reported runs (text, type, top_n), so a
+     cached answer is reused; all_places gets its own entry. A dict stands in
+diff --git a/tests/test_grounded.py b/tests/test_grounded.py
+index d74dd69..238c88e 100644
+--- a/tests/test_grounded.py
++++ b/tests/test_grounded.py
+@@ -24,18 +24,66 @@ DENSE = {"qid": "Q1015681", "entity": "Lower Hutt", "entity_type": "PLACE",
+          "description": "city in the Wellington Region of New Zealand"}
+ 
+ 
+-def test_linked_candidate_shows_the_place_name_not_the_mention():
++def format_candidates_v2(candidates):
++    """List v2 as it ran in the development run of 26-27 November, copied
++    here so that the dense list can be checked against it byte for byte."""
++    lines = []
++    for i, cand in enumerate(candidates, start=1):
++        label = cand.get("label") or cand.get("entity") or cand.get("qid") or "?"
++        qid = cand.get("qid") or "-"
++        country = cand.get("country") or "unknown country"
++        desc = (cand.get("description") or "").strip()
++        line = f"{i}. {qid} — {label} — {country}"
++        if desc and desc.lower() != label.lower():
++            line += f" — {desc}"
++        lines.append(line)
++    return "\n".join(lines) if lines else "(no candidates were retrieved)"
++
++
++def test_linked_candidate_shows_the_place_name_then_the_mention():
+     line = g.format_candidates([LINKED])
+-    assert "Lower Hutt" in line and "Nick Willis" not in line
++    assert line == ('1. Q1015681 — Lower Hutt — New Zealand — city in the Wellington '
++                    'Region of New Zealand — from "Nick Willis"')
+ 
+ 
+-def test_linked_and_dense_candidates_are_shown_the_same_way():
+-    assert g.format_candidates([LINKED]) == g.format_candidates([DENSE])
++def test_the_mention_is_the_only_change_from_list_v2():
++    assert g.format_candidates([LINKED]) == (format_candidates_v2([LINKED])
++                                             + ' — from "Nick Willis"')
++
++
++def test_mention_that_is_the_place_name_is_not_repeated():
++    for mention in ("Lower Hutt", "lower hutt", "Lower-Hutt"):
++        cand = {**LINKED, "entity": mention, "entity_type": "LOC"}
++        assert g.format_candidates([cand]) == format_candidates_v2([cand])
+ 
+ 
+ def test_candidate_without_label_falls_back_to_the_mention():
+     cand = {k: v for k, v in LINKED.items() if k != "label"}
+-    assert "Nick Willis" in g.format_candidates([cand])
++    line = g.format_candidates([cand])
++    assert "Nick Willis" in line and "from" not in line
++
++
++def test_dense_candidates_render_exactly_as_in_list_v2():
++    cands = [DENSE, {**DENSE, "qid": "Q2", "entity": "Earth", "description": "Earth"},
++             {"qid": "Q3", "entity": "Somewhere", "country": None, "description": None}]
++    assert g.format_candidates(cands) == format_candidates_v2(cands)
++    assert g.format_candidates([]) == format_candidates_v2([])
++
++
++def test_dense_candidates_of_the_pinned_index_render_exactly_as_in_list_v2():
++    """Every place of the revision 3 index, as dense retrieval hands it to the
++    model: list v3 is byte-identical to v2, so the dense cache stays v2."""
++    import pickle
++    path = Path(__file__).resolve().parent.parent / "src" / ".dense_index" / "index_3530d31fa83aacb7.pkl"
++    if not path.exists():
++        import pytest
++        pytest.skip("pinned dense index not on this machine")
++    with path.open("rb") as f:
++        places = list(pickle.load(f)["places"].values())
++    assert len(places) == 3599 and not any("label" in p for p in places)
++    for start in range(0, len(places), 10):
++        block = places[start:start + 10]
++        assert g.format_candidates(block) == format_candidates_v2(block)
+ 
+ 
+ def test_prompt_no_longer_asks_to_decline_when_unsure():
+@@ -44,10 +92,25 @@ def test_prompt_no_longer_asks_to_decline_when_unsure():
+     assert "none of the candidates is the location" in g.PROMPT
+ 
+ 
+-def test_new_prompt_has_its_own_cache():
++def _cache_name(source):
+     import pipeline
+     cfg = SimpleNamespace(llm=SimpleNamespace(cache_name="gemma4_12b"),
+-                          grounded=SimpleNamespace(candidate_source="linking"))
+-    name = pipeline.Pipeline._grounded_cache_name(SimpleNamespace(cfg=cfg))
+-    assert name == f"gemma4_12b_grounded_linking_{g.PROMPT_VERSION}"
++                          grounded=SimpleNamespace(candidate_source=source))
++    return pipeline.Pipeline._grounded_cache_name(SimpleNamespace(cfg=cfg))
++
++
++def test_new_prompt_has_its_own_cache():
+     assert g.PROMPT_VERSION != "v1"
++    assert _cache_name("dense") == "gemma4_12b_grounded_dense_v2"
++
++
++def test_linking_list_v3_has_its_own_cache_and_dense_keeps_v2():
++    assert g.LIST_VERSIONS == {"dense": "v2", "linking": "v3"}
++    assert _cache_name("linking") == "gemma4_12b_grounded_linking_v3"
++
++
++def test_stored_candidate_keeps_the_label():
++    import pipeline
++    rec = pipeline._candidate_record(LINKED)
++    assert rec["label"] == "Lower Hutt" and rec["source_entity"] == "Nick Willis"
++    assert pipeline._candidate_record(DENSE)["label"] is None
+diff --git a/tests/test_prompt.py b/tests/test_prompt.py
+index 0755f23..4436e8d 100644
+--- a/tests/test_prompt.py
++++ b/tests/test_prompt.py
+@@ -46,10 +46,92 @@ def test_v4_has_its_own_fingerprint_and_rule():
+     assert llm_geo.RESOLVERS["v4"].__name__ == "resolve_place_wide"
+ 
+ 
++V4_PARAGRAPH = ("The location can be a city, town or village, or any other named place. "
++                "Name the location itself, not a person, organisation or event mentioned "
++                "in the text.")
++V5_PARAGRAPH = ("The location can be a city, town or village, or any other named place. "
++                "If the text is about a building, street or venue, name the city, town or "
++                "village it is in. If it is about a person, organisation or event, name the "
++                "place where they are.")
++
++
++def test_v5_is_v4_with_the_second_paragraph_replaced():
++    """The first v5 (results/dev_rev3b/) had a "settlement" field; the v5 that
++    replaced it keeps v4's JSON fields and changes only the second paragraph."""
++    assert V5_PARAGRAPH in llm_geo.PROMPT_V5
++    assert llm_geo.PROMPT_V5.split("\n\n")[1] == V5_PARAGRAPH
++    assert llm_geo.PROMPT_V5.replace(V5_PARAGRAPH, V4_PARAGRAPH) == llm_geo.PROMPT_V4
++
++
++def test_v5_has_no_settlement_field():
++    assert "settlement" not in llm_geo.PROMPT_V5
++    reply_format = next(line for line in llm_geo.PROMPT_V5.format(text="").split("\n")
++                        if line.startswith("{"))
++    assert [k for k in ("place", "country", "continent", "latitude", "longitude", "refused")
++            if f'"{k}"' in reply_format] == ["place", "country", "continent", "latitude",
++                                             "longitude", "refused"]
++
++
++def test_v5_names_no_dataset_place_type():
++    for word in ("island", "lake", "mountain", "park", "dam", "nearby town", "river",
++                 "airport", "station", "museum", "church", "bridge", "beach", "forest",
++                 "valley", "volcano", "glacier", "region"):
++        assert word not in llm_geo.PROMPT_V5.lower()
++
++
++def test_v5_has_its_own_fingerprint():
++    assert llm_geo.PROMPTS["v5"] is llm_geo.PROMPT_V5
++    assert fingerprint(llm_geo.PROMPTS["v5"], {}) != fingerprint(llm_geo.PROMPTS["v4"], {})
++    assert "v5" in config.PROMPT_TEMPLATES
++
++
++def test_rule_v5_is_kept():
++    # Rule v5 stays in the code (tests/test_resolver.py tests it); the
++    # configurations resolve prompt v5 with rule v4.
++    assert llm_geo.RESOLVERS["v5"].__name__ == "resolve_place_settlement"
++
++
++def test_earlier_prompts_are_unchanged():
++    assert llm_geo.PROMPTS["v3"] is llm_geo.PROMPT_V2
++    assert llm_geo.RESOLVERS["v4"].__name__ == "resolve_place_wide"
++    assert "settlement" not in llm_geo.PROMPT_V4
++
++
+ def test_llm_only_configs_write_to_new_caches():
+-    """The reported runs used the *_v2 caches; v4 has caches of its own, so
+-    PickleCache never sees (and never sets aside as .stale) a reported one."""
+-    for name, reported in (("gemma4", "gemma4_12b_v2"), ("qwen3_vl", "qwen3_vl_235b_v2")):
++    """The reported runs used the *_v2 caches and the dev run of revision 3
++    the *_v4 ones, the first v5 the *_v5 ones; the v5 that replaced it has
++    caches of its own (*_v5b), so PickleCache never sees (and never sets aside
++    as .stale) an earlier one. It is resolved with rule v4: rule v5 needs the
++    settlement field."""
++    for name, reported, v4 in (("gemma4", "gemma4_12b_v2", "gemma4_12b_v4"),
++                               ("qwen3_vl", "qwen3_vl_235b_v2", "qwen3_vl_235b_v4"),
++                               ("qwen3_vl_32b", None, "qwen3_vl_32b_v4")):
+         cfg = config.load_config(ROOT / "configs" / f"{name}.yaml")
+-        assert cfg.llm.prompt_template == "v4"
+-        assert cfg.llm.cache_name != reported and cfg.llm.cache_name.endswith("_v4")
++        assert cfg.llm.prompt_template == "v5"
++        assert cfg.llm.resolver_rule == "v4"
++        assert cfg.llm.cache_name not in (reported, v4, v4[:-1] + "5")
++        assert cfg.llm.cache_name == v4[:-1] + "5b"
++
++
++def test_resolver_rule_picks_the_rule_and_defaults_to_the_prompt(tmp_path, monkeypatch):
++    import llm_common
++    monkeypatch.setattr(llm_common, "CACHE_DIR", str(tmp_path))
++
++    class Client:
++        model_id, generation_params = "m", {}
++
++    for template, rule, expected in (("v5", "v4", "resolve_place_wide"),
++                                     ("v5", None, "resolve_place_settlement"),
++                                     ("v4", None, "resolve_place_wide")):
++        p = llm_geo.LLMGeoPipeline(Client(), "test_only", template, rule)
++        assert p.prompt is llm_geo.PROMPTS[template]
++        assert p.resolve.__name__ == expected
++
++
++def test_resolver_rule_is_a_late_field():
++    """Unset, it leaves every configuration's hash as it was."""
++    import dataclasses
++    cfg = config.load_config(ROOT / "configs" / "gemma4.yaml")
++    unset = dataclasses.replace(cfg, llm=dataclasses.replace(cfg.llm, resolver_rule=None))
++    assert "resolver_rule" not in unset.behavioural_dict()["llm"]
++    assert cfg.behavioural_dict()["llm"]["resolver_rule"] == "v4"
+diff --git a/tests/test_resolver.py b/tests/test_resolver.py
+index e3caf3c..ecc5e66 100644
+--- a/tests/test_resolver.py
++++ b/tests/test_resolver.py
+@@ -456,4 +456,98 @@ def test_v4_on_a_city_reply_is_v3(a):
+ def test_v4_declined_like_the_others(resolve):
+     cand, res = resolver.RESOLVERS[resolve](place_answer(refused=True), search=search,
+                                             fetch=fetch, geo=geo)
+-    assert cand is None and res["status"] == "declined"
+\ No newline at end of file
++    assert cand is None and res["status"] == "declined"
++
++
++# ------------ rule v5 (after the development run of 26-27 November): the settlement
++
++class Searches:
++    """`search` that records every name it is asked for, and fails for one."""
++
++    def __init__(self, fail_on=None):
++        self.names, self.fail_on = [], fail_on
++
++    def __call__(self, name, limit=10):
++        self.names.append(name)
++        if name == self.fail_on:
++            raise resolver.wd.WikidataError("HTTP 429 from Wikidata")
++        return search(name, limit)
++
++
++def v5(answer, search=search, **kw):
++    return resolver.resolve_place_settlement(answer, search=search, fetch=fetch, geo=geo, **kw)
++
++
++def settled_answer(place=None, settlement=None, country=None, lat=None, lon=None, continent=None):
++    return json.dumps({"place": place, "settlement": settlement, "country": country,
++                       "continent": continent, "latitude": lat, "longitude": lon,
++                       "refused": False})
++
++
++def test_v5_place_not_found_falls_back_to_the_settlement():
++    a = settled_answer("Pervez Musharraf Street", "Worcester", "South Africa", -33.6, 19.4)
++    assert v4(a)[1]["status"] == "not_found" and qid(v4(a)) == ZA
++    cand, res = v5(a)
++    assert cand["qid"] == "Q1025649" and cand["entity"] == "Worcester"
++    assert res["status"] == "resolved" and res["field"] == "settlement"
++    assert res["place_status"] == "not_found" and res["level"] == "city"
++
++
++def test_v5_ambiguous_place_falls_back_to_the_settlement():
++    a = settled_answer("Springfield", "Worcester", "United States")
++    assert v4(a)[1]["status"] == "ambiguous"
++    cand, res = v5(a)
++    assert cand["qid"] == "Q49179"
++    assert res["field"] == "settlement" and res["place_status"] == "ambiguous"
++
++
++def test_v5_place_that_resolves_never_searches_the_settlement():
++    searches = Searches()
++    cand, res = v5(settled_answer("Tbilisi", "Worcester", "Georgia", 41.7, 44.8), search=searches)
++    assert cand["qid"] == "Q994" and res["status"] == "resolved" and res["field"] == "place"
++    assert "Worcester" not in searches.names
++
++
++def test_v5_settlement_equal_to_the_place_is_not_searched_again():
++    a = settled_answer("Xyzzyville", "xyzzyville!", "France", 48.0, 2.0)
++    by_v4, by_v5 = Searches(), Searches()
++    expected = v4(a, search=by_v4)
++    assert v5(a, search=by_v5) == expected and by_v5.names == by_v4.names
++    assert "xyzzyville!" not in by_v5.names
++
++
++def test_v5_settlement_not_found_either_gives_what_the_place_gave():
++    a = settled_answer("Pervez Musharraf Street", "Xyzzyville", "France", 48.0, 2.0)
++    searches = Searches()
++    assert v5(a, search=searches) == v4(a)
++    assert "Xyzzyville" in searches.names
++    assert qid(v5(a)) == FR and v5(a)[1]["status"] == "not_found"
++
++
++def test_v5_without_a_settlement_is_v4():
++    a = settled_answer("Pervez Musharraf Street", None, "France", 48.0, 2.0)
++    assert v5(a) == v4(a)
++
++
++@pytest.mark.parametrize("fail_on", ["Pervez Musharraf Street", "Worcester"])
++def test_v5_error_in_either_search_ends_in_error(fail_on):
++    a = settled_answer("Pervez Musharraf Street", "Worcester", "South Africa", -33.6, 19.4)
++    cand, res = v5(a, search=Searches(fail_on=fail_on))
++    assert cand is None and res["status"] == "error" and "429" in res["message"]
++
++
++@pytest.mark.parametrize("a", [
++    place_answer("Worcester", "South Africa", -33.6, 19.4), place_answer("Cambridge", "New Zealand", -37.9, 175.5),
++    place_answer("Springfield", "United States"), place_answer("Nowhere", "France"),
++    place_answer(None, "France"), place_answer(continent="Africa"), place_answer(refused=True),
++    answer("Tbilisi", "Georgia", 41.7, 44.8), "not json"])
++def test_v5_on_a_v4_reply_is_v4(a):
++    """A v4 reply has no settlement: v5 gives v4's answer and only adds
++    `field` "place" when a named place resolved."""
++    cand4, res4 = v4(a)
++    cand5, res5 = v5(a)
++    assert cand5 == cand4
++    assert {k: v for k, v in res5.items() if k != "field"} == res4
++    parsed = resolver.parse_json_object(a) or {}
++    named = any(resolver.clean_name(parsed.get(f)) for f in ("place", "city"))
++    assert res5.get("field") == ("place" if res4["status"] == "resolved" and named else None)
+\ No newline at end of file
+diff --git a/tests/test_comparisons.py b/tests/test_comparisons.py
+new file mode 100644
+index 0000000..3829948
+--- /dev/null
++++ b/tests/test_comparisons.py
+@@ -0,0 +1,35 @@
++"""The planned comparisons and the exploratory ones (configs/comparisons.yaml,
++scripts/analyse.py), after the development run of 26-27 November.
++
++    python -m pytest tests/test_comparisons.py
++"""
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parent.parent
++sys.path.insert(0, str(ROOT / "scripts"))
++sys.path.insert(0, str(ROOT / "src"))
++
++import analyse  # noqa: E402
++
++PLANNED = {
++    ("geoparser_irchel", "population_wikidata"), ("refined", "population_wikidata"),
++    ("gemma4", "population_wikidata"), ("refined", "retrieve_rerank"),
++    ("blink", "retrieve_rerank"), ("refined", "geoparser_irchel"),
++    ("dense_retrieval", "refined"), ("refined", "gemma4"), ("dense_retrieval", "gemma4"),
++    ("qwen3_vl", "gemma4"), ("grounded_gemma", "gemma4"), ("grounded_gemma", "dense_retrieval"),
++    ("grounded_gemma_linking", "grounded_gemma"), ("grounded_gemma_linking", "refined"),
++}
++
++
++def test_planned_family_is_the_fourteen_pairs_chosen_in_advance():
++    planned = [(a, b) for a, b, _ in analyse.load_comparisons()]
++    assert len(planned) == 14 and set(planned) == PLANNED
++
++
++def test_size_pair_is_exploratory_and_outside_the_family():
++    exploratory = [(a, b) for a, b, _ in analyse.load_comparisons(section="exploratory")]
++    assert exploratory == [("qwen3_vl", "qwen3_vl_32b")]
++    assert not set(exploratory) & PLANNED
+diff --git a/tests/test_dense_pin.py b/tests/test_dense_pin.py
+new file mode 100644
+index 0000000..5dabbc5
+--- /dev/null
++++ b/tests/test_dense_pin.py
+@@ -0,0 +1,125 @@
++"""The pinned dense index (`dense.index_signature`, src/dense_index.py), added
++after the development run of 26-27 November.
++
++    python -m pytest tests/test_dense_pin.py
++
++No network and no encoder: a small index file is written to a temporary
++directory and the build path is replaced with one that fails the test.
++"""
++from __future__ import annotations
++
++import hashlib
++import pickle
++import sys
++from pathlib import Path
++from types import SimpleNamespace
++
++import numpy as np
++import pytest
++
++ROOT = Path(__file__).resolve().parent.parent
++sys.path.insert(0, str(ROOT / "src"))
++
++import config  # noqa: E402
++import dense_index  # noqa: E402
++
++SIG = "0123456789abcdef"
++
++
++def _cfg(sig=SIG, **dense):
++    d = {"index_signature": sig, "encoder": "enc", "pool": "gold_plus_answers_described",
++         "index_fields": ["label"], "passage_prefix": "passage: ", "query_prefix": "query: ",
++         **dense}
++    return SimpleNamespace(dense=SimpleNamespace(**d))
++
++
++@pytest.fixture
++def index_dir(tmp_path, monkeypatch):
++    monkeypatch.setattr(dense_index, "CACHE_DIR", tmp_path)
++    monkeypatch.setattr(dense_index, "_dataset_gold_qids", lambda: {"Q1"})
++
++    def no_build(*a, **k):
++        raise AssertionError("a pinned index must never be built")
++
++    monkeypatch.setattr(dense_index, "build_catalogue", no_build)
++    monkeypatch.setattr(dense_index, "build_pool", no_build)
++    payload = {"qids": ["Q1", "Q2"], "matrix": np.eye(2, dtype="float32"),
++               "places": {"Q1": {"qid": "Q1"}, "Q2": {"qid": "Q2"}},
++               "meta": {"signature": SIG, "encoder": "enc", "pool": "gold_plus_answers_described",
++                        "index_fields": ["label"], "passage_prefix": "passage: ", "n_places": 2}}
++    path = tmp_path / f"index_{SIG}.pkl"
++    path.write_bytes(pickle.dumps(payload))
++    path.with_suffix(".sha256").write_text(hashlib.sha256(path.read_bytes()).hexdigest() + "\n")
++    return path
++
++
++def test_pinned_index_is_loaded_as_it_is(index_dir):
++    idx = dense_index.load_or_build(_cfg())
++    assert idx.qids == ["Q1", "Q2"] and idx.meta["signature"] == SIG
++
++
++def test_missing_pinned_index_is_a_config_error_and_nothing_is_built(index_dir):
++    index_dir.unlink()
++    with pytest.raises(config.ConfigError, match="never rebuilt"):
++        dense_index.load_or_build(_cfg())
++
++
++def test_changed_file_is_a_config_error(index_dir):
++    index_dir.write_bytes(index_dir.read_bytes() + b"x")
++    with pytest.raises(config.ConfigError, match="not the pinned index"):
++        dense_index.load_or_build(_cfg())
++
++
++def test_missing_recorded_sha256_is_a_config_error(index_dir):
++    index_dir.with_suffix(".sha256").unlink()
++    with pytest.raises(config.ConfigError, match="no recorded sha256"):
++        dense_index.load_or_build(_cfg())
++
++
++def test_settings_that_differ_from_the_index_are_a_config_error(index_dir):
++    with pytest.raises(config.ConfigError, match="other settings"):
++        dense_index.load_or_build(_cfg(index_fields=["label", "description"]))
++
++
++def test_pinned_index_is_cached_by_its_signature_without_reading_the_pool(index_dir, monkeypatch):
++    monkeypatch.setattr(dense_index, "_indexes", {})
++    a = dense_index.get_index(_cfg())
++    assert dense_index.get_index(_cfg()) is a
++
++
++def test_index_signature_is_a_late_field():
++    """Unset, it leaves every configuration's hash where it was; set, the
++    configuration hashes differently."""
++    raw = config.load_config(ROOT / "configs" / "dense_retrieval.yaml")
++    assert raw.dense.index_signature == "3530d31fa83aacb7"
++    unpinned = config.from_dict({**_raw("dense_retrieval"),
++                                 "dense": {**_raw("dense_retrieval")["dense"], "index_signature": None}},
++                                source_path="x")
++    bare = _raw("dense_retrieval")
++    bare["dense"] = {k: v for k, v in bare["dense"].items() if k != "index_signature"}
++    assert config.from_dict(bare).config_hash == unpinned.config_hash != raw.config_hash
++
++
++def test_bad_signature_is_refused():
++    raw = _raw("dense_retrieval")
++    raw["dense"]["index_signature"] = "not-hex"
++    with pytest.raises(config.ConfigError):
++        config.from_dict(raw)
++
++
++def test_pool_configurations_are_pinned_to_the_same_index():
++    for name in ("dense_retrieval", "grounded_gemma"):
++        assert config.load_config(ROOT / "configs" / f"{name}.yaml").dense.index_signature \
++            == "3530d31fa83aacb7"
++
++
++def test_record_carries_the_index_signature():
++    import runner
++    cfg = config.load_config(ROOT / "configs" / "grounded_gemma.yaml")
++    assert runner.models_of(cfg)["dense_index"] == "3530d31fa83aacb7"
++    assert "dense_index" not in runner.models_of(config.load_config(ROOT / "configs" / "gemma4.yaml"))
++
++
++def _raw(name):
++    import yaml
++    return yaml.safe_load((ROOT / "configs" / f"{name}.yaml").read_text(encoding="utf-8"))

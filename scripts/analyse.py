@@ -56,6 +56,8 @@ Only the pairs listed in configs/comparisons.yaml are tested; they were chosen
 before the results they test. Exact-match comparisons are McNemar by place.
 The p-values are Holm-adjusted over the family of comparisons run (printed as
 "p_holm" with the family size); the bootstrap intervals are not adjusted.
+The pairs under `exploratory:` in that file get the same statistics outside
+the family, with unadjusted p-values, labelled exploratory (column `kind`).
 Every interval is printed with the number of place clusters it resampled, and
 every p-value with the minimum detectable effect of its comparison (two-sided
 alpha 0.05, power 0.8, from the place-resampled standard error of the paired
@@ -592,15 +594,17 @@ def cmd_tables(scored: list[dict], args, meta: dict) -> None:
 COMPARISONS_PATH = CONFIG_DIR / "comparisons.yaml"
 
 
-def load_comparisons(path: Path = COMPARISONS_PATH) -> list[tuple[str, str, str]]:
+def load_comparisons(path: Path = COMPARISONS_PATH,
+                     section: str = "comparisons") -> list[tuple[str, str, str]]:
     """The pre-selected pairs, [(a, b, question), ...]. Which comparisons are
     worth making is an analysis decision taken in advance, so it lives in a
     file, not in code, and nothing else is tested. Pairs naming a
     configuration with no predictions on disk are skipped; the Holm family is
-    the comparisons that actually run."""
+    the comparisons that actually run. `section` "exploratory" reads the
+    pairs kept outside that family."""
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     out = []
-    for entry in raw.get("comparisons") or []:
+    for entry in raw.get(section) or []:
         if not (isinstance(entry, list) and len(entry) == 3
                 and all(isinstance(x, str) for x in entry)):
             raise SystemExit(f"{Path(path).name}: each comparison must be "
@@ -613,27 +617,42 @@ def _exact(rec: dict):
     return rec.get("exact")
 
 
-def run_comparisons(groups: dict, n_boot: int, seed: int) -> list[dict]:
-    """Run every comparison that has data on both sides, then Holm-adjust the
-    by-place McNemar p-values over that family."""
+def _compare(groups: dict, entries, n_boot: int, seed: int, kind: str) -> list[dict]:
     results = []
-    for a_name, b_name, question in load_comparisons():
+    for a_name, b_name, question in entries:
         if a_name not in groups or b_name not in groups:
             continue
         pairs = st.pair_records(groups[a_name], groups[b_name])
         if not pairs:
             continue
         results.append({
-            "a": a_name, "b": b_name, "question": question,
+            "a": a_name, "b": b_name, "question": question, "kind": kind,
             "n_pairs": len(pairs), "n_places": len({p[0] for p in pairs}),
             "mc_place": st.mcnemar(pairs, _exact, unit="place"),
             "mc_item": st.mcnemar(pairs, _exact, unit="item"),
             "effect": st.paired_effect_ci(pairs, st.exact_rate, n_boot=n_boot, seed=seed),
         })
         results[-1]["mde"] = st.min_detectable_effect(results[-1]["effect"].get("se"))
+    return results
+
+
+def run_comparisons(groups: dict, n_boot: int, seed: int) -> list[dict]:
+    """Run every planned comparison that has data on both sides, then
+    Holm-adjust the by-place McNemar p-values over that family."""
+    results = _compare(groups, load_comparisons(), n_boot, seed, "planned")
     adjusted = st.holm_adjust([r["mc_place"]["p"] for r in results])
     for r, p_holm in zip(results, adjusted):
         r["p_holm"] = p_holm
+    return results
+
+
+def run_exploratory(groups: dict, n_boot: int, seed: int) -> list[dict]:
+    """The exploratory pairs: the same statistics, outside the Holm family,
+    with unadjusted p-values (p_holm None)."""
+    results = _compare(groups, load_comparisons(section="exploratory"), n_boot, seed,
+                       "exploratory")
+    for r in results:
+        r["p_holm"] = None
     return results
 
 
@@ -650,17 +669,25 @@ def cmd_stats(scored: list[dict], args, meta: dict) -> None:
 
     results = run_comparisons(groups, args.boot, args.seed)
     family = len(results)
+    exploratory = run_exploratory(groups, args.boot, args.seed)
     print(f"Family of {family} comparison(s). p_holm is the Holm-adjusted p of the")
-    print("McNemar-by-place test over that family; bootstrap intervals are not adjusted.\n")
+    print("McNemar-by-place test over that family; bootstrap intervals are not adjusted.")
+    if exploratory:
+        print(f"{len(exploratory)} exploratory comparison(s) follow the family, outside it:")
+        print("same statistics, unadjusted p, labelled EXPLORATORY.")
+    print()
 
-    for r in results:
+    for r in results + exploratory:
         mp, mi = r["mc_place"], r["mc_item"]
         mde = "-" if r["mde"] is None else f"{r['mde'] * 100:.1f} pp"
-        print(f"--- {r['a']}  vs  {r['b']} ---")
+        label = "  [EXPLORATORY]" if r["kind"] == "exploratory" else ""
+        adjusted = (f"p_holm={st.fmt_p(r['p_holm'])} (family of {family})"
+                    if r["kind"] == "planned" else "not in the Holm family, p unadjusted")
+        print(f"--- {r['a']}  vs  {r['b']} ---{label}")
         print(f"    {r['question']}")
         print(f"    {r['n_pairs']} paired item(s), {r['n_places']} place clusters")
         print(f"    exact match, McNemar by place : b={mp['b']} c={mp['c']} "
-              f"p={st.fmt_p(mp['p'])}  p_holm={st.fmt_p(r['p_holm'])} (family of {family})"
+              f"p={st.fmt_p(mp['p'])}  {adjusted}"
               f"  MDE={mde}")
         print(f"    exact match, McNemar by item  : b={mi['b']} c={mi['c']} "
               f"p={st.fmt_p(mi['p'])}  MDE={mde}  (reference only)")
@@ -693,13 +720,14 @@ def cmd_stats(scored: list[dict], args, meta: dict) -> None:
                    "mcnemar_place_b", "mcnemar_place_c", "p_place", "p_holm", "family_size",
                    "mcnemar_item_b", "mcnemar_item_c", "p_item",
                    "exact_diff", "exact_diff_lo", "exact_diff_hi", "exact_diff_se", "mde",
-                   "n_boot", "seed"],
+                   "n_boot", "seed", "kind"],
                   [[r["a"], r["b"], r["question"], r["n_pairs"], r["n_places"],
-                    r["mc_place"]["b"], r["mc_place"]["c"], r["mc_place"]["p"], r["p_holm"], family,
+                    r["mc_place"]["b"], r["mc_place"]["c"], r["mc_place"]["p"], r["p_holm"],
+                    family if r["kind"] == "planned" else None,
                     r["mc_item"]["b"], r["mc_item"]["c"], r["mc_item"]["p"],
                     r["effect"].get("point"), r["effect"].get("lo"), r["effect"].get("hi"),
                     r["effect"].get("se"), r["mde"],
-                    args.boot, args.seed] for r in results])
+                    args.boot, args.seed, r["kind"]] for r in results + exploratory])
         write_rows(out / f"table_bootstrap_{args.split}.csv",
                   ["config", "exact", "lo", "hi", "n_places", "n_boot_valid", "n_boot", "seed"],
                   boot_rows)

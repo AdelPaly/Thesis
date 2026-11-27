@@ -5,13 +5,16 @@ question: >
   do the conclusions about the LLM alone hold for a second model from another
   family; same design and prompt as gemma4
 design: >
-  LLM(qwen3-vl:235b-a22b-instruct, VSE gateway, temperature 0, prompt v4 → JSON
-  place/country/continent/latitude/longitude/refused) → resolve (src/resolver.py,
-  rule v4): Wikidata search for the place, 10 results (50 when none of the 10 is
-  in the named country) → those in the named country → among several, the first
-  within 25 km of the model's coordinates → else country, else continent string
-  only (no QID, no coords) → prediction. No candidate list. The record's
-  `resolution` says resolved, declined, unreadable, not_found or ambiguous.
+  LLM(qwen3-vl:235b-a22b-instruct, VSE gateway, temperature 0, prompt v5 → JSON
+  place/country/continent/latitude/longitude/refused) → resolve
+  (src/resolver.py, rule v4, set by llm.resolver_rule): Wikidata search for the
+  place, 10 results (50 when none of the 10 is in the named country, or when
+  none in it lies within 25 km of the model's coordinates) → those in the
+  named country (country name matched against the Wikidata country items
+  first) → among several, the first within 25 km of the model's coordinates →
+  else country, else continent string only (no QID, no coords) → prediction.
+  No candidate list. The record's `resolution` says resolved, declined, empty,
+  unreadable, not_found, ambiguous or error.
 description: >
   Tier 4, LLM only: gemma4 with another model, so a difference between the two
   is a difference between models. Qwen3-VL 235B (instruct), text input only,
@@ -24,13 +27,25 @@ description: >
   the test split. The first runs are kept in results/posthoc/original/; see
   results/REVISIONS.md.
 
-  Revision 3 (2026-11-26, not yet run): prompt v4 asks for the location
-  itself, "a city, town or village, or any other named place", rather than a
-  city, and keeps one refusal rule (refuse only if the text has no geographic
-  signal). Its wording names no place type of the dataset. Rule v4 is rule v3
-  (the audit's wider search) on the new "place" field. The reported runs
-  (commit 0389a2d) used prompt template v3 (the v2 prompt, cache
-  qwen3_vl_235b_v2); v4 writes to its own cache, qwen3_vl_235b_v4.
+  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/): prompt v4
+  asks for the location itself, "a city, town or village, or any other named
+  place", rather than a city, and keeps one refusal rule (refuse only if the
+  text has no geographic signal). Its wording names no place type of the
+  dataset. Rule v4 is rule v3 (the audit's wider search) on the "place" field,
+  with four corrections (src/resolver.py). Cache qwen3_vl_235b_v4.
+
+  After that dev run: on posts with clues only, v4 made the model name streets,
+  venues and clubs with no Wikidata item, and rule v4 fell straight back to the
+  country. A first prompt v5 added a "settlement" field, with rule v5 searching
+  it (cache qwen3_vl_235b_v5, results/dev_rev3b/); the model then named a
+  landmark as the place and the town as the settlement, and exact on B fell.
+  It was replaced. Prompt v5 is now v4 with its second paragraph replaced: for
+  a building, street or venue it asks for the city, town or village it is in,
+  and for a person, organisation or event the place where they are. Same JSON
+  fields as v4, resolved with rule v4 (llm.resolver_rule), cache
+  qwen3_vl_235b_v5b (results/dev_rev3c/; results/REVISIONS.md). The reported
+  runs (commit 0389a2d) used prompt template v3 (the v2 prompt, cache
+  qwen3_vl_235b_v2).
 ner:
   model: null
   entity_types: null
@@ -48,5 +63,6 @@ llm:
   revision: null
   temperature: 0.0
   top_p: null
-  prompt_template: v4
-  cache_name: qwen3_vl_235b_v4
+  prompt_template: v5
+  resolver_rule: v4
+  cache_name: qwen3_vl_235b_v5b

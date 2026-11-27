@@ -20,6 +20,13 @@ description: >
   that names anything outside the list is recorded as a violation in `error`,
   so a grounded system ignoring its grounding is visible rather than scored as
   an ordinary wrong guess.
+
+  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/): the
+  prompt declines only when no candidate is the location (src/llm_grounded.py,
+  prompt v2). After that run the dense index is pinned (index_signature): the
+  index this configuration retrieved from on 27 Nov, which dense_retrieval now
+  loads too, so the comparison between them shares one retriever
+  (results/REVISIONS.md).
 ner:
   model: null
   entity_types: null
@@ -44,6 +51,7 @@ dense:
   pool: gold_plus_answers_described
   top_k: 10
   index_fields: [label, description, aliases, country, continent]
+  index_signature: "3530d31fa83aacb7"   # pinned revision 3 index (src/dense_index.py)
   query_prefix: shared
   passage_prefix: shared
 grounded:

@@ -208,6 +208,63 @@ def test_search_path_organisation_cap_counts_organisations():
     assert [c["qid"] for c in out] == ["Qformed"]
 
 
+# ---------- all_places: failed lookups (after the development run of 26-27 November)
+
+def _failing_fetch(fail):
+    """_fetch_entities_status that reports the QIDs in `fail` as not fetched."""
+    def status(qids):
+        return ({q: ({} if q in fail else ITEMS.get(q, {})) for q in qids},
+                not any(q in fail for q in qids))
+    return status
+
+
+@pytest.mark.parametrize("fail", [{"Qall"}, {"Qhome"}, {"Qdistrict"}, {"Qtown"}])
+def test_all_places_failed_fetch_raises(monkeypatch, fail):
+    """The linked entity, one of its places, a target without coordinates, or
+    the P131 hop: any failed fetch raises, where it used to drop places."""
+    monkeypatch.setattr(wd, "_fetch_entities_status", _failing_fetch(fail))
+    qid = "Qvia_district" if fail & {"Qdistrict", "Qtown"} else "Qall"
+    with pytest.raises(wd.WikidataError):
+        wd.resolve_qid_to_candidates(qid, "x", "PER", "all_places")
+
+
+def test_all_places_failed_country_lookup_raises(monkeypatch):
+    monkeypatch.setattr(wd, "_resolve_cc", lambda ents: ({q: ("", "") for q in ents}, False))
+    with pytest.raises(wd.WikidataError):
+        wd.resolve_qid_to_candidates("Qall", "x", "PER", "all_places")
+
+
+def test_chain_v1_failed_fetch_still_gives_nothing_as_it_ran(monkeypatch):
+    monkeypatch.setattr(wd, "fetch_entities", lambda qids: {q: {} for q in qids})
+    monkeypatch.setattr(wd, "_fetch_entities_status", _failing_fetch({"Qall"}))
+    assert wd.resolve_qid_to_candidates("Qall", "x", "PER") == []
+
+
+def test_search_path_all_places_failed_lookup_raises_and_caches_nothing(monkeypatch):
+    cache = {}
+    monkeypatch.setattr(wd, "_coords_cache", cache)
+    monkeypatch.setattr(wd, "_search_with_fallback", lambda text, limit: ["Qall"])
+    monkeypatch.setattr(wd, "_fetch_entities_status", _failing_fetch({"Qhome"}))
+    with pytest.raises(wd.WikidataError):
+        wd.get_coords("x", "PER", top_n=10, place_rule="all_places")
+    assert cache == {}
+    # chain_v1, as in the reported runs: the place of birth fails, the partial
+    # result (nothing) is returned and not cached
+    monkeypatch.setattr(wd, "_fetch_entities_status", _failing_fetch({"Qborn"}))
+    assert wd.get_coords("x", "PER", top_n=10) == []
+    assert cache == {}
+
+
+def test_search_path_all_places_failed_search_raises(monkeypatch):
+    def failing_search(text, limit):
+        raise wd.WikidataError("HTTP 429 from Wikidata")
+    monkeypatch.setattr(wd, "_coords_cache", {})
+    monkeypatch.setattr(wd, "_search_with_fallback", failing_search)
+    with pytest.raises(wd.WikidataError):
+        wd.get_coords("x", "ORG", top_n=10, place_rule="all_places")
+    assert wd.get_coords("x", "ORG", top_n=10) == []          # chain_v1, as it ran
+
+
 def test_cache_key_keeps_chain_v1_entries_and_separates_all_places(monkeypatch):
     """chain_v1 keeps the key of the reported runs (text, type, top_n), so a
     cached answer is reused; all_places gets its own entry. A dict stands in

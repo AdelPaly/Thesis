@@ -4,7 +4,7 @@ An LLM-only configuration gets text back from the model:
 
     {"city": "Worcester", "country": "South Africa", "latitude": -33.6, "longitude": 19.4}
 
-and has to find the Wikidata item for it. There are four rules, chosen by the
+and has to find the Wikidata item for it. There are five rules, chosen by the
 prompt template of the configuration:
 
   v1  `resolve_first_hit`. Search the city name, take the first result. The
@@ -34,6 +34,11 @@ prompt template of the configuration:
       and failed requests and empty replies get statuses of their own. A
       reply with a "city" field and no "place" field is read the same way.
 
+  v5  `resolve_place_settlement`. Rule v4 on "place", then, when the place is
+      not_found or ambiguous, the same search on the "settlement" field of
+      prompt v5 (revision 3, after the development run of 26-27 November).
+      `field` on the resolution says which of the two resolved.
+
 All return `(candidate or None, resolution)`. `resolution` is stored on the
 prediction record, so a missing or coarse answer has a reason:
 
@@ -45,15 +50,19 @@ prediction record, so a missing or coarse answer has a reason:
                        coordinates either)
            ambiguous   several items carry the name and the answer has nothing
                        that chooses between them (v2 only; v1 never knows)
-           empty       (v4) the provider returned no text or blocked the reply,
-                       or every field of the reply is null and "refused" false;
-                       v1-v3 call this declined
-           error       (v4) a Wikidata request failed; `message` says which.
-                       v1-v3 cannot tell this from not_found
+           empty       (v4, v5) the provider returned no text or blocked the
+                       reply, or every field of the reply is null and
+                       "refused" false; v1-v3 call this declined
+           error       (v4, v5) a Wikidata request failed; `message` says
+                       which. v1-v3 cannot tell this from not_found
   level    city | country | continent | None: what the prediction is. A
            not_found or ambiguous city still gives the country when the model
            named one, so `status` describes the named place and `level` the
-           answer.
+           answer. In v4 and v5 "city" means the named place, whatever its
+           type (a street, an island or a park as well as a town), and in v5
+           also the settlement when that is what resolved.
+  field    (v5) "place" or "settlement": which field of the reply resolved;
+           with "settlement", `place_status` is what happened to the place.
   method   how the item was chosen (first_hit, country, country+coordinates,
            country+search_order, coordinates, only_candidate; v4 also
            country_item, the country answered from the table of country items).
@@ -94,7 +103,7 @@ MAX_KM_WITHOUT_COUNTRY = 500.0
 TIE_KM = 25.0
 
 STATUSES = ("resolved", "declined", "unreadable", "not_found", "ambiguous",
-            "empty", "error")      # the last two: rule v4 only
+            "empty", "error")      # the last two: rules v4 and v5 only
 
 # Models are asked for JSON null when a field is unknown, and mostly comply --
 # but a few responses put the *string* "null" (or "none", "unknown") in the
@@ -474,6 +483,60 @@ def resolve_place_wide(raw_or_parsed, *, search: Callable = wd.search_entities_c
         return None, _resolution("error", message=str(e))
 
 
+def resolve_place_settlement(raw_or_parsed, *, search: Callable = wd.search_entities_checked,
+                             fetch: Callable = wd.fetch_entities_checked,
+                             geo: Callable = wd.resolve_country_continent_checked,
+                             countries: Callable = country_item) -> tuple[dict | None, dict]:
+    """Rule v5 (revision 3, after the development run of 26-27 November): rule
+    v4 on the "place" field, then on the "settlement" field of prompt v5 when
+    the place is not pinned down.
+
+    Prompt v4 asks for the location itself. On posts with clues only the
+    models then named a street, a venue, a club or a person that often has no
+    Wikidata item, and rule v4 fell straight back to the country. Prompt v5
+    also asks for the settlement the location is in.
+
+      1. Rule v4 on "place" (falling back to "city", as v4 does). When it
+         resolves, the settlement is never searched; the resolution gets
+         `field` "place".
+      2. When the place is not_found or ambiguous and "settlement" holds a
+         name that is not the place's (compared without case, accents or
+         punctuation), the same search and choice run on the settlement, with
+         the same country and coordinates. If it resolves, that is the answer:
+         `field` "settlement", and `place_status` keeps what happened to the
+         place.
+      3. Otherwise the answer is that of step 1: the country, then the
+         continent.
+
+    A failed Wikidata request in either search ends the whole resolution in
+    status `error`, as in v4."""
+    parsed, ended = _read(raw_or_parsed, v4=True)
+    if ended:
+        return None, ended
+
+    def v4_rule(answer):
+        return resolve_by_country_and_coordinates(
+            answer, search=search, fetch=fetch, geo=geo, wide_limit=WIDE_SEARCH_LIMIT,
+            name_fields=("place", "city"), v4=True, countries=countries)
+
+    place = next((n for n in (clean_name(parsed.get(f)) for f in ("place", "city")) if n), None)
+    settlement = clean_name(parsed.get("settlement"))
+    try:
+        cand, res = v4_rule(parsed)
+        if res["status"] == "resolved":
+            return cand, ({**res, "field": "place"} if place else res)
+        if res["status"] not in ("not_found", "ambiguous") or not settlement \
+                or (place and _plain(settlement) == _plain(place)):
+            return cand, res
+        by_settlement = {k: v for k, v in parsed.items() if k not in ("place", "city")}
+        s_cand, s_res = v4_rule({**by_settlement, "place": settlement})
+    except wd.WikidataError as e:
+        return None, _resolution("error", message=str(e))
+    if s_res["status"] == "resolved":
+        return s_cand, {**s_res, "field": "settlement", "place_status": res["status"]}
+    return cand, res
+
+
 def _level(qid: str, country_qid: str | None) -> str:
     return "country" if qid == country_qid else "city"
 
@@ -499,4 +562,4 @@ def _round(km: float | None) -> float | None:
 
 
 RESOLVERS = {"v1": resolve_first_hit, "v2": resolve_by_country_and_coordinates, "v3": resolve_wide,
-             "v4": resolve_place_wide}
+             "v4": resolve_place_wide, "v5": resolve_place_settlement}

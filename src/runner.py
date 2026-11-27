@@ -120,10 +120,14 @@ def models_of(cfg: PipelineConfig) -> dict:
         "linker_model": cfg.linking.refined_model,
         "rerank": cfg.rerank.model if cfg.rerank.enabled else None,
         "dense_encoder": cfg.dense.encoder,
+        # The pinned index the pool configurations retrieve from (from the
+        # development run of 26-27 November on).
+        "dense_index": cfg.dense.index_signature,
         "llm": f"{llm.provider}/{llm.model}" if llm.model else None,
         "llm_revision": llm.revision,
         "llm_temperature": llm.temperature if llm.model else None,
         "llm_prompt_template": llm.prompt_template if llm.model else None,
+        "llm_resolver_rule": llm.resolver_rule if llm.model else None,
     }
     return {role: value for role, value in used.items() if value is not None}
 

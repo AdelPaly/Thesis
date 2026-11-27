@@ -1,14 +1,18 @@
 """Look up, for every wrong answer, whether it lies inside the gold place.
 
     python scripts/build_containment.py          # adds the pairs not yet looked up
-    python scripts/build_containment.py --all    # looks every pair up again
+    python scripts/build_containment.py --all    # looks the pairs read up again
+    python scripts/build_containment.py --predictions-dir results/dev_rev3
+                                                 # the pairs of runs written elsewhere
 
 A configuration often answers with something that is in the right place but is
 not the place: the station it found for a town, the lighthouse for an island.
 Exact match counts that as wrong. scripts/score.py therefore reports a second
 score, "exact or inside", and this script fetches what it needs: for each
 (predicted item, gold place) pair in results/predictions/ where the two differ,
-the relation between them on Wikidata.
+the relation between them on Wikidata. Runs written to another directory
+(runner --out-dir) are read with --predictions-dir, which can be given more
+than once; the pairs of every directory go into the one results/containment.csv.
 
     inside     the predicted item is located in the gold place: a chain of
                P131 (located in the administrative territorial entity), P276
@@ -26,7 +30,8 @@ results and before any test result was scored.
 Scoring stays offline: this is the only step that calls Wikidata, and it
 writes results/containment.csv, which the scorer reads. Wikidata changes, so
 each row carries the date it was fetched; rows already in the file are kept as
-they are unless --all is given.
+they are unless --all is given, which looks up again the pairs of the
+directories read and keeps every other row.
 """
 from __future__ import annotations
 
@@ -58,9 +63,15 @@ def tls_context():
         return ssl.create_default_context()
 
 
-def pairs_in_predictions() -> set[tuple[str, str]]:
+def pairs_in_predictions(dirs=(PREDICTIONS_DIR,)) -> set[tuple[str, str]]:
     found = set()
-    for path in sorted(PREDICTIONS_DIR.glob("*.jsonl")):
+    paths = []
+    for d in dirs:
+        d = Path(d) if Path(d).is_absolute() else REPO_ROOT / d
+        if not d.is_dir():
+            raise SystemExit(f"no predictions directory {d}")
+        paths += sorted(d.glob("*.jsonl"))
+    for path in paths:
         with path.open(encoding="utf-8") as f:
             for line in f:
                 if not line.strip():
@@ -106,13 +117,20 @@ def save(known: dict) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--all", action="store_true", help="look up every pair again")
+    parser.add_argument("--predictions-dir", action="append", default=None,
+                        help="directory of prediction files to read (repeatable; "
+                             "default results/predictions)")
     args = parser.parse_args()
+    dirs = args.predictions_dir or [PREDICTIONS_DIR]
 
+    # Rows of pairs outside the directories read are always kept: --all looks
+    # up again the pairs of those directories only.
     known: dict[tuple[str, str], dict] = {}
-    if OUT.exists() and not args.all:
+    if OUT.exists():
         with OUT.open(encoding="utf-8", newline="") as f:
             known = {(r["predicted_qid"], r["gold_qid"]): r for r in csv.DictReader(f)}
-    todo = sorted(pairs_in_predictions() - set(known))
+    pairs = pairs_in_predictions(dirs)
+    todo = sorted(pairs if args.all else pairs - set(known))
     print(f"{len(known)} pairs known, {len(todo)} to look up")
     stamp = time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime())
     # One question per item, not per pair: what each predicted item and each
