@@ -31,6 +31,14 @@ META_KEY = "__meta__"
 # What a provider returns when the model blocked or emptied its answer. It
 # parses as a refusal and is never written to the cache.
 REFUSAL_SENTINEL = '{"refused": true}'
+# What a provider returns for an empty or blocked reply (revision 3). It still
+# carries "refused": true, so rules v1-v3 and the grounded selector read it as
+# a refusal, as they did when the providers returned REFUSAL_SENTINEL; rule v4
+# (src/resolver.py) reads `empty_reply` and records the status `empty`. Until
+# revision 3 the providers returned REFUSAL_SENTINEL itself, so in records
+# written before it that exact string is an empty reply too. Neither is cached.
+EMPTY_REPLY_SENTINEL = '{"refused": true, "empty_reply": true}'
+SENTINELS = (REFUSAL_SENTINEL, EMPTY_REPLY_SENTINEL)
 
 _JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
 _JSON_OBJ = re.compile(r"\{[^{}]*\"refused\"[^{}]*\}", re.DOTALL)
@@ -176,7 +184,7 @@ class GoogleClient:
         self.model = genai.GenerativeModel(llm.model)
 
     def call(self, prompt: str) -> str:
-        """Raw text for `prompt`; a refusal sentinel if the model blocked or
+        """Raw text for `prompt`; EMPTY_REPLY_SENTINEL if the model blocked or
         returned no text. Transient API errors are retried with backoff."""
         cfg = self._genai.types.GenerationConfig(**self._sampling)
         delay = self.INITIAL_DELAY_S
@@ -190,8 +198,8 @@ class GoogleClient:
                 return response.text
             except ValueError as e:
                 # `.text` raises when the candidate was blocked or has no parts.
-                log.warning("the model returned no usable text (%s); recording a refusal", e)
-                return REFUSAL_SENTINEL
+                log.warning("the model returned no usable text (%s); recording an empty reply", e)
+                return EMPTY_REPLY_SENTINEL
             except self._transient as e:
                 if attempt == self.MAX_ATTEMPTS:
                     raise
@@ -368,14 +376,14 @@ class OpenRouterProvider:
         self._sampling = _sampling(llm)
 
     def call(self, prompt: str) -> str:
-        """Raw text for `prompt`; a refusal sentinel for an empty answer."""
+        """Raw text for `prompt`; EMPTY_REPLY_SENTINEL for an empty answer."""
         text, meta = self.client.complete(prompt, max_tokens=MAX_OUTPUT_TOKENS, **self._sampling)
         usage = (meta or {}).get("usage") or {}
         meter.add("llm_calls")
         meter.add("llm_prompt_tokens", usage.get("prompt_tokens") or 0)
         meter.add("llm_output_tokens", usage.get("completion_tokens") or 0)
         meter.add("llm_cost_usd", float(usage.get("cost") or 0))
-        return text if text.strip() else REFUSAL_SENTINEL
+        return text if text.strip() else EMPTY_REPLY_SENTINEL
 
 
 VSE_API_URL = "https://litellm.vse.cz/chat/completions"

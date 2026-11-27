@@ -77,6 +77,63 @@ compute something again. A fresh run downloads models, fills a local Wikidata
 cache and takes hours; Wikidata changes, so its answers can differ slightly
 from the committed ones.
 
+## Run on your own data
+
+### Posts without a gold location
+
+A CSV with one text column is enough:
+
+```bash
+python scripts/predict.py --config refined --input posts.csv --out-dir my_predictions
+python scripts/predict.py --config gemma4 --input posts.csv --text-column body --out-dir my_predictions
+```
+
+It writes `<config>__<input>.predict.csv`, one row per post, with the
+predicted item (`predicted_label`, `predicted_qid`, `lat`, `lon`, `country`,
+`continent`) and a `status` saying what happened: for the linkers, search and
+baselines `no_mention`, `no_link`, `no_place` or `predicted` (with `fallback`
+when the MISC fallback was used); for the LLMs the resolution status
+(`resolved`, `declined`, `unreadable`, `not_found`, `ambiguous`) and its
+`level`; for the grounded LLM `predicted`, `abstained` or `violation`.
+A `.predict.jsonl` next to it holds the full record of each post. Only the
+text column is read, nothing is scored, and no split is needed.
+
+Three configurations need gold data and stop with a message:
+`majority_class` (it predicts the most frequent gold place of a labelled dev
+split), and `dense_retrieval` and `grounded_gemma` (their candidate pool is
+built from the gold places in `configs/datasets.yaml` and other
+configurations' answers).
+
+The named-entity recogniser (Flair `ner-large`, CoNLL-03) is English-only,
+and so are the reranker's descriptions and Wikidata's English labels. All
+configurations except the LLMs assume English posts.
+
+### A new labelled dataset
+
+To score methods on another labelled dataset:
+
+1. A CSV with the columns `text`, `qid` (the gold Wikidata item),
+   `location_name`, `country`, `continent`, `latitude`, `longitude`,
+   `signal_type` (the condition; any labels, or one value for all) and
+   `split` (`dev` or `test`, assigned by place: every post about one place on
+   the same side). The optional columns in `BIN_COLUMNS` (`scripts/score.py`)
+   are specific to the synthetic set and can be left out.
+2. An entry in `configs/datasets.yaml`.
+3. `python scripts/make_split.py --force`, which rewrites `splits/` for all
+   registered datasets (the synthetic rows come out the same).
+4. `python src/runner.py --config <name> --dataset <new>`, then
+   `python scripts/build_containment.py` for the new (prediction, gold) pairs,
+   then `scripts/score.py --dataset <new>`.
+
+Specific to the synthetic dataset: the condition names and order of
+`scripts/analyse.py` (`EXPLICIT`, `A`, `B` and their `NOISE_` variants), the
+`BIN_COLUMNS`, the continent codes the scorer expects for gold continents
+(`AF`, `EU`, ...; full names are mapped too), and the per-place bootstrap of
+`scripts/stats.py`, which assumes several posts per place. Registering a
+dataset also adds its gold places to the dense pool of every dataset
+(`src/dense_index.py`), which changes `dense_retrieval` and `grounded_gemma` on
+the synthetic set too.
+
 ## Configurations
 
 One YAML file in `configs/` per method. Adding a file adds a method.
@@ -91,7 +148,8 @@ One YAML file in `configs/` per method. Adding a file adds a method.
 | 2 | `blink` | BLINK entity linking | BLINK checkout and models, see below |
 | 3 | `dense_retrieval` | dense retrieval over place texts | nothing |
 | 4 | `gemma4` | LLM on the whole text (Gemma 4 12B) | `VSE_API_KEY` |
-| 4 | `qwen3_vl` | the same with a second model (Qwen3-VL 235B) | `VSE_API_KEY` |
+| 4 | `qwen3_vl` | the same with a second model (Qwen3-VL 235B-A22B: 235B in total, 22B active) | `VSE_API_KEY` |
+| 4 | `qwen3_vl_32b` | the same family, smaller (Qwen3-VL 32B, dense); revision 3, not yet run | `VSE_API_KEY` |
 | 5 | `grounded_gemma` | LLM choosing among dense candidates | `VSE_API_KEY` |
 | 5 | `grounded_gemma_linking` | LLM choosing among linked candidates | `VSE_API_KEY` |
 

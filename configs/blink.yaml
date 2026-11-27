@@ -5,34 +5,45 @@ paradigm: ner_dependent
 question: >
   does the published retrieve-then-rerank linker (BLINK) beat the hand-built one
 design: >
-  NER(flair/ner-large, all tags) → link(BLINK: bi-encoder top-10 of 5.9M Wikipedia
-  entities → cross-encoder picks 1) → enwiki title → QID (sitelink) → resolve(property
-  chain, as refined) → rerank(E5) across mentions → top-1. Only the cross-encoder's top
-  entity per mention is resolved. Output: no span, no QID, or no reachable coords → no
-  prediction.
+  NER(flair/ner-large, every tag) → link(BLINK: bi-encoder top-10 of 5.9M Wikipedia
+  entities → cross-encoder picks 1) for the LOC/PER/ORG mentions → enwiki title → QID
+  (sitelink) → resolve(all places, as refined) → [gate: any place?] no: the MISC mentions
+  the same way (fallback) → rerank(E5) across all candidates → top-1. Only the
+  cross-encoder's top entity per mention is resolved. Output: no span, no QID, or no
+  reachable coords → no prediction.
 description: >
   BLINK, the published form of the pattern retrieve_rerank builds by hand: a
   bi-encoder retrieves the top-10 of BLINK's 5.9M Wikipedia entities for each
   mention, and a cross-encoder rescores those 10 against the mention context
   and picks one. BLINK's own models, entity catalogue and entity encodings.
 
-  Everything else is held equal to retrieve_rerank: the same Flair NER over
-  every tag supplies the mentions, the chosen entity goes through the same
-  geographic property chain, and the same E5 step ranks the resulting places
-  across mentions. So retrieve_rerank against blink is hand-built retrieval
-  and reranking against the published reference, on the same mentions.
+  Everything else is held equal to retrieve_rerank: the same Flair NER
+  mentions, the chosen entity goes through the same place rule, and the same
+  E5 step ranks the resulting places across mentions. So retrieve_rerank
+  against blink is hand-built retrieval and reranking against the published
+  reference, on the same mentions. (retrieve_rerank has no fallback: its
+  search path has no handler for MISC mentions, which retrieve nothing there.)
 
   The chosen Wikipedia title is mapped to Wikidata by its enwiki sitelink. The
   entity matrix is 24 GB, so it is read from disk in chunks and searched exactly
-  in one pass per run rather than held in memory; see src/blink_linker.py.
+  in one pass per run rather than held in memory; see src/blink_linker.py. That
+  pass covers every mention of the run, the MISC ones too, so the fallback costs
+  no second pass; their links are used only when the fallback is needed.
+
+  Revision 3 (2026-11-26, not yet run). Place rule all_places and the MISC
+  fallback, as refined. The reported runs linked every mention (MISC too, so a
+  demonym such as "French tourists" became the country even when the post named
+  a place) and resolved it by the fixed chain (chain_v1).
 ner:
   model: flair/ner-large
-  entity_types: null
+  entity_types: [LOC, PER, ORG]
+  fallback_types: [MISC]
 linking:
   backend: blink
   refined_model: null
   refined_entity_set: null
   top_n: 10
+  place_rule: all_places
 rerank:
   model: shared            # configs/shared.yaml
   enabled: true

@@ -4,7 +4,7 @@ An LLM-only configuration gets text back from the model:
 
     {"city": "Worcester", "country": "South Africa", "latitude": -33.6, "longitude": 19.4}
 
-and has to find the Wikidata item for it. There are two rules, chosen by the
+and has to find the Wikidata item for it. There are four rules, chosen by the
 prompt template of the configuration:
 
   v1  `resolve_first_hit`. Search the city name, take the first result. The
@@ -23,7 +23,16 @@ prompt template of the configuration:
       ten results lies in it, the name is searched again with fifty results
       before the rule goes on: "Cambridge, New Zealand" and "San Fernando,
       Trinidad and Tobago" are not among the first ten items of that name.
-      Same prompt as v2. This is the rule of the reported gemma4 and qwen3_vl.
+      Same prompt as v2. This is the rule of the reported gemma4 and qwen3_vl
+      runs (commit 0389a2d).
+
+  v4  `resolve_place_wide`. Rule v3 on the "place" field of prompt v4, which
+      asks for the place itself rather than a city (revision 3, 2026-11-26;
+      see results/REVISIONS.md). The search is that of v3, with four
+      corrections (see the function): a far single namesake triggers the
+      wider search, the country name is matched against the country items,
+      and failed requests and empty replies get statuses of their own. A
+      reply with a "city" field and no "place" field is read the same way.
 
 All return `(candidate or None, resolution)`. `resolution` is stored on the
 prediction record, so a missing or coarse answer has a reason:
@@ -36,12 +45,18 @@ prediction record, so a missing or coarse answer has a reason:
                        coordinates either)
            ambiguous   several items carry the name and the answer has nothing
                        that chooses between them (v2 only; v1 never knows)
+           empty       (v4) the provider returned no text or blocked the reply,
+                       or every field of the reply is null and "refused" false;
+                       v1-v3 call this declined
+           error       (v4) a Wikidata request failed; `message` says which.
+                       v1-v3 cannot tell this from not_found
   level    city | country | continent | None: what the prediction is. A
            not_found or ambiguous city still gives the country when the model
            named one, so `status` describes the named place and `level` the
            answer.
   method   how the item was chosen (first_hit, country, country+coordinates,
-           country+search_order, coordinates, only_candidate).
+           country+search_order, coordinates, only_candidate; v4 also
+           country_item, the country answered from the table of country items).
   n_candidates, n_in_country, km: the numbers behind the choice; n_searched
            (v3) when the choice came from the wider search.
 
@@ -50,12 +65,17 @@ The Wikidata calls are parameters so the rule can be tested without a network
 """
 from __future__ import annotations
 
+import functools
+import json
 import math
 import unicodedata
+from pathlib import Path
 from typing import Callable
 
 import wikidata as wd
-from llm_common import parse_json_object
+from llm_common import EMPTY_REPLY_SENTINEL, REFUSAL_SENTINEL, parse_json_object
+
+COUNTRY_ITEMS = Path(__file__).resolve().parent / "country_items.json"
 
 SEARCH_LIMIT = 10
 # v3: results asked for when none of the first SEARCH_LIMIT is in the country
@@ -73,7 +93,8 @@ MAX_KM_WITHOUT_COUNTRY = 500.0
 # (see rule 4); that use was checked on the development split.
 TIE_KM = 25.0
 
-STATUSES = ("resolved", "declined", "unreadable", "not_found", "ambiguous")
+STATUSES = ("resolved", "declined", "unreadable", "not_found", "ambiguous",
+            "empty", "error")      # the last two: rule v4 only
 
 # Models are asked for JSON null when a field is unknown, and mostly comply --
 # but a few responses put the *string* "null" (or "none", "unknown") in the
@@ -147,25 +168,81 @@ def _first_hit(name: str, search: Callable, fetch: Callable, geo: Callable) -> d
     return _candidate(name, qids[0], ent, geo) if wd.get_coords_of(ent) else None
 
 
+@functools.lru_cache(maxsize=1)
+def _country_table() -> tuple[dict, dict]:
+    """({plain label: {qid}}, {plain alias: {qid}}) of src/country_items.json
+    (scripts/build_country_items.py)."""
+    labels: dict[str, set] = {}
+    aliases: dict[str, set] = {}
+    items = json.loads(COUNTRY_ITEMS.read_text(encoding="utf-8"))["items"]
+    for qid, it in items.items():
+        labels.setdefault(_plain(it["label"]), set()).add(qid)
+        for alias in it["aliases"]:
+            aliases.setdefault(_plain(alias), set()).add(qid)
+    return labels, aliases
+
+
+def country_item(name: str) -> str | None:
+    """Rule v4: the Wikidata country item a country name refers to, from the
+    English labels, then the aliases, of the country items; None when no item
+    or more than one has the name ("The Netherlands" is an alias of two)."""
+    labels, aliases = _country_table()
+    key = _plain(name)
+    for table in (labels, aliases):
+        found = table.get(key, set())
+        if len(found) == 1:
+            return next(iter(found))
+        if found:
+            return None
+    return None
+
+
+def _country_candidate(country: str, country_qid: str | None, search: Callable,
+                       fetch: Callable, geo: Callable) -> dict | None:
+    """The country as an answer: the country item when the table named one
+    (rule v4), else the first search hit for the name."""
+    if country_qid:
+        ent = fetch([country_qid]).get(country_qid, {})
+        if wd.get_coords_of(ent):
+            return _candidate(country, country_qid, ent, geo)
+    return _first_hit(country, search, fetch, geo)
+
+
 def _fallback(parsed: dict, status: str, search: Callable, fetch: Callable, geo: Callable,
-              **numbers) -> tuple[dict | None, dict]:
+              country_qid: str | None = None, **numbers) -> tuple[dict | None, dict]:
     """The city could not be pinned down: answer with the country if the model
-    named one, else the continent, else nothing. `status` keeps the reason."""
+    named one, else the continent, else nothing. `status` keeps the reason.
+    `country_qid` is the country item of rule v4's table; v1-v3 never pass it."""
     country = clean_name(parsed.get("country"))
-    cand = _first_hit(country, search, fetch, geo) if country else None
+    cand = _country_candidate(country, country_qid, search, fetch, geo) if country else None
     if cand:
-        return cand, _resolution(status, "country", "first_hit", **numbers)
+        return cand, _resolution(status, "country", "country_item" if country_qid and
+                                 cand["qid"] == country_qid else "first_hit", **numbers)
     cand = _continent_only(parsed)
     return cand, _resolution(status, "continent" if cand else None, None, **numbers)
 
 
-def _read(raw_or_parsed) -> tuple[dict | None, dict | None]:
-    """(parsed answer, None), or (None, the resolution that ends here)."""
+_ANSWER_FIELDS = ("place", "city", "country", "continent")
+
+
+def _read(raw_or_parsed, v4: bool = False) -> tuple[dict | None, dict | None]:
+    """(parsed answer, None), or (None, the resolution that ends here).
+
+    Rule v4 also ends with `empty`: the provider returned no text or blocked
+    the reply (EMPTY_REPLY_SENTINEL; REFUSAL_SENTINEL in records written before
+    revision 3), or the reply is a JSON object with every field null and
+    "refused" false. v1-v3 call these `declined`, as they ran."""
+    if v4 and isinstance(raw_or_parsed, str) and raw_or_parsed.strip() in (
+            REFUSAL_SENTINEL, EMPTY_REPLY_SENTINEL):
+        return None, _resolution("empty")
     parsed = raw_or_parsed if isinstance(raw_or_parsed, dict) else parse_json_object(raw_or_parsed)
     if parsed is None:
         return None, _resolution("unreadable")
     if parsed.get("refused"):
-        return None, _resolution("declined")
+        return None, _resolution("empty" if v4 and parsed.get("empty_reply") else "declined")
+    if v4 and not any(clean_name(parsed.get(f)) for f in _ANSWER_FIELDS) \
+            and not clean_coordinates(parsed.get("latitude"), parsed.get("longitude")):
+        return None, _resolution("empty")
     return parsed, None
 
 
@@ -199,9 +276,14 @@ def resolve_by_country_and_coordinates(
         raw_or_parsed, *, search: Callable = wd.search_entities,
         fetch: Callable = wd.fetch_entities,
         geo: Callable = wd.resolve_country_continent,
-        wide_limit: int | None = None) -> tuple[dict | None, dict]:
-    """Rule v2 (and v3 when `wide_limit` is given, see resolve_wide). For the
-    city the model named:
+        wide_limit: int | None = None,
+        name_fields: tuple[str, ...] = ("city",),
+        v4: bool = False,
+        countries: Callable = country_item) -> tuple[dict | None, dict]:
+    """Rule v2 (and v3 when `wide_limit` is given, see resolve_wide; v4 when
+    `name_fields` also starts with "place", see resolve_place_wide). For the
+    place the model named (the first of `name_fields` that holds a name;
+    called `city` below):
 
       1. search Wikidata, ten results; keep those with coordinates;
       2. if the model named a country, keep the results in it (P17 is the item
@@ -220,24 +302,34 @@ def resolve_by_country_and_coordinates(
       6. otherwise `not_found`.
 
     A not_found or ambiguous city falls back to the country, then the
-    continent, as in v1."""
-    parsed, ended = _read(raw_or_parsed)
+    continent, as in v1.
+
+    `v4` turns on the corrections of rule v4 (see resolve_place_wide); v2 and
+    v3 run without them, as they ran."""
+    parsed, ended = _read(raw_or_parsed, v4)
     if ended:
         return None, ended
-    city, country = clean_name(parsed.get("city")), clean_name(parsed.get("country"))
+    city = next((n for n in (clean_name(parsed.get(f)) for f in name_fields) if n), None)
+    country = clean_name(parsed.get("country"))
     point = clean_coordinates(parsed.get("latitude"), parsed.get("longitude"))
+    # v4: the country item the name refers to, from the table of country items.
+    table_qid = countries(country) if v4 and country else None
+
+    def fallback(status, **numbers):
+        return _fallback(parsed, status, search, fetch, geo, country_qid=table_qid, **numbers)
 
     if not city:
-        cand = _first_hit(country, search, fetch, geo) if country else None
+        cand = _country_candidate(country, table_qid, search, fetch, geo) if country else None
         if cand:
-            return cand, _resolution("resolved", "country", "first_hit")
+            method = "country_item" if table_qid and cand["qid"] == table_qid else "first_hit"
+            return cand, _resolution("resolved", "country", method)
         cand = _continent_only(parsed)
         if cand:
             return cand, _resolution("not_found" if country else "resolved", "continent")
         return None, _resolution("not_found" if country else "declined")
 
-    country_qid = None
-    if country:
+    country_qid = table_qid
+    if country and not country_qid:
         country_hits = search(country, limit=1)
         country_qid = country_hits[0] if country_hits else None
 
@@ -255,7 +347,7 @@ def resolve_by_country_and_coordinates(
         if wide_in_country:
             places, in_country, searched = wide_places, wide_in_country, wide_limit
     if not places:
-        return _fallback(parsed, "not_found", search, fetch, geo, n_candidates=0)
+        return fallback("not_found", n_candidates=0)
     numbers = {"n_candidates": len(places),
                "n_in_country": len(in_country) if country_qid else None,
                "n_searched": searched}
@@ -271,6 +363,26 @@ def resolve_by_country_and_coordinates(
 
     if in_country:
         pool = _same_name(city, in_country)
+        if v4 and point and wide_limit and searched is None and not any(
+                km_between(point, wd.get_coords_of(e)) <= TIE_KM for _, e in pool):
+            # v4: no namesake in the country lies within TIE_KM of the
+            # coordinates, whether the ten results hold one or several. Search
+            # wider; an in-country namesake within TIE_KM is taken (the first
+            # in search order). Only if there is none does the rule below
+            # decide on the ten results: one is kept, of several the first in
+            # search order.
+            wide_places, wide_in_country = placed(wide_limit)
+            near = [m for m in ((km_between(point, wd.get_coords_of(we)), wq, we)
+                                for wq, we in _same_name(city, wide_in_country))
+                    if m[0] <= TIE_KM]
+            if near:
+                km, q, e = near[0]
+                wide_numbers = {"n_candidates": len(wide_places),
+                                "n_in_country": len(wide_in_country),
+                                "n_searched": wide_limit}
+                return _candidate(city, q, e, geo), _resolution(
+                    "resolved", _level(q, country_qid), "country+coordinates",
+                    km=_round(km), **wide_numbers)
         if len(pool) == 1:
             q, e = pool[0]
             km = km_between(point, wd.get_coords_of(e)) if point else None
@@ -289,7 +401,7 @@ def resolve_by_country_and_coordinates(
                 km, method = km_between(point, wd.get_coords_of(e)), "country+search_order"
             return _candidate(city, q, e, geo), _resolution(
                 "resolved", _level(q, country_qid), method, km=_round(km), **numbers)
-        return _fallback(parsed, "ambiguous", search, fetch, geo, **numbers)
+        return fallback("ambiguous", **numbers)
 
     # Nothing in the named country, or no usable country.
     pool = _same_name(city, places)
@@ -298,14 +410,14 @@ def resolve_by_country_and_coordinates(
         if km <= MAX_KM_WITHOUT_COUNTRY:
             return _candidate(city, q, e, geo), _resolution(
                 "resolved", "city", "coordinates", km=_round(km), **numbers)
-        return _fallback(parsed, "not_found", search, fetch, geo, km=_round(km), **numbers)
+        return fallback("not_found", km=_round(km), **numbers)
     if not country_qid:
         if len(pool) == 1:
             q, e = pool[0]
             return _candidate(city, q, e, geo), _resolution(
                 "resolved", "city", "only_candidate", **numbers)
-        return _fallback(parsed, "ambiguous", search, fetch, geo, **numbers)
-    return _fallback(parsed, "not_found", search, fetch, geo, **numbers)
+        return fallback("ambiguous", **numbers)
+    return fallback("not_found", **numbers)
 
 
 def resolve_wide(raw_or_parsed, *, search: Callable = wd.search_entities,
@@ -318,6 +430,48 @@ def resolve_wide(raw_or_parsed, *, search: Callable = wd.search_entities,
     the wider search decided."""
     return resolve_by_country_and_coordinates(raw_or_parsed, search=search, fetch=fetch, geo=geo,
                                               wide_limit=WIDE_SEARCH_LIMIT)
+
+
+def resolve_place_wide(raw_or_parsed, *, search: Callable = wd.search_entities_checked,
+                       fetch: Callable = wd.fetch_entities_checked,
+                       geo: Callable = wd.resolve_country_continent_checked,
+                       countries: Callable = country_item) -> tuple[dict | None, dict]:
+    """Rule v4 (revision 3, 2026-11-26): rule v3 on the "place" field of
+    prompt v4, falling back to "city", with four corrections.
+
+    Prompts v1-v3 asked for a city, so for an island, a dam or a park the
+    models named the nearest town (Visby for Gotland). Prompt v4 asks for the
+    place itself, which need not be a settlement. The search is v3's (ten
+    results, fifty when none of the ten is in the named country).
+
+    The corrections (v1-v3 stay as they ran):
+
+      1. No namesake in the named country within TIE_KM of the model's
+         coordinates, whether the ten results hold one or several: the fifty
+         results are searched too, and an in-country namesake within TIE_KM
+         is taken (the first in search order). Only if there is none does v3's
+         rule decide on the ten: one is kept, of several the first in search
+         order (the choice made on the development split stays the final
+         fallback). v3 took a single namesake whatever the distance ("Richmond,
+         Canada" with coordinates in British Columbia gave Richmond, Quebec).
+      2. The country name is matched against the Wikidata country items
+         (labels, then aliases; src/country_items.json) before the first
+         search hit is used: "Georgia" is the country, not the US state that
+         the search returns first. The country fallback answers with that
+         item too.
+      3. A failed Wikidata request ends in status `error` (with `message`), not
+         in `not_found`: the default lookups raise instead of returning
+         nothing. Nothing about the failure is cached, and the pipeline puts
+         the message on the record's `error`, so the runner retries the post.
+      4. An empty or blocked reply ends in status `empty`, not `declined`, and
+         so does a reply with every field null and "refused" false.
+    """
+    try:
+        return resolve_by_country_and_coordinates(
+            raw_or_parsed, search=search, fetch=fetch, geo=geo, wide_limit=WIDE_SEARCH_LIMIT,
+            name_fields=("place", "city"), v4=True, countries=countries)
+    except wd.WikidataError as e:
+        return None, _resolution("error", message=str(e))
 
 
 def _level(qid: str, country_qid: str | None) -> str:
@@ -344,4 +498,5 @@ def _round(km: float | None) -> float | None:
     return None if km is None else round(km, 1)
 
 
-RESOLVERS = {"v1": resolve_first_hit, "v2": resolve_by_country_and_coordinates, "v3": resolve_wide}
+RESOLVERS = {"v1": resolve_first_hit, "v2": resolve_by_country_and_coordinates, "v3": resolve_wide,
+             "v4": resolve_place_wide}

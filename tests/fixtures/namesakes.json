@@ -1,0 +1,1435 @@
+{
+ "captured": "2026-11-26",
+ "how": "wbsearchentities (src/wikidata.search_entities), limit 50 for the place names and 1 for the country names; items via wbgetentities; lat/lon = wikidata.get_coords_of, country = wikidata._claim_id(P17)",
+ "searches": {
+  "Richmond": [
+   "Q43421",
+   "Q1009324",
+   "Q2500974",
+   "Q548664",
+   "Q16882071",
+   "Q1115878",
+   "Q3407391",
+   "Q19968319",
+   "Q139694",
+   "Q1184885",
+   "Q142476",
+   "Q801366",
+   "Q14875404",
+   "Q5355893",
+   "Q110908576",
+   "Q236837",
+   "Q32515",
+   "Q495377",
+   "Q1012076",
+   "Q7331001",
+   "Q757390",
+   "Q1073994",
+   "Q961272",
+   "Q1032035",
+   "Q498319",
+   "Q1208462",
+   "Q129991",
+   "Q955399",
+   "Q1683013",
+   "Q135591",
+   "Q18432",
+   "Q11997784",
+   "Q7330796",
+   "Q7330738",
+   "Q1965047",
+   "Q2151254",
+   "Q596795",
+   "Q2521385",
+   "Q3307045",
+   "Q386437",
+   "Q5355896",
+   "Q2673075",
+   "Q1916748",
+   "Q3708238",
+   "Q1858363",
+   "Q2901271",
+   "Q985819",
+   "Q3431469",
+   "Q7330726",
+   "Q7331013"
+  ],
+  "Toledo": [
+   "Q5836",
+   "Q16884761",
+   "Q1776774",
+   "Q316527",
+   "Q49239",
+   "Q88185449",
+   "Q1525656",
+   "Q54929",
+   "Q2302319",
+   "Q2078498",
+   "Q1743116",
+   "Q506049",
+   "Q20250345",
+   "Q7814141",
+   "Q31844059",
+   "Q117565086",
+   "Q141104588",
+   "Q1918024",
+   "Q22065023",
+   "Q5931617",
+   "Q2400170",
+   "Q787652",
+   "Q38252138",
+   "Q7814206",
+   "Q2096039",
+   "Q29574695",
+   "Q7814140",
+   "Q7814143",
+   "Q1515635",
+   "Q1025974",
+   "Q54972777",
+   "Q3992393",
+   "Q58214299",
+   "Q1123650",
+   "Q1001999",
+   "Q32153125",
+   "Q16969684",
+   "Q114480655",
+   "Q102975276",
+   "Q61856373",
+   "Q47482527",
+   "Q83641821",
+   "Q20861985",
+   "Q1123180",
+   "Q4650186",
+   "Q59133934",
+   "Q83629340",
+   "Q50360940",
+   "Q106678244",
+   "Q106677728"
+  ],
+  "Aurangabad": [
+   "Q43086",
+   "Q592942",
+   "Q200713",
+   "Q590550",
+   "Q4822111",
+   "Q55337486",
+   "Q63680091",
+   "Q584916",
+   "Q1924611",
+   "Q16869017",
+   "Q3763786",
+   "Q120487800",
+   "Q10942521",
+   "Q12992459",
+   "Q110293920",
+   "Q103891311",
+   "Q63677670",
+   "Q57707502",
+   "Q19805360",
+   "Q19805358",
+   "Q13116205",
+   "Q4822112",
+   "Q4362303",
+   "Q61433753",
+   "Q58954389",
+   "Q4822113",
+   "Q12417483",
+   "Q3629782",
+   "Q87973698",
+   "Q61441780",
+   "Q61336982",
+   "Q61421761",
+   "Q91907728",
+   "Q4822106",
+   "Q61368132",
+   "Q16843541",
+   "Q59633459",
+   "Q105730038",
+   "Q60927848",
+   "Q64212733",
+   "Q60927846",
+   "Q774452",
+   "Q585443",
+   "Q4822109",
+   "Q94136787",
+   "Q24747917",
+   "Q141489530",
+   "Q120397279",
+   "Q39056807",
+   "Q4822107"
+  ],
+  "United States": [
+   "Q30"
+  ],
+  "United Kingdom": [
+   "Q145"
+  ],
+  "Canada": [
+   "Q16"
+  ],
+  "Spain": [
+   "Q29"
+  ],
+  "Philippines": [
+   "Q928"
+  ],
+  "Brazil": [
+   "Q155"
+  ],
+  "Colombia": [
+   "Q739"
+  ],
+  "Uruguay": [
+   "Q77"
+  ],
+  "South Africa": [
+   "Q258"
+  ],
+  "New Zealand": [
+   "Q664"
+  ],
+  "India": [
+   "Q668"
+  ],
+  "Australia": [
+   "Q408"
+  ],
+  "England": [
+   "Q21"
+  ],
+  "Qwxzvillebury": [],
+  "Georgia": [
+   "Q1428"
+  ],
+  "UK": [
+   "Q8798"
+  ]
+ },
+ "items": {
+  "Q1001999": {
+   "label": "Toledo",
+   "lat": -18.183333333333,
+   "lon": -67.4,
+   "country": "Q750",
+   "description": "town in Bolivia"
+  },
+  "Q1009324": {
+   "label": "Richmond",
+   "lat": 54.403611,
+   "lon": -1.737222,
+   "country": "Q145",
+   "description": "town in North Yorkshire, England"
+  },
+  "Q1012076": {
+   "label": "Richmond",
+   "lat": -37.823,
+   "lon": 144.998,
+   "country": "Q408",
+   "description": "suburb of Melbourne, Victoria, Australia"
+  },
+  "Q1025974": {
+   "label": "Toledo",
+   "lat": 39.2722,
+   "lon": -88.2428,
+   "country": "Q30",
+   "description": "village in Illinois, United States"
+  },
+  "Q102975276": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": "Q736",
+   "description": "print by Oswaldo Guayasamín"
+  },
+  "Q1032035": {
+   "label": "Richmond (Yorks)",
+   "lat": 54.405,
+   "lon": -1.653,
+   "country": "Q145",
+   "description": "Parliamentary constituency in the United Kingdom, 1868-2024"
+  },
+  "Q103891311": {
+   "label": "Aurangabad",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "encyclopedia article"
+  },
+  "Q105730038": {
+   "label": "Bombay High Court – Aurangabad Bench",
+   "lat": 19.8731357,
+   "lon": 75.358574,
+   "country": "Q668",
+   "description": "permanent bench of Bombay High Court"
+  },
+  "Q106677728": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "ship built in 1960"
+  },
+  "Q106678244": {
+   "label": "Volta River",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "ship built in 1980"
+  },
+  "Q1073994": {
+   "label": "Richmond",
+   "lat": -28.511,
+   "lon": 153.363,
+   "country": "Q408",
+   "description": "Australian federal electoral division"
+  },
+  "Q10942521": {
+   "label": "Aurangabad",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": ""
+  },
+  "Q110293920": {
+   "label": "Aurangabad",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "hymn tune"
+  },
+  "Q110908576": {
+   "label": "Richmond Transit Center",
+   "lat": 37.93666666666667,
+   "lon": -122.35333333333334,
+   "country": "Q30",
+   "description": "railway station complex in Richmond, California, US"
+  },
+  "Q1115878": {
+   "label": "University of Richmond",
+   "lat": 37.5775,
+   "lon": -77.53777777777778,
+   "country": "Q30",
+   "description": "university in Richmond, Virginia, United States"
+  },
+  "Q1123180": {
+   "label": "Toledo Cathedral",
+   "lat": 39.857083333333,
+   "lon": -4.0238888888889,
+   "country": "Q29",
+   "description": "cathedral in Toledo, Spain"
+  },
+  "Q1123650": {
+   "label": "Toledo",
+   "lat": -31.555833333333,
+   "lon": -64.009444444444,
+   "country": "Q414",
+   "description": "town in Argentina"
+  },
+  "Q114480655": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "episode of The Danny Thomas Show (S1 E14)"
+  },
+  "Q117565086": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "composition by Aurélio Cavalcanti"
+  },
+  "Q1184885": {
+   "label": "Richmond",
+   "lat": -33.598333333333336,
+   "lon": 150.7511111,
+   "country": "Q408",
+   "description": "town in New South Wales, Australia"
+  },
+  "Q11997784": {
+   "label": "Richmond County",
+   "lat": 40.59,
+   "lon": -74.14,
+   "country": "Q30",
+   "description": "county in New York, United States"
+  },
+  "Q120397279": {
+   "label": "Aurangabad, Ghiror",
+   "lat": 27.31936,
+   "lon": 78.72663,
+   "country": "Q668",
+   "description": "village in Uttar Pradesh, India"
+  },
+  "Q120487800": {
+   "label": "Aurangabad",
+   "lat": 27.085,
+   "lon": 78.84088,
+   "country": "Q668",
+   "description": "village in Uttar Pradesh, India"
+  },
+  "Q1208462": {
+   "label": "Richmond",
+   "lat": -41.333333333333,
+   "lon": 173.18333333333,
+   "country": "Q664",
+   "description": "town in Tasman District, New Zealand"
+  },
+  "Q12417483": {
+   "label": "Aurangabad Block",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": "community development block in Aurangabad District, Bihar"
+  },
+  "Q12992459": {
+   "label": "Aurangabad",
+   "lat": 24.6156,
+   "lon": 88.02867,
+   "country": "Q668",
+   "description": "village in Haveli Ghanpur mandalam of Medak district, Telangana"
+  },
+  "Q129991": {
+   "label": "Richmond",
+   "lat": 41.9194,
+   "lon": -111.81,
+   "country": "Q30",
+   "description": "city in Cache County, Utah, United States"
+  },
+  "Q13116205": {
+   "label": "Aurangabad Central Assembly constituency",
+   "lat": 19.868,
+   "lon": 75.31,
+   "country": "Q668",
+   "description": "constituency of the Maharashtra legislative assembly in India"
+  },
+  "Q135591": {
+   "label": "Charles Wallace Richmond",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "American ornithologist (1868-1932)"
+  },
+  "Q139694": {
+   "label": "Richmond",
+   "lat": 45.66555555555556,
+   "lon": -72.14722222222223,
+   "country": "Q16",
+   "description": "town in Estrie, Quebec, Canada"
+  },
+  "Q141104588": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "episode of Interview with the Vampire (S3 E2)"
+  },
+  "Q141489530": {
+   "label": "Aurangabad subah",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": ""
+  },
+  "Q142476": {
+   "label": "Richmond",
+   "lat": -20.728888888889,
+   "lon": 143.14,
+   "country": "Q408",
+   "description": "town in Richmond Shire, Queensland, Australia"
+  },
+  "Q145": {
+   "label": "United Kingdom",
+   "lat": 54.6,
+   "lon": -2,
+   "country": "Q145",
+   "description": "island country in north-west Europe"
+  },
+  "Q14875404": {
+   "label": "Richmond",
+   "lat": 45.1943,
+   "lon": -75.839,
+   "country": "Q16",
+   "description": "neighbourhood in Ottawa, Ontario, Canada"
+  },
+  "Q1515635": {
+   "label": "Toledo",
+   "lat": 46.439166666667,
+   "lon": -122.84805555556,
+   "country": "Q30",
+   "description": "city in Washington, United States"
+  },
+  "Q1525656": {
+   "label": "Toledo",
+   "lat": 7.3102777777778,
+   "lon": -72.483055555556,
+   "country": "Q739",
+   "description": "Colombian municipality of the department of Norte de Santander"
+  },
+  "Q155": {
+   "label": "Brazil",
+   "lat": -14,
+   "lon": -53,
+   "country": "Q155",
+   "description": "country in South America"
+  },
+  "Q16": {
+   "label": "Canada",
+   "lat": 56,
+   "lon": -109,
+   "country": "Q16",
+   "description": "country in North America"
+  },
+  "Q1683013": {
+   "label": "Richmondshire",
+   "lat": 54.33,
+   "lon": -2.012,
+   "country": "Q145",
+   "description": "former non-metropolitan district of North Yorkshire, England, UK"
+  },
+  "Q16843541": {
+   "label": "history of Chhatrapati Sambhajinagar",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "aspect of history"
+  },
+  "Q16869017": {
+   "label": "Aurangabad",
+   "lat": 28.0278,
+   "lon": 77.329,
+   "country": "Q668",
+   "description": "village in Haryana, India"
+  },
+  "Q16882071": {
+   "label": "Richmond",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "family name"
+  },
+  "Q16884761": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "family name"
+  },
+  "Q16969684": {
+   "label": "Toledo Rockets men's basketball",
+   "lat": null,
+   "lon": null,
+   "country": "Q30",
+   "description": "men's basketball team of the University of Toledo"
+  },
+  "Q1743116": {
+   "label": "Toledo Museum of Art",
+   "lat": 41.65833333333333,
+   "lon": -83.55944444444444,
+   "country": "Q30",
+   "description": "art museum in Toledo, Ohio, USA"
+  },
+  "Q1776774": {
+   "label": "Toledo",
+   "lat": -24.713888888889,
+   "lon": -53.742777777778,
+   "country": "Q155",
+   "description": "municipality of Paraná state, Brazil"
+  },
+  "Q178038": {
+   "label": "Second Spanish Republic",
+   "lat": 40.2,
+   "lon": -3.5,
+   "country": "Q29",
+   "description": "political regime established in Spain between April 14, 1931 and April 1, 1939"
+  },
+  "Q18432": {
+   "label": "Staten Island",
+   "lat": 40.57194444444445,
+   "lon": -74.14694444444444,
+   "country": "Q30",
+   "description": "borough of New York City, New York, United States"
+  },
+  "Q1858363": {
+   "label": "Richmond",
+   "lat": 42.809166666667,
+   "lon": -82.755833333333,
+   "country": "Q30",
+   "description": "place in Michigan, United States of America"
+  },
+  "Q1916748": {
+   "label": "Richmond",
+   "lat": 42.4719,
+   "lon": -88.3075,
+   "country": "Q30",
+   "description": "village in McHenry County, Illinois, United States"
+  },
+  "Q1918024": {
+   "label": "Toledo",
+   "lat": 41.993333333333,
+   "lon": -92.579166666667,
+   "country": "Q30",
+   "description": "city in Iowa, United States"
+  },
+  "Q1924611": {
+   "label": "Aurangabad",
+   "lat": 24.61,
+   "lon": 88.06,
+   "country": "Q668",
+   "description": "human settlement in Murshidabad district, Malda division, West Bengal, India"
+  },
+  "Q1965047": {
+   "label": "Richmond",
+   "lat": 44.3952163,
+   "lon": -72.9940131,
+   "country": "Q30",
+   "description": "place in Vermont, United States of America"
+  },
+  "Q19805358": {
+   "label": "Aurangabad West Assembly constituency",
+   "lat": 19.84,
+   "lon": 75.23,
+   "country": "Q668",
+   "description": "constituency of the Maharashtra legislative assembly in India"
+  },
+  "Q19805360": {
+   "label": "Aurangabad East Assembly constituency",
+   "lat": 19.87,
+   "lon": 75.33,
+   "country": "Q668",
+   "description": "constituency of the Maharashtra legislative assembly in India"
+  },
+  "Q19968319": {
+   "label": "Richmond",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "male given name"
+  },
+  "Q200713": {
+   "label": "Aurangabad",
+   "lat": 19.88,
+   "lon": 75.32,
+   "country": "Q668",
+   "description": "city in the district of Aurangabad"
+  },
+  "Q20250345": {
+   "label": "Toledo",
+   "lat": 24.80061,
+   "lon": -104.4651,
+   "country": "Q96",
+   "description": "human settlement in Mexico"
+  },
+  "Q2078498": {
+   "label": "Toledo",
+   "lat": 7.0102777777778,
+   "lon": -75.701666666667,
+   "country": "Q739",
+   "description": "Colombian municipality of the department of Antioquia"
+  },
+  "Q20861985": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "painting by Earl Horter"
+  },
+  "Q2096039": {
+   "label": "Toledo",
+   "lat": -34.740254,
+   "lon": -56.0908,
+   "country": "Q77",
+   "description": "city in Uruguay"
+  },
+  "Q21": {
+   "label": "England",
+   "lat": 53,
+   "lon": -1,
+   "country": "Q145",
+   "description": "country in north-west Europe, part of the United Kingdom"
+  },
+  "Q2151254": {
+   "label": "Richmond",
+   "lat": 41.5,
+   "lon": -71.666666666667,
+   "country": "Q30",
+   "description": "town in Rhode Island, United States of America"
+  },
+  "Q22065023": {
+   "label": "Toledo",
+   "lat": -22.742777777778,
+   "lon": -46.371944444444,
+   "country": "Q155",
+   "description": "town and municipality in the state of Minas Gerais, Brazil"
+  },
+  "Q2302319": {
+   "label": "University of Toledo",
+   "lat": 41.6577,
+   "lon": -83.6137,
+   "country": "Q30",
+   "description": "public university in Toledo, Ohio, USA"
+  },
+  "Q236837": {
+   "label": "Richmond",
+   "lat": 49.166666666667,
+   "lon": -123.13333333333,
+   "country": "Q16",
+   "description": "city in British Columbia, Canada"
+  },
+  "Q2400170": {
+   "label": "Toledo",
+   "lat": 44.621111111111,
+   "lon": -123.93777777778,
+   "country": "Q30",
+   "description": "city in Oregon, USA"
+  },
+  "Q242": {
+   "label": "Belize",
+   "lat": 17.066666666666666,
+   "lon": -88.7,
+   "country": "Q242",
+   "description": "sovereign state in Central America"
+  },
+  "Q24747917": {
+   "label": "Aurangabad District Cricket Association Stadium",
+   "lat": 19.8703455,
+   "lon": 75.3635515,
+   "country": "Q668",
+   "description": "stadium in Maharastra, India"
+  },
+  "Q2500974": {
+   "label": "Richmond",
+   "lat": 51.456,
+   "lon": -0.301,
+   "country": "Q145",
+   "description": "town in London, England"
+  },
+  "Q2521385": {
+   "label": "Richmond Football Club",
+   "lat": null,
+   "lon": null,
+   "country": "Q408",
+   "description": "Australian rules football club"
+  },
+  "Q258": {
+   "label": "South Africa",
+   "lat": -29,
+   "lon": 24,
+   "country": "Q258",
+   "description": "country in southern Africa"
+  },
+  "Q2673075": {
+   "label": "Richmond",
+   "lat": 40.4322,
+   "lon": -80.7725,
+   "country": "Q30",
+   "description": "place in Jefferson County, Ohio, United States of America"
+  },
+  "Q29": {
+   "label": "Spain",
+   "lat": 40.2,
+   "lon": -3.5,
+   "country": "Q29",
+   "description": "country in southwestern Europe with territories in Africa"
+  },
+  "Q2901271": {
+   "label": "Richmond",
+   "lat": 38.4025,
+   "lon": -95.2531,
+   "country": "Q30",
+   "description": "city in Kansas, United States of America"
+  },
+  "Q29574695": {
+   "label": "Toletum",
+   "lat": 39.8581,
+   "lon": -4.022630555555556,
+   "country": "Q29",
+   "description": "roman name of Toledo, Spain"
+  },
+  "Q30": {
+   "label": "United States",
+   "lat": 39.828175,
+   "lon": -98.5795,
+   "country": "Q30",
+   "description": "country located primarily in North America"
+  },
+  "Q316527": {
+   "label": "Toledo",
+   "lat": 10.383333333333,
+   "lon": 123.65,
+   "country": "Q928",
+   "description": "city of the Philippines in the province of Cebu"
+  },
+  "Q31844059": {
+   "label": "Toledo city",
+   "lat": 39.8581,
+   "lon": -4.02263,
+   "country": "Q29",
+   "description": "city in Spain, municipality seat of Toledo municipality in Spain"
+  },
+  "Q32153125": {
+   "label": "Toledo",
+   "lat": -24.73518,
+   "lon": -53.82059,
+   "country": "Q155",
+   "description": "human settlement in Brazil"
+  },
+  "Q32515": {
+   "label": "London Borough of Richmond upon Thames",
+   "lat": 51.447777777778,
+   "lon": -0.32416666666667,
+   "country": "Q145",
+   "description": "borough in the London Region in England"
+  },
+  "Q3307045": {
+   "label": "Richmond",
+   "lat": 44.087222222222,
+   "lon": -69.798888888889,
+   "country": "Q30",
+   "description": "town in Maine, United States of America"
+  },
+  "Q3407391": {
+   "label": "Richmond",
+   "lat": -42.733611111111,
+   "lon": 147.43944444444,
+   "country": "Q408",
+   "description": "town in Tasmania, Australia"
+  },
+  "Q3431469": {
+   "label": "Richmond",
+   "lat": 45.661,
+   "lon": -71.971,
+   "country": "Q16",
+   "description": "provincial electoral district in Quebec, Canada"
+  },
+  "Q3629782": {
+   "label": "Chhatrapati Sambhaji Nagar cantonment",
+   "lat": 19.88,
+   "lon": 75.3,
+   "country": "Q668",
+   "description": "human settlement in Chhatrapati Sambhaji Nagar District, Chhatrapati Sambhaji Nagar Division, Maharashtra, India"
+  },
+  "Q3708238": {
+   "label": "Richmond",
+   "lat": 42.8,
+   "lon": -77.533333333333,
+   "country": "Q30",
+   "description": "town in Ontario County, New York, United States"
+  },
+  "Q3763786": {
+   "label": "Aurangabad Lok Sabha Constituency",
+   "lat": 19.88878611,
+   "lon": 75.34343611,
+   "country": "Q668",
+   "description": "Lok Sabha Constituency in Maharashtra"
+  },
+  "Q38": {
+   "label": "Italy",
+   "lat": 42.5,
+   "lon": 12.5,
+   "country": "Q38",
+   "description": "country in southern Europe"
+  },
+  "Q38252138": {
+   "label": "Toledo",
+   "lat": 39.83333333,
+   "lon": -4,
+   "country": "Q29",
+   "description": ""
+  },
+  "Q386437": {
+   "label": "Richmond",
+   "lat": 42.373055555556,
+   "lon": -73.368055555556,
+   "country": "Q30",
+   "description": "town in Massachusetts, United States"
+  },
+  "Q39056807": {
+   "label": "Aurangabad–Renigunta Express",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": "train in India"
+  },
+  "Q3992393": {
+   "label": "Toledo",
+   "lat": 40.8424,
+   "lon": 14.2493,
+   "country": "Q38",
+   "description": "Naples Metro station"
+  },
+  "Q408": {
+   "label": "Australia",
+   "lat": -25,
+   "lon": 133,
+   "country": "Q408",
+   "description": "country in Oceania"
+  },
+  "Q414": {
+   "label": "Argentina",
+   "lat": -34,
+   "lon": -64,
+   "country": "Q414",
+   "description": "country in South America"
+  },
+  "Q43086": {
+   "label": "Aurangabad district",
+   "lat": 24.75,
+   "lon": 84.3667,
+   "country": "Q668",
+   "description": "district of Bihar, India"
+  },
+  "Q43421": {
+   "label": "Richmond",
+   "lat": 37.54083333333333,
+   "lon": -77.43666666666667,
+   "country": "Q30",
+   "description": "capital city of Virginia, United States of America"
+  },
+  "Q4362303": {
+   "label": "Sambhajinagar Caves",
+   "lat": 19.91694444,
+   "lon": 75.31194444,
+   "country": "Q668",
+   "description": "caves in Chhatrapati Sambhaji Nagar, Maharashtra"
+  },
+  "Q45": {
+   "label": "Portugal",
+   "lat": 38.7,
+   "lon": -9.183333333333334,
+   "country": "Q45",
+   "description": "country in Southwestern Europe"
+  },
+  "Q4650186": {
+   "label": "ABC Muirend",
+   "lat": 55.8095,
+   "lon": -4.2718,
+   "country": "Q145",
+   "description": "cinema in Glasgow, Scotland, UK"
+  },
+  "Q47482527": {
+   "label": "Toledo",
+   "lat": 10.378333333333,
+   "lon": 123.63833333333,
+   "country": "Q928",
+   "description": "lighthouse in Poblacion,Toledo, Cebu, Philippines"
+  },
+  "Q4822106": {
+   "label": "Aurangabad Vidhan Sabha constituency",
+   "lat": 24.61,
+   "lon": 88.06,
+   "country": "Q668",
+   "description": "former West Bengal Legislative Assembly constituency"
+  },
+  "Q4822107": {
+   "label": "Aurangabad CIDCO",
+   "lat": 19.87405556,
+   "lon": 75.36659722,
+   "country": "Q668",
+   "description": "planned city in India"
+  },
+  "Q4822109": {
+   "label": "Dadar Central–Jalna Jan Shatabdi Express",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": "Train in India"
+  },
+  "Q4822111": {
+   "label": "Aurangabad Lok Sabha constituency",
+   "lat": 24.8,
+   "lon": 84.4,
+   "country": "Q668",
+   "description": "Lok Sabha Constituency in Bihar"
+  },
+  "Q4822112": {
+   "label": "Aurangabad (Chhatrapati Sambhajinagar) Municipal Corporation",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": "governing body of the city of Sambhajinagar, India"
+  },
+  "Q4822113": {
+   "label": "Aurangabadi Mahal",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "concubine of Aurangzeb"
+  },
+  "Q49239": {
+   "label": "Toledo",
+   "lat": 41.65277777777778,
+   "lon": -83.53777777777778,
+   "country": "Q30",
+   "description": "city in and county seat of Lucas County, Ohio, United States"
+  },
+  "Q495377": {
+   "label": "Richmond",
+   "lat": 37.935833333333,
+   "lon": -122.34777777778,
+   "country": "Q30",
+   "description": "city in Contra Costa County, California, United States"
+  },
+  "Q498319": {
+   "label": "Richmond County",
+   "lat": 33.36,
+   "lon": -82.07,
+   "country": "Q30",
+   "description": "county in Georgia, United States"
+  },
+  "Q50360940": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": ""
+  },
+  "Q506049": {
+   "label": "Toledo District",
+   "lat": 16.333333333333,
+   "lon": -88.75,
+   "country": "Q242",
+   "description": "district of Belize"
+  },
+  "Q5355893": {
+   "label": "Richmond",
+   "lat": null,
+   "lon": null,
+   "country": "Q408",
+   "description": "state electoral district of New South Wales, Australia"
+  },
+  "Q5355896": {
+   "label": "Richmond",
+   "lat": -37.8125,
+   "lon": 144.994,
+   "country": "Q408",
+   "description": "state electoral district of Victoria, Australia"
+  },
+  "Q548664": {
+   "label": "Richmond",
+   "lat": 39.830277777778,
+   "lon": -84.890555555556,
+   "country": "Q30",
+   "description": "city in Indiana, United States"
+  },
+  "Q54929": {
+   "label": "Toledo Province",
+   "lat": 39.8,
+   "lon": -4.15,
+   "country": "Q29",
+   "description": "province of Spain"
+  },
+  "Q54972777": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "cell line"
+  },
+  "Q55337486": {
+   "label": "Aurangabad Vidhan Sabha constituency",
+   "lat": 24.75,
+   "lon": 84.37,
+   "country": "Q668",
+   "description": "constituency of the Bihar legislative assembly in India"
+  },
+  "Q57707502": {
+   "label": "Aurangabad Sadar subdivision",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": "subdivision in the namesake district of Bihar"
+  },
+  "Q58214299": {
+   "label": "Toledo",
+   "lat": 39.833333333333336,
+   "lon": -4,
+   "country": "Q29",
+   "description": "Senate constituency in Spain"
+  },
+  "Q5836": {
+   "label": "Toledo",
+   "lat": 39.866666666667,
+   "lon": -4.0333333333333,
+   "country": "Q29",
+   "description": "municipality in central Spain"
+  },
+  "Q584916": {
+   "label": "Aurangabad",
+   "lat": 28.5,
+   "lon": 77.96,
+   "country": "Q668",
+   "description": "human settlement in Bulandshahr, Meerut, Uttar Pradesh, India"
+  },
+  "Q585443": {
+   "label": "Aurangabad Bangar",
+   "lat": 27.44,
+   "lon": 77.69,
+   "country": "Q668",
+   "description": "human settlement"
+  },
+  "Q58954389": {
+   "label": "Chhatrapati Sambhajinagar Municipal Corporation area",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": "area of jurisdiction of Chhatrapati Sambhajinagar Municipal Corporation"
+  },
+  "Q590550": {
+   "label": "Aurangabad",
+   "lat": 24.75,
+   "lon": 84.37,
+   "country": "Q668",
+   "description": "human settlement in Aurangabad district, Bihar, India"
+  },
+  "Q59133934": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": "Q7646305",
+   "description": "plantation in Surinam"
+  },
+  "Q592942": {
+   "label": "Aurangabad district",
+   "lat": 19.888786111111,
+   "lon": 75.343436111111,
+   "country": "Q668",
+   "description": "district of Maharashtra, India"
+  },
+  "Q5931617": {
+   "label": "Joaquim Franco de Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "Brazilian botanist (1905-1952)"
+  },
+  "Q59633459": {
+   "label": "Aurangabad Kos Minar No. 22",
+   "lat": 28.0331,
+   "lon": 77.338683,
+   "country": "Q668",
+   "description": ""
+  },
+  "Q596795": {
+   "label": "Richmond",
+   "lat": 42.754722222222,
+   "lon": -72.271666666667,
+   "country": "Q30",
+   "description": "town in New Hampshire, United States"
+  },
+  "Q60927846": {
+   "label": "Aurangabad-i gram panchayat",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": ""
+  },
+  "Q60927848": {
+   "label": "Aurangabad-ii gram panchayat",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": ""
+  },
+  "Q61336982": {
+   "label": "Aurangabad-ii GP Sub-centre",
+   "lat": 24.619309,
+   "lon": 88.028993,
+   "country": "Q668",
+   "description": "Sub-centre in West Bengal"
+  },
+  "Q61368132": {
+   "label": "Siddharth Garden and Zoo",
+   "lat": 19.87926,
+   "lon": 75.31484,
+   "country": "Q668",
+   "description": "zoo in Aurangabad, India"
+  },
+  "Q61421761": {
+   "label": "Aurangabad P.H.C. Sub-centre",
+   "lat": 24.624377,
+   "lon": 88.011086,
+   "country": "Q668",
+   "description": "building in India"
+  },
+  "Q61433753": {
+   "label": "Aurangabad-i G.P Sub-centre",
+   "lat": 24.623998,
+   "lon": 88.025759,
+   "country": "Q668",
+   "description": "building in India"
+  },
+  "Q61441780": {
+   "label": "Aurangabad Primary Health Centre",
+   "lat": 24.624504,
+   "lon": 88.011893,
+   "country": "Q668",
+   "description": "Primary Health Centre in West Bengal"
+  },
+  "Q61856373": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "painting by Aureliano de Beruete"
+  },
+  "Q63677670": {
+   "label": "Aurangabad postal region",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": ""
+  },
+  "Q63680091": {
+   "label": "Aurangabad postal division",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": ""
+  },
+  "Q64212733": {
+   "label": "Aurangabad head post office",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": ""
+  },
+  "Q664": {
+   "label": "New Zealand",
+   "lat": -41.2,
+   "lon": 174,
+   "country": "Q664",
+   "description": "island country in the southwest Pacific Ocean"
+  },
+  "Q668": {
+   "label": "India",
+   "lat": 22.8,
+   "lon": 83,
+   "country": "Q668",
+   "description": "country in South Asia"
+  },
+  "Q7330726": {
+   "label": "Richmond",
+   "lat": -43.517,
+   "lon": 172.655,
+   "country": "Q664",
+   "description": "suburb of Christchurch, New Zealand"
+  },
+  "Q7330738": {
+   "label": "Richmond, The American International University in London",
+   "lat": 51.4932,
+   "lon": -0.2738,
+   "country": "Q145",
+   "description": "university in London, England"
+  },
+  "Q7330796": {
+   "label": "Richmond",
+   "lat": null,
+   "lon": null,
+   "country": "Q408",
+   "description": "county of New South Wales, Australia"
+  },
+  "Q7331001": {
+   "label": "Richmond Spiders men's basketball",
+   "lat": null,
+   "lon": null,
+   "country": "Q30",
+   "description": "NCAA Division I team of the University of Richmond"
+  },
+  "Q7331013": {
+   "label": "Richmond Times-Dispatch",
+   "lat": null,
+   "lon": null,
+   "country": "Q30",
+   "description": "newspaper in Richmond, Virginia"
+  },
+  "Q736": {
+   "label": "Ecuador",
+   "lat": -1,
+   "lon": -78,
+   "country": "Q736",
+   "description": "sovereign state in South America"
+  },
+  "Q739": {
+   "label": "Colombia",
+   "lat": 4,
+   "lon": -73.25,
+   "country": "Q739",
+   "description": "country in South America"
+  },
+  "Q750": {
+   "label": "Bolivia",
+   "lat": -17.056869611111,
+   "lon": -64.991228611111,
+   "country": "Q750",
+   "description": "sovereign state in South America"
+  },
+  "Q757390": {
+   "label": "Richmond",
+   "lat": 37.744722222222,
+   "lon": -84.293611111111,
+   "country": "Q30",
+   "description": "city in and the county seat of Madison County, Kentucky, United States"
+  },
+  "Q7646305": {
+   "label": "Surinam",
+   "lat": 5.821055555555556,
+   "lon": -55.18597222222222,
+   "country": null,
+   "description": "Dutch plantation colony in the Guianas"
+  },
+  "Q77": {
+   "label": "Uruguay",
+   "lat": -33,
+   "lon": -56,
+   "country": "Q77",
+   "description": "country in South America"
+  },
+  "Q774452": {
+   "label": "Sambhajinagar division",
+   "lat": 19.888786111111,
+   "lon": 75.343436111111,
+   "country": "Q668",
+   "description": "administrative division of Maharashtra, India"
+  },
+  "Q7814140": {
+   "label": "Toledo Lucas County Public Library",
+   "lat": 41.654444,
+   "lon": -83.539722,
+   "country": "Q30",
+   "description": "public library system in Ohio, USA"
+  },
+  "Q7814141": {
+   "label": "Toledo",
+   "lat": 39.83333333,
+   "lon": -4,
+   "country": "Q29",
+   "description": "Spanish Congress Electoral District"
+  },
+  "Q7814143": {
+   "label": "Toledo",
+   "lat": 38.6939,
+   "lon": -28.1444,
+   "country": "Q45",
+   "description": "settlement in Portugal"
+  },
+  "Q7814206": {
+   "label": "Toledonia",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "genus of molluscs"
+  },
+  "Q787652": {
+   "label": "Toledo Mud Hens",
+   "lat": null,
+   "lon": null,
+   "country": "Q30",
+   "description": "minor league baseball team in Toledo, Ohio, USA"
+  },
+  "Q801366": {
+   "label": "Richmond station",
+   "lat": 51.463188888889,
+   "lon": -0.30061944444444,
+   "country": "Q145",
+   "description": "London Underground and railway station in Richmond, London Borough of Richmond upon Thames, England, UK"
+  },
+  "Q83629340": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "ship built in 2005"
+  },
+  "Q83641821": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": null,
+   "description": "German article in Die Gartenlaube, 1889, no. 8"
+  },
+  "Q87973698": {
+   "label": "2020 COVID-19 pandemic in Aurangabad district",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": ""
+  },
+  "Q88185449": {
+   "label": "Toledo",
+   "lat": null,
+   "lon": null,
+   "country": "Q178038",
+   "description": "electoral district of the Second Spanish Republic"
+  },
+  "Q91907728": {
+   "label": "2020 COVID-19 pandemic in Aurangabad district",
+   "lat": null,
+   "lon": null,
+   "country": "Q668",
+   "description": ""
+  },
+  "Q928": {
+   "label": "Philippines",
+   "lat": 12,
+   "lon": 123,
+   "country": "Q928",
+   "description": "archipelagic country in Southeast Asia"
+  },
+  "Q94136787": {
+   "label": "Aurangabad railway accident",
+   "lat": 19.875833333333333,
+   "lon": 75.55833333333334,
+   "country": "Q668",
+   "description": "railway accident in India"
+  },
+  "Q955399": {
+   "label": "Richmond",
+   "lat": 39.2775,
+   "lon": -93.9758,
+   "country": "Q30",
+   "description": "city in and county seat of Ray County, Missouri, United States"
+  },
+  "Q96": {
+   "label": "Mexico",
+   "lat": 23,
+   "lon": -102,
+   "country": "Q96",
+   "description": "country in North America"
+  },
+  "Q961272": {
+   "label": "Richmond",
+   "lat": 29.5808,
+   "lon": -95.7631,
+   "country": "Q30",
+   "description": "city in Fort Bend County, Texas, United States"
+  },
+  "Q985819": {
+   "label": "Richmond",
+   "lat": -29.866666666667,
+   "lon": 30.266666666667,
+   "country": "Q258",
+   "description": "town in KwaZulu-Natal, South Africa"
+  },
+  "Q1428": {
+   "label": "Georgia",
+   "lat": 33,
+   "lon": -83.5,
+   "country": "Q30",
+   "description": "state of the United States of America"
+  },
+  "Q230": {
+   "label": "Georgia",
+   "lat": 42,
+   "lon": 44,
+   "country": "Q230",
+   "description": "country in the Caucasus region of Europe and Asia"
+  },
+  "Q8798": {
+   "label": "Ukrainian",
+   "lat": 48,
+   "lon": 31,
+   "country": "Q212",
+   "description": "East Slavic language"
+  }
+ }
+}

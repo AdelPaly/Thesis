@@ -11,7 +11,7 @@ import hashlib
 
 import meter
 
-from llm_common import REFUSAL_SENTINEL, PickleCache, fingerprint, make_client
+from llm_common import SENTINELS, PickleCache, fingerprint, make_client
 
 from resolver import RESOLVERS, clean_name
 
@@ -38,11 +38,28 @@ Do not guess if you have no confidence — refuse instead.
 
 Text: {text}"""
 
+# v4 (revision 3, 2026-11-26) asks for the place itself, which need not be a
+# settlement, where v1-v3 asked for a "city". Its wording names no place type
+# of the dataset and no error measured on it: a first draft listed islands,
+# lakes, mountains, parks and dams and said "not a nearby town", and both were
+# removed before any run. v4 also keeps one rule for refusing; v1-v3 gave two
+# that disagree ("no geographic signal at all" and "no confidence").
+PROMPT_V4 = """You are a geolocation assistant. Given a text, identify the single most relevant real-world location the text refers to.
+
+The location can be a city, town or village, or any other named place. Name the location itself, not a person, organisation or event mentioned in the text.
+
+Respond with JSON only, no explanation:
+{{"place": "<name of the location, or null if unknown>", "country": "<country name or null if unknown>", "continent": "<continent name or null if unknown>", "latitude": <approximate latitude of the location in decimal degrees, or null if unknown>, "longitude": <approximate longitude in decimal degrees, or null if unknown>, "refused": false}}
+
+Set "refused" to true only if the text contains no geographic signal at all.
+
+Text: {text}"""
+
 # `llm.prompt_template` names the prompt and, with it, the rule that resolves
 # the answer: v1 takes the first search result for the city, v2 chooses by
 # country and coordinates, v3 is v2 with a wider search (same prompt, so the
-# same cached replies).
-PROMPTS = {"v1": PROMPT, "v2": PROMPT_V2, "v3": PROMPT_V2}
+# same cached replies), v4 is v3's rule on the "place" field of prompt v4.
+PROMPTS = {"v1": PROMPT, "v2": PROMPT_V2, "v3": PROMPT_V2, "v4": PROMPT_V4}
 
 _clean_name = clean_name          # the name other modules import
 
@@ -82,7 +99,7 @@ class LLMGeoPipeline:
             # Keep what this run already paid for before the error propagates.
             self.save_cache()
             raise
-        if raw != REFUSAL_SENTINEL:
+        if raw not in SENTINELS:
             self._cache.put(key, raw)
         return raw
 

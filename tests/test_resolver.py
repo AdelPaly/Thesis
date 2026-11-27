@@ -390,3 +390,70 @@ def test_v3_without_a_country_is_v2():
     answer("Nowhere", "France"), answer(None, "France"), answer(refused=True)])
 def test_v3_agrees_with_v2_on_the_earlier_cases(a):
     assert v3(a) == v2(a)
+
+
+# ---------------------- rule v4 (revision 3, 2026-11-26): v3 on the "place" field
+
+def v4(answer, search=search, **kw):
+    return resolver.resolve_place_wide(answer, search=search, fetch=fetch, geo=geo, **kw)
+
+
+def place_answer(place=None, country=None, lat=None, lon=None, continent=None, refused=False):
+    return json.dumps({"place": place, "country": country, "continent": continent,
+                       "latitude": lat, "longitude": lon, "refused": refused})
+
+
+def test_v4_reads_the_place_field():
+    assert qid(v4(place_answer("Worcester", "South Africa", -33.6, 19.4))) == "Q1025649"
+
+
+def test_v4_reads_a_city_field_when_there_is_no_place():
+    assert qid(v4(answer("Worcester", "South Africa", -33.6, 19.4))) == "Q1025649"
+
+
+def test_v4_prefers_place_to_city():
+    reply = json.dumps({"place": "Tbilisi", "city": "Worcester", "country": "Georgia",
+                        "latitude": 41.7, "longitude": 44.8})
+    assert qid(v4(reply)) == "Q994"
+
+
+def test_v2_and_v3_ignore_the_place_field():
+    """v2 and v3 are kept as they ran: a v4 reply has no city, so they give the country."""
+    for rule in (v2, v3):
+        cand, res = rule(place_answer("Worcester", "South Africa", -33.6, 19.4))
+        assert cand["qid"] == ZA and res["level"] == "country"
+
+
+def test_v4_searches_past_the_tenth_result_as_v3_does():
+    """Worcester, South Africa as the eleventh search result: v2 never sees it.
+    None of the first ten is in South Africa, so v3 and v4 search again with
+    fifty results and find it there."""
+    padded = SEARCHES["Worcester"][:-1] + ["Q49179"] * 5 + ["Q1025649"]
+
+    def long_search(name, limit=10):
+        return (padded if name == "Worcester" else SEARCHES.get(name, []))[:limit]
+
+    assert len(padded) > resolver.SEARCH_LIMIT
+    assert qid(resolver.resolve_by_country_and_coordinates(
+        answer("Worcester", "South Africa", -33.6, 19.4),
+        search=long_search, fetch=fetch, geo=geo)) == ZA
+    cand, res = v4(place_answer("Worcester", "South Africa", -33.6, 19.4), search=long_search)
+    assert cand["qid"] == "Q1025649" and res["n_searched"] == resolver.WIDE_SEARCH_LIMIT
+
+
+@pytest.mark.parametrize("a", [
+    answer("Worcester", "South Africa", -33.6, 19.4), answer("Cambridge", "United Kingdom", 52.2, 0.1),
+    answer("Cambridge", "Trinidad and Tobago", 10.6, -61.4), answer("Cambridge", None, 42.4, -71.1),
+    answer("Tbilisi", "Georgia", 41.7, 44.8), answer("Nowhere", "France"), answer(None, "France")])
+def test_v4_on_a_city_reply_is_v3(a):
+    """With the table of country items left out (correction 2), v4 reads a
+    city reply as v3 does; corrections 1, 3 and 4 do not apply to these
+    replies. tests/test_resolver_outside.py tests the corrections."""
+    assert v4(a, countries=lambda name: None) == v3(a)
+
+
+@pytest.mark.parametrize("resolve", ["v1", "v2", "v3", "v4"])
+def test_v4_declined_like_the_others(resolve):
+    cand, res = resolver.RESOLVERS[resolve](place_answer(refused=True), search=search,
+                                            fetch=fetch, geo=geo)
+    assert cand is None and res["status"] == "declined"

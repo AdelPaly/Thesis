@@ -8,14 +8,22 @@ question: >
 design: >
   NER(flair/ner-large, all tags; MISC retrieves nothing) → per mention:
   retrieve(Wikidata wbsearchentities top-10, trailing-word fallback; LOC: hits with
-  coords, PER (Q5): birthplace P19, ORG: headquarters P159) → pool all mentions →
-  rerank(E5 cos(raw text, place description)) → top-1. No linker. Output: no span or
-  nothing retrieved → no prediction.
+  coords, up to 10; PER: the first 5 humans (Q5), ORG: the first 10 other hits with a
+  place, each giving every place it links to through P159, P740, P131, P276, P551, P937,
+  P19, P20, +1 P131 hop, deduplicated) → pool all mentions → rerank(E5 cos(raw text,
+  place description)) → top-1. No linker, no MISC fallback. Output: no span or nothing
+  retrieved → no prediction.
 description: >
   Flair NER over every tag, Wikidata wbsearchentities top-10 retrieval per
-  mention pushed through the geographic property chain, E5 cross-candidate
-  rerank, top-1. No entity linker: disambiguation is done entirely by the
-  reranker over the retrieved candidate set.
+  mention, E5 cross-candidate rerank, top-1. No entity linker: disambiguation
+  is done entirely by the reranker over the retrieved candidate set.
+
+  Revision 3 (2026-11-26, not yet run). Place rule all_places, as refined: a
+  person or organisation hit gives every place it links to, and the caps (5
+  persons, 10 organisations) count hits, not places. The reported runs gave a
+  person's place of birth and an organisation's headquarters (chain_v1). No
+  MISC fallback: the search path has no handler for MISC mentions, so they
+  retrieve nothing, as before.
 ner:
   model: flair/ner-large
   entity_types: null
@@ -24,6 +32,7 @@ linking:
   refined_model: null
   refined_entity_set: null
   top_n: 10
+  place_rule: all_places
 rerank:
   model: shared            # configs/shared.yaml
   enabled: true

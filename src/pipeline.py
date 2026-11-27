@@ -143,8 +143,12 @@ class Pipeline:
         if text in self._ner_memo:
             return [dict(e) for e in self._ner_memo[text]]
         from ner import extract_entities
-        spans = extract_entities(text, model=self.cfg.ner.model,
-                                 entity_types=self.cfg.ner.entity_types)
+        # The fallback types are kept too (in text order with the others);
+        # _link_with_fallback decides whether they are linked.
+        types = self.cfg.ner.entity_types
+        if types is not None and self.cfg.ner.fallback_types:
+            types = [*types, *self.cfg.ner.fallback_types]
+        spans = extract_entities(text, model=self.cfg.ner.model, entity_types=types)
         self._ner_memo[text] = [dict(e) for e in spans]
         return spans
 
@@ -201,19 +205,58 @@ class Pipeline:
         get_linker(self.cfg.linking.top_n).link_all(samples)
 
     def _resolved_links(self, spans, linked_entities):
-        """Yield (link, candidate) for each linked QID that resolves to a
-        place through the property chain."""
-        from wikidata import resolve_qid_to_candidate
+        """Yield (link, candidate) for each place a linked QID resolves to
+        under `linking.place_rule`: at most one per link for chain_v1, every
+        place for all_places (src/wikidata.py)."""
+        from wikidata import resolve_qid_to_candidates
+        rule = self.cfg.linking.place_rule
         for ent, link in zip(spans, linked_entities):
             if not link["qid"]:
                 continue
-            cand = resolve_qid_to_candidate(link["qid"], ent["text"], ent["type"])
-            if cand:
+            for cand in resolve_qid_to_candidates(link["qid"], ent["text"], ent["type"], rule):
                 yield link, cand
+
+    def _link_with_fallback(self, text: str) -> tuple[list[dict], list[dict], list[tuple]]:
+        """NER, linking and resolution, with the fallback of `ner.fallback_types`.
+
+        The mentions of the main types are linked first, in a linker call of
+        their own, so their links are those of a run without the fallback.
+        Only if none of them resolves to a place are the fallback mentions
+        (MISC: demonyms, events) linked, in a second call, and resolved.
+
+        Returns (spans, linked_entities, [(link, candidate), ...]). `spans` are
+        all mentions in text order and `linked_entities` is aligned with it, one
+        entry per span, as the analysis scripts expect: a fallback mention
+        that was not needed gets an unlinked entry. Fallback entries carry
+        `fallback`: "used" or "not_needed"."""
+        spans = self._ner(text)
+        fallback = set(self.cfg.ner.fallback_types or [])
+        main_idx = [i for i, s in enumerate(spans) if s["type"] not in fallback]
+        fb_idx = [i for i, s in enumerate(spans) if s["type"] in fallback]
+
+        links: list[dict | None] = [None] * len(spans)
+        main = [spans[i] for i in main_idx]
+        for i, link in zip(main_idx, self._link(text, main)):
+            links[i] = link
+        pairs = list(self._resolved_links(main, [links[i] for i in main_idx]))
+
+        if fb_idx:
+            fb = [spans[i] for i in fb_idx]
+            if pairs:
+                fb_links = [{"mention": e["text"], "mention_type": e["type"], "qid": None,
+                             "confidence": None, "candidates": [], "fallback": "not_needed"}
+                            for e in fb]
+            else:
+                fb_links = [{**link, "fallback": "used"} for link in self._link(text, fb)]
+                pairs = list(self._resolved_links(fb, fb_links))
+            for i, link in zip(fb_idx, fb_links):
+                links[i] = link
+        return spans, links, pairs
 
     def _places_from_search(self, spans) -> list[Candidate]:
         from wikidata import get_all_coords
-        return get_all_coords(spans, top_n=self.cfg.linking.top_n)
+        return get_all_coords(spans, top_n=self.cfg.linking.top_n,
+                              place_rule=self.cfg.linking.place_rule)
 
     def _rank(self, text: str, candidates: list[Candidate]) -> list[Candidate]:
         """Rerank by text/description similarity; a no-op when disabled."""
@@ -354,13 +397,21 @@ class Pipeline:
         return self._grounded
 
     def _grounded_cache_name(self):
+        # The prompt version is in the name from revision 3 on, so a new prompt
+        # starts its own cache and the replies of the first runs stay where
+        # they are (llm_common.PickleCache would set them aside as .stale).
+        from llm_grounded import PROMPT_VERSION
         gr = self.cfg.grounded
-        return f"{self.cfg.llm.cache_name}_grounded_{gr.candidate_source}"
+        name = f"{self.cfg.llm.cache_name}_grounded_{gr.candidate_source}"
+        return name if PROMPT_VERSION == "v1" else f"{name}_{PROMPT_VERSION}"
 
-    def _top_linked(self, spans, linked_entities, top_k: int) -> list[Candidate]:
-        """Distinct QIDs, most confident linker output first, then truncated."""
+    def _top_linked(self, pairs, top_k: int) -> list[Candidate]:
+        """Distinct place QIDs, most confident linker output first, then
+        truncated. `pairs` is [(link, candidate), ...]; the places of one
+        linked entity (all_places) share its confidence and keep their list
+        order among themselves."""
         best: dict[str, tuple[float, Candidate]] = {}
-        for link, cand in self._resolved_links(spans, linked_entities):
+        for link, cand in pairs:
             conf = link.get("confidence")
             conf = float(conf) if conf is not None else float("-inf")
             qid = cand.get("qid") or link["qid"]
@@ -377,10 +428,8 @@ class Pipeline:
         if gr.candidate_source == "dense":
             candidates = self._dense_candidates(text, top_k=gr.top_k)
         elif gr.candidate_source == "linking":
-            out.ner_spans = self._ner(text)
-            out.linked_entities = self._link(text, out.ner_spans)
-            candidates = self._top_linked(out.ner_spans, out.linked_entities,
-                                          gr.top_k)
+            out.ner_spans, out.linked_entities, pairs = self._link_with_fallback(text)
+            candidates = self._top_linked(pairs, gr.top_k)
         else:
             raise ConfigError(f"unknown grounded.candidate_source "
                               f"{gr.candidate_source!r}")
@@ -437,25 +486,32 @@ class Pipeline:
 
     def _run_linking_path(self, text, out):
         """NER -> linking (or search retrieval) -> rerank -> top-1."""
-        out.ner_spans = self._ner(text)
         if self.cfg.linking.backend == "wikidata_search":
+            # The search path has no fallback (config.py refuses one): it has
+            # no handler for MISC mentions.
+            out.ner_spans = self._ner(text)
             candidates = self._places_from_search(out.ner_spans)
         else:
-            out.linked_entities = self._link(text, out.ner_spans)
-            candidates = [cand for _, cand in self._resolved_links(
-                out.ner_spans, out.linked_entities)]
+            out.ner_spans, out.linked_entities, pairs = self._link_with_fallback(text)
+            candidates = [cand for _, cand in pairs]
         candidates = self._rank(text, candidates)
         out.candidate_places = [_candidate_record(c) for c in candidates]
         out.prediction = candidates[0] if candidates else None
 
     def _run_llm_path(self, text, out):
         """Whole-text LLM reading. candidate_places stays empty by
-        construction: the LLM's answer is resolved with a limit=1 search, so
-        there is no scored candidate list to record."""
+        construction: the LLM's answer is resolved by src/resolver.py (the rule
+        that goes with the prompt template), which keeps no scored candidate
+        list to record."""
         cand, raw, resolution = self._llm_pipeline().geolocate_verbose(text)
         out.llm_raw_response = raw
         out.resolution = resolution
         out.prediction = cand
+        if (resolution or {}).get("status") == "error":
+            # Rule v4: a Wikidata request failed while resolving the reply. The
+            # record carries `error`, so the runner retries the post on resume;
+            # the reply itself is in the LLM cache, so the retry calls no model.
+            out.error = f"wikidata: {resolution.get('message', '')}"
 
     # ---------------------------------------------------------------- entry
 

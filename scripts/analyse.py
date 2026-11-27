@@ -5,6 +5,7 @@
     python scripts/analyse.py stats    --split test
     python scripts/analyse.py layers   --split test   # scripts/error_layers.py
     python scripts/analyse.py bins     --split test   # every config by condition and bin
+    python scripts/analyse.py conditions --split test # intervals by condition, clean minus noise
     python scripts/analyse.py all      --split test --out results/summary
 
 Reads results/predictions/*.jsonl and splits/item_split.csv, plus configs/*.yaml
@@ -750,6 +751,94 @@ def cmd_bins(scored: list[dict], args, meta: dict) -> None:
                    rows)
 
 
+# ------------------------------------------------------------ conditions
+
+# Each noise condition is about the same places as its clean condition, and
+# both have one post per place (checked below), so the two are paired by
+# place. A place with a post in only one of the two (a withheld
+# noise post, or a noise post written for another place) is left out of the
+# paired difference and counted.
+CONDITION_ORDER = ["EXPLICIT", "NOISE_EXPLICIT", "B", "NOISE_B", "A", "NOISE_A"]
+CONDITION_NAMES = {"EXPLICIT": "named", "NOISE_EXPLICIT": "named + noise",
+                   "B": "ambiguous", "NOISE_B": "ambiguous + noise",
+                   "A": "clue-only", "NOISE_A": "clue-only + noise"}
+
+
+def _one_per_place(records: list[dict]) -> dict:
+    """{place: record}; refuses a condition with two posts for one place,
+    which would make the pairing ambiguous."""
+    out = {}
+    for r in records:
+        place = st._place_of(r)
+        if place in out:
+            raise SystemExit(f"two posts for place {place} in condition {r.get('condition')}")
+        out[place] = r
+    return out
+
+
+def cmd_conditions(scored: list[dict], args, meta: dict) -> None:
+    """Every configuration by condition: exact match and exact-or-inside with
+    place-resampled 95% intervals, the number of posts and places behind each,
+    and, on each noise row, the paired difference clean minus noise over the
+    places that have a post in both. Descriptive, like the bins table: the
+    intervals are not adjusted for multiplicity and no test is run."""
+    groups = group_by(scored, "config_name")
+    names = sorted(groups, key=lambda n: sort_key(n, meta))
+    boot, seed = args.boot, args.seed
+    print(RULE)
+    print(f"BY CONDITION, WITH CLEAN MINUS NOISE  (split={args.split}, n_boot={boot}, seed={seed})")
+    print(RULE)
+    print(f"{'configuration':24} {'condition':18} {'n':>4} {'places':>6} "
+          f"{'exact % [95% CI]':>24} {'clean - noise, pp [95% CI] (pairs)':>38}")
+    rows = []
+    for name in names:
+        by_cond = group_by(groups[name], "condition")
+        unknown = set(by_cond) - set(CONDITION_ORDER)
+        if unknown:
+            raise SystemExit(f"{name}: conditions not in CONDITION_ORDER: {sorted(map(str, unknown))}")
+        for cond in CONDITION_ORDER:
+            recs = by_cond.get(cond, [])
+            if not recs:
+                continue
+            m = summarise_metrics(recs)
+            ex = st.cluster_bootstrap_ci(recs, st.exact_rate, n_boot=boot, seed=seed)
+            ins = st.cluster_bootstrap_ci(recs, st.exact_or_inside_rate, n_boot=boot, seed=seed)
+            paired = [None] * 9
+            shown = ""
+            if cond.startswith("NOISE_"):
+                clean = _one_per_place(by_cond.get(cond[len("NOISE_"):], []))
+                noise = _one_per_place(recs)
+                shared = sorted(set(clean) & set(noise), key=str)
+                pairs = [(p, clean[p], noise[p]) for p in shared]
+                d_ex = st.paired_effect_ci(pairs, st.exact_rate, n_boot=boot, seed=seed)
+                d_in = st.paired_effect_ci(pairs, st.exact_or_inside_rate, n_boot=boot, seed=seed)
+                paired = [len(shared), len(set(clean) - set(noise)), len(set(noise) - set(clean)),
+                          d_ex.get("point"), d_ex.get("lo"), d_ex.get("hi"),
+                          d_in.get("point"), d_in.get("lo"), d_in.get("hi")]
+                if d_ex.get("lo") is not None:
+                    shown = (f"{d_ex['point'] * 100:+.1f} [{d_ex['lo'] * 100:+.1f}, "
+                             f"{d_ex['hi'] * 100:+.1f}] ({len(shared)})")
+            print(f"{name:24} {CONDITION_NAMES[cond]:18} {m['n']:>4} {ex.get('n_places'):>6} "
+                  f"{st.fmt_ci(ex, pct=True):>24} {shown:>38}")
+            rows.append([name, cond, CONDITION_NAMES[cond], m["n"], ex.get("n_places"),
+                         m["exact"], ex.get("lo"), ex.get("hi"),
+                         m["exact_or_inside"], ins.get("lo"), ins.get("hi"), ins.get("n_places"),
+                         *paired, boot, seed])
+        print()
+    if args.out:
+        write_rows(Path(args.out) / f"table_bootstrap_by_condition_{args.split}.csv",
+                   ["config", "condition", "condition_name", "n_posts", "n_places",
+                    "exact", "exact_lo", "exact_hi",
+                    "exact_or_inside", "exact_or_inside_lo", "exact_or_inside_hi",
+                    "n_places_inside",
+                    "n_paired_places", "n_places_clean_only", "n_places_noise_only",
+                    "clean_minus_noise_exact", "clean_minus_noise_exact_lo",
+                    "clean_minus_noise_exact_hi",
+                    "clean_minus_noise_exact_or_inside", "clean_minus_noise_exact_or_inside_lo",
+                    "clean_minus_noise_exact_or_inside_hi", "n_boot", "seed"],
+                   rows)
+
+
 # ---------------------------------------------------------------- entry
 
 def _warn_uneven_coverage(scored: list[dict]) -> None:
@@ -798,7 +887,8 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command",
-                   choices=["failures", "tables", "stats", "grounding", "layers", "bins", "all"])
+                   choices=["failures", "tables", "stats", "grounding", "layers", "bins",
+                            "conditions", "all"])
     p.add_argument("--split", default="test", choices=["all", "dev", "test"])
     p.add_argument("--configs", nargs="*", default=None)
     p.add_argument("--datasets", nargs="*", default=None)
@@ -844,6 +934,8 @@ def main() -> None:
         cmd_stats(scored, args, meta)
     if args.command in ("bins", "all"):
         cmd_bins(scored, args, meta)
+    if args.command in ("conditions", "all"):
+        cmd_conditions(scored, args, meta)
     if args.command in ("layers", "all"):
         from error_layers import report     # imports this module, so not at the top
         report([dict(r) for r in scored], meta, args.split,

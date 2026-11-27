@@ -352,6 +352,29 @@ def _fetch_entities_status(qids: list[str]) -> tuple[dict[str, dict], bool]:
             all(q in _entity_cache for q in qids))
 
 
+def search_entities_checked(text: str, limit: int = SEARCH_LIMIT) -> list[str]:
+    """search_entities, but a failed request raises WikidataError instead of
+    returning [] (rule v4 of src/resolver.py). Not cached on failure."""
+    return _search_checked(text, limit)
+
+
+def fetch_entities_checked(qids: list[str]) -> dict[str, dict]:
+    """fetch_entities, but raises WikidataError if any request failed. An item
+    that does not exist is not a failure (the API returns it as missing)."""
+    entities, complete = _fetch_entities_status(qids)
+    if not complete:
+        raise WikidataError("entity fetch failed for some of " + ",".join(qids[:5]))
+    return entities
+
+
+def resolve_country_continent_checked(entities_dict: dict[str, dict]) -> dict[str, tuple[str, str]]:
+    """resolve_country_continent, but raises WikidataError if a lookup failed."""
+    geo, complete = _resolve_cc(entities_dict)
+    if not complete:
+        raise WikidataError("country/continent lookup failed")
+    return geo
+
+
 def fetch_entities(qids: list[str]) -> dict[str, dict]:
     """Batch-fetch entity data, using cache. Returns dict QID -> entity data
     ({} for QIDs that could not be fetched; those are not cached)."""
@@ -562,8 +585,31 @@ def _loc_candidates(entity_text: str, qids: list[str], cap: int) -> tuple[list[d
              for q in ranked], ok and geo_ok)
 
 
-def _per_candidates(entity_text: str, qids: list[str], cap: int) -> tuple[list[dict], bool]:
+def _all_places_search(entity_text: str, entities: dict[str, dict], chosen: list[str],
+                       cap: int, ok: bool) -> tuple[list[dict], bool]:
+    """all_places on the search path: the first `cap` chosen entities (the cap
+    counts entities, not places, so no property is cut off by its position in
+    ALL_PLACE_PROPS), every place of each, deduplicated, in first-seen order."""
+    chosen = chosen[:cap]
+    if not chosen:
+        return [], ok
+    places_of, place_ents, ok = _all_place_ents({q: entities[q] for q in chosen}, ok)
+    ordered = list(dict.fromkeys(p for q in chosen for p in places_of.get(q, [])))
+    geo, geo_ok = _resolve_cc({p: place_ents[p] for p in ordered})
+    return ([_candidate(p, place_ents[p], get_coords_of(place_ents[p]), geo, entity_text)
+             for p in ordered], ok and geo_ok)
+
+
+def _per_candidates(entity_text: str, qids: list[str], cap: int,
+                    place_rule: str = "chain_v1") -> tuple[list[dict], bool]:
+    """Places for a person mention among the search hits that are humans (Q5).
+    chain_v1: each person's place of birth, as in the reported runs.
+    all_places: every place of each of the first `cap` persons."""
     entities, ok = _fetch_entities_status(qids)
+    if place_rule == "all_places":
+        persons = [q for q in qids if "Q5" in _claim_ids(entities.get(q, {}), "P31")]
+        return _all_places_search(entity_text, entities, persons, cap, ok)
+
     person_to_bp = {}
     for qid in qids:
         ent = entities.get(qid, {})
@@ -586,8 +632,20 @@ def _per_candidates(entity_text: str, qids: list[str], cap: int) -> tuple[list[d
     return out, ok and bp_ok and geo_ok
 
 
-def _org_candidates(entity_text: str, qids: list[str], cap: int) -> tuple[list[dict], bool]:
+def _org_candidates(entity_text: str, qids: list[str], cap: int,
+                    place_rule: str = "chain_v1") -> tuple[list[dict], bool]:
+    """Places for an organisation mention. chain_v1: the headquarters (P159),
+    else its P131, as in the reported runs. all_places: every place of each of
+    the first `cap` hits that are not humans and have coordinates or a value
+    of ALL_PLACE_PROPS (an organisation hit that has no place property at all
+    gave nothing under chain_v1 either)."""
     entities, ok = _fetch_entities_status(qids)
+    if place_rule == "all_places":
+        def placed(ent):
+            return bool(get_coords_of(ent)) or any(_claim_ids_all(ent, p) for p in ALL_PLACE_PROPS)
+        orgs = [q for q in qids if entities.get(q)
+                and "Q5" not in _claim_ids(entities[q], "P31") and placed(entities[q])]
+        return _all_places_search(entity_text, entities, orgs, cap, ok)
     hq_map = {}
     for qid in qids:
         hq = _claim_id(entities.get(qid, {}), "P159")
@@ -652,15 +710,22 @@ def _search_with_fallback(entity_text: str, limit: int) -> list[str]:
     return qids
 
 
-def get_coords(entity_text: str, entity_type: str, top_n: int = 10) -> list[dict]:
+def get_coords(entity_text: str, entity_type: str, top_n: int = 10,
+               place_rule: str = "chain_v1") -> list[dict]:
     """Candidate places for an entity mention, as dicts with lat/lon/description/
     qid/country/continent.
 
-    Considers the top_n search hits. The per-type result caps (LOC 10, PER 5,
-    ORG 10) apply for top_n up to SEARCH_LIMIT and scale to top_n beyond it.
-    If any network lookup fails the partial result is returned but not cached.
+    Considers the top_n search hits. The per-type caps (LOC 10, PER 5, ORG 10)
+    apply for top_n up to SEARCH_LIMIT and scale to top_n beyond it. Under
+    chain_v1 they cap places; under all_places, for PER and ORG, they cap the
+    entities whose places are taken. If any network lookup fails the partial
+    result is returned but not cached.
     """
+    # chain_v1 keeps the key of the reported runs, so their cached answers stay
+    # valid; another rule gets its own entries.
     cache_key = (entity_text, entity_type, top_n)
+    if place_rule != "chain_v1":
+        cache_key += (place_rule,)
     if cache_key in _coords_cache:
         return _coords_cache[cache_key]
     if entity_type not in ENTITY_TYPES:
@@ -677,20 +742,145 @@ def get_coords(entity_text: str, entity_type: str, top_n: int = 10) -> list[dict
 
     handler, default_cap = _TYPE_HANDLERS[entity_type]
     cap = default_cap if top_n <= SEARCH_LIMIT else top_n
-    coords, complete = handler(entity_text, qids[:top_n], cap)
+    if entity_type == "LOC":     # a place mention: the rule does not apply
+        coords, complete = handler(entity_text, qids[:top_n], cap)
+    else:
+        coords, complete = handler(entity_text, qids[:top_n], cap, place_rule=place_rule)
     if complete:
         _coords_cache[cache_key] = coords
     return coords
 
 
-GEO_PROP_CHAIN = ["P159", "P131", "P19", "P937", "P276"]
+# How a linked entity without coordinates of its own becomes candidate places
+# (`linking.place_rule`, src/config.py):
+#
+#   chain_v1    the rule of the reported runs. Linking path: the first place
+#               along GEO_PROP_CHAIN_V1, one value per property (_claim_id).
+#               Search path: a person's place of birth, an organisation's
+#               headquarters (P159, else its P131).
+#   all_places  revision 3. Every place the entity links to through
+#               ALL_PLACE_PROPS, every non-deprecated value of each (end-dated
+#               ones included), deduplicated, with no preference among them:
+#               the configuration's own selection (the E5 reranker, or the LLM
+#               of grounded_gemma_linking) chooses. An entity with coordinates
+#               of its own is still the one candidate.
+#
+# Under both, a target without coordinates gets one extra hop to its P131.
+GEO_PROP_CHAIN_V1 = ["P159", "P131", "P19", "P937", "P276"]
+
+# Considered in revision 3 (residence and work location before birth) and
+# replaced by all_places before any run used it. Not used; kept so that the
+# record of revision 3 can name it.
+GEO_PROP_CHAIN = ["P159", "P131", "P551", "P937", "P19", "P276"]
+
+# all_places: headquarters, place of formation, located in, location,
+# residence, work location, place of birth, place of death. The list order is
+# only the order candidates are listed in, not a preference.
+ALL_PLACE_PROPS = ["P159", "P740", "P131", "P276", "P551", "P937", "P19", "P20"]
+
+
+def _claim_ids_all(entity: dict, prop: str) -> list[str]:
+    """Every non-deprecated QID value of a property, end-dated ones included,
+    in storage order, without repeats. The all_places counterpart of
+    _claim_id, which picks one value and passes end-dated ones over."""
+    out = []
+    for claim in entity.get("claims", {}).get(prop, []):
+        if claim.get("rank") == "deprecated":
+            continue
+        val = claim.get("mainsnak", {}).get("datavalue", {}).get("value")
+        if isinstance(val, dict) and "id" in val and val["id"] not in out:
+            out.append(val["id"])
+    return out
+
+
+def _all_place_ents(entities: dict[str, dict], ok: bool = True
+                    ) -> tuple[dict[str, list[str]], dict[str, dict], bool]:
+    """all_places for several entities at once.
+
+    Returns ({entity qid: [place qid, ...]}, {place qid: entity}, complete).
+    An entity with coordinates is its own one place. Otherwise every value of
+    ALL_PLACE_PROPS that has coordinates is a place, and a value without them
+    is replaced by its P131 (one value, as in the chain) if that has them.
+    Entities and places come in first-seen order, deduplicated."""
+    places_of: dict[str, list[str]] = {}
+    place_ents: dict[str, dict] = {}
+    targets_of: dict[str, list[str]] = {}
+    for qid, ent in entities.items():
+        if get_coords_of(ent):
+            places_of[qid] = [qid]
+            place_ents[qid] = ent
+        else:
+            targets_of[qid] = list(dict.fromkeys(
+                t for prop in ALL_PLACE_PROPS for t in _claim_ids_all(ent, prop)))
+    wanted = list(dict.fromkeys(t for ts in targets_of.values() for t in ts))
+    target_ents, t_ok = _fetch_entities_status(wanted) if wanted else ({}, True)
+    hop_of = {t: _claim_id(e, "P131") for t, e in target_ents.items()
+              if e and not get_coords_of(e)}
+    hops = list(dict.fromkeys(h for h in hop_of.values() if h))
+    hop_ents, h_ok = _fetch_entities_status(hops) if hops else ({}, True)
+    for qid, targets in targets_of.items():
+        found = []
+        for t in targets:
+            ent = target_ents.get(t) or {}
+            if get_coords_of(ent):
+                place, place_ent = t, ent
+            elif hop_of.get(t) and get_coords_of(hop_ents.get(hop_of[t]) or {}):
+                place, place_ent = hop_of[t], hop_ents[hop_of[t]]
+            else:
+                continue
+            if place not in found:
+                found.append(place)
+                place_ents[place] = place_ent
+        places_of[qid] = found
+    return places_of, place_ents, ok and t_ok and h_ok
+
+
+def _linked_candidate(place_qid: str, place_ent: dict, geo: dict, entity_text: str,
+                      entity_type: str) -> dict:
+    c = get_coords_of(place_ent)
+    country, continent = geo.get(place_qid, ("", ""))
+    return {
+        "entity": entity_text,
+        "entity_type": entity_type,
+        # The place's own name. `entity` is the mention it was reached from,
+        # which for a person or an organisation is not a place name.
+        "label": place_ent.get("labels", {}).get("en", {}).get("value") or entity_text,
+        "lat": c[0], "lon": c[1],
+        "description": _description(place_ent, entity_text),
+        "qid": place_qid,
+        "country": country,
+        "continent": continent,
+    }
+
+
+def resolve_qid_to_candidates(qid: str, entity_text: str, entity_type: str,
+                              place_rule: str = "chain_v1") -> list[dict]:
+    """The candidate places of a linked QID under `place_rule`: at most one
+    for chain_v1 (resolve_qid_to_candidate), every place for all_places."""
+    if place_rule == "chain_v1":
+        cand = resolve_qid_to_candidate(qid, entity_text, entity_type)
+        return [cand] if cand else []
+    if place_rule != "all_places":
+        raise ValueError(f"unknown place_rule {place_rule!r}")
+    if not qid:
+        return []
+    ent = fetch_entities([qid]).get(qid, {})
+    if not ent:
+        return []
+    places_of, place_ents, _ = _all_place_ents({qid: ent})
+    places = places_of.get(qid, [])
+    if not places:
+        return []
+    geo = resolve_country_continent({p: place_ents[p] for p in places})
+    return [_linked_candidate(p, place_ents[p], geo, entity_text, entity_type) for p in places]
 
 
 def resolve_qid_to_candidate(qid: str, entity_text: str, entity_type: str) -> dict | None:
-    """Resolve a known QID (e.g. from BLINK) to a geographic candidate dict via
-    the property chain P625 (coords) → P159 → P131 → P19 → P937 → P276, with one
-    extra P131 hop if the chained target also lacks coords. Returns None if no
-    coordinates can be reached."""
+    """Resolve a known QID (e.g. from BLINK) to one geographic candidate dict
+    by the chain_v1 rule: P625 (coords) → P159 → P131 → P19 → P937 → P276
+    (GEO_PROP_CHAIN_V1), with one extra P131 hop if the chained target also
+    lacks coords. Returns None if no coordinates can be reached. The majority
+    baseline and the geoparser use this too."""
     if not qid:
         return None
     ent = fetch_entities([qid]).get(qid, {})
@@ -703,7 +893,7 @@ def resolve_qid_to_candidate(qid: str, entity_text: str, entity_type: str) -> di
     if get_coords_of(ent):
         place_qid, place_ent = qid, ent
     else:
-        for prop in GEO_PROP_CHAIN:
+        for prop in GEO_PROP_CHAIN_V1:
             target = _claim_id(ent, prop)
             if not target:
                 continue
@@ -721,25 +911,16 @@ def resolve_qid_to_candidate(qid: str, entity_text: str, entity_type: str) -> di
     if not place_ent:
         return None
 
-    c = get_coords_of(place_ent)
     geo = resolve_country_continent({place_qid: place_ent})
-    country, continent = geo.get(place_qid, ("", ""))
-    return {
-        "entity": entity_text,
-        "entity_type": entity_type,
-        "lat": c[0], "lon": c[1],
-        "description": _description(place_ent, entity_text),
-        "qid": place_qid,
-        "country": country,
-        "continent": continent,
-    }
+    return _linked_candidate(place_qid, place_ent, geo, entity_text, entity_type)
 
 
-def get_all_coords(entities: list[dict], top_n: int = 10) -> list[dict]:
+def get_all_coords(entities: list[dict], top_n: int = 10,
+                   place_rule: str = "chain_v1") -> list[dict]:
     """Take the entity list from ner.py and return candidate coordinates."""
     all_candidates = []
     for entity in entities:
-        coords = get_coords(entity["text"], entity["type"], top_n=top_n)
+        coords = get_coords(entity["text"], entity["type"], top_n=top_n, place_rule=place_rule)
         for coord in coords:
             all_candidates.append({
                 "entity": entity["text"],

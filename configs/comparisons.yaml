@@ -24,6 +24,10 @@ comparisons:
   - [dense_retrieval, gemma4, "no mention detection: retrieval vs parametric"]
   # tier 4: between models
   - [qwen3_vl, gemma4, "second model vs first"]
+  # Added 2026-11-26 in revision 3, with the configuration it tests, after test
+  # scores of the other configurations had been seen (results/REVISIONS.md).
+  # It enlarges the Holm family by one.
+  - [qwen3_vl, qwen3_vl_32b, "same family, larger model vs smaller"]
   # tier 5: grounding
   - [grounded_gemma, gemma4, "does grounding help (same model, matched control)"]
   - [grounded_gemma, dense_retrieval, "grounded LLM vs its retriever alone"]

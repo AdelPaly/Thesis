@@ -5,19 +5,20 @@ question: >
   does parametric knowledge (LLM alone, whole text) beat mention detection and
   retrieval; matched control for grounded_gemma
 design: >
-  LLM(gemma-4-12b-it, VSE gateway, temperature 0, prompt v2 → JSON
-  city/country/continent/latitude/longitude/refused) → resolve (src/resolver.py):
-  Wikidata search for the city, 10 results → those in the named country → among
-  several, the first within 25 km of the model's coordinates → else country, else
-  continent string only (no QID, no coords) → prediction. No candidate list. The
-  record's `resolution` says resolved, declined, unreadable, not_found or ambiguous.
+  LLM(gemma-4-12b-it, VSE gateway, temperature 0, prompt v4 → JSON
+  place/country/continent/latitude/longitude/refused) → resolve (src/resolver.py,
+  rule v4): Wikidata search for the place, 10 results (50 when none of the 10 is
+  in the named country) → those in the named country → among several, the first
+  within 25 km of the model's coordinates → else country, else continent string
+  only (no QID, no coords) → prediction. No candidate list. The record's
+  `resolution` says resolved, declined, unreadable, not_found or ambiguous.
 description: >
   Tier 4, LLM only, and the matched ungrounded control for tier 5: same model
   as grounded_gemma, so the grounded-vs-ungrounded comparison measures the
   grounding rather than a model change.
 
   Google Gemma 4 12B (instruction tuned), reading the whole text in one pass.
-  No mention detection stage: the model is asked for city / country /
+  No mention detection stage: the model is asked for place / country /
   continent directly, and the answer is resolved against Wikidata. A
   continent-only answer carries no coordinate.
 
@@ -26,6 +27,14 @@ description: >
   The rule was corrected on the development split only and then run once on
   the test split. The first runs are kept in results/posthoc/original/; see
   results/REVISIONS.md.
+
+  Revision 3 (2026-11-26, not yet run): prompt v4 asks for the location
+  itself, "a city, town or village, or any other named place", rather than a
+  city, and keeps one refusal rule (refuse only if the text has no geographic
+  signal). Its wording names no place type of the dataset. Rule v4 is rule v3
+  (the audit's wider search) on the new "place" field. The reported runs
+  (commit 0389a2d) used prompt template v3 (the v2 prompt, cache
+  gemma4_12b_v2); v4 writes to its own cache, gemma4_12b_v4.
 ner:
   model: null
   entity_types: null
@@ -43,5 +52,5 @@ llm:
   revision: null
   temperature: 0.0
   top_p: null
-  prompt_template: v3
-  cache_name: gemma4_12b_v2
+  prompt_template: v4
+  cache_name: gemma4_12b_v4

@@ -6,25 +6,37 @@ question: >
   does entity linking (ReFinED) beat the population floor, toponym-only geoparsing and
   search + rerank
 design: >
-  NER(flair/ner-large, LOC/PER/ORG) → link(ReFinED wikipedia_model, constrained spans:
-  one QID per mention, top-10 linker candidates kept) → resolve(QID: P625, else property
-  chain P159 → P131 → P19 → P937 → P276, +1 P131 hop) → rerank(E5 cos(raw text, place
-  description)) across mentions → top-1. Only the linker's top QID per mention is
+  NER(flair/ner-large, every tag) → link(ReFinED wikipedia_model, constrained spans:
+  one QID per mention, top-10 linker candidates kept) for the LOC/PER/ORG mentions →
+  resolve(QID: P625 → itself, else every place it links to through P159, P740, P131,
+  P276, P551, P937, P19, P20, +1 P131 hop, deduplicated) → [gate: any place?] no: link
+  and resolve the MISC mentions the same way (fallback) → rerank(E5 cos(raw text, place
+  description)) across all candidates → top-1. Only the linker's top QID per mention is
   resolved. Output: no span, no link, or no linked QID with reachable coords → no
   prediction.
 description: >
-  Flair NER (LOC/PER/ORG) supplies the mentions; ReFinED in constrained-span
-  mode links each one to a Wikidata QID; the shared property chain turns the
-  QID into coordinates; E5 reranks across mentions. Two stages, not
-  end-to-end: ReFinED is doing disambiguation only, Flair owns detection.
+  Flair NER supplies the mentions; ReFinED in constrained-span mode links each
+  one to a Wikidata QID; E5 reranks the resulting places across mentions. Two
+  stages, not end-to-end: ReFinED is doing disambiguation only, Flair owns
+  detection.
+
+  Revision 3 (2026-11-26, not yet run). Place rule all_places: a linked item
+  with coordinates is its own one candidate; any other item gives every place
+  it links to, in no order of preference, and the reranker chooses among
+  them. The reported runs took the first place along a fixed chain
+  (place_rule chain_v1: P159, P131, P19, P937, P276). Fallback: MISC mentions
+  (demonyms, events) are linked, in a second linker call, only when the LOC,
+  PER and ORG mentions give no place; the reported runs never used them.
 ner:
   model: flair/ner-large
   entity_types: [LOC, PER, ORG]
+  fallback_types: [MISC]
 linking:
   backend: refined
   refined_model: wikipedia_model
   refined_entity_set: wikipedia
   top_n: 10
+  place_rule: all_places
 rerank:
   model: shared            # configs/shared.yaml
   enabled: true

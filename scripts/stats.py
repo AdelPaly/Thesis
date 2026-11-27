@@ -57,10 +57,11 @@ def mcnemar(pairs: list[tuple], correct: Callable, unit: str = "place") -> dict:
     """Paired accuracy comparison.
 
     unit="place" (the default and what should be reported): each place
-    contributes ONE outcome per system -- whether that system got the majority
-    of the place's items right. Places where the two systems tie are
-    concordant and drop out, exactly as in the item-level test. This is the
-    clustered form: the pairs being counted are places, which are independent.
+    contributes ONE outcome: which of the two systems got the larger share of
+    that place's items right. Places where the shares are equal are
+    concordant and drop out, as ties do in the item-level test. This is an
+    exact sign test over places, the clustered form of McNemar's test: the
+    pairs being counted are places, which are independent.
 
     unit="item": the textbook per-item test. Reported only for reference,
     because its pairs are not independent when a place has several items, so
@@ -264,6 +265,26 @@ def exact_rate(records: list[dict]) -> float | None:
 
 
 exact_rate.terms = _exact_terms
+
+
+def _exact_or_inside_terms(r: dict) -> tuple[int, int]:
+    if not r.get("scorable_inside"):
+        return 0, 0
+    return int(bool(r.get("exact_or_inside"))), 1
+
+
+def exact_or_inside_rate(records: list[dict]) -> float | None:
+    """Exact match, or a prediction inside the gold place (score.py's
+    exact_or_inside), over the records the containment table can score."""
+    num = den = 0
+    for r in records:
+        n, d = _exact_or_inside_terms(r)
+        num += n
+        den += d
+    return num / den if den else None
+
+
+exact_or_inside_rate.terms = _exact_or_inside_terms
 
 
 def fmt_ci(ci: dict | None, pct: bool = False, unit: str = "") -> str:

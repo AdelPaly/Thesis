@@ -32,10 +32,14 @@ import re
 
 import meter
 
-from llm_common import (REFUSAL_SENTINEL, PickleCache, fingerprint,
+from llm_common import (SENTINELS, PickleCache, fingerprint,
                         parse_json_object)
 
-PROMPT = """You are a geolocation assistant. Identify the single real-world location the text refers to, choosing from the numbered candidate list.
+# The prompt of the runs until revision 3, kept for the record. Its last rule
+# asked the model to decline when unsure, which the LLM-only prompt v4 no
+# longer does; with both the matched comparison (grounded_gemma against
+# gemma4) would compare two different rules for declining.
+PROMPT_V1 = """You are a geolocation assistant. Identify the single real-world location the text refers to, choosing from the numbered candidate list.
 
 Respond with JSON only, no explanation:
 {{"selection": <the number of the chosen candidate, or null>, "refused": <true or false>}}
@@ -51,12 +55,38 @@ Text: {text}
 Candidates:
 {candidates}"""
 
+# Revision 3 (2026-11-26): PROMPT_V1 without its last rule. The model declines
+# when no candidate is the location, as the LLM-only prompt v4 declines when
+# the text has no geographic signal; neither is told to decline when unsure.
+PROMPT_VERSION = "v2"
+PROMPT = """You are a geolocation assistant. Identify the single real-world location the text refers to, choosing from the numbered candidate list.
+
+Respond with JSON only, no explanation:
+{{"selection": <the number of the chosen candidate, or null>, "refused": <true or false>}}
+
+Rules:
+- You may ONLY choose a number that appears in the candidate list.
+- Do not name a place that is not in the list.
+- If none of the candidates is the location the text refers to, set "selection" to null and "refused" to true.
+
+Text: {text}
+
+Candidates:
+{candidates}"""
+
 
 def format_candidates(candidates: list[dict]) -> str:
-    """The numbered list the model sees: index, QID, label, country, description."""
+    """The numbered list the model sees: index, QID, place name, country,
+    description.
+
+    The place name is the candidate's `label`. Until revision 3 the list showed
+    `entity`, which for a linked candidate is the mention it came from: a
+    place reached through a person showed the person's name and never its own
+    ("Nick Willis -- city in the Wellington Region of New Zealand"). Dense
+    candidates carry the place name in `entity` and have no `label`."""
     lines = []
     for i, cand in enumerate(candidates, start=1):
-        label = cand.get("entity") or cand.get("qid") or "?"
+        label = cand.get("label") or cand.get("entity") or cand.get("qid") or "?"
         qid = cand.get("qid") or "-"
         country = cand.get("country") or "unknown country"
         desc = (cand.get("description") or "").strip()
@@ -98,7 +128,7 @@ class GroundedSelector:
         except BaseException:
             self.save_cache()
             raise
-        if raw != REFUSAL_SENTINEL:
+        if raw not in SENTINELS:
             self._cache.put(key, raw)
         return raw
 

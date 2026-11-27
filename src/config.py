@@ -43,7 +43,7 @@ PARADIGMS = {"ner_dependent", "ner_free", "baseline", "dense_retrieval",
              "grounded_llm", "geoparser"}
 LINKING_BACKENDS = {"refined", "blink", "wikidata_search", "none"}
 LLM_PROVIDERS = {None, "google", "openrouter", "vse"}
-PROMPT_TEMPLATES = {"v1", "v2", "v3"}
+PROMPT_TEMPLATES = {"v1", "v2", "v3", "v4"}
 TIERS = range(0, 6)
 # most_populous_named: as most_populous, over the search results named exactly
 # as the toponym when there are any (src/gazetteer.py).
@@ -62,6 +62,17 @@ class ConfigError(ValueError):
 class NERConfig:
     model: str | None = None
     entity_types: list[str] | None = None   # None means keep every tag
+    # Mention types linked only when the mentions of `entity_types` give no
+    # place (revision 3): [MISC] links a demonym or an event as a last resort.
+    # None means no fallback. Added after prediction files existed; see
+    # _LATE_FIELDS.
+    fallback_types: list[str] | None = None
+
+
+# How a linked entity without coordinates of its own becomes candidate
+# places (src/wikidata.py): chain_v1 the first place along the property chain
+# of the reported runs, all_places every place it links to (revision 3).
+PLACE_RULES = {"chain_v1", "all_places"}
 
 
 @dataclass(frozen=True)
@@ -70,6 +81,8 @@ class LinkingConfig:
     refined_model: str | None = None
     refined_entity_set: str | None = None
     top_n: int = 10
+    # Added after prediction files existed; see _LATE_FIELDS.
+    place_rule: str = "chain_v1"
 
 
 @dataclass(frozen=True)
@@ -199,10 +212,24 @@ _LATE_SECTIONS = {
 }
 
 
+# Single fields added to an existing section after prediction files existed,
+# with the default each holds in every configuration written before it. While
+# a field holds that default it is left out of the hash, so adding it changed
+# no existing configuration's hash; a configuration that sets it moves.
+_LATE_FIELDS = {
+    ("ner", "fallback_types"): None,         # revision 3
+    ("linking", "place_rule"): "chain_v1",   # revision 3
+}
+
+
 def _drop_late_defaults(d: dict) -> dict:
     for section, cls in _LATE_SECTIONS.items():
         if d.get(section) == asdict(cls()):
             del d[section]
+    for (section, key), default in _LATE_FIELDS.items():
+        sub = d.get(section)
+        if isinstance(sub, dict) and key in sub and sub[key] == default:
+            del sub[key]
     return d
 
 
@@ -352,6 +379,8 @@ def _validate_types(cfg: PipelineConfig) -> None:
                                   or not isinstance(value, (int, float))):
             raise ConfigError(f"{where} must be a number, got {value!r}")
     _require_str_list("ner.entity_types", cfg.ner.entity_types, allow_none=True)
+    _require_str_list("ner.fallback_types", cfg.ner.fallback_types, allow_none=True)
+    _require_type("linking.place_rule", cfg.linking.place_rule, str)
     _require_str_list("dense.index_fields", cfg.dense.index_fields, allow_none=True)
     _require_type("linking.top_n", cfg.linking.top_n, int)
     _require_type("dense.top_k", cfg.dense.top_k, int)
@@ -398,6 +427,21 @@ def _validate_common(cfg: PipelineConfig) -> None:
         raise ConfigError(f"llm.provider is {llm.provider!r} but llm.model is not set")
     if cfg.ner.entity_types is not None and not cfg.ner.entity_types:
         raise ConfigError("ner.entity_types is an empty list; use null to keep every tag")
+    if linking.place_rule not in PLACE_RULES:
+        raise ConfigError(f"linking.place_rule must be one of {sorted(PLACE_RULES)}")
+    fallback = cfg.ner.fallback_types
+    if fallback is not None:
+        if not fallback:
+            raise ConfigError("ner.fallback_types is an empty list; use null for no fallback")
+        if cfg.ner.entity_types is None:
+            raise ConfigError("ner.fallback_types needs ner.entity_types: with every tag "
+                              "kept there is nothing left to fall back to")
+        if set(fallback) & set(cfg.ner.entity_types):
+            raise ConfigError("ner.fallback_types and ner.entity_types overlap")
+        # The fallback links mentions; the search path (wikidata_search) has no
+        # handler for MISC, and the baselines link nothing.
+        if linking.backend not in ("refined", "blink"):
+            raise ConfigError("ner.fallback_types needs linking.backend refined or blink")
     if cfg.baseline.gazetteer is not None and cfg.baseline.gazetteer not in GAZETTEERS:
         raise ConfigError(f"baseline.gazetteer must be one of {sorted(GAZETTEERS)}")
     if linking.backend == "refined" and not (linking.refined_model

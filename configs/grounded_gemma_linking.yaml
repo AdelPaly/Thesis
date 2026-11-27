@@ -5,11 +5,11 @@ question: >
   does grounding help because of the LLM or because of the retriever (linking vs dense
   candidates)
 design: >
-  NER(flair/ner-large, LOC/PER/ORG) → link(ReFinED, as refined) → resolve(property
-  chain) → distinct place QIDs by linker confidence, top-10 (no rerank) → [gate:
-  candidates?] no: abstain (selection.no_candidates, no LLM call) / yes: LLM
-  select(gemma-4-12b-it, as grounded_gemma) → chosen candidate. Output: as
-  grounded_gemma.
+  NER(flair/ner-large, every tag) → link(ReFinED, as refined, with the MISC fallback) →
+  resolve(all places, as refined) → distinct place QIDs by linker confidence (the places
+  of one entity share its confidence), top-10 (no rerank) → [gate: candidates?] no:
+  abstain (selection.no_candidates, no LLM call) / yes: LLM select(gemma-4-12b-it, as
+  grounded_gemma) → chosen candidate. Output: as grounded_gemma.
 description: >
   Tier 5, second variant. Identical to grounded_gemma except that the
   candidates come from entity linking (tier 2b) instead of dense retrieval
@@ -18,14 +18,22 @@ description: >
   The pair answers a question neither variant can answer alone: does grounding
   help because of the LLM or because of the retriever? Same model, same prompt,
   same selection contract, different candidate source. Decided on dev only.
+
+  Revision 3 (2026-11-26, not yet run). The candidates follow refined: place
+  rule all_places and the MISC fallback, so the model, not a fixed chain,
+  chooses among the places a linked person or organisation gives. The
+  candidate list shows each place by its own name, and the prompt declines
+  only when no candidate is the location (src/llm_grounded.py).
 ner:
   model: flair/ner-large
   entity_types: [LOC, PER, ORG]
+  fallback_types: [MISC]
 linking:
   backend: refined
   refined_model: wikipedia_model
   refined_entity_set: wikipedia
   top_n: 10
+  place_rule: all_places
 rerank:
   model: null
   enabled: false
