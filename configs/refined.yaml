@@ -20,7 +20,7 @@ description: >
   stages, not end-to-end: ReFinED is doing disambiguation only, Flair owns
   detection.
 
-  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/); after
+  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/archive/dev_rev3/); after
   that run, a failed Wikidata lookup under all_places is an error on the
   record, retried on resume, not a shorter candidate list (src/wikidata.py;
   results/REVISIONS.md). Place rule all_places: a linked item

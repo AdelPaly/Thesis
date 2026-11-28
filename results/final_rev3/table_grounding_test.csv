@@ -1,0 +1,15 @@
+config,condition,n,gold_supplied,selected_gold,abstained,abstained_with_gold,violations,eval_code_rev,comparisons_sha256
+grounded_gemma,,2614,1070,863,888,36,1,13187fe,1ede8903dde8
+grounded_gemma_linking,,2614,1839,1607,321,52,0,13187fe,1ede8903dde8
+grounded_gemma,A,292,4,1,,,,13187fe,1ede8903dde8
+grounded_gemma,B,279,125,86,,,,13187fe,1ede8903dde8
+grounded_gemma,EXPLICIT,741,537,447,,,,13187fe,1ede8903dde8
+grounded_gemma,NOISE_A,292,3,0,,,,13187fe,1ede8903dde8
+grounded_gemma,NOISE_B,279,72,56,,,,13187fe,1ede8903dde8
+grounded_gemma,NOISE_EXPLICIT,731,329,273,,,,13187fe,1ede8903dde8
+grounded_gemma_linking,A,292,166,120,,,,13187fe,1ede8903dde8
+grounded_gemma_linking,B,279,227,190,,,,13187fe,1ede8903dde8
+grounded_gemma_linking,EXPLICIT,741,536,535,,,,13187fe,1ede8903dde8
+grounded_gemma_linking,NOISE_A,292,163,91,,,,13187fe,1ede8903dde8
+grounded_gemma_linking,NOISE_B,279,218,180,,,,13187fe,1ede8903dde8
+grounded_gemma_linking,NOISE_EXPLICIT,731,529,491,,,,13187fe,1ede8903dde8

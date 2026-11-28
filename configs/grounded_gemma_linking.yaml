@@ -19,7 +19,7 @@ description: >
   help because of the LLM or because of the retriever? Same model, same prompt,
   same selection contract, different candidate source. Decided on dev only.
 
-  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/). The
+  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/archive/dev_rev3/). The
   candidates follow refined: place rule all_places and the MISC fallback, so
   the model, not a fixed chain, chooses among the places a linked person or
   organisation gives. The candidate list shows each place by its own name,

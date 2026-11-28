@@ -2,7 +2,7 @@
 
     python scripts/build_containment.py          # adds the pairs not yet looked up
     python scripts/build_containment.py --all    # looks the pairs read up again
-    python scripts/build_containment.py --predictions-dir results/dev_rev3
+    python scripts/build_containment.py --predictions-dir results/archive/dev_rev3
                                                  # the pairs of runs written elsewhere
 
 A configuration often answers with something that is in the right place but is

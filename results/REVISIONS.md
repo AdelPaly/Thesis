@@ -341,10 +341,10 @@ rule v4 change no configuration hash: the rule is chosen by
 ### Revision 3, after the development run of 26-27 November
 
 Revision 3 was run on the development split on 26-27 November into
-`results/dev_rev3/` (code `57d76e7+dirty`, the code of commit `3ac1a37`). A
+`results/archive/dev_rev3/` (code `57d76e7+dirty`, the code of commit `3ac1a37`). A
 review of that run found the faults below. **Every choice here was made on
 development results**; no test-split run was made with any of it. The runs
-after these changes are in `results/dev_rev3b/`, and `results/dev_rev3/` is
+after these changes are in `results/archive/dev_rev3b/`, and `results/archive/dev_rev3/` is
 kept as it is. Prompts and rules v1-v4, list v2 and every existing response
 cache are unchanged.
 
@@ -399,12 +399,12 @@ cache are unchanged.
    `grounded_gemma` keeps its cache. Stored candidates now carry `label`.
 4. **Containment of runs outside `results/predictions/`.**
    `scripts/build_containment.py` read only `results/predictions/`, so the
-   wrong answers of `results/dev_rev3/` were never looked up and "exact or
+   wrong answers of `results/archive/dev_rev3/` were never looked up and "exact or
    inside" came out too low for it: 216 distinct (predicted, gold) pairs, in
    356 records. It takes `--predictions-dir` (repeatable; default
    `results/predictions`), and `--all` now looks up again only the pairs of the
    directories read, keeping every other row of `results/containment.csv`.
-   Run on `results/dev_rev3` on 27 November.
+   Run on `results/archive/dev_rev3` on 27 November.
 5. **Failed lookups under `all_places` were silent.** In `src/wikidata.py`,
    `resolve_qid_to_candidates` threw away the completeness flag of the place
    fetch and of the country lookup, so a failed request silently dropped
@@ -439,14 +439,14 @@ hashes of `refined`, `blink`, `retrieve_rerank` and `grounded_gemma_linking`
 equal those of their `dev_rev3` records (the list version of
 `grounded_gemma_linking` is in its cache name, not its hash, so it is run into
 a new `--out-dir`). The exact code of the `dev_rev3b` runs, whose records say
-`+dirty`, is in `results/dev_rev3b/code.diff`. New tests: the end of
+`+dirty`, is in `results/archive/dev_rev3b/code.diff`. New tests: the end of
 `tests/test_resolver.py`, `tests/test_prompt.py`, `tests/test_grounded.py`,
 `tests/test_chain.py`, and the new `tests/test_dense_pin.py` and
 `tests/test_comparisons.py`.
 
-**Development results of `results/dev_rev3b/`** (run 27 November, 735
+**Development results of `results/archive/dev_rev3b/`** (run 27 November, 735
 development posts per configuration, no record with an error; containment
-looked up for `results/dev_rev3` and `results/dev_rev3b`). Exact match, in %,
+looked up for `results/archive/dev_rev3` and `results/archive/dev_rev3b`). Exact match, in %,
 `dev_rev3` to `dev_rev3b`:
 
 | configuration | all | A | B | NOISE_A | NOISE_B | exact or inside, all |
@@ -479,7 +479,7 @@ The reported runs had, for A: `gemma4` 8.5, `qwen3_vl` 14.1,
   equals that of `grounded_gemma` in `dev_rev3` for all 735 posts. Its exact
   match is that of the reported run (10.2%).
 
-#### Prompt v5 as run in results/dev_rev3b/ (replaced)
+#### Prompt v5 as run in results/archive/dev_rev3b/ (replaced)
 
 As the model saw it (in `src/llm_geo.py` the braces of the JSON line are
 doubled):
@@ -502,7 +502,7 @@ prompt of revision 3. It was chosen on dev results, after v4 and the first v5.
 Its dev results are reported whatever they are. After its dev run, only clear
 bugs are fixed.
 
-#### Prompt v5 (final), run in results/dev_rev3c/
+#### Prompt v5 (final), run in results/archive/dev_rev3c/
 
 ```
 You are a geolocation assistant. Given a text, identify the single most relevant real-world location the text refers to.
@@ -524,11 +524,11 @@ and `qwen3_vl_32b` resolve it with rule v4, through a new field,
 `_LATE_FIELDS`, so no other configuration's hash moved; recorded in each
 record as `models.llm_resolver_rule`). Rule v5 stays in the code with its
 tests. New caches: `gemma4_12b_v5b`, `qwen3_vl_235b_v5b`, `qwen3_vl_32b_v5b`.
-The exact code of the `dev_rev3c` runs is in `results/dev_rev3c/code.diff`.
+The exact code of the `dev_rev3c` runs is in `results/archive/dev_rev3c/code.diff`.
 
-**Development results of `results/dev_rev3c/`** (run 27 November, 735
+**Development results of `results/archive/dev_rev3c/`** (run 27 November, 735
 development posts per configuration; containment looked up for
-`results/dev_rev3c`). The `gemma4` run stopped at post 268 when the machine ran
+`results/archive/dev_rev3c`). The `gemma4` run stopped at post 268 when the machine ran
 low on memory and was resumed from its records. One record ended in a
 Wikidata `cirrussearch-too-busy-error`; a resume looked it up again from the
 cached reply, and no record has an error. Columns: reported run (v2),
@@ -550,7 +550,7 @@ cached reply, and no record has an error. Columns: reported run (v2),
 | | no result | - / 3.4 / 3.5 / 1.5 | - / 23.9 / 23.9 / 8.5 | - / 0.0 / 0.0 / 0.0 | - / 9.9 / 11.3 / 5.6 | - / 0.0 / 0.0 / 0.0 |
 
 EXPLICIT and NOISE_EXPLICIT moved by at most 2 points against `dev_rev3`
-(full table in `results/dev_rev3c/report.txt`). Exact / exact or inside by
+(full table in `results/archive/dev_rev3c/report.txt`). Exact / exact or inside by
 gold type (column `type` of `generation/out/places.csv`; 626 settlements,
 39 islands, 30 natural, 40 manmade), `dev_rev3` → `dev_rev3c`:
 
@@ -576,8 +576,16 @@ ambiguous 13 → 5, declined 40 → 21, resolved 591 → 641; `qwen3_vl` not_fou
   landmark inside it.
 - On A the models still name a person's or a club's place from the wrong
   country (Pervez Musharraf Street → Islamabad for Delhi; Vital'O FC →
-  Sutton Coldfield or Lyon for Bujumbura; `results/dev_rev3c/report.txt`
+  Sutton Coldfield or Lyon for Bujumbura; `results/archive/dev_rev3c/report.txt`
   lists 30 sampled answers).
+
+### Final run of revision 3
+
+Code frozen at commit `13187fe` ("Freeze revision 3", 27 November 2026). The
+final run, all 3,349 posts of `refined`, `blink`, `retrieve_rerank`,
+`dense_retrieval`, `grounded_gemma`, `grounded_gemma_linking`, `gemma4`,
+`qwen3_vl` and `qwen3_vl_32b`, was made on 27-28 November 2026 into
+`results/final_rev3/`.
 
 ## What changed between the revisions of the other runs
 

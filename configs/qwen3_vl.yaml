@@ -27,7 +27,7 @@ description: >
   the test split. The first runs are kept in results/posthoc/original/; see
   results/REVISIONS.md.
 
-  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/): prompt v4
+  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/archive/dev_rev3/): prompt v4
   asks for the location itself, "a city, town or village, or any other named
   place", rather than a city, and keeps one refusal rule (refuse only if the
   text has no geographic signal). Its wording names no place type of the
@@ -37,13 +37,13 @@ description: >
   After that dev run: on posts with clues only, v4 made the model name streets,
   venues and clubs with no Wikidata item, and rule v4 fell straight back to the
   country. A first prompt v5 added a "settlement" field, with rule v5 searching
-  it (cache qwen3_vl_235b_v5, results/dev_rev3b/); the model then named a
+  it (cache qwen3_vl_235b_v5, results/archive/dev_rev3b/); the model then named a
   landmark as the place and the town as the settlement, and exact on B fell.
   It was replaced. Prompt v5 is now v4 with its second paragraph replaced: for
   a building, street or venue it asks for the city, town or village it is in,
   and for a person, organisation or event the place where they are. Same JSON
   fields as v4, resolved with rule v4 (llm.resolver_rule), cache
-  qwen3_vl_235b_v5b (results/dev_rev3c/; results/REVISIONS.md). The reported
+  qwen3_vl_235b_v5b (results/archive/dev_rev3c/; results/REVISIONS.md). The reported
   runs (commit 0389a2d) used prompt template v3 (the v2 prompt, cache
   qwen3_vl_235b_v2).
 ner:

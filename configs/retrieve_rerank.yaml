@@ -18,7 +18,7 @@ description: >
   mention, E5 cross-candidate rerank, top-1. No entity linker: disambiguation
   is done entirely by the reranker over the retrieved candidate set.
 
-  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/); after
+  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/archive/dev_rev3/); after
   that run, a failed Wikidata lookup under all_places is an error on the
   record, retried on resume, not a shorter candidate list (src/wikidata.py;
   results/REVISIONS.md). Place rule all_places, as refined: a

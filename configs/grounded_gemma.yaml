@@ -21,7 +21,7 @@ description: >
   so a grounded system ignoring its grounding is visible rather than scored as
   an ordinary wrong guess.
 
-  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/): the
+  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/archive/dev_rev3/): the
   prompt declines only when no candidate is the location (src/llm_grounded.py,
   prompt v2). After that run the dense index is pinned (index_signature): the
   index this configuration retrieved from on 27 Nov, which dense_retrieval now

@@ -30,7 +30,7 @@ description: >
   pass covers every mention of the run, the MISC ones too, so the fallback costs
   no second pass; their links are used only when the fallback is needed.
 
-  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/dev_rev3/); after
+  Revision 3 (2026-11-26), run on dev 26-27 Nov (results/archive/dev_rev3/); after
   that run, a failed Wikidata lookup under all_places is an error on the
   record, retried on resume, not a shorter candidate list (src/wikidata.py;
   results/REVISIONS.md). Place rule all_places and the MISC

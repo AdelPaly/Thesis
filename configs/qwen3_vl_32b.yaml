@@ -26,11 +26,11 @@ description: >
   Added in revision 3 (2026-11-26), before any run of it, with the prompt and
   rule of revision 3, so it is compared with the revision 3 runs of qwen3_vl
   and gemma4, not with their reported runs. Run on dev 26-27 Nov with prompt
-  v4 and rule v4 (cache qwen3_vl_32b_v4; results/dev_rev3/); after that dev
+  v4 and rule v4 (cache qwen3_vl_32b_v4; results/archive/dev_rev3/); after that dev
   run, the first prompt v5 (with a "settlement" field) and rule v5, cache
-  qwen3_vl_32b_v5 (results/dev_rev3b/); then, as for gemma4 and qwen3_vl, the
+  qwen3_vl_32b_v5 (results/archive/dev_rev3b/); then, as for gemma4 and qwen3_vl, the
   replacing prompt v5 (v4's fields, the second paragraph replaced) with rule
-  v4 (llm.resolver_rule), cache qwen3_vl_32b_v5b (results/dev_rev3c/). Its
+  v4 (llm.resolver_rule), cache qwen3_vl_32b_v5b (results/archive/dev_rev3c/). Its
   comparison with qwen3_vl is exploratory, outside the
   Holm family (configs/comparisons.yaml): it was added after test scores of
   the other configurations had been seen.
