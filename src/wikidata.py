@@ -33,7 +33,9 @@ REQUEST_TIMEOUT = 15           # seconds
 MAX_ATTEMPTS = 6
 MAX_BACKOFF = 32               # cap on the exponential wait, seconds
 MAX_RETRY_AFTER = 120          # cap on a server-supplied Retry-After, seconds
-RETRYABLE_API_ERRORS = ("maxlag", "ratelimited")
+# "cirrussearch-too-busy-error": the search backend is overloaded for a moment;
+# the same request succeeds when sent again.
+RETRYABLE_API_ERRORS = ("maxlag", "ratelimited", "cirrussearch-too-busy-error")
 BATCH_SIZE = 50                # wbgetentities id limit
 
 SEARCH_LIMIT = 10              # default wbsearchentities limit
